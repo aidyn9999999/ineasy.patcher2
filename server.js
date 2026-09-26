@@ -3,6 +3,7 @@ const express = require('express');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { Telegraf } = require('telegraf');
+const { Redis } = require('@upstash/redis');
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const BOT_USERNAME = process.env.BOT_USERNAME || 'ineasy_4k_bot';
@@ -16,17 +17,40 @@ if (!BOT_TOKEN) {
   process.exit(1);
 }
 
-// --- Хранилище сессий авторизации (в памяти) ---
-const sessions = new Map();
-
-// --- Баланс видео по Telegram ID (в памяти) ---
-const balances = new Map();
-
-function getBalance(telegramId) {
-  const key = String(telegramId);
-  if (!balances.has(key)) balances.set(key, DEFAULT_BALANCE);
-  return balances.get(key);
+if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+  console.error('Не найдены UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN. Добавьте их в переменные окружения (см. upstash.com).');
+  process.exit(1);
 }
+
+// --- Постоянное хранилище баланса (Upstash Redis) ---
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN,
+});
+
+function balanceKey(telegramId) {
+  return `balance:${telegramId}`;
+}
+
+async function getBalance(telegramId) {
+  const key = balanceKey(telegramId);
+  const value = await redis.get(key);
+  if (value === null || value === undefined) {
+    await redis.set(key, DEFAULT_BALANCE);
+    return DEFAULT_BALANCE;
+  }
+  return Number(value);
+}
+
+async function addBalance(telegramId, amount) {
+  // при первом обращении убеждаемся, что дефолт уже стоит, затем прибавляем
+  await getBalance(telegramId);
+  const newValue = await redis.incrby(balanceKey(telegramId), amount);
+  return newValue;
+}
+
+// --- Хранилище сессий авторизации (в памяти — это ок, сессии живут недолго) ---
+const sessions = new Map();
 
 setInterval(() => {
   const now = Date.now();
@@ -72,7 +96,7 @@ bot.start((ctx) => {
   ctx.reply('✅ Успешно авторизовались!\n\nЗайдите в сайт — вам там ждут.');
 });
 
-bot.command('addvideo', (ctx) => {
+bot.command('addvideo', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) {
     return;
   }
@@ -86,10 +110,13 @@ bot.command('addvideo', (ctx) => {
     return;
   }
 
-  const current = getBalance(targetId);
-  balances.set(String(targetId), current + amount);
-
-  ctx.reply(`✅ Зачислено ${amount} видео пользователю ${targetId}.\nНовый баланс: ${balances.get(String(targetId))}`);
+  try {
+    const newBalance = await addBalance(targetId, amount);
+    ctx.reply(`✅ Зачислено ${amount} видео пользователю ${targetId}.\nНовый баланс: ${newBalance}`);
+  } catch (err) {
+    console.error('Ошибка addvideo:', err);
+    ctx.reply('❌ Не удалось обновить баланс. Проверьте логи сервера.');
+  }
 });
 
 // --- Веб-сервер ---
@@ -119,8 +146,14 @@ app.get('/api/session/:id', (req, res) => {
   });
 });
 
-app.get('/api/balance/:telegramId', (req, res) => {
-  res.json({ balance: getBalance(req.params.telegramId) });
+app.get('/api/balance/:telegramId', async (req, res) => {
+  try {
+    const balance = await getBalance(req.params.telegramId);
+    res.json({ balance });
+  } catch (err) {
+    console.error('Ошибка получения баланса:', err);
+    res.status(500).json({ error: 'balance_fetch_failed' });
+  }
 });
 
 app.get('/api/buy-link/:count/:price', (req, res) => {
@@ -134,7 +167,7 @@ app.use(bot.webhookCallback(WEBHOOK_PATH));
 app.listen(PORT, async () => {
   console.log(`Сайт запущен: http://localhost:${PORT}`);
 
-  const publicUrl = process.env.RENDER_EXTERNAL_URL;
+  const publicUrl = process.env.RENDER_EXTERNAL_URL || process.env.RAILWAY_PUBLIC_DOMAIN_URL;
 
   if (publicUrl) {
     await bot.telegram.setWebhook(`${publicUrl}${WEBHOOK_PATH}`);
