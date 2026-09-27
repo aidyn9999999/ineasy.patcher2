@@ -13,12 +13,15 @@ const DEFAULT_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher2-production.up.railway.app/app.html';
 
-// Пакеты для покупки: [видео, цена в тенге]
+// Пакеты: [количество видео, цена в тенге]. Цена за 1 видео считается автоматически.
 const PACKAGES = [
-  [5, 2000],
-  [15, 5000],
-  [40, 10000],
+  [3, 450],
+  [5, 750],
+  [10, 1400],
+  [20, 2600],
 ];
+
+const BUY_BUTTON_TEXT = '🛒 Купить лимиты';
 
 if (!BOT_TOKEN) {
   console.error('Не найден BOT_TOKEN. Скопируйте .env.example в .env и вставьте токен от @BotFather.');
@@ -71,6 +74,11 @@ setInterval(() => {
 // --- Телеграм-бот ---
 const bot = new Telegraf(BOT_TOKEN);
 
+// Постоянная клавиатура внизу экрана (не привязана к одному сообщению)
+function mainKeyboard() {
+  return Markup.keyboard([[BUY_BUTTON_TEXT]]).resize();
+}
+
 function welcomeText(name) {
   return `👋 Привет, ${name}!\n\n` +
     `Добро пожаловать в INEASY PATCHER 🚀🔥\n\n` +
@@ -84,37 +92,39 @@ function welcomeText(name) {
     `💎 Не останавливай обработку!\n` +
     `🛒 КУПИТЬ ДОПОЛНИТЕЛЬНЫЕ ЛИМИТЫ\n\n` +
     `💰 Выгодная цена • Быстрая активация • Больше обработок\n\n` +
-    `👇 Нажмите кнопку «🛒 КУПИТЬ» прямо сейчас! 👇\n\n` +
+    `👇 Нажмите кнопку «${BUY_BUTTON_TEXT}» внизу экрана! 👇\n\n` +
     `━━━━━━━━━━━━━━━━━━\n\n` +
     `✨ Спасибо, что используете INEASY PATCHER!`;
 }
 
-function welcomeKeyboard() {
-  return Markup.inlineKeyboard([
-    [Markup.button.url('🌐 Открыть сайт', SITE_URL)],
-    [Markup.button.callback('🛒 КУПИТЬ', 'buyvideo')],
-  ]);
-}
-
 function buyText() {
-  let text = `🛒 Выберите пакет лимитов:\n\n💳 Оплата на карту:\n${CARD_INFO}\n\n`;
+  let text = `🛒 Выберите пакет лимитов:\n\n`;
   PACKAGES.forEach(([count, price]) => {
-    text += `▫️ ${count} видео — ${price.toLocaleString('ru-RU')} тенге\n`;
+    const perUnit = Math.round(price / count);
+    text += `▫️ ${count} видео — ${price.toLocaleString('ru-RU')} тенге (${perUnit} тенге/шт)\n`;
   });
-  text += `\n✅ После перевода отправьте сюда чек и ваш Telegram ID.\n\n` +
+  text += `\n💳 Оплата на карту:\n${CARD_INFO}\n\n` +
+    `✅ После перевода отправьте сюда чек и ваш Telegram ID.\n\n` +
     `🔎 Ваш Telegram ID указан в углу экрана на сайте.`;
   return text;
 }
 
 async function sendWelcome(ctx) {
   const name = ctx.from.first_name || ctx.from.username || 'друг';
-  await ctx.reply(welcomeText(name), welcomeKeyboard());
+  await ctx.reply(welcomeText(name), mainKeyboard());
+}
+
+async function sendAuthSuccess(ctx) {
+  await ctx.reply(
+    '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
+    mainKeyboard()
+  );
 }
 
 bot.start(async (ctx) => {
   const payload = ctx.startPayload ? ctx.startPayload.trim() : null;
 
-  // Если пришли из сайта с сессией — авторизуем в фоне, но всегда показываем приветствие
+  // Пришли по прямой ссылке с сайта (кнопка "Войти через Telegram") — валидная сессия
   if (payload && payload !== 'buyvideo' && !payload.startsWith('buy_') && sessions.has(payload)) {
     const session = sessions.get(payload);
     session.authorized = true;
@@ -122,27 +132,32 @@ bot.start(async (ctx) => {
     session.username = ctx.from.username || null;
     session.firstName = ctx.from.first_name || '';
     sessions.set(payload, session);
-  }
 
-  if (payload === 'buyvideo' || (payload && payload.startsWith('buy_'))) {
-    await ctx.reply(buyText());
+    await sendAuthSuccess(ctx);
     return;
   }
 
+  // Пришли по ссылке "купить" (из письма/сайта) — сразу открываем меню покупки
+  if (payload === 'buyvideo' || (payload && payload.startsWith('buy_'))) {
+    await ctx.reply(buyText(), mainKeyboard());
+    return;
+  }
+
+  // Обычный /start без параметров — общее приветствие/меню
   await sendWelcome(ctx);
 });
 
 bot.command('buyvideo', async (ctx) => {
-  await ctx.reply(buyText());
+  await ctx.reply(buyText(), mainKeyboard());
 });
 
 bot.command('autorization', async (ctx) => {
   await sendWelcome(ctx);
 });
 
-bot.action('buyvideo', async (ctx) => {
-  await ctx.answerCbQuery();
-  await ctx.reply(buyText());
+// Постоянная кнопка внизу экрана — приходит как обычный текст
+bot.hears(BUY_BUTTON_TEXT, async (ctx) => {
+  await ctx.reply(buyText(), mainKeyboard());
 });
 
 bot.command('addvideo', async (ctx) => {
