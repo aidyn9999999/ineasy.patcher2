@@ -39,10 +39,18 @@ const redis = new Redis({
 });
 
 const BTN = {
-  ru: { buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль' },
-  en: { buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile' },
-  kk: { buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль' },
+  ru: { buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык' },
+  en: { buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language' },
+  kk: { buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл' },
 };
+
+function langChoiceKeyboard() {
+  return Markup.inlineKeyboard([
+    [Markup.button.callback('🇷🇺 Русский', 'lang_ru')],
+    [Markup.button.callback('🇬🇧 English', 'lang_en')],
+    [Markup.button.callback('🇰🇿 Қазақша', 'lang_kk')],
+  ]);
+}
 
 const TEXTS = {
   ru: {
@@ -246,7 +254,7 @@ const bot = new Telegraf(BOT_TOKEN);
 
 function mainKeyboard(lang) {
   const b = BTN[lang];
-  return Markup.keyboard([[b.buy], [b.balance, b.profile]]).resize();
+  return Markup.keyboard([[b.buy], [b.balance, b.profile], [b.lang]]).resize();
 }
 
 function packagesKeyboard(lang) {
@@ -315,11 +323,11 @@ bot.command('balance', async (ctx) => sendBalance(ctx, await getLang(ctx.from.id
 bot.command('profile', async (ctx) => sendProfile(ctx, await getLang(ctx.from.id)));
 
 bot.command('language', async (ctx) => {
-  await ctx.reply('Choose language / Выберите язык / Тілді таңдаңыз:', Markup.inlineKeyboard([
-    [Markup.button.callback('🇷🇺 Русский', 'lang_ru')],
-    [Markup.button.callback('🇬🇧 English', 'lang_en')],
-    [Markup.button.callback('🇰🇿 Қазақша', 'lang_kk')],
-  ]));
+  await ctx.reply('Choose language / Выберите язык / Тілді таңдаңыз:', langChoiceKeyboard());
+});
+
+bot.hears([BTN.ru.lang, BTN.en.lang, BTN.kk.lang], async (ctx) => {
+  await ctx.reply('Choose language / Выберите язык / Тілді таңдаңыз:', langChoiceKeyboard());
 });
 
 bot.action(/^lang_(ru|en|kk)$/, async (ctx) => {
