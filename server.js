@@ -215,7 +215,18 @@ async function getFreeBalance(telegramId) {
 
 async function getPurchasedBalance(telegramId) {
   const val = await redis.get(`purchased:${telegramId}`);
-  return val === null || val === undefined ? 0 : Number(val);
+  if (val !== null && val !== undefined) {
+    return Number(val);
+  }
+  // Миграция со старого формата (единый ключ balance:<id>, использовался раньше)
+  const oldVal = await redis.get(`balance:${telegramId}`);
+  if (oldVal !== null && oldVal !== undefined) {
+    const migrated = Number(oldVal);
+    await redis.set(`purchased:${telegramId}`, migrated);
+    await redis.del(`balance:${telegramId}`);
+    return migrated;
+  }
+  return 0;
 }
 
 async function addPurchasedBalance(telegramId, amount) {
