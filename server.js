@@ -9,11 +9,10 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const BOT_USERNAME = process.env.BOT_USERNAME || 'ineasybot';
 const PORT = process.env.PORT || 3000;
 const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : null;
-const DEFAULT_BALANCE = 2;
+const WEEKLY_FREE_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher2-production.up.railway.app/app.html';
 
-// Пакеты: [количество видео, цена в тенге]
 const PACKAGES = [
   [3, 450],
   [5, 725],
@@ -25,121 +24,268 @@ const PACKAGES = [
   [100, 11000],
 ];
 
-const BUY_BUTTON_TEXT = '🛒 Купить лимиты';
-
 if (!BOT_TOKEN) {
-  console.error('Не найден BOT_TOKEN. Скопируйте .env.example в .env и вставьте токен от @BotFather.');
+  console.error('Не найден BOT_TOKEN.');
   process.exit(1);
 }
-
 if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-  console.error('Не найдены UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN. Добавьте их в переменные окружения (см. upstash.com).');
+  console.error('Не найдены UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN.');
   process.exit(1);
 }
 
-// --- Постоянное хранилище баланса (Upstash Redis) ---
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL,
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-function balanceKey(telegramId) {
-  return `balance:${telegramId}`;
+const BTN = {
+  ru: { buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль' },
+  en: { buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile' },
+  kk: { buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль' },
+};
+
+const TEXTS = {
+  ru: {
+    welcome: (name) =>
+      `👋 Привет, ${name}!\n\n` +
+      `Добро пожаловать в INEASY PATCHER 🚀🔥\n\n` +
+      `🎬 Как обработать видео:\n\n` +
+      `1️⃣ Перейдите на сайт патчера:\n🔗 ${SITE_URL}\n\n` +
+      `2️⃣ 🔐 Авторизуйтесь на сайте.\n\n` +
+      `3️⃣ 🎥 Выберите своё видео и патчите его как необходимо.\n\n` +
+      `4️⃣ ✅ После завершения обработки скачайте готовое видео и опубликуйте его согласно инструкции.\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `🔥 ЗАКОНЧИЛИСЬ ЛИМИТЫ? 🔥\n\n` +
+      `💎 Не останавливай обработку!\n` +
+      `🛒 КУПИТЬ ДОПОЛНИТЕЛЬНЫЕ ЛИМИТЫ\n\n` +
+      `💰 Выгодная цена • Быстрая активация • Больше обработок\n\n` +
+      `👇 Нажмите кнопку «${BTN.ru.buy}» внизу экрана! 👇\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `✨ Спасибо, что используете INEASY PATCHER!`,
+    authSuccess: '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
+    packagesTitle: '🛒 Выберите пакет лимитов:',
+    packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
+    packageDetails: (count, price) =>
+      `🛒 Пакет: ${count} видео за ${price.toLocaleString('ru-RU')} тенге\n\n` +
+      `💳 Оплата на карту:\n${CARD_INFO}\n\n` +
+      `✅ После перевода отправьте сюда чек и ваш Telegram ID.\n\n` +
+      `🔎 Как узнать свой Telegram ID:\n` +
+      `1) Нажмите кнопку «${BTN.ru.profile}» внизу и скопируйте ID оттуда\n` +
+      `2) Либо зайдите на сайт — ID указан в углу экрана`,
+    balance: (free, purchased) =>
+      `💰 Ваш баланс:\n\n` +
+      `🆓 Бесплатный (на этой неделе): ${free} видео\n` +
+      `💎 Купленный: ${purchased} видео\n\n` +
+      `📊 Всего доступно: ${free + purchased} видео`,
+    profile: (username, id, patched, free, purchased) =>
+      `👤 Профиль\n\n` +
+      `Ник: ${username}\n` +
+      `Telegram ID: ${id}\n\n` +
+      `🎬 Обработано видео: ${patched}\n` +
+      `🆓 Бесплатный баланс (неделя): ${free}\n` +
+      `💎 Купленный баланс: ${purchased}\n` +
+      `📊 Всего доступно: ${free + purchased}`,
+    langSet: '✅ Язык переключён на русский.',
+  },
+  en: {
+    welcome: (name) =>
+      `👋 Hi, ${name}!\n\n` +
+      `Welcome to INEASY PATCHER 🚀🔥\n\n` +
+      `🎬 How to process a video:\n\n` +
+      `1️⃣ Go to the patcher website:\n🔗 ${SITE_URL}\n\n` +
+      `2️⃣ 🔐 Log in on the website.\n\n` +
+      `3️⃣ 🎥 Choose your video and patch it as needed.\n\n` +
+      `4️⃣ ✅ Once processing is done, download the finished video and publish it as instructed.\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `🔥 OUT OF LIMITS? 🔥\n\n` +
+      `💎 Don't stop processing!\n` +
+      `🛒 BUY MORE LIMITS\n\n` +
+      `💰 Great price • Instant activation • More processing\n\n` +
+      `👇 Tap the «${BTN.en.buy}» button at the bottom! 👇\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `✨ Thanks for using INEASY PATCHER!`,
+    authSuccess: '✅ Successfully logged in!\n\nGo back to the website — you can start working now.',
+    packagesTitle: '🛒 Choose a limits package:',
+    packageButton: (count, perUnit, price) => `${count} videos × ${perUnit} ₸ = ${price.toLocaleString('en-US')} ₸`,
+    packageDetails: (count, price) =>
+      `🛒 Package: ${count} videos for ${price.toLocaleString('en-US')} tenge\n\n` +
+      `💳 Card payment:\n${CARD_INFO}\n\n` +
+      `✅ After the transfer, send the receipt and your Telegram ID here.\n\n` +
+      `🔎 How to find your Telegram ID:\n` +
+      `1) Tap the «${BTN.en.profile}» button below and copy the ID from there\n` +
+      `2) Or open the website — the ID is shown in the corner of the screen`,
+    balance: (free, purchased) =>
+      `💰 Your balance:\n\n` +
+      `🆓 Free (this week): ${free} videos\n` +
+      `💎 Purchased: ${purchased} videos\n\n` +
+      `📊 Total available: ${free + purchased} videos`,
+    profile: (username, id, patched, free, purchased) =>
+      `👤 Profile\n\n` +
+      `Username: ${username}\n` +
+      `Telegram ID: ${id}\n\n` +
+      `🎬 Videos processed so far: ${patched}\n` +
+      `🆓 Free balance (this week): ${free}\n` +
+      `💎 Purchased balance: ${purchased}\n` +
+      `📊 Total available: ${free + purchased}`,
+    langSet: '✅ Language switched to English.',
+  },
+  kk: {
+    welcome: (name) =>
+      `👋 Сәлем, ${name}!\n\n` +
+      `INEASY PATCHER-ге қош келдіңіз 🚀🔥\n\n` +
+      `🎬 Видеоны қалай өңдеу керек:\n\n` +
+      `1️⃣ Патчер сайтына өтіңіз:\n🔗 ${SITE_URL}\n\n` +
+      `2️⃣ 🔐 Сайтта авторизациядан өтіңіз.\n\n` +
+      `3️⃣ 🎥 Видеоңызды таңдап, қажетінше патчтаңыз.\n\n` +
+      `4️⃣ ✅ Өңдеу аяқталған соң дайын видеоны жүктеп алып, нұсқаулыққа сай жариялаңыз.\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `🔥 ЛИМИТ БІТТІ МЕ? 🔥\n\n` +
+      `💎 Өңдеуді тоқтатпаңыз!\n` +
+      `🛒 ҚОСЫМША ЛИМИТ САТЫП АЛУ\n\n` +
+      `💰 Тиімді баға • Жылдам белсендіру • Көбірек өңдеу\n\n` +
+      `👇 Төмендегі «${BTN.kk.buy}» батырмасын басыңыз! 👇\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `✨ INEASY PATCHER-ді қолданғаныңыз үшін рахмет!`,
+    authSuccess: '✅ Сәтті авторизациядан өттіңіз!\n\nСайтқа қайта оралыңыз — енді жұмыс істей аласыз.',
+    packagesTitle: '🛒 Лимит пакетін таңдаңыз:',
+    packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
+    packageDetails: (count, price) =>
+      `🛒 Пакет: ${price.toLocaleString('ru-RU')} теңгеге ${count} видео\n\n` +
+      `💳 Картаға төлем:\n${CARD_INFO}\n\n` +
+      `✅ Аударымнан кейін чек пен Telegram ID-іңізді осында жіберіңіз.\n\n` +
+      `🔎 Telegram ID-іңізді қалай табуға болады:\n` +
+      `1) Төмендегі «${BTN.kk.profile}» батырмасын басып, ID-ды сол жерден көшіріп алыңыз\n` +
+      `2) Немесе сайтқа кіріңіз — ID экранның бұрышында көрсетілген`,
+    balance: (free, purchased) =>
+      `💰 Сіздің балансыңыз:\n\n` +
+      `🆓 Тегін (осы аптада): ${free} видео\n` +
+      `💎 Сатып алынған: ${purchased} видео\n\n` +
+      `📊 Барлығы қолжетімді: ${free + purchased} видео`,
+    profile: (username, id, patched, free, purchased) =>
+      `👤 Профиль\n\n` +
+      `Ник: ${username}\n` +
+      `Telegram ID: ${id}\n\n` +
+      `🎬 Өңделген видео саны: ${patched}\n` +
+      `🆓 Тегін баланс (апта): ${free}\n` +
+      `💎 Сатып алынған баланс: ${purchased}\n` +
+      `📊 Барлығы қолжетімді: ${free + purchased}`,
+    langSet: '✅ Тіл қазақ тіліне ауыстырылды.',
+  },
+};
+
+async function getLang(telegramId) {
+  const val = await redis.get(`lang:${telegramId}`);
+  return (val === 'en' || val === 'kk') ? val : 'ru';
+}
+async function setLang(telegramId, lang) {
+  await redis.set(`lang:${telegramId}`, lang);
 }
 
-async function getBalance(telegramId) {
-  const key = balanceKey(telegramId);
-  const value = await redis.get(key);
-  if (value === null || value === undefined) {
-    await redis.set(key, DEFAULT_BALANCE);
-    return DEFAULT_BALANCE;
+function currentWeekKey() {
+  const now = new Date();
+  const firstJan = new Date(now.getFullYear(), 0, 1);
+  const days = Math.floor((now - firstJan) / (24 * 60 * 60 * 1000));
+  const week = Math.ceil((days + firstJan.getDay() + 1) / 7);
+  return `${now.getFullYear()}-W${week}`;
+}
+
+async function getFreeBalance(telegramId) {
+  const weekKey = currentWeekKey();
+  const storedWeek = await redis.get(`freeWeek:${telegramId}`);
+  if (storedWeek !== weekKey) {
+    await redis.set(`freeWeek:${telegramId}`, weekKey);
+    await redis.set(`freeBalance:${telegramId}`, WEEKLY_FREE_BALANCE);
+    return WEEKLY_FREE_BALANCE;
   }
-  return Number(value);
+  const val = await redis.get(`freeBalance:${telegramId}`);
+  if (val === null || val === undefined) {
+    await redis.set(`freeBalance:${telegramId}`, WEEKLY_FREE_BALANCE);
+    return WEEKLY_FREE_BALANCE;
+  }
+  return Number(val);
 }
 
-async function addBalance(telegramId, amount) {
-  await getBalance(telegramId);
-  const newValue = await redis.incrby(balanceKey(telegramId), amount);
-  return newValue;
+async function getPurchasedBalance(telegramId) {
+  const val = await redis.get(`purchased:${telegramId}`);
+  return val === null || val === undefined ? 0 : Number(val);
 }
 
-// --- Хранилище сессий авторизации (в памяти — сессии живут недолго) ---
+async function addPurchasedBalance(telegramId, amount) {
+  await getPurchasedBalance(telegramId);
+  return redis.incrby(`purchased:${telegramId}`, amount);
+}
+
+async function getPatchedCount(telegramId) {
+  const val = await redis.get(`patched:${telegramId}`);
+  return val === null || val === undefined ? 0 : Number(val);
+}
+
+async function consumeOneVideo(telegramId) {
+  const free = await getFreeBalance(telegramId);
+  if (free > 0) {
+    await redis.decrby(`freeBalance:${telegramId}`, 1);
+  } else {
+    const purchased = await getPurchasedBalance(telegramId);
+    if (purchased <= 0) {
+      throw new Error('no_balance');
+    }
+    await redis.decrby(`purchased:${telegramId}`, 1);
+  }
+  await redis.incrby(`patched:${telegramId}`, 1);
+}
+
 const sessions = new Map();
-
 setInterval(() => {
   const now = Date.now();
   for (const [id, s] of sessions.entries()) {
-    if (!s.authorized && now - s.createdAt > 30 * 60 * 1000) {
-      sessions.delete(id);
-    }
+    if (!s.authorized && now - s.createdAt > 30 * 60 * 1000) sessions.delete(id);
   }
 }, 60 * 60 * 1000);
 
-// --- Телеграм-бот ---
 const bot = new Telegraf(BOT_TOKEN);
 
-// Постоянная клавиатура внизу экрана (не привязана к одному сообщению)
-function mainKeyboard() {
-  return Markup.keyboard([[BUY_BUTTON_TEXT]]).resize();
+function mainKeyboard(lang) {
+  const b = BTN[lang];
+  return Markup.keyboard([[b.buy], [b.balance, b.profile]]).resize();
 }
 
-function welcomeText(name) {
-  return `👋 Привет, ${name}!\n\n` +
-    `Добро пожаловать в INEASY PATCHER 🚀🔥\n\n` +
-    `🎬 Как обработать видео:\n\n` +
-    `1️⃣ Перейдите на сайт патчера:\n🔗 ${SITE_URL}\n\n` +
-    `2️⃣ 🔐 Авторизуйтесь на сайте.\n\n` +
-    `3️⃣ 🎥 Выберите своё видео и патчите его как необходимо.\n\n` +
-    `4️⃣ ✅ После завершения обработки скачайте готовое видео и опубликуйте его согласно инструкции.\n\n` +
-    `━━━━━━━━━━━━━━━━━━\n\n` +
-    `🔥 ЗАКОНЧИЛИСЬ ЛИМИТЫ? 🔥\n\n` +
-    `💎 Не останавливай обработку!\n` +
-    `🛒 КУПИТЬ ДОПОЛНИТЕЛЬНЫЕ ЛИМИТЫ\n\n` +
-    `💰 Выгодная цена • Быстрая активация • Больше обработок\n\n` +
-    `👇 Нажмите кнопку «${BUY_BUTTON_TEXT}» внизу экрана! 👇\n\n` +
-    `━━━━━━━━━━━━━━━━━━\n\n` +
-    `✨ Спасибо, что используете INEASY PATCHER!`;
-}
-
-// Список пакетов — каждый в виде отдельной кнопки
-function packagesKeyboard() {
+function packagesKeyboard(lang) {
+  const t = TEXTS[lang];
   const rows = PACKAGES.map(([count, price]) => {
     const perUnit = Math.round(price / count);
-    return [Markup.button.callback(
-      `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
-      `pkg_${count}_${price}`
-    )];
+    return [Markup.button.callback(t.packageButton(count, perUnit, price), `pkg_${count}_${price}`)];
   });
   return Markup.inlineKeyboard(rows);
 }
 
-function packageDetailsText(count, price) {
-  return `🛒 Пакет: ${count} видео за ${price.toLocaleString('ru-RU')} тенге\n\n` +
-    `💳 Оплата на карту:\n${CARD_INFO}\n\n` +
-    `✅ После перевода отправьте сюда чек и ваш Telegram ID.\n\n` +
-    `🔎 Ваш Telegram ID указан в углу экрана на сайте.`;
+async function sendWelcome(ctx, lang) {
+  const name = ctx.from.first_name || ctx.from.username || 'friend';
+  await ctx.reply(TEXTS[lang].welcome(name), mainKeyboard(lang));
 }
 
-async function sendWelcome(ctx) {
-  const name = ctx.from.first_name || ctx.from.username || 'друг';
-  await ctx.reply(welcomeText(name), mainKeyboard());
+async function sendPackagesMenu(ctx, lang) {
+  await ctx.reply(TEXTS[lang].packagesTitle, packagesKeyboard(lang));
 }
 
-async function sendAuthSuccess(ctx) {
-  await ctx.reply(
-    '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
-    mainKeyboard()
-  );
+async function sendBalance(ctx, lang) {
+  const id = ctx.from.id;
+  const [free, purchased] = await Promise.all([getFreeBalance(id), getPurchasedBalance(id)]);
+  await ctx.reply(TEXTS[lang].balance(free, purchased), mainKeyboard(lang));
 }
 
-async function sendPackagesMenu(ctx) {
-  await ctx.reply('🛒 Выберите пакет лимитов:', packagesKeyboard());
+async function sendProfile(ctx, lang) {
+  const id = ctx.from.id;
+  const username = ctx.from.username ? `@${ctx.from.username}` : (ctx.from.first_name || '—');
+  const [free, purchased, patched] = await Promise.all([
+    getFreeBalance(id), getPurchasedBalance(id), getPatchedCount(id),
+  ]);
+  await ctx.reply(TEXTS[lang].profile(username, id, patched, free, purchased), mainKeyboard(lang));
 }
 
 bot.start(async (ctx) => {
+  const lang = await getLang(ctx.from.id);
   const payload = ctx.startPayload ? ctx.startPayload.trim() : null;
 
-  // Пришли по прямой ссылке с сайта (кнопка "Войти через Telegram") — валидная сессия
   if (payload && payload !== 'buyvideo' && !payload.startsWith('buy_') && sessions.has(payload)) {
     const session = sessions.get(payload);
     session.authorized = true;
@@ -148,68 +294,72 @@ bot.start(async (ctx) => {
     session.firstName = ctx.from.first_name || '';
     sessions.set(payload, session);
 
-    await sendAuthSuccess(ctx);
+    await ctx.reply(TEXTS[lang].authSuccess, mainKeyboard(lang));
     return;
   }
 
-  // Пришли по прямой ссылке на конкретный пакет: buy_<count>_<price>
   if (payload && payload.startsWith('buy_')) {
     const [, count, price] = payload.split('_');
     if (count && price) {
-      await ctx.reply(packageDetailsText(Number(count), Number(price)), mainKeyboard());
+      await ctx.reply(TEXTS[lang].packageDetails(Number(count), Number(price)), mainKeyboard(lang));
       return;
     }
   }
 
-  // Обычный /start без параметров — общее приветствие/меню
-  await sendWelcome(ctx);
+  await sendWelcome(ctx, lang);
 });
 
-bot.command('buyvideo', async (ctx) => {
-  await sendPackagesMenu(ctx);
+bot.command('buyvideo', async (ctx) => sendPackagesMenu(ctx, await getLang(ctx.from.id)));
+bot.command('autorization', async (ctx) => sendWelcome(ctx, await getLang(ctx.from.id)));
+bot.command('balance', async (ctx) => sendBalance(ctx, await getLang(ctx.from.id)));
+bot.command('profile', async (ctx) => sendProfile(ctx, await getLang(ctx.from.id)));
+
+bot.command('language', async (ctx) => {
+  await ctx.reply('Choose language / Выберите язык / Тілді таңдаңыз:', Markup.inlineKeyboard([
+    [Markup.button.callback('🇷🇺 Русский', 'lang_ru')],
+    [Markup.button.callback('🇬🇧 English', 'lang_en')],
+    [Markup.button.callback('🇰🇿 Қазақша', 'lang_kk')],
+  ]));
 });
 
-bot.command('autorization', async (ctx) => {
-  await sendWelcome(ctx);
+bot.action(/^lang_(ru|en|kk)$/, async (ctx) => {
+  await ctx.answerCbQuery();
+  const lang = ctx.match[1];
+  await setLang(ctx.from.id, lang);
+  await ctx.reply(TEXTS[lang].langSet, mainKeyboard(lang));
 });
 
-// Постоянная кнопка внизу экрана — приходит как обычный текст
-bot.hears(BUY_BUTTON_TEXT, async (ctx) => {
-  await sendPackagesMenu(ctx);
-});
+bot.hears([BTN.ru.buy, BTN.en.buy, BTN.kk.buy], async (ctx) => sendPackagesMenu(ctx, await getLang(ctx.from.id)));
+bot.hears([BTN.ru.balance, BTN.en.balance, BTN.kk.balance], async (ctx) => sendBalance(ctx, await getLang(ctx.from.id)));
+bot.hears([BTN.ru.profile, BTN.en.profile, BTN.kk.profile], async (ctx) => sendProfile(ctx, await getLang(ctx.from.id)));
 
-// Нажатие на конкретный пакет в inline-меню
 bot.action(/^pkg_(\d+)_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
-  const count = ctx.match[1];
-  const price = ctx.match[2];
-  await ctx.reply(packageDetailsText(Number(count), Number(price)), mainKeyboard());
+  const lang = await getLang(ctx.from.id);
+  await ctx.reply(TEXTS[lang].packageDetails(Number(ctx.match[1]), Number(ctx.match[2])), mainKeyboard(lang));
 });
 
 bot.command('addvideo', async (ctx) => {
-  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) {
-    return;
-  }
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
 
   const parts = ctx.message.text.trim().split(/\s+/);
   const targetId = parts[1];
   const amount = parseInt(parts[2], 10);
 
   if (!targetId || !Number.isFinite(amount) || amount <= 0) {
-    ctx.reply('Формат: /addvideo <telegram_id> <количество>\nНапример: /addvideo 123456789 10');
+    ctx.reply('Формат: /addvideo <telegram_id> <количество>');
     return;
   }
 
   try {
-    const newBalance = await addBalance(targetId, amount);
-    ctx.reply(`✅ Зачислено ${amount} видео пользователю ${targetId}.\nНовый баланс: ${newBalance}`);
+    const newBalance = await addPurchasedBalance(targetId, amount);
+    ctx.reply(`✅ Зачислено ${amount} видео пользователю ${targetId}.\nНовый купленный баланс: ${newBalance}`);
   } catch (err) {
     console.error('Ошибка addvideo:', err);
     ctx.reply('❌ Не удалось обновить баланс. Проверьте логи сервера.');
   }
 });
 
-// --- Веб-сервер ---
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -217,17 +367,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.post('/api/session', (req, res) => {
   const sessionId = uuidv4();
   sessions.set(sessionId, { authorized: false, createdAt: Date.now() });
-  res.json({
-    sessionId,
-    botLink: `https://t.me/${BOT_USERNAME}?start=${sessionId}`,
-  });
+  res.json({ sessionId, botLink: `https://t.me/${BOT_USERNAME}?start=${sessionId}` });
 });
 
 app.get('/api/session/:id', (req, res) => {
   const session = sessions.get(req.params.id);
-  if (!session) {
-    return res.status(404).json({ error: 'session_not_found' });
-  }
+  if (!session) return res.status(404).json({ error: 'session_not_found' });
   res.json({
     authorized: session.authorized,
     telegramId: session.telegramId || null,
@@ -238,11 +383,30 @@ app.get('/api/session/:id', (req, res) => {
 
 app.get('/api/balance/:telegramId', async (req, res) => {
   try {
-    const balance = await getBalance(req.params.telegramId);
-    res.json({ balance });
+    const id = req.params.telegramId;
+    const [free, purchased] = await Promise.all([getFreeBalance(id), getPurchasedBalance(id)]);
+    res.json({ free, purchased, balance: free + purchased });
   } catch (err) {
     console.error('Ошибка получения баланса:', err);
     res.status(500).json({ error: 'balance_fetch_failed' });
+  }
+});
+
+app.post('/api/consume/:telegramId', async (req, res) => {
+  try {
+    await consumeOneVideo(req.params.telegramId);
+    const [free, purchased, patched] = await Promise.all([
+      getFreeBalance(req.params.telegramId),
+      getPurchasedBalance(req.params.telegramId),
+      getPatchedCount(req.params.telegramId),
+    ]);
+    res.json({ free, purchased, patched });
+  } catch (err) {
+    if (err.message === 'no_balance') {
+      return res.status(402).json({ error: 'no_balance' });
+    }
+    console.error('Ошибка consume:', err);
+    res.status(500).json({ error: 'consume_failed' });
   }
 });
 
@@ -256,21 +420,16 @@ app.use(bot.webhookCallback(WEBHOOK_PATH));
 
 app.listen(PORT, async () => {
   console.log(`Сайт запущен: http://localhost:${PORT}`);
-
   const publicUrl = process.env.RENDER_EXTERNAL_URL || process.env.RAILWAY_PUBLIC_DOMAIN_URL;
-
   if (publicUrl) {
     await bot.telegram.setWebhook(`${publicUrl}${WEBHOOK_PATH}`);
-    console.log(`Бот @${BOT_USERNAME} слушает через вебхук: ${publicUrl}${WEBHOOK_PATH}`);
+    console.log(`Бот слушает через вебхук: ${publicUrl}${WEBHOOK_PATH}`);
   } else {
     await bot.telegram.deleteWebhook();
     bot.launch();
-    console.log(`Бот @${BOT_USERNAME} слушает команды (локальный polling)...`);
+    console.log('Бот слушает команды (локальный polling)...');
   }
-
-  if (!ADMIN_ID) {
-    console.log('⚠️  ADMIN_ID не задан — команда /addvideo для пополнения баланса работать не будет.');
-  }
+  if (!ADMIN_ID) console.log('⚠️  ADMIN_ID не задан — /addvideo работать не будет.');
 });
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
