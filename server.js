@@ -2,15 +2,23 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const { Telegraf } = require('telegraf');
+const { Telegraf, Markup } = require('telegraf');
 const { Redis } = require('@upstash/redis');
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const BOT_USERNAME = process.env.BOT_USERNAME || 'ineasy_4k_bot';
+const BOT_USERNAME = process.env.BOT_USERNAME || 'ineasybot';
 const PORT = process.env.PORT || 3000;
 const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : null;
 const DEFAULT_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771\nИмя: Айдынбек Н.';
+const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher2-production.up.railway.app/app.html';
+
+// Пакеты для покупки: [видео, цена в тенге]
+const PACKAGES = [
+  [5, 2000],
+  [15, 5000],
+  [40, 10000],
+];
 
 if (!BOT_TOKEN) {
   console.error('Не найден BOT_TOKEN. Скопируйте .env.example в .env и вставьте токен от @BotFather.');
@@ -43,13 +51,12 @@ async function getBalance(telegramId) {
 }
 
 async function addBalance(telegramId, amount) {
-  // при первом обращении убеждаемся, что дефолт уже стоит, затем прибавляем
   await getBalance(telegramId);
   const newValue = await redis.incrby(balanceKey(telegramId), amount);
   return newValue;
 }
 
-// --- Хранилище сессий авторизации (в памяти — это ок, сессии живут недолго) ---
+// --- Хранилище сессий авторизации (в памяти — сессии живут недолго) ---
 const sessions = new Map();
 
 setInterval(() => {
@@ -64,36 +71,78 @@ setInterval(() => {
 // --- Телеграм-бот ---
 const bot = new Telegraf(BOT_TOKEN);
 
-bot.start((ctx) => {
+function welcomeText(name) {
+  return `👋 Привет, ${name}!\n\n` +
+    `Добро пожаловать в INEASY PATCHER 🚀🔥\n\n` +
+    `🎬 Как обработать видео:\n\n` +
+    `1️⃣ Перейдите на сайт патчера:\n🔗 ${SITE_URL}\n\n` +
+    `2️⃣ 🔐 Авторизуйтесь на сайте.\n\n` +
+    `3️⃣ 🎥 Выберите своё видео и патчите его как необходимо.\n\n` +
+    `4️⃣ ✅ После завершения обработки скачайте готовое видео и опубликуйте его согласно инструкции.\n\n` +
+    `━━━━━━━━━━━━━━━━━━\n\n` +
+    `🔥 ЗАКОНЧИЛИСЬ ЛИМИТЫ? 🔥\n\n` +
+    `💎 Не останавливай обработку!\n` +
+    `🛒 КУПИТЬ ДОПОЛНИТЕЛЬНЫЕ ЛИМИТЫ\n\n` +
+    `💰 Выгодная цена • Быстрая активация • Больше обработок\n\n` +
+    `👇 Нажмите кнопку «🛒 КУПИТЬ» прямо сейчас! 👇\n\n` +
+    `━━━━━━━━━━━━━━━━━━\n\n` +
+    `✨ Спасибо, что используете INEASY PATCHER!`;
+}
+
+function welcomeKeyboard() {
+  return Markup.inlineKeyboard([
+    [Markup.button.url('🌐 Открыть сайт', SITE_URL)],
+    [Markup.button.callback('🛒 КУПИТЬ', 'buyvideo')],
+  ]);
+}
+
+function buyText() {
+  let text = `🛒 Выберите пакет лимитов:\n\n💳 Оплата на карту:\n${CARD_INFO}\n\n`;
+  PACKAGES.forEach(([count, price]) => {
+    text += `▫️ ${count} видео — ${price.toLocaleString('ru-RU')} тенге\n`;
+  });
+  text += `\n✅ После перевода отправьте сюда чек и ваш Telegram ID.\n\n` +
+    `🔎 Ваш Telegram ID указан в углу экрана на сайте.`;
+  return text;
+}
+
+async function sendWelcome(ctx) {
+  const name = ctx.from.first_name || ctx.from.username || 'друг';
+  await ctx.reply(welcomeText(name), welcomeKeyboard());
+}
+
+bot.start(async (ctx) => {
   const payload = ctx.startPayload ? ctx.startPayload.trim() : null;
 
-  if (payload && payload.startsWith('buy_')) {
-    const [, count, price] = payload.split('_');
-    ctx.reply(
-      `🛒 Купить ${count} видео за ${Number(price).toLocaleString('ru-RU')} тенге\n\n` +
-      `💳 Способ оплаты:\n${CARD_INFO}\n\n` +
-      `✅ После перевода отправьте сюда чек и ваш Telegram ID.\n\n` +
-      `🔎 Как найти ваш Telegram ID?\nЗайдите на сайт, затем скопируйте ID, который указан в углу экрана.`
-    );
+  // Если пришли из сайта с сессией — авторизуем в фоне, но всегда показываем приветствие
+  if (payload && payload !== 'buyvideo' && !payload.startsWith('buy_') && sessions.has(payload)) {
+    const session = sessions.get(payload);
+    session.authorized = true;
+    session.telegramId = ctx.from.id;
+    session.username = ctx.from.username || null;
+    session.firstName = ctx.from.first_name || '';
+    sessions.set(payload, session);
+  }
+
+  if (payload === 'buyvideo' || (payload && payload.startsWith('buy_'))) {
+    await ctx.reply(buyText());
     return;
   }
 
-  const sessionId = payload;
-  if (!sessionId || !sessions.has(sessionId)) {
-    ctx.reply(
-      'Похоже, ссылка устарела. Вернитесь на сайт и нажмите «Войти через Telegram» ещё раз.'
-    );
-    return;
-  }
+  await sendWelcome(ctx);
+});
 
-  const session = sessions.get(sessionId);
-  session.authorized = true;
-  session.telegramId = ctx.from.id;
-  session.username = ctx.from.username || null;
-  session.firstName = ctx.from.first_name || '';
-  sessions.set(sessionId, session);
+bot.command('buyvideo', async (ctx) => {
+  await ctx.reply(buyText());
+});
 
-  ctx.reply('✅ Успешно авторизовались!\n\nЗайдите в сайт — вам там ждут.');
+bot.command('autorization', async (ctx) => {
+  await sendWelcome(ctx);
+});
+
+bot.action('buyvideo', async (ctx) => {
+  await ctx.answerCbQuery();
+  await ctx.reply(buyText());
 });
 
 bot.command('addvideo', async (ctx) => {
