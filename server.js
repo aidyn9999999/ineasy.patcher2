@@ -13,12 +13,16 @@ const DEFAULT_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher2-production.up.railway.app/app.html';
 
-// Пакеты: [количество видео, цена в тенге]. Цена за 1 видео считается автоматически.
+// Пакеты: [количество видео, цена в тенге]
 const PACKAGES = [
   [3, 450],
-  [5, 750],
+  [5, 725],
   [10, 1400],
+  [15, 2025],
   [20, 2600],
+  [30, 3750],
+  [50, 6000],
+  [100, 11000],
 ];
 
 const BUY_BUTTON_TEXT = '🛒 Купить лимиты';
@@ -97,16 +101,23 @@ function welcomeText(name) {
     `✨ Спасибо, что используете INEASY PATCHER!`;
 }
 
-function buyText() {
-  let text = `🛒 Выберите пакет лимитов:\n\n`;
-  PACKAGES.forEach(([count, price]) => {
+// Список пакетов — каждый в виде отдельной кнопки
+function packagesKeyboard() {
+  const rows = PACKAGES.map(([count, price]) => {
     const perUnit = Math.round(price / count);
-    text += `▫️ ${count} видео — ${price.toLocaleString('ru-RU')} тенге (${perUnit} тенге/шт)\n`;
+    return [Markup.button.callback(
+      `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
+      `pkg_${count}_${price}`
+    )];
   });
-  text += `\n💳 Оплата на карту:\n${CARD_INFO}\n\n` +
+  return Markup.inlineKeyboard(rows);
+}
+
+function packageDetailsText(count, price) {
+  return `🛒 Пакет: ${count} видео за ${price.toLocaleString('ru-RU')} тенге\n\n` +
+    `💳 Оплата на карту:\n${CARD_INFO}\n\n` +
     `✅ После перевода отправьте сюда чек и ваш Telegram ID.\n\n` +
     `🔎 Ваш Telegram ID указан в углу экрана на сайте.`;
-  return text;
 }
 
 async function sendWelcome(ctx) {
@@ -119,6 +130,10 @@ async function sendAuthSuccess(ctx) {
     '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
     mainKeyboard()
   );
+}
+
+async function sendPackagesMenu(ctx) {
+  await ctx.reply('🛒 Выберите пакет лимитов:', packagesKeyboard());
 }
 
 bot.start(async (ctx) => {
@@ -137,10 +152,13 @@ bot.start(async (ctx) => {
     return;
   }
 
-  // Пришли по ссылке "купить" (из письма/сайта) — сразу открываем меню покупки
-  if (payload === 'buyvideo' || (payload && payload.startsWith('buy_'))) {
-    await ctx.reply(buyText(), mainKeyboard());
-    return;
+  // Пришли по прямой ссылке на конкретный пакет: buy_<count>_<price>
+  if (payload && payload.startsWith('buy_')) {
+    const [, count, price] = payload.split('_');
+    if (count && price) {
+      await ctx.reply(packageDetailsText(Number(count), Number(price)), mainKeyboard());
+      return;
+    }
   }
 
   // Обычный /start без параметров — общее приветствие/меню
@@ -148,7 +166,7 @@ bot.start(async (ctx) => {
 });
 
 bot.command('buyvideo', async (ctx) => {
-  await ctx.reply(buyText(), mainKeyboard());
+  await sendPackagesMenu(ctx);
 });
 
 bot.command('autorization', async (ctx) => {
@@ -157,7 +175,15 @@ bot.command('autorization', async (ctx) => {
 
 // Постоянная кнопка внизу экрана — приходит как обычный текст
 bot.hears(BUY_BUTTON_TEXT, async (ctx) => {
-  await ctx.reply(buyText(), mainKeyboard());
+  await sendPackagesMenu(ctx);
+});
+
+// Нажатие на конкретный пакет в inline-меню
+bot.action(/^pkg_(\d+)_(\d+)$/, async (ctx) => {
+  await ctx.answerCbQuery();
+  const count = ctx.match[1];
+  const price = ctx.match[2];
+  await ctx.reply(packageDetailsText(Number(count), Number(price)), mainKeyboard());
 });
 
 bot.command('addvideo', async (ctx) => {
