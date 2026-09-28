@@ -4,6 +4,9 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { Telegraf, Markup } = require('telegraf');
 const { Redis } = require('@upstash/redis');
+const { execFile } = require('child_process');
+const fs = require('fs');
+const https = require('https');
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const BOT_USERNAME = process.env.BOT_USERNAME || 'ineasybot';
@@ -39,9 +42,9 @@ const redis = new Redis({
 });
 
 const BTN = {
-  ru: { buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык' },
-  en: { buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language' },
-  kk: { buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл' },
+  ru: { buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео' },
+  en: { buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker' },
+  kk: { buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру' },
 };
 
 function langChoiceKeyboard() {
@@ -94,6 +97,21 @@ const TEXTS = {
       `💎 Купленный баланс: ${purchased}\n` +
       `📊 Всего доступно: ${free + purchased}`,
     langSet: '✅ Язык переключён на русский.',
+    checkerHint: '🔍 Отправьте сюда ссылку на видео из TikTok — я покажу качество, FPS, кодек и другие данные.',
+    checkerWorking: '⏳ Анализирую видео...',
+    checkerBusy: '⚠️ Сейчас много проверок, попробуйте через минуту.',
+    checkerWait: '⏳ Подождите несколько секунд перед следующей проверкой.',
+    checkerError: '❌ Не удалось получить данные. Проверьте ссылку (видео должно быть публичным) и попробуйте ещё раз.',
+    checkerResult: (d) =>
+      `🔍 Данные видео\n\n` +
+      `📺 Качество: ${d.quality}p (${d.width}×${d.height})\n` +
+      `🎞 FPS: ${d.fps}\n` +
+      `🎬 Кодек: ${d.codec} (по данным TikTok)\n` +
+      `📶 Битрейт: ${d.bitrate}\n` +
+      `⏱ Длительность: ${d.duration}\n` +
+      `💾 Размер: ${d.size}\n` +
+      `📁 Формат: ${d.ext}\n` +
+      `👤 Автор: ${d.author}`,
   },
   en: {
     welcome: (name) =>
@@ -136,6 +154,21 @@ const TEXTS = {
       `💎 Purchased balance: ${purchased}\n` +
       `📊 Total available: ${free + purchased}`,
     langSet: '✅ Language switched to English.',
+    checkerHint: '🔍 Send a TikTok video link here — I will show its quality, FPS, codec and other details.',
+    checkerWorking: '⏳ Analyzing the video...',
+    checkerBusy: '⚠️ Many checks are running right now, please try again in a minute.',
+    checkerWait: '⏳ Please wait a few seconds before the next check.',
+    checkerError: '❌ Could not get the data. Check the link (the video must be public) and try again.',
+    checkerResult: (d) =>
+      `🔍 Video details\n\n` +
+      `📺 Quality: ${d.quality}p (${d.width}×${d.height})\n` +
+      `🎞 FPS: ${d.fps}\n` +
+      `🎬 Codec: ${d.codec} (as reported by TikTok)\n` +
+      `📶 Bitrate: ${d.bitrate}\n` +
+      `⏱ Duration: ${d.duration}\n` +
+      `💾 Size: ${d.size}\n` +
+      `📁 Format: ${d.ext}\n` +
+      `👤 Author: ${d.author}`,
   },
   kk: {
     welcome: (name) =>
@@ -178,6 +211,21 @@ const TEXTS = {
       `💎 Сатып алынған баланс: ${purchased}\n` +
       `📊 Барлығы қолжетімді: ${free + purchased}`,
     langSet: '✅ Тіл қазақ тіліне ауыстырылды.',
+    checkerHint: '🔍 Осында TikTok бейнесінің сілтемесін жіберіңіз — мен сапасын, FPS, кодегін және басқа деректерін көрсетемін.',
+    checkerWorking: '⏳ Бейне талданып жатыр...',
+    checkerBusy: '⚠️ Қазір тексерулер көп, бір минуттан кейін қайталап көріңіз.',
+    checkerWait: '⏳ Келесі тексеруге дейін бірнеше секунд күтіңіз.',
+    checkerError: '❌ Деректерді алу мүмкін болмады. Сілтемені тексеріңіз (бейне ашық болуы керек) да қайталап көріңіз.',
+    checkerResult: (d) =>
+      `🔍 Бейне деректері\n\n` +
+      `📺 Сапасы: ${d.quality}p (${d.width}×${d.height})\n` +
+      `🎞 FPS: ${d.fps}\n` +
+      `🎬 Кодек: ${d.codec} (TikTok деректері бойынша)\n` +
+      `📶 Битрейт: ${d.bitrate}\n` +
+      `⏱ Ұзақтығы: ${d.duration}\n` +
+      `💾 Көлемі: ${d.size}\n` +
+      `📁 Форматы: ${d.ext}\n` +
+      `👤 Авторы: ${d.author}`,
   },
 };
 
@@ -253,6 +301,110 @@ async function consumeOneVideo(telegramId) {
   await redis.incrby(`patched:${telegramId}`, 1);
 }
 
+// ============ ЧЕКЕР ВИДЕО TIKTOK (yt-dlp) ============
+const YTDLP_PATH = '/tmp/yt-dlp';
+const TIKTOK_RE = /https?:\/\/(?:www\.|m\.|vm\.|vt\.)?tiktok\.com\/[^\s]+/i;
+const MAX_PARALLEL_CHECKS = 2;
+const CHECK_COOLDOWN_MS = 8000;
+let activeChecks = 0;
+const lastCheckAt = new Map();
+let ytdlpReady = null;
+
+function downloadFile(url, dest, redirects = 5) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers: { 'User-Agent': 'ineasy-patcher' } }, (res) => {
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && redirects > 0) {
+        res.resume();
+        return resolve(downloadFile(res.headers.location, dest, redirects - 1));
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        return reject(new Error('HTTP ' + res.statusCode));
+      }
+      const file = fs.createWriteStream(dest);
+      res.pipe(file);
+      file.on('finish', () => file.close(() => resolve()));
+      file.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
+// Скачивает автономный бинарник yt-dlp (не требует Python) один раз при старте
+function ensureYtDlp() {
+  if (ytdlpReady) return ytdlpReady;
+  ytdlpReady = (async () => {
+    if (fs.existsSync(YTDLP_PATH)) return;
+    const tmp = YTDLP_PATH + '.part';
+    await downloadFile('https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux', tmp);
+    fs.chmodSync(tmp, 0o755);
+    fs.renameSync(tmp, YTDLP_PATH);
+    console.log('yt-dlp установлен');
+  })().catch((e) => {
+    ytdlpReady = null;
+    throw e;
+  });
+  return ytdlpReady;
+}
+
+function extractTikTokUrl(text) {
+  const m = (text || '').match(TIKTOK_RE);
+  return m ? m[0] : null;
+}
+
+function runYtDlp(url) {
+  return new Promise((resolve, reject) => {
+    execFile(
+      YTDLP_PATH,
+      ['--dump-single-json', '--no-warnings', '--no-playlist', '--socket-timeout', '15', url],
+      { timeout: 45000, maxBuffer: 20 * 1024 * 1024 },
+      (err, stdout) => {
+        if (err) return reject(err);
+        try { resolve(JSON.parse(stdout)); } catch (e) { reject(e); }
+      }
+    );
+  });
+}
+
+function pickBestVideo(info) {
+  const formats = (info.formats || []).filter((f) => f.vcodec && f.vcodec !== 'none' && f.height);
+  if (!formats.length) return info.height ? info : null;
+  formats.sort((a, b) => (b.height - a.height) || ((b.tbr || 0) - (a.tbr || 0)));
+  return formats[0];
+}
+
+function fmtDuration(sec) {
+  if (!sec) return '—';
+  const s = Math.round(sec);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+async function analyzeTikTok(url) {
+  await ensureYtDlp();
+  const info = await runYtDlp(url);
+  const v = pickBestVideo(info);
+  if (!v) throw new Error('no_video_format');
+  const width = v.width || info.width;
+  const height = v.height || info.height;
+  const kbps = v.vbr || v.tbr;
+  const bytes = v.filesize || v.filesize_approx;
+  const codecRaw = (v.vcodec || '').toLowerCase();
+  let codec = codecRaw.split('.')[0] || '—';
+  if (codec === 'h264' || codec === 'avc1') codec = 'H.264';
+  if (codec === 'h265' || codec === 'hevc' || codec === 'hvc1' || codec === 'bytevc1') codec = 'H.265 (HEVC)';
+  return {
+    quality: Math.min(width || 0, height || 0) || '—',
+    width: width || '—',
+    height: height || '—',
+    fps: v.fps || info.fps || '—',
+    codec,
+    bitrate: kbps ? `${Math.round(kbps)} kbps` : '—',
+    duration: fmtDuration(info.duration),
+    size: bytes ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : '—',
+    ext: v.ext || info.ext || '—',
+    author: info.uploader ? `@${info.uploader}` : (info.creator || '—'),
+  };
+}
+
 const sessions = new Map();
 setInterval(() => {
   const now = Date.now();
@@ -265,7 +417,7 @@ const bot = new Telegraf(BOT_TOKEN);
 
 function mainKeyboard(lang) {
   const b = BTN[lang];
-  return Markup.keyboard([[b.buy], [b.balance, b.profile], [b.lang]]).resize();
+  return Markup.keyboard([[b.buy], [b.check], [b.balance, b.profile], [b.lang]]).resize();
 }
 
 function packagesKeyboard(lang) {
@@ -379,6 +531,43 @@ bot.command('addvideo', async (ctx) => {
   }
 });
 
+bot.hears([BTN.ru.check, BTN.en.check, BTN.kk.check], async (ctx) => {
+  const lang = await getLang(ctx.from.id);
+  await ctx.reply(TEXTS[lang].checkerHint, mainKeyboard(lang));
+});
+
+// Любое сообщение со ссылкой на TikTok = запуск чекера
+bot.on('text', async (ctx, next) => {
+  const url = extractTikTokUrl(ctx.message.text);
+  if (!url) return next();
+
+  const lang = await getLang(ctx.from.id);
+  const t = TEXTS[lang];
+  const now = Date.now();
+
+  if (now - (lastCheckAt.get(ctx.from.id) || 0) < CHECK_COOLDOWN_MS) {
+    await ctx.reply(t.checkerWait);
+    return;
+  }
+  if (activeChecks >= MAX_PARALLEL_CHECKS) {
+    await ctx.reply(t.checkerBusy);
+    return;
+  }
+
+  lastCheckAt.set(ctx.from.id, now);
+  activeChecks++;
+  try {
+    await ctx.reply(t.checkerWorking);
+    const data = await analyzeTikTok(url);
+    await ctx.reply(t.checkerResult(data), mainKeyboard(lang));
+  } catch (err) {
+    console.error('Ошибка чекера:', err.message);
+    await ctx.reply(t.checkerError, mainKeyboard(lang));
+  } finally {
+    activeChecks--;
+  }
+});
+
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -449,6 +638,7 @@ app.listen(PORT, async () => {
     console.log('Бот слушает команды (локальный polling)...');
   }
   if (!ADMIN_ID) console.log('⚠️  ADMIN_ID не задан — /addvideo работать не будет.');
+  ensureYtDlp().catch((e) => console.error('Не удалось установить yt-dlp:', e.message));
 });
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
