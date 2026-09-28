@@ -7,6 +7,9 @@ const { Redis } = require('@upstash/redis');
 const { execFile } = require('child_process');
 const fs = require('fs');
 const https = require('https');
+const os = require('os');
+let FFPROBE_PATH = 'ffprobe';
+try { FFPROBE_PATH = require('ffprobe-static').path; } catch (e) { /* используем системный ffprobe */ }
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const BOT_USERNAME = process.env.BOT_USERNAME || 'ineasybot';
@@ -106,7 +109,7 @@ const TEXTS = {
       `🔍 Данные видео\n\n` +
       `📺 Качество: ${d.quality}p (${d.width}×${d.height})\n` +
       `🎞 FPS: ${d.fps}\n` +
-      `🎬 Кодек: ${d.codec} (по данным TikTok)\n` +
+      `🎬 Кодек: ${d.codec}\n` +
       `📶 Битрейт: ${d.bitrate}\n` +
       `⏱ Длительность: ${d.duration}\n` +
       `💾 Размер: ${d.size}\n` +
@@ -163,7 +166,7 @@ const TEXTS = {
       `🔍 Video details\n\n` +
       `📺 Quality: ${d.quality}p (${d.width}×${d.height})\n` +
       `🎞 FPS: ${d.fps}\n` +
-      `🎬 Codec: ${d.codec} (as reported by TikTok)\n` +
+      `🎬 Codec: ${d.codec}\n` +
       `📶 Bitrate: ${d.bitrate}\n` +
       `⏱ Duration: ${d.duration}\n` +
       `💾 Size: ${d.size}\n` +
@@ -220,7 +223,7 @@ const TEXTS = {
       `🔍 Бейне деректері\n\n` +
       `📺 Сапасы: ${d.quality}p (${d.width}×${d.height})\n` +
       `🎞 FPS: ${d.fps}\n` +
-      `🎬 Кодек: ${d.codec} (TikTok деректері бойынша)\n` +
+      `🎬 Кодек: ${d.codec}\n` +
       `📶 Битрейт: ${d.bitrate}\n` +
       `⏱ Ұзақтығы: ${d.duration}\n` +
       `💾 Көлемі: ${d.size}\n` +
@@ -378,27 +381,118 @@ function fmtDuration(sec) {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
+// ===== FFPROBE START =====
+function parseFraction(str) {
+  if (!str || typeof str !== 'string') return null;
+  const [a, b] = str.split('/').map(Number);
+  if (!a || !b) return null;
+  return a / b;
+}
+
+function prettyCodec(name) {
+  const c = (name || '').toLowerCase();
+  if (c === 'h264') return 'H.264 (AVC)';
+  if (c === 'hevc' || c === 'h265') return 'H.265 (HEVC)';
+  if (c === 'av1') return 'AV1';
+  if (c === 'vp9') return 'VP9';
+  return c || '—';
+}
+
+// Читает реальные параметры файла (а не то, что заявляет TikTok)
+function probeFile(filePath) {
+  return new Promise((resolve, reject) => {
+    execFile(
+      FFPROBE_PATH,
+      ['-v', 'error', '-select_streams', 'v:0',
+        '-show_entries', 'stream=codec_name,width,height,avg_frame_rate,r_frame_rate,bit_rate:format=bit_rate,duration,size',
+        '-of', 'json', filePath],
+      { timeout: 20000, maxBuffer: 5 * 1024 * 1024 },
+      (err, stdout) => {
+        if (err) return reject(err);
+        try { resolve(JSON.parse(stdout)); } catch (e) { reject(e); }
+      }
+    );
+  });
+}
+
+function summarizeProbe(probe) {
+  const st = (probe.streams && probe.streams[0]) || {};
+  const fmt = probe.format || {};
+  const fpsNum = parseFraction(st.avg_frame_rate) || parseFraction(st.r_frame_rate);
+  const bps = Number(st.bit_rate) || Number(fmt.bit_rate) || 0;
+  return {
+    width: st.width,
+    height: st.height,
+    fps: fpsNum ? String(Math.round(fpsNum * 100) / 100).replace(/\.0+$/, '') : null,
+    codec: st.codec_name ? prettyCodec(st.codec_name) : null,
+    bitrate: bps ? `${Math.round(bps / 1000)} kbps` : null,
+    duration: Number(fmt.duration) || null,
+    bytes: Number(fmt.size) || null,
+  };
+}
+// ===== FFPROBE END =====
+
+function downloadVideoToTmp(url) {
+  const id = uuidv4();
+  const template = path.join(os.tmpdir(), `chk_${id}.%(ext)s`);
+  return new Promise((resolve, reject) => {
+    execFile(
+      YTDLP_PATH,
+      ['--no-warnings', '--no-playlist', '--max-filesize', '100M', '--socket-timeout', '15', '-o', template, url],
+      { timeout: 90000, maxBuffer: 5 * 1024 * 1024 },
+      (err) => {
+        const files = fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith(`chk_${id}.`) && !f.endsWith('.part'));
+        const full = files.map((f) => path.join(os.tmpdir(), f));
+        if (err || !full.length) {
+          full.forEach((f) => fs.unlink(f, () => {}));
+          return reject(err || new Error('download_failed'));
+        }
+        resolve(full[0]);
+      }
+    );
+  });
+}
+
 async function analyzeTikTok(url) {
   await ensureYtDlp();
   const info = await runYtDlp(url);
   const v = pickBestVideo(info);
   if (!v) throw new Error('no_video_format');
-  const width = v.width || info.width;
-  const height = v.height || info.height;
-  const kbps = v.vbr || v.tbr;
-  const bytes = v.filesize || v.filesize_approx;
-  const codecRaw = (v.vcodec || '').toLowerCase();
-  let codec = codecRaw.split('.')[0] || '—';
-  if (codec === 'h264' || codec === 'avc1') codec = 'H.264';
-  if (codec === 'h265' || codec === 'hevc' || codec === 'hvc1' || codec === 'bytevc1') codec = 'H.265 (HEVC)';
+
+  // Данные заявленные TikTok (запасной вариант)
+  const meta = {
+    width: v.width || info.width,
+    height: v.height || info.height,
+    fps: v.fps || info.fps || null,
+    codec: v.vcodec && v.vcodec !== 'none' ? prettyCodec(v.vcodec.split('.')[0]) : null,
+    bitrate: (v.vbr || v.tbr) ? `${Math.round(v.vbr || v.tbr)} kbps` : null,
+    bytes: v.filesize || v.filesize_approx || null,
+  };
+
+  // Реальные данные: скачиваем файл во временную папку, читаем ffprobe, удаляем
+  let real = {};
+  let filePath = null;
+  try {
+    filePath = await downloadVideoToTmp(url);
+    real = summarizeProbe(await probeFile(filePath));
+    if (!real.bytes) real.bytes = fs.statSync(filePath).size;
+  } catch (e) {
+    console.error('ffprobe/скачивание не удалось, используем данные TikTok:', e.message);
+  } finally {
+    if (filePath) fs.unlink(filePath, () => {});
+  }
+
+  const width = real.width || meta.width;
+  const height = real.height || meta.height;
+  const bytes = real.bytes || meta.bytes;
   return {
     quality: Math.min(width || 0, height || 0) || '—',
     width: width || '—',
     height: height || '—',
-    fps: v.fps || info.fps || '—',
-    codec,
-    bitrate: kbps ? `${Math.round(kbps)} kbps` : '—',
-    duration: fmtDuration(info.duration),
+    fps: real.fps || meta.fps || '—',
+    codec: real.codec || meta.codec || '—',
+    bitrate: real.bitrate || meta.bitrate || '—',
+    duration: fmtDuration(real.duration || info.duration),
     size: bytes ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : '—',
     ext: v.ext || info.ext || '—',
     author: info.uploader ? `@${info.uploader}` : (info.creator || '—'),
