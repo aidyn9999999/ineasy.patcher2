@@ -712,6 +712,19 @@ app.post('/api/consume/:telegramId', async (req, res) => {
   }
 });
 
+app.post('/api/check-video', async (req, res) => {
+  const url = extractTikTokUrl(req.body && req.body.url);
+  if (!url) return res.status(400).json({ error: 'invalid_tiktok_url' });
+
+  try {
+    const data = await analyzeTikTok(url);
+    res.json(data);
+  } catch (err) {
+    console.error('Ошибка проверки видео через сайт:', err.message);
+    res.status(502).json({ error: 'video_check_failed' });
+  }
+});
+
 app.get('/api/buy-link/:count/:price', (req, res) => {
   const { count, price } = req.params;
   res.json({ url: `https://t.me/${BOT_USERNAME}?start=buy_${count}_${price}` });
