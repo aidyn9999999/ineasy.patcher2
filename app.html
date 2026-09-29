@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INEASY — обработка видео</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-shell">
+  <button class="theme-toggle" type="button" aria-label="Включить светлую тему" title="Переключить тему">
+    <span class="theme-icon theme-icon-moon" aria-hidden="true">☾</span>
+    <span class="theme-icon theme-icon-sun" aria-hidden="true">☀</span>
+  </button>
+  <header class="topbar">
+    <div class="brand">INEASY</div>
+    <nav class="product-nav" aria-label="Разделы">
+      <button class="nav-tab active" data-view="patchSection" type="button">Патчер</button>
+      <button class="nav-tab" data-view="checkerSection" type="button">⌕ Проверка качества</button>
+      <button class="nav-tab" data-view="faqSection" type="button">FAQ</button>
+    </nav>
+    <select class="language-select" id="languageSelect" aria-label="Язык">
+      <option value="ru">RU</option>
+      <option value="kk">KZ</option>
+      <option value="en">EN</option>
+    </select>
+    <div class="balance-pill" id="balancePill">
+      <span class="id-part">ID: <b id="tgIdLabel">—</b></span>
+      <button class="copy-id-btn" id="copyIdBtn" aria-label="Скопировать ID">⧉</button>
+      <span class="pill-sep"></span>
+      <span>Баланс: <b id="balanceLabel">…</b></span>
+      <button class="plus-btn" id="plusBtn" aria-label="Пополнить">+</button>
+    </div>
+  </header>
+
+  <!-- Модалка со списком пакетов -->
+  <div class="modal-overlay hidden" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>Платные пакеты</h3>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+
+      <div class="modal-body" id="packagesView">
+        <p class="modal-hint">Нажмите «Купить» — откроется бот @ineasybot, он пришлёт реквизиты для оплаты.</p>
+        <ul class="pkg-list" id="pkgList"></ul>
+      </div>
+    </div>
+  </div>
+
+  <main class="app-main">
+    <div class="notice-banner"><span>!</span><p>Если после патчинга длительность видео показывает 0:00, это нормально. Файл специально подготовлен так, чтобы TikTok меньше сжимал его.</p></div>
+
+    <section class="view-section active" id="patchSection">
+    <div class="patch-panel">
+      <p class="eyebrow">VIDEO TECHNOLOGY / 01</p>
+      <h1 class="patch-title">Патчер автоматически определяет необходимые параметры.</h1>
+      <p class="patch-sub">Загрузите ролик. Мы подберём оптимальные параметры без ручной настройки FPS, разрешения и битрейта.</p>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="video/*">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 16V4M12 4L7 9M12 4L17 9" stroke="#5B8CFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 16V18C4 19.1 4.9 20 6 20H18C19.1 20 20 19.1 20 18V16" stroke="#5B8CFF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p class="dz-title">Выберите видео</p>
+        <p class="dz-sub">Перетащите файл сюда или нажмите, чтобы открыть устройство</p>
+      </div>
+
+      <div class="preview-wrap" id="previewWrap">
+        <video id="previewVideo" controls></video>
+        <div class="file-row">
+          <span id="fileMeta">—</span>
+          <button class="clear-btn" id="clearBtn">Убрать</button>
+        </div>
+      </div>
+
+      <p class="local-note">Видео остаётся в вашем рабочем процессе. Настройки обработки определяются автоматически.</p>
+      <button class="process-btn" id="processBtn" type="button" disabled>Обработать видео</button>
+      <div class="processing-state hidden" id="processingState"><span class="processing-spinner"></span><div><strong>Подготавливаем видео…</strong><span id="processingText">Автоматически применяем параметры</span></div><div class="progress-track"><i id="processingProgress"></i></div></div>
+      <div class="processed-result hidden" id="processedResult"><span>✓</span><div><strong>Видео готово</strong><small>Можно скачать обработанный файл</small></div><a id="downloadBtn" download>Скачать видео</a></div>
+    </div>
+    </section>
+
+    <section class="view-section hidden" id="checkerSection">
+    <section class="checker-panel" aria-labelledby="checkerTitle">
+      <div class="checker-copy">
+        <p class="eyebrow red-eyebrow">VIDEO CHECKER / 02</p>
+        <h2 id="checkerTitle">Проверить качество видео</h2>
+        <p>Вставьте публичную ссылку TikTok. Сервер проанализирует оригинальный ролик и покажет реальные параметры.</p>
+      </div>
+      <button class="checker-open-btn" id="checkerOpenBtn" type="button">Проверить видео</button>
+      <form class="checker-form hidden" id="checkerForm">
+        <label for="checkerUrl">Ссылка на видео</label>
+        <div class="checker-input-row">
+          <input id="checkerUrl" type="url" placeholder="Вставьте ссылку на TikTok" autocomplete="url" required>
+          <button type="submit">Анализировать</button>
+        </div>
+        <p class="checker-status" id="checkerStatus" aria-live="polite"></p>
+      </form>
+      <div class="checker-result hidden" id="checkerResult" aria-live="polite"></div>
+    </section>
+    <p class="checker-support">Заметили ошибку на сайте? <a href="https://t.me/ineasyadmin?text=Я%20нашёл%20ошибку%20на%20сайте%20и%20хочу%20сообщить%20о%20ней" target="_blank" rel="noopener">Сообщите сразу</a>.</p>
+    </section>
+
+    <section class="view-section hidden" id="faqSection">
+    <section class="faq-section" aria-labelledby="faqTitle">
+      <p class="eyebrow">SHORT FAQ</p>
+      <h2 id="faqTitle">Всё важное, без лишнего</h2>
+      <details><summary>Нужно ли устанавливать программу?</summary><p>Нет. VideoPatcher работает в браузере.</p></details>
+      <details><summary>Какие видео можно обрабатывать?</summary><p>Вертикальные видео для TikTok и коротких форматов.</p></details>
+      <details><summary>Что происходит после обработки?</summary><p>Вы увидите результат и сможете скачать готовый файл.</p></details>
+      <details><summary>Можно ли изменить видео после патчинга?</summary><p>Нет. После обработки внутренние параметры файла уже изменены, поэтому дополнительные изменения могут нарушить результат.</p></details>
+      <details><summary>Патчер сжимает видео?</summary><p>Мы максимально сохраняем исходное качество и подготавливаем параметры для TikTok. Полностью исключить сжатие платформы невозможно: финальное сжатие выполняет сам TikTok.</p></details>
+      <details><summary>Нужно ли выбирать FPS, битрейт или разрешение?</summary><p>Нет. INEASY автоматически определяет совместимые параметры.</p></details>
+      <details><summary>Куда сообщить о баге?</summary><p>Напишите администратору <a href="https://t.me/ineasyadmin?text=Я%20нашёл%20ошибку%20на%20сайте%20и%20хочу%20сообщить%20о%20ней" target="_blank" rel="noopener">@ineasyadmin</a>.</p></details>
+    </section>
+    <p class="faq-support">Заметили баг или ошибку? <a href="https://t.me/ineasyadmin?text=Я%20нашёл%20ошибку%20на%20сайте%20и%20хочу%20сообщить%20о%20ней" target="_blank" rel="noopener">Сообщите быстро</a>.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div><strong>VideoPatcher</strong><span>Сохраняйте качество. Публикуйте уверенно.</span></div>
+    <nav aria-label="Навигация"><a href="#">Главная</a><a href="#faqTitle">FAQ</a><a href="mailto:support@videopatcher.app">Поддержка</a><a href="#">Политика конфиденциальности</a></nav>
+    <a class="footer-telegram" href="https://t.me/ineasyadmin?text=Я%20нашёл%20ошибку%20на%20сайте%20и%20хочу%20сообщить%20о%20ней" target="_blank" rel="noopener">Поддержка: @ineasyadmin</a>
+  </footer>
+</div>
+
+<script src="app.js"></script>
+<script src="theme.js"></script>
+</body>
+</html>
