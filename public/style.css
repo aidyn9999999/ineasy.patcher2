@@ -524,7 +524,8 @@ h1, h2, .tg-btn, .patch-title {
 .bottom-nav .nav-tab { min-width: 92px; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 12px; color: var(--muted); font-size: 10px; cursor: pointer; border: none; background: transparent; border-radius: 14px; transition: all 0.15s ease; }
 .bottom-nav .nav-tab.active { color: var(--accent); background: var(--accent-dim); box-shadow: none; }
 .bottom-nav .nav-tab:hover { color: var(--accent); background: rgba(79, 70, 229, 0.08); }
-.nav-icon { font-size: 19px; line-height: 1; color: inherit; }
+.nav-icon { display: grid; place-items: center; width: 20px; height: 20px; color: inherit; }
+.nav-icon svg { display: block; width: 20px; height: 20px; }
 .language-dock { display: flex; gap: 2px; order: 2; padding: 4px; border: 1px solid var(--card-border); border-radius: 11px; background: var(--bg); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
 .language-dock button { border: 0; border-radius: 7px; padding: 6px 7px; background: transparent; color: var(--muted); font-size: 10px; cursor: pointer; font-weight: 600; transition: all 0.15s ease; }
 .language-dock button.active, .language-dock button:hover { background: var(--accent); color: #ffffff; }

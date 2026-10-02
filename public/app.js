@@ -17,7 +17,11 @@ const translations = {
     packages: 'Paid packages',
     packageHint: 'Click “Buy” to open @ineasybot and receive payment details.',
     buy: 'Buy',
-    nav: ['PATCHER', 'ANALYZER', 'HOW TO USE'],
+    nav: ['PATCHER', 'VIDEO CHECKER', 'HOW TO USE'],
+    faqLabel: 'HOW TO USE / FAQ',
+    analyzerEyebrow: 'VIDEO CHECKER / 02',
+    videos: 'videos',
+    report: 'Report',
     patchTitle: 'Patcher auto-detects the right settings.',
     patchSub: 'Upload a video. We choose FPS, resolution and bitrate automatically.',
     choose: 'Select video',
@@ -78,7 +82,11 @@ const translations = {
     packages: 'Платные пакеты',
     packageHint: 'Нажмите «Купить» — откроется бот @ineasybot, он пришлёт реквизиты для оплаты.',
     buy: 'Купить',
-    nav: ['ПАТЧЕР', 'АНАЛИЗ', 'HOW TO USE'],
+    nav: ['ПАТЧЕР', 'ЧЕКЕР ВИДЕО', 'КАК ИСПОЛЬЗОВАТЬ'],
+    faqLabel: 'КАК ПОЛЬЗОВАТЬСЯ / FAQ',
+    analyzerEyebrow: 'ПРОВЕРКА ВИДЕО / 02',
+    videos: 'видео',
+    report: 'Сообщить',
     patchTitle: 'Патчер автоматически определяет необходимые параметры.',
     patchSub: 'Загрузите ролик. Мы подберём оптимальные параметры без ручной настройки FPS, разрешения и битрейта.',
     choose: 'Выберите видео',
@@ -139,7 +147,11 @@ const translations = {
     packages: 'Ақылы пакеттер',
     packageHint: '«Сатып алу» түймесін басыңыз — бот @ineasybot сізге төлем реквизиттерін жіберетін болады.',
     buy: 'Сатып алу',
-    nav: ['ПАТЧЕР', 'АНАЛИЗ', 'HOW TO USE'],
+    nav: ['ПАТЧЕР', 'ТЕКСЕР ВИДЕО', 'ҚАЛАЙ ПАЙДАЛАНУ',],
+    faqLabel: 'ҚАЛАЙ ПАЙДАЛАНУ / FAQ',
+    analyzerEyebrow: 'БЕЙНЕНІ ТЕКСЕРУ / 02',
+    videos: 'бейне',
+    report: 'Хабарлау',
     patchTitle: 'Патчер қажетті параметрлерді өзі анықтайды.',
     patchSub: 'Бейнені жүктеңіз. FPS, ажыратымдылық және битрейт автоматты түрде тандалады.',
     choose: 'Бейнені таңдаңыз',
@@ -196,7 +208,7 @@ const translations = {
 };
 
 function t(key) {
-  const lang = STATE.lang || 'en';
+  const lang = translations[STATE.lang] ? STATE.lang : 'en';
   const pack = translations[lang] || translations.en;
   return pack[key] ?? translations.en[key] ?? key;
 }
@@ -207,6 +219,7 @@ function setText(id, value) {
 }
 
 function applyLanguage(lang) {
+  lang = translations[lang] ? lang : 'en';
   STATE.lang = lang;
   localStorage.setItem('ineasy-language', lang);
   document.documentElement.lang = lang;
@@ -235,23 +248,49 @@ function applyLanguage(lang) {
   setText('noticeBannerText', pack.notice);
   setText('checkerTitle', pack.analyzerTitle);
   setText('checkerDesc', pack.analyzerDesc);
-  setText('checkerButtonLabel', pack.analyzerButton);
+  setText('checkerOpenBtn', pack.analyzerButton);
   setText('urlLabel', pack.analyzerLabel);
-  setText('checkerUrl', null);
-  document.getElementById('checkerUrl').placeholder = pack.analyzerPlaceholder;
+  if (document.getElementById('checkerUrl')) document.getElementById('checkerUrl').placeholder = pack.analyzerPlaceholder;
   setText('analyzeBtn', pack.analyzerSubmit);
   setText('faqTitle', pack.faqTitle);
   setText('supportText', pack.faqSupportText);
   setText('faqSupportText', pack.faqSupportText);
+  setText('checkerReport', pack.report);
+  setText('faqReport', pack.report);
   setText('footerTitle', 'VideoPatcher');
   setText('footerDesc', pack.footerDesc);
   setText('footerHome', pack.footerHome);
   setText('footerFaq', pack.footerFaq);
   setText('footerSupport', pack.footerSupport);
   setText('footerTelegram', pack.footerTelegram);
-  setText('faqLabel', 'HOW TO USE / FAQ');
-  setText('analyzerLabel', 'VIDEO ANALYZER / 02');
-  setText('remove', pack.remove);
+  setText('faqLabel', pack.faqLabel);
+  setText('analyzerLabel', pack.analyzerEyebrow);
+  setText('clearBtn', pack.remove);
+  const bottomNav = document.querySelector('.bottom-nav');
+  if (bottomNav) bottomNav.setAttribute('aria-label', lang === 'ru' ? 'Навигация' : lang === 'kk' ? 'Навигация' : 'Navigation');
+  const copyIdLabel = lang === 'ru' ? 'Копировать ID' : lang === 'kk' ? 'ID көшіру' : 'Copy ID';
+  const topUpLabel = lang === 'ru' ? 'Пополнить баланс' : lang === 'kk' ? 'Балансты толтыру' : 'Top up';
+  const logoutButton = document.getElementById('logoutBtn');
+  const copyIdButton = document.getElementById('copyIdBtn');
+  const topUpButton = document.getElementById('plusBtn');
+  const closeButton = document.getElementById('modalClose');
+  const languageDock = document.getElementById('languageDock');
+  const footerNav = document.querySelector('.site-footer nav');
+  if (logoutButton) {
+    logoutButton.setAttribute('aria-label', pack.logout);
+    logoutButton.title = pack.logout;
+  }
+  if (copyIdButton) {
+    copyIdButton.setAttribute('aria-label', copyIdLabel);
+    copyIdButton.title = copyIdLabel;
+  }
+  if (topUpButton) {
+    topUpButton.setAttribute('aria-label', topUpLabel);
+    topUpButton.title = topUpLabel;
+  }
+  if (closeButton) closeButton.setAttribute('aria-label', pack.close);
+  if (languageDock) languageDock.setAttribute('aria-label', lang === 'ru' ? 'Язык' : lang === 'kk' ? 'Тіл' : 'Language');
+  if (footerNav) footerNav.setAttribute('aria-label', lang === 'ru' ? 'Навигация внизу страницы' : lang === 'kk' ? 'Бет төменіндегі навигация' : 'Footer Navigation');
 
   const faqBlocks = [
     ['faq1q', 'faq1a'], ['faq2q', 'faq2a'], ['faq3q', 'faq3a'],
@@ -293,12 +332,18 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 
 // --- Balance ---
 const balanceLabel = document.getElementById('balanceLabel');
+let currentBalance = null;
+
+function renderBalance() {
+  if (balanceLabel && currentBalance !== null) balanceLabel.textContent = `${currentBalance} ${t('videos')}`;
+}
 
 async function loadBalance() {
   try {
     const res = await fetch(`/api/balance/${tgId}`);
     const data = await res.json();
-    if (balanceLabel) balanceLabel.textContent = `${data.balance} videos`;
+    currentBalance = data.balance;
+    renderBalance();
   } catch (e) {
     if (balanceLabel) balanceLabel.textContent = '—';
   }
@@ -550,11 +595,21 @@ if (checkerForm) {
 // --- Tabs ---
 document.querySelectorAll('.nav-tab').forEach((tab) => {
   tab.addEventListener('click', () => {
-    document.querySelectorAll('.nav-tab').forEach((item) => item.classList.remove('active'));
-    document.querySelectorAll('.view-section').forEach((section) => section.classList.add('hidden'));
+    document.querySelectorAll('.nav-tab').forEach((item) => {
+      item.classList.remove('active');
+      item.removeAttribute('aria-current');
+    });
+    document.querySelectorAll('.view-section').forEach((section) => {
+      section.classList.add('hidden');
+      section.classList.remove('active');
+    });
     tab.classList.add('active');
+    tab.setAttribute('aria-current', 'page');
     const target = document.getElementById(tab.dataset.view);
-    if (target) target.classList.remove('hidden');
+    if (target) {
+      target.classList.remove('hidden');
+      target.classList.add('active');
+    }
   });
 });
 
@@ -615,7 +670,10 @@ async function loadPatchCount() {
     const response = await fetch('https://compressbase.com/api/method/v1/stats');
     if (!response.ok) return;
     const data = await response.json();
-    if (Number.isFinite(data.patches)) patchCount.textContent = ` · ${data.patches.toLocaleString()} patches`;
+    if (Number.isFinite(data.patches)) {
+      const labels = { en: 'patches', ru: 'обработок', kk: 'өңдеу' };
+      patchCount.textContent = ` · ${data.patches.toLocaleString()} ${labels[STATE.lang] || labels.en}`;
+    }
   } catch (error) {
     patchCount.textContent = '';
   }
@@ -639,5 +697,6 @@ applyLanguage(savedLanguage);
 document.querySelectorAll('[data-lang]').forEach((button) => {
   button.addEventListener('click', () => {
     applyLanguage(button.dataset.lang);
+    renderBalance();
   });
 });
