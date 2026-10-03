@@ -228,7 +228,7 @@ function applyLanguage(lang) {
 
   setText('idCaption', pack.id);
   setText('balanceCaption', pack.balance);
-  setText('logoutBtn', pack.logout);
+  setText('logoutLabel', pack.logout);
   setText('packagesTitle', pack.packages);
   setText('packagesHint', pack.packageHint);
   setText('navPatcher', pack.nav[0]);
