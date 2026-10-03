@@ -568,6 +568,9 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Inter', sans-serif; }
 .processing-state { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; margin-top: 16px; padding: 15px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--bg); }
 .processing-state strong, .processing-state span { display: block; }
 .processing-state strong { color: var(--text); font-size: 13px; }
+.cancel-process-btn { grid-column: 2; justify-self: start; border: 1px solid var(--card-border); border-radius: 8px; padding: 7px 11px; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; }
+.cancel-process-btn:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
+.cancel-process-btn:disabled { opacity: .45; cursor: not-allowed; }
 .processing-spinner { width: 22px; height: 22px; border: 2px solid var(--card-border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 .progress-track { grid-column: 1 / -1; height: 4px; overflow: hidden; border-radius: 5px; background: var(--accent-dim); }
 .progress-track i { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--accent); transition: width .6s ease; }

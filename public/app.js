@@ -28,7 +28,7 @@ const translations = {
     patchSub: 'Upload a video. We choose FPS, resolution and bitrate automatically.',
     choose: 'Select video',
     chooseSub: 'Drag file here or click to browse',
-    localNote: 'The video stays on your device. Processing settings are selected automatically.',
+    localNote: 'Video stays on your device. Videos up to 4K / 10 minutes are reduced to 1080p; output size depends on your device.',
     process: 'Process video',
     processing: 'Preparing video…',
     processingSub: 'Preparing…',
@@ -96,7 +96,9 @@ const translations = {
     selectFile: 'Select video',
     fileName: 'Selected file',
     packageLabel: 'Video package',
-    errorInvalidFile: 'Choose an MP4 up to 8 GiB.',
+    errorInvalidFile: 'Choose a supported video up to 8 GiB.',
+    cancel: 'Cancel',
+    processingCancelled: 'Processing cancelled.',
     loadingText: 'Preparing MP4 metadata on your device…',
     successText: 'Done. Video and audio stayed on your device; only MP4 metadata was sent.',
     checkResult: 'Result',
@@ -132,7 +134,7 @@ const translations = {
     patchSub: 'Загрузите ролик. Мы подберём оптимальные параметры без ручной настройки FPS, разрешения и битрейта.',
     choose: 'Выберите видео',
     chooseSub: 'Перетащите файл сюда или нажмите, чтобы открыть устройство',
-    localNote: 'Видео остаётся в вашем рабочем процессе. Настройки обработки определяются автоматически.',
+    localNote: 'Видео остаётся на устройстве. Ролики до 4K и 10 минут уменьшаются до 1080p; размер результата зависит от устройства.',
     process: 'Обработать видео',
     processing: 'Подготавливаем видео…',
     processingSub: 'Обработка…',
@@ -200,7 +202,9 @@ const translations = {
     selectFile: 'Выберите видео',
     fileName: 'Выбранный файл',
     packageLabel: 'Пакет видео',
-    errorInvalidFile: 'Выберите MP4 размером до 8 GiB.',
+    errorInvalidFile: 'Выберите поддерживаемое видео размером до 8 GiB.',
+    cancel: 'Отмена',
+    processingCancelled: 'Обработка отменена.',
     loadingText: 'Проверяем MP4 и подготавливаем метаданные на устройстве…',
     successText: 'Готово. Видео и аудио не отправлялись; сервис получил только метаданные MP4.',
     checkResult: 'Результат проверки',
@@ -236,7 +240,7 @@ const translations = {
     patchSub: 'Бейнені жүктеңіз. FPS, ажыратымдылық және битрейт автоматты түрде тандалады.',
     choose: 'Бейнені таңдаңыз',
     chooseSub: 'Файлды осы жерге сүйреп апарыңыз немесе құрылғыдан таңдаңыз',
-    localNote: 'Бейне құрылғыда қалады. Өңдеу параметрлері автоматты түрде анықталады.',
+    localNote: 'Бейне құрылғыда қалады. 4K және 10 минутқа дейінгі бейне 1080p-ке дейін кішірейтіледі; нәтиже өлшемі құрылғыға байланысты.',
     process: 'Бейнені өңдеу',
     processing: 'Бейнені даярлау…',
     processingSub: 'Өңдеу…',
@@ -304,7 +308,9 @@ const translations = {
     selectFile: 'Бейнені таңдаңыз',
     fileName: 'Таңдалған файл',
     packageLabel: 'Бейне пакеті',
-    errorInvalidFile: '8 GiB-ке дейін MP4 файл таңдаңыз.',
+    errorInvalidFile: '8 GiB-ке дейін қолдау көрсетілетін бейне таңдаңыз.',
+    cancel: 'Бас тарту',
+    processingCancelled: 'Өңдеу тоқтатылды.',
     loadingText: 'MP4 метадеректерін құрылғыда дайындаймыз…',
     successText: 'Дайын. Бейне мен аудио жіберілмеді; сервис тек MP4 метадеректерін алды.',
     checkResult: 'Нәтиже',
@@ -373,6 +379,7 @@ function applyLanguage(lang) {
   setText('dzSub', pack.chooseSub);
   setText('localNote', pack.localNote);
   setText('processBtn', pack.process);
+  setText('cancelProcessBtn', pack.cancel);
   setText('processingTitle', pack.processing);
   setText('processingText', pack.processingSub);
   setText('resultTitle', pack.ready);
@@ -565,6 +572,7 @@ const previewVideo = document.getElementById('previewVideo');
 const fileMeta = document.getElementById('fileMeta');
 const clearBtn = document.getElementById('clearBtn');
 const processBtn = document.getElementById('processBtn');
+const cancelProcessBtn = document.getElementById('cancelProcessBtn');
 const processingState = document.getElementById('processingState');
 const processingText = document.getElementById('processingText');
 const processingProgress = document.getElementById('processingProgress');
@@ -585,6 +593,7 @@ let processedVideoBlob = null;
 
 let currentObjectUrl = null;
 let patchedDownloadUrl = null;
+let processController = null;
 
 function renderTikTokOptions() {
   if (!tiktokCreatorInfo || !tiktokPrivacy) return;
@@ -762,14 +771,15 @@ function setProcessingState(type, text) {
 }
 
 function handleFile(file) {
-  const isMp4 = file && (file.type === 'video/mp4' || /\.mp4$/i.test(file.name));
-  if (!isMp4 || file.size < 16 || file.size > 8 * 1024 ** 3) {
+  const isVideo = file && (file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name));
+  if (!isVideo || file.size < 16 || file.size > 8 * 1024 ** 3) {
     setProcessingState('error', t('errorInvalidFile'));
     if (processBtn) processBtn.disabled = true;
     return;
   }
 
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+  if (processController) processController.abort();
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
   patchedDownloadUrl = null;
   processedVideoBlob = null;
@@ -817,6 +827,7 @@ if (dropzone) {
 
 if (clearBtn) {
   clearBtn.addEventListener('click', () => {
+    if (processController) processController.abort();
     if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
     if (previewVideo) previewVideo.src = '';
     if (previewWrap) previewWrap.classList.remove('show');
@@ -950,7 +961,11 @@ document.querySelectorAll('.nav-tab').forEach((tab) => {
 if (processBtn) {
   processBtn.addEventListener('click', async () => {
     if (!fileInput || !fileInput.files[0]) return;
+    const sourceFile = fileInput.files[0];
+    const controller = new AbortController();
+    processController = controller;
     processBtn.disabled = true;
+    if (cancelProcessBtn) cancelProcessBtn.disabled = false;
     if (processingState) {
       processingState.classList.remove('hidden');
       processingState.classList.remove('completed', 'failed');
@@ -960,8 +975,24 @@ if (processBtn) {
     if (processingProgress) processingProgress.style.width = '';
 
     try {
-      const { patchVideo } = await import('./client.mjs');
-      const outputBlob = await patchVideo(fileInput.files[0], {
+      const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
+      const scaledVideo = await downscaleVideo(sourceFile, {
+        signal: controller.signal,
+        onProgress: (fraction) => {
+          if (!processingProgress) return;
+          const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
+          processingProgress.style.width = `${progress * 95}%`;
+        },
+        onStatus: (message) => {
+          if (processingText) processingText.textContent = localizePatchStatus(message);
+        },
+      });
+      controller.signal.throwIfAborted();
+      if (processingProgress) processingProgress.style.width = '95%';
+
+      const { patchVideo } = await import('https://compressbase.com/method-api/client.mjs');
+      const outputBlob = await patchVideo(scaledVideo, {
+        signal: controller.signal,
         onStatus: (message) => {
           if (processingText) processingText.textContent = localizePatchStatus(message);
         },
@@ -971,7 +1002,7 @@ if (processBtn) {
       patchedDownloadUrl = URL.createObjectURL(outputBlob);
       if (downloadBtn) {
         downloadBtn.href = patchedDownloadUrl;
-        downloadBtn.download = `${fileInput.files[0].name.replace(/\.mp4$/i, '')}-ineasy.mp4`;
+        downloadBtn.download = `${sourceFile.name.replace(/\.[^.]+$/, '')}-ineasy.mp4`;
       }
 
       if (processingText) processingText.textContent = t('successText');
@@ -981,12 +1012,17 @@ if (processBtn) {
       loadPatchCount();
     } catch (error) {
       if (processingState) processingState.classList.add('failed');
-      if (processingText) processingText.textContent = localizePatchError(error.message);
+      if (processingText) processingText.textContent = controller.signal.aborted ? t('processingCancelled') : localizePatchError(error.message);
       if (processingProgress) processingProgress.style.width = '0%';
       processBtn.disabled = false;
+    } finally {
+      processController = null;
+      if (cancelProcessBtn) cancelProcessBtn.disabled = true;
     }
   });
 }
+
+if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processController?.abort());
 
 function localizePatchStatus(message) {
   const lang = STATE.lang || 'en';
@@ -1017,7 +1053,7 @@ async function loadPatchCount() {
 function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const knownErrors = [
-    { test: /up to 8 GiB/i, ru: 'Выберите MP4 размером до 8 GiB.', kk: 'Өлшемі 8 GiB-ке дейінгі MP4 таңдаңыз.', en: 'Choose an MP4 up to 8 GiB.' },
+    { test: /up to 8 GiB/i, ru: 'Выберите поддерживаемое видео размером до 8 GiB.', kk: 'Өлшемі 8 GiB-ке дейін қолдау көрсетілетін бейне таңдаңыз.', en: 'Choose a supported video up to 8 GiB.' },
     { test: /supported MP4|non-fragmented|fast-start/i, ru: 'Этот MP4 не поддерживается. Экспортируйте видео как MP4 и попробуйте снова.', kk: 'Бұл MP4 қолдау көрсетпейді. Бейнені MP4 түрінде экспорттаңыз.', en: 'This MP4 is not supported. Export the video as MP4 and try again.' },
     { test: /429|limit/i, ru: 'Достигнут бесплатный лимит. Попробуйте позже.', kk: 'Тегін шектеуге жеттіңіз. Кейінірек қайталап көріңіз.', en: 'Free limit reached. Please try again later.' },
   ];
