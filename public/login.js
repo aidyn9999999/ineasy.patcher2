@@ -41,6 +41,7 @@ function pollSession() {
       if (data.authorized) {
         clearInterval(pollTimer);
         localStorage.setItem('tg_id', data.telegramId);
+        localStorage.setItem('tg_auth_token', data.authToken);
         localStorage.setItem('tg_username', data.username || '');
         localStorage.setItem('tg_first_name', data.firstName || '');
         window.location.href = '/app.html';

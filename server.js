@@ -8,6 +8,7 @@ const { execFile } = require('child_process');
 const fs = require('fs');
 const https = require('https');
 const os = require('os');
+const crypto = require('crypto');
 let FFPROBE_PATH = 'ffprobe';
 try { FFPROBE_PATH = require('ffprobe-static').path; } catch (e) { /* используем системный ffprobe */ }
 
@@ -500,6 +501,7 @@ async function analyzeTikTok(url) {
 }
 
 const sessions = new Map();
+const tiktokProfilePromises = new Map();
 setInterval(() => {
   const now = Date.now();
   for (const [id, s] of sessions.entries()) {
@@ -666,6 +668,89 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+function createUserToken(telegramId) {
+  const payload = Buffer.from(JSON.stringify({
+    telegramId: String(telegramId),
+    expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000,
+  })).toString('base64url');
+  const signature = crypto.createHmac('sha256', BOT_TOKEN).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function requireUserToken(req, res, next) {
+  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  const [payload, signature] = token.split('.');
+  if (!payload || !signature) return res.status(401).json({ error: 'authentication_required' });
+
+  const expected = crypto.createHmac('sha256', BOT_TOKEN).update(payload).digest();
+  let actual;
+  try { actual = Buffer.from(signature, 'base64url'); } catch (error) { actual = Buffer.alloc(0); }
+  if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) {
+    return res.status(401).json({ error: 'authentication_required' });
+  }
+
+  try {
+    const session = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    if (!session.telegramId || session.expiresAt < Date.now()) {
+      return res.status(401).json({ error: 'authentication_expired' });
+    }
+    req.telegramId = String(session.telegramId);
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'authentication_required' });
+  }
+}
+
+async function zernioRequest(resource, options = {}) {
+  if (!process.env.ZERNIO_API_KEY) {
+    const error = new Error('TikTok publishing is not configured. Add ZERNIO_API_KEY on the server.');
+    error.status = 503;
+    throw error;
+  }
+  const response = await fetch(`https://zernio.com/api/v1${resource}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${process.env.ZERNIO_API_KEY}`,
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...options.headers,
+    },
+    ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error || data.message || 'TikTok provider request failed.');
+    error.status = response.status >= 400 && response.status < 500 ? response.status : 502;
+    throw error;
+  }
+  return data;
+}
+
+async function getTiktokProfile(telegramId) {
+  const key = `tiktokProfile:${telegramId}`;
+  const existing = await redis.get(key);
+  if (existing) return existing;
+  if (tiktokProfilePromises.has(telegramId)) return tiktokProfilePromises.get(telegramId);
+
+  const pending = zernioRequest('/profiles', {
+    method: 'POST',
+    body: { name: `telegram_${telegramId}` },
+  }).then(async (data) => {
+    if (!data.profile || !data.profile._id) throw new Error('Zernio did not return a profile id.');
+    await redis.set(key, data.profile._id);
+    return data.profile._id;
+  }).finally(() => tiktokProfilePromises.delete(telegramId));
+  tiktokProfilePromises.set(telegramId, pending);
+  return pending;
+}
+
+async function getUserTiktokAccount(telegramId) {
+  const profileId = await redis.get(`tiktokProfile:${telegramId}`);
+  if (!profileId) return { profileId: null, account: null };
+  const data = await zernioRequest(`/accounts?profileId=${encodeURIComponent(profileId)}`);
+  const account = (data.accounts || []).find((item) => item.platform === 'tiktok' && item.isActive);
+  return { profileId, account: account || null };
+}
+
 app.post('/api/session', (req, res) => {
   const sessionId = uuidv4();
   sessions.set(sessionId, { authorized: false, createdAt: Date.now() });
@@ -680,7 +765,164 @@ app.get('/api/session/:id', (req, res) => {
     telegramId: session.telegramId || null,
     username: session.username || null,
     firstName: session.firstName || null,
+    authToken: session.authorized ? createUserToken(session.telegramId) : null,
   });
+});
+
+app.get('/api/tiktok/status', requireUserToken, async (req, res) => {
+  try {
+    const { profileId, account } = await getUserTiktokAccount(req.telegramId);
+    if (!profileId || !account) return res.json({ connected: false });
+    const creator = await zernioRequest(`/accounts/${encodeURIComponent(account._id)}/tiktok/creator-info?mediaType=video`);
+    res.json({
+      connected: true,
+      account: { id: account._id, username: account.username || '' },
+      creatorInfo: creator,
+    });
+  } catch (error) {
+    res.status(error.status || 502).json({ error: error.message || 'tiktok_status_failed' });
+  }
+});
+
+app.get('/api/tiktok/connect', requireUserToken, async (req, res) => {
+  try {
+    const profileId = await getTiktokProfile(req.telegramId);
+    const callbackUrl = `${new URL(SITE_URL).origin}/tiktok/callback`;
+    const query = new URLSearchParams({ profileId, redirect_url: callbackUrl });
+    const result = await zernioRequest(`/connect/tiktok?${query}`);
+    if (!result.authUrl) return res.status(502).json({ error: 'tiktok_auth_url_missing' });
+    res.json({ authUrl: result.authUrl });
+  } catch (error) {
+    res.status(error.status || 502).json({ error: error.message || 'tiktok_connect_failed' });
+  }
+});
+
+app.get('/tiktok/callback', (req, res) => {
+  res.type('html').send('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TikTok connected</title></head><body><p>TikTok connected. Return to the INEASY tab.</p><script>window.close()</script></body></html>');
+});
+
+app.post('/api/tiktok/media/presign', requireUserToken, async (req, res) => {
+  const { filename, contentType, size } = req.body || {};
+  if (typeof filename !== 'string' || !filename.toLowerCase().endsWith('.mp4') || contentType !== 'video/mp4') {
+    return res.status(400).json({ error: 'unsupported_video_format' });
+  }
+  if (!Number.isSafeInteger(size) || size < 1 || size > 4 * 1024 * 1024 * 1024) {
+    return res.status(400).json({ error: 'video_size_out_of_range' });
+  }
+  try {
+    const result = await zernioRequest('/media/presign', {
+      method: 'POST',
+      body: { filename: path.basename(filename), contentType, size },
+    });
+    const uploadId = uuidv4();
+    const uploadKey = `tiktokUpload:${req.telegramId}:${uploadId}`;
+    const uploadRecord = JSON.stringify({ uploadUrl: result.uploadUrl, publicUrl: result.publicUrl, contentType, size });
+    await redis.set(uploadKey, uploadRecord, { ex: Math.min(3600, Math.max(60, Number(result.expiresIn) || 3600)) });
+    res.json({ uploadId, publicUrl: result.publicUrl });
+  } catch (error) {
+    res.status(error.status || 502).json({ error: error.message || 'media_upload_setup_failed' });
+  }
+});
+
+app.put('/api/tiktok/media/upload/:uploadId', requireUserToken, async (req, res) => {
+  const uploadKey = `tiktokUpload:${req.telegramId}:${req.params.uploadId}`;
+  let upload;
+  try {
+    const saved = await redis.get(uploadKey);
+    if (!saved) return res.status(404).json({ error: 'upload_expired' });
+    upload = typeof saved === 'string' ? JSON.parse(saved) : saved;
+    const target = new URL(upload.uploadUrl);
+    if (target.protocol !== 'https:' || !target.hostname.endsWith('.r2.cloudflarestorage.com')) {
+      return res.status(502).json({ error: 'invalid_storage_upload_url' });
+    }
+    if (req.headers['content-type'] !== upload.contentType || Number(req.headers['content-length']) !== upload.size) {
+      return res.status(400).json({ error: 'upload_size_or_type_mismatch' });
+    }
+
+    const upstream = https.request({
+      hostname: target.hostname,
+      port: target.port || 443,
+      path: `${target.pathname}${target.search}`,
+      method: 'PUT',
+      headers: { 'Content-Type': upload.contentType, 'Content-Length': String(upload.size) },
+    }, (storageResponse) => {
+      storageResponse.resume();
+      storageResponse.on('end', () => {
+        if (storageResponse.statusCode < 200 || storageResponse.statusCode >= 300) {
+          return res.status(502).json({ error: 'media_storage_upload_failed' });
+        }
+        redis.del(uploadKey).catch(() => {});
+        res.json({ publicUrl: upload.publicUrl });
+      });
+    });
+    upstream.on('error', (error) => {
+      if (!res.headersSent) res.status(502).json({ error: 'media_storage_upload_failed' });
+    });
+    req.on('aborted', () => upstream.destroy());
+    req.pipe(upstream);
+  } catch (error) {
+    if (!res.headersSent) res.status(502).json({ error: 'media_storage_upload_failed' });
+  }
+});
+
+app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
+  const { accountId, publicUrl, content, privacyLevel, allowComment, allowDuet, allowStitch, madeWithAi, commercialContentType, adsOnly, confirmedPreview, consentGiven } = req.body || {};
+  if (typeof content !== 'string' || !content.trim() || content.length > 2200) return res.status(400).json({ error: 'invalid_caption' });
+  if (!confirmedPreview || !consentGiven) return res.status(400).json({ error: 'publishing_consent_required' });
+  let mediaUrl;
+  try {
+    mediaUrl = new URL(publicUrl);
+    if (mediaUrl.protocol !== 'https:' || mediaUrl.hostname !== 'media.zernio.com') throw new Error('invalid');
+  } catch (error) {
+    return res.status(400).json({ error: 'invalid_media_url' });
+  }
+
+  try {
+    const { profileId, account } = await getUserTiktokAccount(req.telegramId);
+    if (!profileId || !account || account._id !== accountId) return res.status(403).json({ error: 'tiktok_account_not_connected' });
+    const creator = await zernioRequest(`/accounts/${encodeURIComponent(accountId)}/tiktok/creator-info?mediaType=video`);
+    const privacyLevels = (creator.privacyLevels || []).map((level) => level.value);
+    if (!privacyLevels.includes(privacyLevel)) return res.status(400).json({ error: 'privacy_level_not_available' });
+    const commercialTypes = (creator.commercialContentTypes || []).map((item) => item.value);
+    if (!['none', 'brand_organic', 'brand_content'].includes(commercialContentType)
+      || (commercialTypes.length > 0 && !commercialTypes.includes(commercialContentType))) {
+      return res.status(400).json({ error: 'invalid_commercial_content_type' });
+    }
+    if (commercialContentType !== 'none' && privacyLevel === 'SELF_ONLY') {
+      return res.status(400).json({ error: 'branded_content_cannot_be_private' });
+    }
+
+    const isDraft = privacyLevel !== 'PUBLIC_TO_EVERYONE';
+    const result = await zernioRequest('/posts', {
+      method: 'POST',
+      headers: { 'x-request-id': crypto.randomUUID() },
+      body: {
+        content,
+        mediaItems: [{ type: 'video', url: mediaUrl.toString() }],
+        platforms: [{ platform: 'tiktok', accountId }],
+        tiktokSettings: {
+          privacy_level: privacyLevel,
+          allow_comment: Boolean(allowComment),
+          allow_duet: Boolean(allowDuet),
+          allow_stitch: Boolean(allowStitch),
+          content_preview_confirmed: true,
+          express_consent_given: true,
+          video_made_with_ai: Boolean(madeWithAi),
+          commercialContentType,
+          isAdsOnly: Boolean(adsOnly),
+          ...(isDraft ? { draft: true } : {}),
+        },
+        publishNow: true,
+      },
+    });
+    res.status(result.post && result.post.status === 'failed' ? 502 : 200).json({
+      post: result.post || null,
+      draft: isDraft,
+      error: result.post && result.post.platforms && result.post.platforms[0] && result.post.platforms[0].errorMessage,
+    });
+  } catch (error) {
+    res.status(error.status || 502).json({ error: error.message || 'tiktok_publish_failed' });
+  }
 });
 
 app.get('/api/balance/:telegramId', async (req, res) => {

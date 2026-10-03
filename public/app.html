@@ -90,6 +90,7 @@
           <small id="resultSub">Download your patched file</small>
         </div>
         <a id="downloadBtn" href="#" download class="download-link">Download</a>
+        <button id="publishTiktokBtn" class="tiktok-publish-btn" type="button">Publish to TikTok</button>
       </div>
       <p class="compressbase-credit">Powered by <a href="https://compressbase.com/" target="_blank" rel="noopener">CompressBase</a><span id="patchCount" aria-live="polite"></span></p>
     </div>
@@ -154,6 +155,45 @@
     <p class="faq-support"><span id="faqSupportText">Found a bug?</span> <a id="faqReport" href="https://t.me/ineasyadmin?text=I%20found%20a%20bug%20on%20the%20site%20and%20want%20to%20report%20it" target="_blank">Report</a></p>
     </section>
   </main>
+
+  <div class="modal-overlay tiktok-overlay hidden" id="tiktokComposerOverlay" role="dialog" aria-modal="true" aria-labelledby="publishModalTitle">
+    <section class="modal tiktok-composer">
+      <div class="modal-head">
+        <h2 id="publishModalTitle">Publish to TikTok</h2>
+        <button class="modal-close" id="tiktokModalClose" type="button" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="tiktok-account-status" id="tiktokAccountStatus" role="status">Checking TikTok connection…</p>
+        <button class="tiktok-connect-btn" id="tiktokConnectBtn" type="button">Connect TikTok</button>
+        <form class="tiktok-publish-form hidden" id="tiktokPublishForm">
+          <p class="tiktok-upload-notice" id="tiktokUploadNotice">When you publish, this video is uploaded to Zernio and sent to TikTok.</p>
+          <label class="tiktok-field-label" for="tiktokCaption" id="tiktokCaptionLabel">Description</label>
+          <textarea id="tiktokCaption" maxlength="2200" rows="4" required></textarea>
+          <div class="tiktok-caption-hint"><span id="tiktokCaptionHint">Add hashtags with # and mention accounts with @</span><span id="tiktokCaptionCount">0 / 2200</span></div>
+
+          <label class="tiktok-field-label" for="tiktokPrivacy" id="tiktokPrivacyLabel">Who can watch this video</label>
+          <select id="tiktokPrivacy" required></select>
+
+          <div class="tiktok-toggle-grid">
+            <label><input id="tiktokAllowComments" type="checkbox"><span id="tiktokCommentsLabel">Allow comments</span></label>
+            <label><input id="tiktokAllowDuet" type="checkbox"><span id="tiktokDuetLabel">Allow Duet</span></label>
+            <label><input id="tiktokAllowStitch" type="checkbox"><span id="tiktokStitchLabel">Allow Stitch</span></label>
+            <label><input id="tiktokMadeWithAi" type="checkbox"><span id="tiktokAiLabel">AI-generated content</span></label>
+            <label><input id="tiktokAdsOnly" type="checkbox"><span id="tiktokAdsOnlyLabel">Only show in ads</span></label>
+          </div>
+
+          <label class="tiktok-field-label" for="tiktokCommercialType" id="tiktokCommercialLabel">Commercial content disclosure</label>
+          <select id="tiktokCommercialType"></select>
+          <p class="tiktok-draft-note hidden" id="tiktokDraftNote">Friends-only and private videos are sent as drafts. Finish visibility and publishing in TikTok.</p>
+
+          <label class="tiktok-consent"><input id="tiktokPreviewConfirmed" type="checkbox" required><span id="tiktokPreviewLabel">I reviewed the video and caption.</span></label>
+          <label class="tiktok-consent"><input id="tiktokConsentGiven" type="checkbox" required><span id="tiktokConsentLabel">I authorize publishing this content to TikTok.</span></label>
+          <button class="tiktok-submit-btn" id="tiktokSubmitBtn" type="submit">Publish now</button>
+        </form>
+        <p class="tiktok-publish-status" id="tiktokPublishStatus" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+  </div>
 
   <nav class="bottom-nav" aria-label="Navigation">
     <button class="nav-tab active" data-view="patchSection" type="button" aria-current="page">

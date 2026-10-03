@@ -8,6 +8,8 @@ if (!tgId) {
 const STATE = {
   lang: localStorage.getItem('ineasy-language') || 'en',
 };
+let tiktokCreatorInfo = null;
+let tiktokAccountId = null;
 
 const translations = {
   en: {
@@ -33,6 +35,45 @@ const translations = {
     ready: 'Video ready',
     readySub: 'Download your patched file',
     download: 'Download',
+    publishTikTok: 'Publish to TikTok',
+    publishNow: 'Publish now',
+    publishTitle: 'Publish to TikTok',
+    connectTikTok: 'Connect TikTok',
+    checkingTikTok: 'Checking TikTok connection…',
+    connectedAs: 'Connected as',
+    uploadNotice: 'When publishing, this video streams through our server to Zernio and TikTok. This site does not save it.',
+    allowPopups: 'Allow pop-ups to connect TikTok in a new tab.',
+    uploadFailed: 'The video upload failed. Please try again.',
+    connectHint: 'Connect a TikTok account to continue.',
+    captionLabel: 'Description',
+    captionHint: 'Add hashtags with # and mention accounts with @',
+    privacyLabel: 'Who can watch this video',
+    privacyPublic: 'Everyone',
+    privacyFriends: 'Friends',
+    privacyFollowers: 'Followers',
+    privacyPrivate: 'Only you',
+    commentsLabel: 'Allow comments',
+    duetLabel: 'Allow Duet',
+    stitchLabel: 'Allow Stitch',
+    aiLabel: 'AI-generated content',
+    adsOnlyLabel: 'Only show in ads',
+    commercialLabel: 'Commercial content disclosure',
+    commercialNone: 'None',
+    commercialOwnBrand: 'Your brand',
+    commercialPartner: 'Paid partnership',
+    previewLabel: 'I reviewed the video and caption.',
+    consentLabel: 'I authorize publishing this content to TikTok.',
+    draftNotice: 'Friends-only and private videos are sent as drafts. Review all settings and finish publishing in TikTok.',
+    connecting: 'Opening TikTok sign-in…',
+    uploading: 'Uploading video…',
+    publishing: 'Publishing to TikTok…',
+    publishSuccess: 'Video published to TikTok.',
+    publishPending: 'TikTok accepted the video and is processing the post.',
+    draftSuccess: 'Draft sent to TikTok. Finish visibility and publishing in the TikTok app.',
+    connectFailed: 'Could not connect TikTok. Check the server setup and try again.',
+    publishFailed: 'TikTok could not publish this video. Check the options and try again.',
+    authExpired: 'Your session expired. Sign in again to publish.',
+    close: 'Close',
     notice: 'If the video duration shows 0:00 after patching, this is normal. The file works correctly.',
     analyzerTitle: 'Check video quality',
     analyzerDesc: 'Paste a public TikTok link. We analyze the original video and show real parameters.',
@@ -98,6 +139,45 @@ const translations = {
     ready: 'Видео готово',
     readySub: 'Можно скачать обработанный файл',
     download: 'Скачать',
+    publishTikTok: 'Опубликовать в TikTok',
+    publishNow: 'Опубликовать сейчас',
+    publishTitle: 'Публикация в TikTok',
+    connectTikTok: 'Подключить TikTok',
+    checkingTikTok: 'Проверяем подключение TikTok…',
+    connectedAs: 'Подключён аккаунт',
+    uploadNotice: 'При публикации видео пройдет через сервер сайта в Zernio и TikTok. Сайт не сохраняет файл.',
+    allowPopups: 'Разрешите всплывающие окна для входа в TikTok в новой вкладке.',
+    uploadFailed: 'Не удалось загрузить видео. Попробуйте ещё раз.',
+    connectHint: 'Подключите аккаунт TikTok, чтобы продолжить.',
+    captionLabel: 'Описание',
+    captionHint: 'Добавьте хештеги через # и упоминания через @',
+    privacyLabel: 'Кто может смотреть это видео',
+    privacyPublic: 'Все',
+    privacyFriends: 'Друзья',
+    privacyFollowers: 'Подписчики',
+    privacyPrivate: 'Только я',
+    commentsLabel: 'Разрешить комментарии',
+    duetLabel: 'Разрешить дуэты',
+    stitchLabel: 'Разрешить Stitch',
+    aiLabel: 'Контент создан с помощью ИИ',
+    adsOnlyLabel: 'Показывать только в рекламе',
+    commercialLabel: 'Маркировка коммерческого контента',
+    commercialNone: 'Нет',
+    commercialOwnBrand: 'Продвижение своего бренда',
+    commercialPartner: 'Платное партнёрство',
+    previewLabel: 'Я проверил видео и описание.',
+    consentLabel: 'Я разрешаю опубликовать этот контент в TikTok.',
+    draftNotice: 'Видео для друзей или личное будет отправлено в черновики. Проверьте настройки и завершите публикацию в TikTok.',
+    connecting: 'Открываем вход в TikTok…',
+    uploading: 'Загружаем видео…',
+    publishing: 'Публикуем в TikTok…',
+    publishSuccess: 'Видео опубликовано в TikTok.',
+    publishPending: 'TikTok принял видео и обрабатывает публикацию.',
+    draftSuccess: 'Черновик отправлен в TikTok. Завершите настройку видимости и публикацию в приложении TikTok.',
+    connectFailed: 'Не удалось подключить TikTok. Проверьте настройки сервера и попробуйте снова.',
+    publishFailed: 'Не удалось опубликовать видео в TikTok. Проверьте настройки и попробуйте снова.',
+    authExpired: 'Сессия истекла. Войдите снова, чтобы опубликовать видео.',
+    close: 'Закрыть',
     notice: 'Если после патчинга длительность видео показывает 0:00, это нормально. Файл работает корректно.',
     analyzerTitle: 'Проверить качество видео',
     analyzerDesc: 'Вставьте публичную ссылку на видео. Сервер проанализирует оригинальный ролик и покажет реальные параметры.',
@@ -163,6 +243,45 @@ const translations = {
     ready: 'Бейне дайын',
     readySub: 'Өңделген файлын жүктеп алыңыз',
     download: 'Жүктеу',
+    publishTikTok: 'TikTok-қа жариялау',
+    publishNow: 'Қазір жариялау',
+    publishTitle: 'TikTok-қа жариялау',
+    connectTikTok: 'TikTok-ты қосу',
+    checkingTikTok: 'TikTok байланысын тексеру…',
+    connectedAs: 'Қосылған аккаунт',
+    uploadNotice: 'Жариялау кезінде бейне серверіміз арқылы Zernio мен TikTok-қа жіберіледі. Сайт файлды сақтамайды.',
+    allowPopups: 'TikTok-қа жаңа қойындыда кіру үшін қалқымалы терезелерге рұқсат беріңіз.',
+    uploadFailed: 'Бейне жүктелмеді. Қайталап көріңіз.',
+    connectHint: 'Жалғастыру үшін TikTok аккаунтын қосыңыз.',
+    captionLabel: 'Сипаттама',
+    captionHint: '# арқылы хештег, @ арқылы аккаунтты белгілеңіз',
+    privacyLabel: 'Бұл бейнені кім көре алады',
+    privacyPublic: 'Барлығы',
+    privacyFriends: 'Достар',
+    privacyFollowers: 'Жазылушылар',
+    privacyPrivate: 'Тек мен',
+    commentsLabel: 'Пікірлерге рұқсат беру',
+    duetLabel: 'Дуэтке рұқсат беру',
+    stitchLabel: 'Stitch-ке рұқсат беру',
+    aiLabel: 'ЖИ жасаған контент',
+    adsOnlyLabel: 'Тек жарнамада көрсету',
+    commercialLabel: 'Коммерциялық контент белгісі',
+    commercialNone: 'Жоқ',
+    commercialOwnBrand: 'Өз брендіңіз',
+    commercialPartner: 'Ақылы серіктестік',
+    previewLabel: 'Бейне мен сипаттаманы тексердім.',
+    consentLabel: 'Осы контентті TikTok-та жариялауға рұқсат беремін.',
+    draftNotice: 'Достарға немесе жеке бейне черновикке жіберіледі. Баптауларды тексеріп, жариялауды TikTok-та аяқтаңыз.',
+    connecting: 'TikTok жүйесіне кіру ашылуда…',
+    uploading: 'Бейне жүктелуде…',
+    publishing: 'TikTok-та жариялануда…',
+    publishSuccess: 'Бейне TikTok-та жарияланды.',
+    publishPending: 'TikTok бейнені қабылдады және жариялап жатыр.',
+    draftSuccess: 'Черновик TikTok-қа жіберілді. Жариялауды TikTok қолданбасында аяқтаңыз.',
+    connectFailed: 'TikTok қосылмады. Сервер баптауларын тексеріп, қайталап көріңіз.',
+    publishFailed: 'Бейне TikTok-та жарияланбады. Параметрлерді тексеріп, қайталап көріңіз.',
+    authExpired: 'Сеанс аяқталды. Жариялау үшін қайта кіріңіз.',
+    close: 'Жабу',
     notice: 'Егер өңдеуден кейін ұзақтығы 0:00 болса, бұл қалыпты. Файл дұрыс жұмыс істейді.',
     analyzerTitle: 'Бейнені тексеру',
     analyzerDesc: 'Жалпы доступты TikTok сілтемесін енгізіңіз. Біз түпнұсқа бейненің нақты параметрлерін анықтаймыз.',
@@ -213,6 +332,20 @@ function t(key) {
   return pack[key] ?? translations.en[key] ?? key;
 }
 
+async function tiktokApi(url, options = {}) {
+  const headers = new Headers(options.headers || {});
+  headers.set('Authorization', `Bearer ${localStorage.getItem('tg_auth_token') || ''}`);
+  if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  const response = await fetch(url, { ...options, headers });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.error || 'tiktok_request_failed');
+    error.status = response.status;
+    throw error;
+  }
+  return data;
+}
+
 function setText(id, value) {
   const node = document.getElementById(id);
   if (node) node.textContent = value;
@@ -245,6 +378,24 @@ function applyLanguage(lang) {
   setText('resultTitle', pack.ready);
   setText('resultSub', pack.readySub);
   setText('downloadBtn', pack.download);
+  setText('publishTiktokBtn', pack.publishTikTok);
+  setText('publishModalTitle', pack.publishTitle);
+  setText('tiktokCaptionLabel', pack.captionLabel);
+  setText('tiktokUploadNotice', pack.uploadNotice);
+  setText('tiktokCaptionHint', pack.captionHint);
+  setText('tiktokPrivacyLabel', pack.privacyLabel);
+  setText('tiktokCommentsLabel', pack.commentsLabel);
+  setText('tiktokDuetLabel', pack.duetLabel);
+  setText('tiktokStitchLabel', pack.stitchLabel);
+  setText('tiktokAiLabel', pack.aiLabel);
+  setText('tiktokAdsOnlyLabel', pack.adsOnlyLabel);
+  setText('tiktokCommercialLabel', pack.commercialLabel);
+  setText('tiktokPreviewLabel', pack.previewLabel);
+  setText('tiktokConsentLabel', pack.consentLabel);
+  setText('tiktokDraftNote', pack.draftNotice);
+  setText('tiktokConnectBtn', pack.connectTikTok);
+  setText('tiktokSubmitBtn', pack.publishNow);
+  if (tiktokCreatorInfo) renderTikTokOptions();
   setText('noticeBannerText', pack.notice);
   setText('checkerTitle', pack.analyzerTitle);
   setText('checkerDesc', pack.analyzerDesc);
@@ -289,6 +440,8 @@ function applyLanguage(lang) {
     topUpButton.title = topUpLabel;
   }
   if (closeButton) closeButton.setAttribute('aria-label', pack.close);
+  const tiktokCloseButton = document.getElementById('tiktokModalClose');
+  if (tiktokCloseButton) tiktokCloseButton.setAttribute('aria-label', pack.close);
   if (languageDock) languageDock.setAttribute('aria-label', lang === 'ru' ? 'Язык' : lang === 'kk' ? 'Тіл' : 'Language');
   if (footerNav) footerNav.setAttribute('aria-label', lang === 'ru' ? 'Навигация внизу страницы' : lang === 'kk' ? 'Бет төменіндегі навигация' : 'Footer Navigation');
 
@@ -326,7 +479,7 @@ document.getElementById('copyIdBtn').addEventListener('click', () => {
 });
 
 document.getElementById('logoutBtn').addEventListener('click', () => {
-  ['tg_id', 'tg_username', 'tg_first_name'].forEach((key) => localStorage.removeItem(key));
+  ['tg_id', 'tg_username', 'tg_first_name', 'tg_auth_token'].forEach((key) => localStorage.removeItem(key));
   window.location.href = '/';
 });
 
@@ -417,9 +570,188 @@ const processingText = document.getElementById('processingText');
 const processingProgress = document.getElementById('processingProgress');
 const processedResult = document.getElementById('processedResult');
 const downloadBtn = document.getElementById('downloadBtn');
+const publishTiktokBtn = document.getElementById('publishTiktokBtn');
+const tiktokComposerOverlay = document.getElementById('tiktokComposerOverlay');
+const tiktokAccountStatus = document.getElementById('tiktokAccountStatus');
+const tiktokConnectBtn = document.getElementById('tiktokConnectBtn');
+const tiktokPublishForm = document.getElementById('tiktokPublishForm');
+const tiktokPublishStatus = document.getElementById('tiktokPublishStatus');
+const tiktokCaption = document.getElementById('tiktokCaption');
+const tiktokCaptionCount = document.getElementById('tiktokCaptionCount');
+const tiktokPrivacy = document.getElementById('tiktokPrivacy');
+const tiktokDraftNote = document.getElementById('tiktokDraftNote');
+const tiktokSubmitBtn = document.getElementById('tiktokSubmitBtn');
+let processedVideoBlob = null;
 
 let currentObjectUrl = null;
 let patchedDownloadUrl = null;
+
+function renderTikTokOptions() {
+  if (!tiktokCreatorInfo || !tiktokPrivacy) return;
+  const privacyLabels = {
+    PUBLIC_TO_EVERYONE: t('privacyPublic'),
+    MUTUAL_FOLLOW_FRIENDS: t('privacyFriends'),
+    FOLLOWER_OF_CREATOR: t('privacyFollowers'),
+    SELF_ONLY: t('privacyPrivate'),
+  };
+  tiktokPrivacy.replaceChildren(...(tiktokCreatorInfo.privacyLevels || []).map((level) => {
+    const option = document.createElement('option');
+    option.value = level.value;
+    option.textContent = privacyLabels[level.value] || level.label || level.value;
+    return option;
+  }));
+  if ([...tiktokPrivacy.options].some((option) => option.value === 'PUBLIC_TO_EVERYONE')) {
+    tiktokPrivacy.value = 'PUBLIC_TO_EVERYONE';
+  }
+
+  const settings = tiktokCreatorInfo.postingLimits?.interactionSettings || {};
+  [['tiktokAllowComments', 'allow_comment'], ['tiktokAllowDuet', 'allow_duet'], ['tiktokAllowStitch', 'allow_stitch']].forEach(([id, key]) => {
+    const input = document.getElementById(id);
+    const setting = settings[key];
+    if (input) {
+      input.checked = Boolean(setting && setting.default);
+      input.disabled = Boolean(setting && setting.enabled === false);
+    }
+  });
+
+  const commercialSelect = document.getElementById('tiktokCommercialType');
+  if (commercialSelect) {
+    const commercialLabels = { none: t('commercialNone'), brand_organic: t('commercialOwnBrand'), brand_content: t('commercialPartner') };
+    commercialSelect.replaceChildren(...(tiktokCreatorInfo.commercialContentTypes || [{ value: 'none' }]).map((item) => {
+      const option = document.createElement('option');
+      option.value = item.value;
+      option.textContent = commercialLabels[item.value] || item.label || item.value;
+      return option;
+    }));
+  }
+  updateTikTokPrivacyNote();
+}
+
+function updateTikTokPrivacyNote() {
+  if (tiktokDraftNote && tiktokPrivacy) {
+    tiktokDraftNote.classList.toggle('hidden', tiktokPrivacy.value === 'PUBLIC_TO_EVERYONE');
+  }
+}
+
+async function refreshTikTokStatus() {
+  if (!tiktokAccountStatus || !tiktokConnectBtn || !tiktokPublishForm) return;
+  tiktokAccountStatus.textContent = t('checkingTikTok');
+  tiktokPublishForm.classList.add('hidden');
+  tiktokConnectBtn.classList.add('hidden');
+  try {
+    const data = await tiktokApi('/api/tiktok/status');
+    if (!data.connected) {
+      tiktokAccountStatus.textContent = t('connectHint');
+      tiktokConnectBtn.classList.remove('hidden');
+      return;
+    }
+    tiktokAccountId = data.account.id;
+    tiktokCreatorInfo = data.creatorInfo;
+    tiktokAccountStatus.textContent = `${t('connectedAs')} @${data.account.username}`;
+    tiktokPublishForm.classList.remove('hidden');
+    renderTikTokOptions();
+  } catch (error) {
+    tiktokAccountStatus.textContent = error.status === 401 ? t('authExpired') : (error.message || t('connectFailed'));
+  }
+}
+
+async function openTikTokComposer() {
+  if (!tiktokComposerOverlay) return;
+  tiktokComposerOverlay.classList.remove('hidden');
+  if (tiktokPublishStatus) tiktokPublishStatus.textContent = '';
+  await refreshTikTokStatus();
+}
+
+if (publishTiktokBtn) publishTiktokBtn.addEventListener('click', openTikTokComposer);
+if (tiktokConnectBtn) {
+  tiktokConnectBtn.addEventListener('click', async () => {
+    const authWindow = window.open('about:blank', '_blank');
+    tiktokConnectBtn.disabled = true;
+    tiktokAccountStatus.textContent = t('connecting');
+    try {
+      const data = await tiktokApi('/api/tiktok/connect');
+      if (!authWindow) throw new Error(t('allowPopups'));
+      authWindow.location.href = data.authUrl;
+    } catch (error) {
+      if (authWindow) authWindow.close();
+      tiktokAccountStatus.textContent = error.status === 401 ? t('authExpired') : (error.message || t('connectFailed'));
+    } finally {
+      tiktokConnectBtn.disabled = false;
+    }
+  });
+}
+
+if (tiktokPrivacy) tiktokPrivacy.addEventListener('change', updateTikTokPrivacyNote);
+if (tiktokCaption && tiktokCaptionCount) {
+  tiktokCaption.addEventListener('input', () => {
+    tiktokCaptionCount.textContent = `${tiktokCaption.value.length} / 2200`;
+  });
+}
+if (tiktokComposerOverlay) {
+  const closeTikTokComposer = () => tiktokComposerOverlay.classList.add('hidden');
+  document.getElementById('tiktokModalClose').addEventListener('click', closeTikTokComposer);
+  tiktokComposerOverlay.addEventListener('click', (event) => {
+    if (event.target === tiktokComposerOverlay) closeTikTokComposer();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeTikTokComposer();
+  });
+  window.addEventListener('focus', () => {
+    if (!tiktokComposerOverlay.classList.contains('hidden')) refreshTikTokStatus();
+  });
+}
+
+if (tiktokPublishForm) {
+  tiktokPublishForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!processedVideoBlob || !tiktokAccountId) return;
+    tiktokSubmitBtn.disabled = true;
+    try {
+      if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('uploading');
+      const filename = (downloadBtn && downloadBtn.download) || 'ineasy-video.mp4';
+      const upload = await tiktokApi('/api/tiktok/media/presign', {
+        method: 'POST',
+        body: JSON.stringify({ filename, contentType: 'video/mp4', size: processedVideoBlob.size }),
+      });
+      const uploaded = await tiktokApi(`/api/tiktok/media/upload/${encodeURIComponent(upload.uploadId)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'video/mp4' },
+        body: processedVideoBlob,
+      });
+
+      if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('publishing');
+      const result = await tiktokApi('/api/tiktok/publish', {
+        method: 'POST',
+        body: JSON.stringify({
+          accountId: tiktokAccountId,
+          publicUrl: uploaded.publicUrl,
+          content: tiktokCaption.value.trim(),
+          privacyLevel: tiktokPrivacy.value,
+          allowComment: document.getElementById('tiktokAllowComments').checked,
+          allowDuet: document.getElementById('tiktokAllowDuet').checked,
+          allowStitch: document.getElementById('tiktokAllowStitch').checked,
+          madeWithAi: document.getElementById('tiktokMadeWithAi').checked,
+          commercialContentType: document.getElementById('tiktokCommercialType').value,
+          adsOnly: document.getElementById('tiktokAdsOnly').checked,
+          confirmedPreview: document.getElementById('tiktokPreviewConfirmed').checked,
+          consentGiven: document.getElementById('tiktokConsentGiven').checked,
+        }),
+      });
+      if (tiktokPublishStatus) {
+        const publishState = result.post?.status || result.post?.platforms?.[0]?.status;
+        tiktokPublishStatus.textContent = result.draft
+          ? t('draftSuccess')
+          : publishState === 'published' ? t('publishSuccess') : t('publishPending');
+      }
+    } catch (error) {
+      if (tiktokPublishStatus) {
+        tiktokPublishStatus.textContent = error.status === 401 ? t('authExpired') : (error.message || t('publishFailed'));
+      }
+    } finally {
+      tiktokSubmitBtn.disabled = false;
+    }
+  });
+}
 
 function setProcessingState(type, text) {
   if (!processingState) return;
@@ -440,6 +772,7 @@ function handleFile(file) {
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
   patchedDownloadUrl = null;
+  processedVideoBlob = null;
   currentObjectUrl = URL.createObjectURL(file);
 
   if (previewVideo) previewVideo.src = currentObjectUrl;
@@ -491,6 +824,7 @@ if (clearBtn) {
     if (processBtn) processBtn.disabled = true;
     if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
     patchedDownloadUrl = null;
+    processedVideoBlob = null;
     if (processedResult) processedResult.classList.add('hidden');
     if (processingState) processingState.classList.add('hidden');
   });
@@ -633,6 +967,7 @@ if (processBtn) {
         },
       });
 
+      processedVideoBlob = outputBlob;
       patchedDownloadUrl = URL.createObjectURL(outputBlob);
       if (downloadBtn) {
         downloadBtn.href = patchedDownloadUrl;
