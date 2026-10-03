@@ -936,13 +936,15 @@ app.get('/api/balance/:telegramId', async (req, res) => {
   }
 });
 
-app.post('/api/consume/:telegramId', async (req, res) => {
+app.post('/api/consume/:telegramId', requireUserToken, async (req, res) => {
   try {
-    await consumeOneVideo(req.params.telegramId);
+    const telegramId = String(req.params.telegramId);
+    if (telegramId !== req.telegramId) return res.status(403).json({ error: 'account_mismatch' });
+    await consumeOneVideo(telegramId);
     const [free, purchased, patched] = await Promise.all([
-      getFreeBalance(req.params.telegramId),
-      getPurchasedBalance(req.params.telegramId),
-      getPatchedCount(req.params.telegramId),
+      getFreeBalance(telegramId),
+      getPurchasedBalance(telegramId),
+      getPatchedCount(telegramId),
     ]);
     res.json({ free, purchased, patched });
   } catch (err) {

@@ -1,7 +1,8 @@
 // --- Auth + layout ---
 const tgId = localStorage.getItem('tg_id');
+const tgAuthToken = localStorage.getItem('tg_auth_token');
 
-if (!tgId) {
+if (!tgId || !tgAuthToken) {
   window.location.href = '/';
 }
 
@@ -100,6 +101,8 @@ const translations = {
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
     loadingText: 'Preparing MP4 metadata on your device…',
+    noBalance: 'No videos remain in your balance. Add videos to continue.',
+    balanceUpdateFailed: 'The video was patched, but the balance could not be updated. Contact support before processing again.',
     successText: 'Done. Video and audio stayed on your device; only MP4 metadata was sent.',
     checkResult: 'Result',
     quality: 'Quality',
@@ -206,6 +209,8 @@ const translations = {
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
     loadingText: 'Проверяем MP4 и подготавливаем метаданные на устройстве…',
+    noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
+    balanceUpdateFailed: 'Видео обработано, но баланс не удалось обновить. Перед повторной обработкой обратитесь в поддержку.',
     successText: 'Готово. Видео и аудио не отправлялись; сервис получил только метаданные MP4.',
     checkResult: 'Результат проверки',
     quality: 'Качество',
@@ -312,6 +317,8 @@ const translations = {
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
     loadingText: 'MP4 метадеректерін құрылғыда дайындаймыз…',
+    noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
+    balanceUpdateFailed: 'Бейне өңделді, бірақ баланс жаңартылмады. Қайталап өңдемей, қолдау қызметіне хабарласыңыз.',
     successText: 'Дайын. Бейне мен аудио жіберілмеді; сервис тек MP4 метадеректерін алды.',
     checkResult: 'Нәтиже',
     quality: 'Сапа',
@@ -509,6 +516,23 @@ async function loadBalance() {
   }
 }
 
+async function consumeProcessedVideo() {
+  const token = localStorage.getItem('tg_auth_token');
+  const response = await fetch(`/api/consume/${encodeURIComponent(tgId)}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token || ''}` },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    if (data.error === 'no_balance') throw new Error(t('noBalance'));
+    if (response.status === 401) throw new Error(t('authExpired'));
+    throw new Error(t('balanceUpdateFailed'));
+  }
+  currentBalance = data.free + data.purchased;
+  renderBalance();
+  return data;
+}
+
 loadBalance();
 
 // --- Packages ---
@@ -671,7 +695,13 @@ async function openTikTokComposer() {
   await refreshTikTokStatus();
 }
 
-if (publishTiktokBtn) publishTiktokBtn.addEventListener('click', openTikTokComposer);
+if (publishTiktokBtn) {
+  publishTiktokBtn.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    openTikTokComposer();
+  });
+}
 if (tiktokConnectBtn) {
   tiktokConnectBtn.addEventListener('click', async () => {
     const authWindow = window.open('about:blank', '_blank');
@@ -998,6 +1028,7 @@ if (processBtn) {
         },
       });
 
+      await consumeProcessedVideo();
       processedVideoBlob = outputBlob;
       patchedDownloadUrl = URL.createObjectURL(outputBlob);
       if (downloadBtn) {
@@ -1009,7 +1040,6 @@ if (processBtn) {
       if (processingProgress) processingProgress.style.width = '100%';
       if (processingState) processingState.classList.add('completed');
       if (processedResult) processedResult.classList.remove('hidden');
-      loadPatchCount();
     } catch (error) {
       if (processingState) processingState.classList.add('failed');
       if (processingText) processingText.textContent = controller.signal.aborted ? t('processingCancelled') : localizePatchError(error.message);
@@ -1032,22 +1062,6 @@ function localizePatchStatus(message) {
     'Patching metadata…': { ru: 'Обновляем метаданные видео…', kk: 'Бейне метадеректері жаңартылуда…', en: 'Patching video metadata…' },
   };
   return statuses[message]?.[lang] || message;
-}
-
-async function loadPatchCount() {
-  const patchCount = document.getElementById('patchCount');
-  if (!patchCount) return;
-  try {
-    const response = await fetch('https://compressbase.com/api/method/v1/stats');
-    if (!response.ok) return;
-    const data = await response.json();
-    if (Number.isFinite(data.patches)) {
-      const labels = { en: 'patches', ru: 'обработок', kk: 'өңдеу' };
-      patchCount.textContent = ` · ${data.patches.toLocaleString()} ${labels[STATE.lang] || labels.en}`;
-    }
-  } catch (error) {
-    patchCount.textContent = '';
-  }
 }
 
 function localizePatchError(message) {
