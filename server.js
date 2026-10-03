@@ -20,6 +20,7 @@ const WEEKLY_FREE_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher.up.railway.app/app.html';
 const MINI_APP_URL = process.env.MINI_APP_URL || new URL('/miniapp.html', SITE_URL).toString();
+const WEBSITE_URL = new URL('/', SITE_URL).toString();
 
 const PACKAGES = [
   [3, 450],
@@ -47,9 +48,9 @@ const redis = new Redis({
 });
 
 const BTN = {
-  ru: { miniApp: 'Открыть патчер', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео' },
-  en: { miniApp: 'Open patcher', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker' },
-  kk: { miniApp: 'Патчерді ашу', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру' },
+  ru: { miniApp: '🔐 Патчер', website: '🌐 Сайт', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео' },
+  en: { miniApp: '🔐 Patcher', website: '🌐 Website', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker' },
+  kk: { miniApp: '🔐 Патчер', website: '🌐 Сайт', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру' },
 };
 
 function langChoiceKeyboard() {
@@ -64,21 +65,13 @@ const TEXTS = {
   ru: {
     welcome: (name) =>
       `👋 Привет, ${name}!\n\n` +
-      `Добро пожаловать в INEASY PATCHER 🚀🔥\n\n` +
-      `🎬 Как обработать видео:\n\n` +
-      `1️⃣ Откройте патчер в Telegram:\n🔗 ${MINI_APP_URL}\n\n` +
-      `2️⃣ 🔐 Авторизуйтесь на сайте.\n\n` +
-      `3️⃣ 🎥 Выберите своё видео и патчите его как необходимо.\n\n` +
-      `4️⃣ ✅ После завершения обработки скачайте готовое видео и опубликуйте его согласно инструкции.\n\n` +
-      `━━━━━━━━━━━━━━━━━━\n\n` +
-      `🔥 ЗАКОНЧИЛИСЬ ЛИМИТЫ? 🔥\n\n` +
-      `💎 Не останавливай обработку!\n` +
-      `🛒 КУПИТЬ ДОПОЛНИТЕЛЬНЫЕ ЛИМИТЫ\n\n` +
-      `💰 Выгодная цена • Быстрая активация • Больше обработок\n\n` +
-      `👇 Нажмите кнопку «${BTN.ru.buy}» внизу экрана! 👇\n\n` +
-      `━━━━━━━━━━━━━━━━━━\n\n` +
-      `✨ Спасибо, что используете INEASY PATCHER!`,
-    authSuccess: '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
+      `Добро пожаловать в INEASY PATCHER.\n\n` +
+      `🔐 В патчере вход выполняется автоматически через Telegram.\n` +
+      `🎬 Выберите видео, нажмите «Подготовить видео» и скачайте результат.\n\n` +
+      `В меню есть патчер и ссылка на полную версию сайта.`,
+    authSuccess: '✅ Вход подтверждён. Вернитесь на сайт и продолжайте.',
+    websiteButton: 'Открыть сайт',
+    websiteGuide: (url) => `Полная версия INEASY PATCHER:\n${url}\n\nЕсли ссылка открылась во внутреннем браузере Telegram, зажмите её и выберите «Открыть в браузере». Затем войдите через Telegram и следуйте инструкции на сайте.`,
     packagesTitle: '🛒 Выберите пакет лимитов:',
     packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
     packageDetails: (count, price) =>
@@ -121,21 +114,13 @@ const TEXTS = {
   en: {
     welcome: (name) =>
       `👋 Hi, ${name}!\n\n` +
-      `Welcome to INEASY PATCHER 🚀🔥\n\n` +
-      `🎬 How to process a video:\n\n` +
-      `1️⃣ Open the patcher in Telegram:\n🔗 ${MINI_APP_URL}\n\n` +
-      `2️⃣ 🔐 Log in on the website.\n\n` +
-      `3️⃣ 🎥 Choose your video and patch it as needed.\n\n` +
-      `4️⃣ ✅ Once processing is done, download the finished video and publish it as instructed.\n\n` +
-      `━━━━━━━━━━━━━━━━━━\n\n` +
-      `🔥 OUT OF LIMITS? 🔥\n\n` +
-      `💎 Don't stop processing!\n` +
-      `🛒 BUY MORE LIMITS\n\n` +
-      `💰 Great price • Instant activation • More processing\n\n` +
-      `👇 Tap the «${BTN.en.buy}» button at the bottom! 👇\n\n` +
-      `━━━━━━━━━━━━━━━━━━\n\n` +
-      `✨ Thanks for using INEASY PATCHER!`,
-    authSuccess: '✅ Successfully logged in!\n\nGo back to the website — you can start working now.',
+      `Welcome to INEASY PATCHER.\n\n` +
+      `🔐 Patcher signs you in automatically with Telegram.\n` +
+      `🎬 Choose a video, tap Prepare video, then download the result.\n\n` +
+      `The menu has the patcher and a link to the full website.`,
+    authSuccess: '✅ Sign-in confirmed. Return to the website to continue.',
+    websiteButton: 'Open website',
+    websiteGuide: (url) => `Full INEASY PATCHER website:\n${url}\n\nIf Telegram opens its in-app browser, press and hold the link and choose “Open in Browser”. Then sign in with Telegram and follow the website instructions.`,
     packagesTitle: '🛒 Choose a limits package:',
     packageButton: (count, perUnit, price) => `${count} videos × ${perUnit} ₸ = ${price.toLocaleString('en-US')} ₸`,
     packageDetails: (count, price) =>
@@ -178,21 +163,13 @@ const TEXTS = {
   kk: {
     welcome: (name) =>
       `👋 Сәлем, ${name}!\n\n` +
-      `INEASY PATCHER-ге қош келдіңіз 🚀🔥\n\n` +
-      `🎬 Видеоны қалай өңдеу керек:\n\n` +
-      `1️⃣ Патчерді Telegram-да ашыңыз:\n🔗 ${MINI_APP_URL}\n\n` +
-      `2️⃣ 🔐 Сайтта авторизациядан өтіңіз.\n\n` +
-      `3️⃣ 🎥 Видеоңызды таңдап, қажетінше патчтаңыз.\n\n` +
-      `4️⃣ ✅ Өңдеу аяқталған соң дайын видеоны жүктеп алып, нұсқаулыққа сай жариялаңыз.\n\n` +
-      `━━━━━━━━━━━━━━━━━━\n\n` +
-      `🔥 ЛИМИТ БІТТІ МЕ? 🔥\n\n` +
-      `💎 Өңдеуді тоқтатпаңыз!\n` +
-      `🛒 ҚОСЫМША ЛИМИТ САТЫП АЛУ\n\n` +
-      `💰 Тиімді баға • Жылдам белсендіру • Көбірек өңдеу\n\n` +
-      `👇 Төмендегі «${BTN.kk.buy}» батырмасын басыңыз! 👇\n\n` +
-      `━━━━━━━━━━━━━━━━━━\n\n` +
-      `✨ INEASY PATCHER-ді қолданғаныңыз үшін рахмет!`,
-    authSuccess: '✅ Сәтті авторизациядан өттіңіз!\n\nСайтқа қайта оралыңыз — енді жұмыс істей аласыз.',
+      `INEASY PATCHER-ге қош келдіңіз.\n\n` +
+      `🔐 Патчерге Telegram арқылы автоматты түрде кіресіз.\n` +
+      `🎬 Бейне таңдап, «Бейнені дайындау» түймесін басыңыз да, нәтижені жүктеп алыңыз.\n\n` +
+      `Мәзірде патчер мен толық сайтқа сілтеме бар.`,
+    authSuccess: '✅ Кіру расталды. Жалғастыру үшін сайтқа оралыңыз.',
+    websiteButton: 'Сайтты ашу',
+    websiteGuide: (url) => `INEASY PATCHER толық сайты:\n${url}\n\nСілтеме Telegram ішкі браузерінде ашылса, оны басып тұрып «Браузерде ашу» тармағын таңдаңыз. Содан кейін Telegram арқылы кіріп, сайттағы нұсқауларды орындаңыз.`,
     packagesTitle: '🛒 Лимит пакетін таңдаңыз:',
     packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
     packageDetails: (count, price) =>
@@ -514,7 +491,7 @@ const bot = new Telegraf(BOT_TOKEN);
 
 function mainKeyboard(lang) {
   const b = BTN[lang];
-  return Markup.keyboard([[Markup.button.webApp(b.miniApp, MINI_APP_URL)], [b.buy], [b.check], [b.balance, b.profile], [b.lang]]).resize();
+  return Markup.keyboard([[Markup.button.webApp(b.miniApp, MINI_APP_URL)], [b.website]]).resize();
 }
 
 function packagesKeyboard(lang) {
@@ -588,6 +565,13 @@ bot.command('language', async (ctx) => {
 
 bot.hears([BTN.ru.lang, BTN.en.lang, BTN.kk.lang], async (ctx) => {
   await ctx.reply('Choose language / Выберите язык / Тілді таңдаңыз:', langChoiceKeyboard());
+});
+
+bot.hears([BTN.ru.website, BTN.en.website, BTN.kk.website], async (ctx) => {
+  const lang = await getLang(ctx.from.id);
+  await ctx.reply(TEXTS[lang].websiteGuide(WEBSITE_URL), Markup.inlineKeyboard([
+    [Markup.button.url(TEXTS[lang].websiteButton, WEBSITE_URL)],
+  ]));
 });
 
 bot.action(/^lang_(ru|en|kk)$/, async (ctx) => {
