@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f7f1">
+  <title>INEASY Patcher</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="miniapp.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script type="module" src="miniapp.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <header class="header">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">✦</span><span>INEASY <b>PATCHER</b></span></div>
+      <nav class="languages" aria-label="Language">
+        <button type="button" data-lang="ru" class="active">RU</button><button type="button" data-lang="kk">KZ</button><button type="button" data-lang="en">EN</button>
+      </nav>
+    </header>
+    <p id="status" class="status" role="status" aria-live="polite"></p>
+    <main id="content" class="hidden">
+      <section class="account">
+        <div class="account-head"><div><p class="eyebrow" data-i18n="balanceTitle">ВАШ БАЛАНС</p><p class="total"><strong id="balanceTotal">0</strong><span data-i18n="videos">видео</span></p></div><i aria-hidden="true"></i></div>
+        <div class="split"><div><span data-i18n="free">Бесплатно</span><b id="freeBalance">0</b></div><div><span data-i18n="purchased">Куплено</span><b id="paidBalance">0</b></div></div>
+        <div class="user-row"><span id="userName">Telegram</span><button id="copyId" type="button"><span>ID</span><code id="userId">—</code><span aria-hidden="true">⧉</span></button></div>
+      </section>
+      <section class="patcher">
+        <div class="title-row"><span class="index">01</span><div><h1 data-i18n="title">Подготовьте видео</h1><p data-i18n="subtitle">Одно нажатие. Нужные параметры — автоматически.</p></div></div>
+        <label class="picker" for="videoInput"><input id="videoInput" type="file" accept="video/*"><span class="picker-icon" aria-hidden="true">↑</span><span class="picker-copy"><b id="pickerTitle" data-i18n="choose">Выберите видео</b><small data-i18n="chooseHint">До 4K · файл останется на телефоне</small></span><span aria-hidden="true">›</span></label>
+        <div id="selected" class="selected hidden"><span id="filename">—</span><button id="removeFile" type="button" data-i18n="remove">Убрать</button></div>
+        <video id="preview" class="preview hidden" controls playsinline></video>
+        <p class="privacy-note" data-i18n="privacy">Видео обрабатывается на устройстве. Для патчинга отправляются только MP4-метаданные.</p>
+        <button id="process" class="process" type="button" disabled data-i18n="process">Подготовить видео</button>
+        <div id="work" class="work hidden"><div class="work-line"><span class="spinner"></span><span id="workText"></span><b id="percent">0%</b></div><progress id="progress" max="100" value="0"></progress><button id="cancel" type="button" data-i18n="cancel">Отменить</button></div>
+        <div id="result" class="result hidden" role="status"><span class="check">✓</span><div><b data-i18n="ready">Видео готово</b><small data-i18n="readyHint">Используйте этот файл для TikTok.</small></div><a id="download" href="#" download data-i18n="download">Скачать видео</a></div>
+        <p class="credit">Powered by <a href="https://compressbase.com/" target="_blank" rel="noopener">CompressBase</a></p>
+      </section>
+      <details class="howto"><summary><span class="index">02</span><b data-i18n="howto">Как использовать</b><span class="chevron" aria-hidden="true">⌄</span></summary><ol><li data-i18n="step1">Выберите исходное видео.</li><li data-i18n="step2">Нажмите «Подготовить видео» и дождитесь завершения.</li><li data-i18n="step3">Скачайте результат.</li><li data-i18n="step4">Не редактируйте и не экспортируйте файл повторно.</li><li data-i18n="step5">Загрузите итоговый файл в TikTok.</li></ol></details>
+      <p class="footer-copy" data-i18n="footer">Подготовьте видео. Сохраните качество. Публикуйте уверенно.</p>
+    </main>
+  </div>
+</body>
+</html>

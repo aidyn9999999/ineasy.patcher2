@@ -19,6 +19,7 @@ const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : nu
 const WEEKLY_FREE_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher2-production.up.railway.app/app.html';
+const MINI_APP_URL = process.env.MINI_APP_URL || new URL('/miniapp.html', SITE_URL).toString();
 
 const PACKAGES = [
   [3, 450],
@@ -46,9 +47,9 @@ const redis = new Redis({
 });
 
 const BTN = {
-  ru: { buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео' },
-  en: { buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker' },
-  kk: { buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру' },
+  ru: { miniApp: 'Открыть патчер', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео' },
+  en: { miniApp: 'Open patcher', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker' },
+  kk: { miniApp: 'Патчерді ашу', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру' },
 };
 
 function langChoiceKeyboard() {
@@ -65,7 +66,7 @@ const TEXTS = {
       `👋 Привет, ${name}!\n\n` +
       `Добро пожаловать в INEASY PATCHER 🚀🔥\n\n` +
       `🎬 Как обработать видео:\n\n` +
-      `1️⃣ Перейдите на сайт патчера:\n🔗 ${SITE_URL}\n\n` +
+      `1️⃣ Откройте патчер в Telegram:\n🔗 ${MINI_APP_URL}\n\n` +
       `2️⃣ 🔐 Авторизуйтесь на сайте.\n\n` +
       `3️⃣ 🎥 Выберите своё видео и патчите его как необходимо.\n\n` +
       `4️⃣ ✅ После завершения обработки скачайте готовое видео и опубликуйте его согласно инструкции.\n\n` +
@@ -122,7 +123,7 @@ const TEXTS = {
       `👋 Hi, ${name}!\n\n` +
       `Welcome to INEASY PATCHER 🚀🔥\n\n` +
       `🎬 How to process a video:\n\n` +
-      `1️⃣ Go to the patcher website:\n🔗 ${SITE_URL}\n\n` +
+      `1️⃣ Open the patcher in Telegram:\n🔗 ${MINI_APP_URL}\n\n` +
       `2️⃣ 🔐 Log in on the website.\n\n` +
       `3️⃣ 🎥 Choose your video and patch it as needed.\n\n` +
       `4️⃣ ✅ Once processing is done, download the finished video and publish it as instructed.\n\n` +
@@ -179,7 +180,7 @@ const TEXTS = {
       `👋 Сәлем, ${name}!\n\n` +
       `INEASY PATCHER-ге қош келдіңіз 🚀🔥\n\n` +
       `🎬 Видеоны қалай өңдеу керек:\n\n` +
-      `1️⃣ Патчер сайтына өтіңіз:\n🔗 ${SITE_URL}\n\n` +
+      `1️⃣ Патчерді Telegram-да ашыңыз:\n🔗 ${MINI_APP_URL}\n\n` +
       `2️⃣ 🔐 Сайтта авторизациядан өтіңіз.\n\n` +
       `3️⃣ 🎥 Видеоңызды таңдап, қажетінше патчтаңыз.\n\n` +
       `4️⃣ ✅ Өңдеу аяқталған соң дайын видеоны жүктеп алып, нұсқаулыққа сай жариялаңыз.\n\n` +
@@ -513,7 +514,7 @@ const bot = new Telegraf(BOT_TOKEN);
 
 function mainKeyboard(lang) {
   const b = BTN[lang];
-  return Markup.keyboard([[b.buy], [b.check], [b.balance, b.profile], [b.lang]]).resize();
+  return Markup.keyboard([[Markup.button.webApp(b.miniApp, MINI_APP_URL)], [b.buy], [b.check], [b.balance, b.profile], [b.lang]]).resize();
 }
 
 function packagesKeyboard(lang) {
@@ -701,6 +702,47 @@ function requireUserToken(req, res, next) {
   }
 }
 
+function verifyTelegramWebAppData(initData) {
+  if (typeof initData !== 'string' || initData.length > 8192) throw new Error('invalid_init_data');
+  const params = new URLSearchParams(initData);
+  const hashes = params.getAll('hash');
+  if (hashes.length !== 1 || !/^[a-f0-9]{64}$/i.test(hashes[0])) throw new Error('invalid_init_data');
+
+  const authDate = Number(params.get('auth_date'));
+  const now = Math.floor(Date.now() / 1000);
+  if (!Number.isSafeInteger(authDate) || authDate > now + 60 || now - authDate > 86400) {
+    throw new Error('expired_init_data');
+  }
+
+  const checkString = [...params.entries()]
+    .filter(([key]) => key !== 'hash')
+    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+    .map(([key, value]) => `${key}=${value}`)
+    .join('\n');
+  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
+  const expectedHash = crypto.createHmac('sha256', secretKey).update(checkString).digest();
+  const suppliedHash = Buffer.from(hashes[0], 'hex');
+  if (suppliedHash.length !== expectedHash.length || !crypto.timingSafeEqual(suppliedHash, expectedHash)) {
+    throw new Error('invalid_init_data');
+  }
+
+  const userValues = params.getAll('user');
+  if (userValues.length !== 1) throw new Error('invalid_init_data');
+  const user = JSON.parse(userValues[0]);
+  if (!user || !user.id) throw new Error('invalid_init_data');
+  return user;
+}
+
+function requireMiniAppAuth(req, res, next) {
+  try {
+    req.telegramUser = verifyTelegramWebAppData(req.body && req.body.initData);
+    req.telegramId = String(req.telegramUser.id);
+    next();
+  } catch (error) {
+    res.status(401).json({ error: error.message === 'expired_init_data' ? 'telegram_auth_expired' : 'telegram_auth_invalid' });
+  }
+}
+
 async function zernioRequest(resource, options = {}) {
   if (!process.env.ZERNIO_API_KEY) {
     const error = new Error('TikTok publishing is not configured. Add ZERNIO_API_KEY on the server.');
@@ -767,6 +809,45 @@ app.get('/api/session/:id', (req, res) => {
     firstName: session.firstName || null,
     authToken: session.authorized ? createUserToken(session.telegramId) : null,
   });
+});
+
+app.post('/api/miniapp/session', requireMiniAppAuth, async (req, res) => {
+  try {
+    const [free, purchased, processed] = await Promise.all([
+      getFreeBalance(req.telegramId),
+      getPurchasedBalance(req.telegramId),
+      getPatchedCount(req.telegramId),
+    ]);
+    res.json({
+      authToken: createUserToken(req.telegramId),
+      user: {
+        id: req.telegramId,
+        firstName: req.telegramUser.first_name || '',
+        username: req.telegramUser.username || '',
+      },
+      free,
+      purchased,
+      balance: free + purchased,
+      processed,
+    });
+  } catch (error) {
+    console.error('Ошибка Mini App:', error);
+    res.status(500).json({ error: 'miniapp_session_failed' });
+  }
+});
+
+app.get('/api/miniapp/balance', requireUserToken, async (req, res) => {
+  try {
+    const [free, purchased, processed] = await Promise.all([
+      getFreeBalance(req.telegramId),
+      getPurchasedBalance(req.telegramId),
+      getPatchedCount(req.telegramId),
+    ]);
+    res.json({ free, purchased, balance: free + purchased, processed });
+  } catch (error) {
+    console.error('Ошибка баланса Mini App:', error);
+    res.status(500).json({ error: 'balance_fetch_failed' });
+  }
 });
 
 app.get('/api/tiktok/status', requireUserToken, async (req, res) => {
