@@ -48,9 +48,9 @@ const redis = new Redis({
 });
 
 const BTN = {
-  ru: { miniApp: '🔐 Патчер', website: '🌐 Сайт', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео' },
-  en: { miniApp: '🔐 Patcher', website: '🌐 Website', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker' },
-  kk: { miniApp: '🔐 Патчер', website: '🌐 Сайт', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру' },
+  ru: { miniApp: '🔐 Патчер', website: '🌐 Основной сайт', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео' },
+  en: { miniApp: '🔐 Patcher', website: '🌐 Main website', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker' },
+  kk: { miniApp: '🔐 Патчер', website: '🌐 Негізгі сайт', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру' },
 };
 
 function langChoiceKeyboard() {
@@ -65,11 +65,21 @@ const TEXTS = {
   ru: {
     welcome: (name) =>
       `👋 Привет, ${name}!\n\n` +
-      `Добро пожаловать в INEASY PATCHER.\n\n` +
-      `🔐 В патчере вход выполняется автоматически через Telegram.\n` +
-      `🎬 Выберите видео, нажмите «Подготовить видео» и скачайте результат.\n\n` +
-      `В меню есть патчер и ссылка на полную версию сайта.`,
-    authSuccess: '✅ Вход подтверждён. Вернитесь на сайт и продолжайте.',
+      `Добро пожаловать в INEASY PATCHER 🚀🔥\n\n` +
+      `🎬 Как обработать видео:\n\n` +
+      `1️⃣ Откройте патчер кнопкой «${BTN.ru.miniApp}» в Telegram — вход выполнится автоматически.\n\n` +
+      `2️⃣ 🎥 Выберите видео и нажмите «Подготовить видео».\n\n` +
+      `3️⃣ ✅ Скачайте готовое видео и загрузите его в TikTok.\n\n` +
+      `Для полной версии сайта используйте кнопку «${BTN.ru.website}» внизу меню.\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `🔥 ЗАКОНЧИЛИСЬ ЛИМИТЫ? 🔥\n\n` +
+      `💎 Не останавливай обработку!\n` +
+      `🛒 КУПИТЬ ДОПОЛНИТЕЛЬНЫЕ ЛИМИТЫ\n\n` +
+      `💰 Выгодная цена • Быстрая активация • Больше обработок\n\n` +
+      `👇 Нажмите кнопку «${BTN.ru.buy}» внизу экрана! 👇\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `✨ Спасибо, что используете INEASY PATCHER!`,
+    authSuccess: '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
     websiteButton: 'Открыть сайт',
     websiteGuide: (url) => `Полная версия INEASY PATCHER:\n${url}\n\nЕсли ссылка открылась во внутреннем браузере Telegram, зажмите её и выберите «Открыть в браузере». Затем войдите через Telegram и следуйте инструкции на сайте.`,
     packagesTitle: '🛒 Выберите пакет лимитов:',
@@ -114,11 +124,21 @@ const TEXTS = {
   en: {
     welcome: (name) =>
       `👋 Hi, ${name}!\n\n` +
-      `Welcome to INEASY PATCHER.\n\n` +
-      `🔐 Patcher signs you in automatically with Telegram.\n` +
-      `🎬 Choose a video, tap Prepare video, then download the result.\n\n` +
-      `The menu has the patcher and a link to the full website.`,
-    authSuccess: '✅ Sign-in confirmed. Return to the website to continue.',
+      `Welcome to INEASY PATCHER 🚀🔥\n\n` +
+      `🎬 How to process a video:\n\n` +
+      `1️⃣ Tap “${BTN.en.miniApp}” in Telegram. Sign-in is automatic.\n\n` +
+      `2️⃣ 🎥 Choose a video and tap Prepare video.\n\n` +
+      `3️⃣ ✅ Download the finished video and upload it to TikTok.\n\n` +
+      `For the full website, tap “${BTN.en.website}” in the menu.\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `🔥 OUT OF LIMITS? 🔥\n\n` +
+      `💎 Keep processing!\n` +
+      `🛒 BUY MORE LIMITS\n\n` +
+      `💰 Great price • Fast activation • More processing\n\n` +
+      `👇 Tap «${BTN.en.buy}» below! 👇\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `✨ Thanks for using INEASY PATCHER!`,
+    authSuccess: '✅ Successfully logged in!\n\nGo back to the website — you can start working now.',
     websiteButton: 'Open website',
     websiteGuide: (url) => `Full INEASY PATCHER website:\n${url}\n\nIf Telegram opens its in-app browser, press and hold the link and choose “Open in Browser”. Then sign in with Telegram and follow the website instructions.`,
     packagesTitle: '🛒 Choose a limits package:',
@@ -163,11 +183,21 @@ const TEXTS = {
   kk: {
     welcome: (name) =>
       `👋 Сәлем, ${name}!\n\n` +
-      `INEASY PATCHER-ге қош келдіңіз.\n\n` +
-      `🔐 Патчерге Telegram арқылы автоматты түрде кіресіз.\n` +
-      `🎬 Бейне таңдап, «Бейнені дайындау» түймесін басыңыз да, нәтижені жүктеп алыңыз.\n\n` +
-      `Мәзірде патчер мен толық сайтқа сілтеме бар.`,
-    authSuccess: '✅ Кіру расталды. Жалғастыру үшін сайтқа оралыңыз.',
+      `INEASY PATCHER-ге қош келдіңіз 🚀🔥\n\n` +
+      `🎬 Бейнені өңдеу жолы:\n\n` +
+      `1️⃣ Telegram-да «${BTN.kk.miniApp}» түймесін басыңыз — кіру автоматты түрде орындалады.\n\n` +
+      `2️⃣ 🎥 Бейнені таңдап, «Бейнені дайындау» түймесін басыңыз.\n\n` +
+      `3️⃣ ✅ Дайын файлды жүктеп алып, TikTok-қа салыңыз.\n\n` +
+      `Толық сайт үшін мәзірдегі «${BTN.kk.website}» түймесін басыңыз.\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `🔥 ЛИМИТ БІТТІ МЕ? 🔥\n\n` +
+      `💎 Өңдеуді жалғастырыңыз!\n` +
+      `🛒 ҚОСЫМША ЛИМИТ САТЫП АЛУ\n\n` +
+      `💰 Тиімді баға • Жылдам іске қосу • Көбірек өңдеу\n\n` +
+      `👇 Төмендегі «${BTN.kk.buy}» түймесін басыңыз! 👇\n\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `✨ INEASY PATCHER-ді қолданғаныңыз үшін рақмет!`,
+    authSuccess: '✅ Сәтті авторизациядан өттіңіз!\n\nСайтқа қайта оралыңыз — енді жұмыс істей аласыз.',
     websiteButton: 'Сайтты ашу',
     websiteGuide: (url) => `INEASY PATCHER толық сайты:\n${url}\n\nСілтеме Telegram ішкі браузерінде ашылса, оны басып тұрып «Браузерде ашу» тармағын таңдаңыз. Содан кейін Telegram арқылы кіріп, сайттағы нұсқауларды орындаңыз.`,
     packagesTitle: '🛒 Лимит пакетін таңдаңыз:',
@@ -491,7 +521,14 @@ const bot = new Telegraf(BOT_TOKEN);
 
 function mainKeyboard(lang) {
   const b = BTN[lang];
-  return Markup.keyboard([[Markup.button.webApp(b.miniApp, MINI_APP_URL)], [b.website]]).resize();
+  return Markup.keyboard([
+    [Markup.button.webApp(b.miniApp, MINI_APP_URL)],
+    [b.buy],
+    [b.check],
+    [b.balance, b.profile],
+    [b.lang],
+    [b.website],
+  ]).resize();
 }
 
 function packagesKeyboard(lang) {
