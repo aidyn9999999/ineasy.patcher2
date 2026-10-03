@@ -79,10 +79,10 @@ const TEXTS = {
       `👇 Нажмите кнопку «${BTN.ru.buy}» внизу экрана! 👇\n\n` +
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `✨ Спасибо, что используете INEASY PATCHER!`,
-    authSuccess: '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
-    subscribeRequired: '🔐 Чтобы продолжить, подпишитесь на наш новостной канал @ineasynews.\n\n📣 Там мы публикуем новости и обновления INEASY PATCHER.\n\nПосле подписки нажмите «✅ Я подписался» — мы проверим подписку.',
+    authSuccess: '✅ Вы успешно авторизовались на сайте!\n\n↩️ Вернитесь на сайт — теперь можно работать.',
+    subscribeRequired: '🔐 Чтобы продолжить, подпишитесь на канал INEASY PATCHER:\n\n📣 @ineasynews\n\nПосле подписки нажмите «✅ Я подписался» — бот проверит подписку.',
     subscribeFailed: '✕ Подписка не найдена. Подпишитесь на канал и попробуйте ещё раз.',
-    subscribeNotJoined: 'Вы не подписаны на канал. Подпишитесь, чтобы пользоваться патчером.',
+    subscribeNotJoined: '⛔ Вы не подписаны на канал. Без подписки патчер недоступен.',
     subscribeCheckError: 'Не удалось проверить подписку. Попробуйте позже или сообщите администратору.',
     subscribeButton: 'Подписаться на канал',
     checkSubscribeButton: '✅ Я подписался',
@@ -144,10 +144,10 @@ const TEXTS = {
       `👇 Tap «${BTN.en.buy}» below! 👇\n\n` +
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `✨ Thanks for using INEASY PATCHER!`,
-    authSuccess: '✅ Successfully logged in!\n\nGo back to the website — you can start working now.',
-    subscribeRequired: '🔐 Subscribe to our news channel @ineasynews to continue.\n\n📣 We share INEASY PATCHER news and updates there.\n\nAfter subscribing, tap “✅ I subscribed” and we will check your membership.',
+    authSuccess: '✅ You are signed in to the website.\n\n↩️ Return to the site to get started.',
+    subscribeRequired: '🔐 Subscribe to the INEASY PATCHER channel to continue:\n\n📣 @ineasynews\n\nAfter subscribing, tap “✅ I subscribed” and the bot will check your membership.',
     subscribeFailed: '✕ We could not find your subscription. Join the channel and try again.',
-    subscribeNotJoined: 'You have not joined the channel. Subscribe to use the patcher.',
+    subscribeNotJoined: '⛔ You are not subscribed to the channel. Subscribe to use the patcher.',
     subscribeCheckError: 'Could not check your subscription. Try again later or contact support.',
     subscribeButton: 'Subscribe to the channel',
     checkSubscribeButton: '✅ I subscribed',
@@ -209,10 +209,10 @@ const TEXTS = {
       `👇 Төмендегі «${BTN.kk.buy}» түймесін басыңыз! 👇\n\n` +
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `✨ INEASY PATCHER-ді қолданғаныңыз үшін рақмет!`,
-    authSuccess: '✅ Сәтті авторизациядан өттіңіз!\n\nСайтқа қайта оралыңыз — енді жұмыс істей аласыз.',
-    subscribeRequired: '🔐 Жалғастыру үшін @ineasynews жаңалықтар арнасына жазылыңыз.\n\n📣 Онда INEASY PATCHER жаңалықтары мен жаңартуларын жариялаймыз.\n\nЖазылған соң «✅ Жазылдым» түймесін басыңыз — жазылымды тексереміз.',
+    authSuccess: '✅ Сайтқа сәтті кірдіңіз!\n\n↩️ Сайтқа оралып, жұмысты жалғастырыңыз.',
+    subscribeRequired: '🔐 Жалғастыру үшін INEASY PATCHER арнасына жазылыңыз:\n\n📣 @ineasynews\n\nЖазылған соң «✅ Жазылдым» түймесін басыңыз — бот жазылымды тексереді.',
     subscribeFailed: '✕ Жазылым табылмады. Арнаға жазылып, қайта көріңіз.',
-    subscribeNotJoined: 'Сіз арнаға жазылмағансыз. Патчерді пайдалану үшін арнаға жазылыңыз.',
+    subscribeNotJoined: '⛔ Сіз арнаға жазылмағансыз. Патчерді пайдалану үшін жазылыңыз.',
     subscribeCheckError: 'Жазылымды тексеру мүмкін болмады. Кейінірек қайталап көріңіз немесе қолдау қызметіне хабарласыңыз.',
     subscribeButton: 'Арнаға жазылу',
     checkSubscribeButton: '✅ Жазылдым',

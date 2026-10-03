@@ -477,10 +477,9 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
 .app-main { align-items: stretch; flex-direction: column; gap: 28px; max-width: 760px; width: 100%; margin: 0 auto; }
 .patch-panel, .checker-panel, .faq-section { width: 100%; }
 .eyebrow { color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: 0; margin: 0 0 12px; text-transform: uppercase; }
-.red-eyebrow { color: #ef4444; }
 .patch-title { max-width: 640px; font-size: clamp(28px, 5vw, 48px); line-height: 1.04; }
 .patch-sub { max-width: 580px; font-size: 15px; line-height: 1.65; }
-.checker-panel { padding: 30px; border: 1px solid rgba(255, 113, 133, 0.2); border-radius: 18px; background: linear-gradient(135deg, rgba(255, 113, 133, 0.07), rgba(16, 31, 51, 0.85)); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+.checker-panel { padding: 30px; border: 1px solid rgba(91, 140, 255, 0.2); border-radius: 18px; background: linear-gradient(135deg, rgba(91, 140, 255, 0.07), rgba(16, 31, 51, 0.85)); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
 .checker-copy h2, .faq-section h2 { color: var(--text); margin: 0 0 8px; font: 600 26px/1.15 'Manrope', sans-serif; letter-spacing: 0; }
 .checker-copy p:not(.eyebrow) { max-width: 560px; color: var(--muted); font-size: 13px; line-height: 1.6; margin: 0 0 22px; }
 .checker-open-btn { border: 0; border-radius: 10px; padding: 14px 19px; background: var(--success); color: #081321; font: 600 14px 'Manrope', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(54, 201, 154, 0.2); transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; }
