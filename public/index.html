@@ -6,7 +6,7 @@
 <title>Патчер видео</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -45,6 +45,13 @@
       <div class="spinner" aria-hidden="true"></div>
       <p class="waiting-text">Ждём подтверждение в Telegram…</p>
       <button class="link-btn" id="cancelBtn">Отменить</button>
+    </div>
+
+    <div class="stage hidden" id="stage-subscription">
+      <p class="error-text">✕ Сначала подпишитесь на канал новостей, чтобы продолжить.</p>
+      <a class="tg-btn subscription-channel" href="https://t.me/ineasynews" target="_blank" rel="noopener">Подписаться на канал</a>
+      <p class="hint">После подписки вернитесь сюда и подтвердите её в Telegram.</p>
+      <button class="link-btn" id="checkSubscriptionBtn" type="button">Я подписался</button>
     </div>
 
     <div class="stage hidden" id="stage-error">

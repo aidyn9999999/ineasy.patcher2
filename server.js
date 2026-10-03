@@ -14,6 +14,7 @@ try { FFPROBE_PATH = require('ffprobe-static').path; } catch (e) { /* испол
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const BOT_USERNAME = process.env.BOT_USERNAME || 'ineasybot';
+const NEWS_CHANNEL_ID = process.env.NEWS_CHANNEL_ID || '@ineasynews';
 const PORT = process.env.PORT || 3000;
 const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : null;
 const WEEKLY_FREE_BALANCE = 2;
@@ -79,6 +80,11 @@ const TEXTS = {
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `✨ Спасибо, что используете INEASY PATCHER!`,
     authSuccess: '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
+    subscribeRequired: '✕ Сначала подпишитесь на канал новостей @ineasynews, чтобы продолжить.',
+    subscribeFailed: '✕ Подписка не найдена. Подпишитесь на канал и попробуйте ещё раз.',
+    subscribeCheckError: 'Не удалось проверить подписку. Попробуйте позже или сообщите администратору.',
+    subscribeButton: 'Подписаться на канал',
+    checkSubscribeButton: '✅ Я подписался',
     websiteButton: 'Открыть сайт',
     websiteGuide: (url) => `Ссылка на INEASY PATCHER:\n${url}\n\nЧтобы сайт и обработка видео работали правильно, откройте его в браузере телефона. Если ссылка открылась внутри Telegram, зажмите её и выберите «Открыть в браузере», затем выберите Safari или Chrome. Во встроенном браузере Telegram инструменты сайта могут работать некорректно. После открытия войдите через Telegram и следуйте инструкции на сайте.`,
     packagesTitle: '🛒 Выберите пакет лимитов:',
@@ -138,6 +144,11 @@ const TEXTS = {
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `✨ Thanks for using INEASY PATCHER!`,
     authSuccess: '✅ Successfully logged in!\n\nGo back to the website — you can start working now.',
+    subscribeRequired: '✕ Subscribe to the news channel @ineasynews before continuing.',
+    subscribeFailed: '✕ We could not find your subscription. Join the channel and try again.',
+    subscribeCheckError: 'Could not check your subscription. Try again later or contact support.',
+    subscribeButton: 'Subscribe to the channel',
+    checkSubscribeButton: '✅ I subscribed',
     websiteButton: 'Open website',
     websiteGuide: (url) => `INEASY PATCHER website:\n${url}\n\nFor the site and video tools to work correctly, open it in your phone's browser. If it opens inside Telegram, press and hold the link, choose “Open in Browser”, then select Safari or Chrome. The website tools may not work correctly inside Telegram's browser. Sign in with Telegram and follow the website instructions.`,
     packagesTitle: '🛒 Choose a limits package:',
@@ -197,6 +208,11 @@ const TEXTS = {
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `✨ INEASY PATCHER-ді қолданғаныңыз үшін рақмет!`,
     authSuccess: '✅ Сәтті авторизациядан өттіңіз!\n\nСайтқа қайта оралыңыз — енді жұмыс істей аласыз.',
+    subscribeRequired: '✕ Жалғастыру үшін @ineasynews жаңалықтар арнасына жазылыңыз.',
+    subscribeFailed: '✕ Жазылым табылмады. Арнаға жазылып, қайта көріңіз.',
+    subscribeCheckError: 'Жазылымды тексеру мүмкін болмады. Кейінірек қайталап көріңіз немесе қолдау қызметіне хабарласыңыз.',
+    subscribeButton: 'Арнаға жазылу',
+    checkSubscribeButton: '✅ Жазылдым',
     websiteButton: 'Сайтты ашу',
     websiteGuide: (url) => `INEASY PATCHER сайты:\n${url}\n\nСайт пен бейне құралдары дұрыс жұмыс істеуі үшін сілтемені телефон браузерінде ашыңыз. Telegram ішінде ашылса, сілтемені басып тұрып «Браузерде ашу» тармағын таңдап, Safari немесе Chrome браузерін ашыңыз. Telegram ішкі браузерінде сайт құралдары дұрыс істемеуі мүмкін. Сайтқа Telegram арқылы кіріп, нұсқауларды орындаңыз.`,
     packagesTitle: '🛒 Лимит пакетін таңдаңыз:',
@@ -543,6 +559,51 @@ async function sendWelcome(ctx, lang) {
   await ctx.reply(TEXTS[lang].welcome(name), mainKeyboard(lang));
 }
 
+function newsSubscriptionKeyboard(lang, sessionId) {
+  const text = TEXTS[lang];
+  return Markup.inlineKeyboard([
+    [Markup.button.url(text.subscribeButton, 'https://t.me/ineasynews')],
+    [Markup.button.callback(text.checkSubscribeButton, `verify_news_${sessionId}`)],
+  ]);
+}
+
+async function confirmSiteLogin(ctx, sessionId) {
+  const session = sessions.get(sessionId);
+  const lang = await getLang(ctx.from.id);
+  if (!session) {
+    await ctx.reply('Ссылка для входа устарела. Вернитесь на сайт и начните вход заново.');
+    return;
+  }
+  if (session.telegramId && String(session.telegramId) !== String(ctx.from.id)) {
+    await ctx.reply('Эта ссылка для входа уже привязана к другому Telegram-аккаунту.');
+    return;
+  }
+
+  session.telegramId = ctx.from.id;
+  session.username = ctx.from.username || null;
+  session.firstName = ctx.from.first_name || '';
+  session.subscriptionRequired = true;
+  sessions.set(sessionId, session);
+
+  try {
+    const member = await bot.telegram.getChatMember(NEWS_CHANNEL_ID, ctx.from.id);
+    const subscribed = ['creator', 'administrator', 'member'].includes(member.status) ||
+      (member.status === 'restricted' && member.is_member);
+    if (!subscribed) {
+      await ctx.reply(TEXTS[lang].subscribeRequired, newsSubscriptionKeyboard(lang, sessionId));
+      return;
+    }
+
+    session.authorized = true;
+    session.subscriptionRequired = false;
+    sessions.set(sessionId, session);
+    await ctx.reply(TEXTS[lang].authSuccess, mainKeyboard(lang));
+  } catch (error) {
+    console.error('Не удалось проверить подписку на канал:', error.message);
+    await ctx.reply(TEXTS[lang].subscribeCheckError, newsSubscriptionKeyboard(lang, sessionId));
+  }
+}
+
 async function sendPackagesMenu(ctx, lang) {
   await ctx.reply(TEXTS[lang].packagesTitle, packagesKeyboard(lang));
 }
@@ -567,14 +628,7 @@ bot.start(async (ctx) => {
   const payload = ctx.startPayload ? ctx.startPayload.trim() : null;
 
   if (payload && payload !== 'buyvideo' && !payload.startsWith('buy_') && sessions.has(payload)) {
-    const session = sessions.get(payload);
-    session.authorized = true;
-    session.telegramId = ctx.from.id;
-    session.username = ctx.from.username || null;
-    session.firstName = ctx.from.first_name || '';
-    sessions.set(payload, session);
-
-    await ctx.reply(TEXTS[lang].authSuccess, mainKeyboard(lang));
+    await confirmSiteLogin(ctx, payload);
     return;
   }
 
@@ -624,6 +678,11 @@ bot.action(/^pkg_(\d+)_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
   const lang = await getLang(ctx.from.id);
   await ctx.reply(TEXTS[lang].packageDetails(Number(ctx.match[1]), Number(ctx.match[2])), mainKeyboard(lang));
+});
+
+bot.action(/^verify_news_([\w-]+)$/, async (ctx) => {
+  await ctx.answerCbQuery();
+  await confirmSiteLogin(ctx, ctx.match[1]);
 });
 
 bot.command('addvideo', async (ctx) => {
@@ -782,6 +841,7 @@ app.get('/api/session/:id', (req, res) => {
   if (!session) return res.status(404).json({ error: 'session_not_found' });
   res.json({
     authorized: session.authorized,
+    subscriptionRequired: Boolean(session.subscriptionRequired),
     telegramId: session.telegramId || null,
     username: session.username || null,
     firstName: session.firstName || null,

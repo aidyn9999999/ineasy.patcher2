@@ -4,14 +4,20 @@ const cancelBtn = document.getElementById('cancelBtn');
 
 const stageLogin = document.getElementById('stage-login');
 const stageWaiting = document.getElementById('stage-waiting');
+const stageSubscription = document.getElementById('stage-subscription');
 const stageError = document.getElementById('stage-error');
+const checkSubscriptionBtn = document.getElementById('checkSubscriptionBtn');
 
 let pollTimer = null;
 let currentSessionId = null;
+let currentBotLink = null;
+let activeStage = null;
 
 function showStage(stage) {
-  [stageLogin, stageWaiting, stageError].forEach(s => s.classList.add('hidden'));
+  if (activeStage === stage) return;
+  [stageLogin, stageWaiting, stageSubscription, stageError].forEach(s => s.classList.add('hidden'));
   stage.classList.remove('hidden');
+  activeStage = stage;
 }
 
 async function startLogin() {
@@ -19,9 +25,10 @@ async function startLogin() {
     const res = await fetch('/api/session', { method: 'POST' });
     const data = await res.json();
     currentSessionId = data.sessionId;
+    currentBotLink = data.botLink;
 
     // Открываем бота в новой вкладке
-    window.open(data.botLink, '_blank');
+    window.open(currentBotLink, '_blank');
 
     showStage(stageWaiting);
     pollSession();
@@ -45,6 +52,8 @@ function pollSession() {
         localStorage.setItem('tg_username', data.username || '');
         localStorage.setItem('tg_first_name', data.firstName || '');
         window.location.href = '/app.html';
+      } else if (data.subscriptionRequired) {
+        showStage(stageSubscription);
       }
     } catch (e) {
       // Молча пробуем на следующем тике
@@ -55,9 +64,16 @@ function pollSession() {
 function stopLogin() {
   clearInterval(pollTimer);
   currentSessionId = null;
+  currentBotLink = null;
   showStage(stageLogin);
+}
+
+function recheckSubscription() {
+  if (currentBotLink) window.open(currentBotLink, '_blank');
+  showStage(stageWaiting);
 }
 
 tgBtn.addEventListener('click', startLogin);
 retryBtn.addEventListener('click', startLogin);
 cancelBtn.addEventListener('click', stopLogin);
+checkSubscriptionBtn.addEventListener('click', recheckSubscription);
