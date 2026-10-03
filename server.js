@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : null;
 const WEEKLY_FREE_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771\nИмя: Айдынбек Н.';
-const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher2-production.up.railway.app/app.html';
+const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher.up.railway.app/app.html';
 const MINI_APP_URL = process.env.MINI_APP_URL || new URL('/miniapp.html', SITE_URL).toString();
 
 const PACKAGES = [

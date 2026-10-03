@@ -75,7 +75,7 @@ project/
 
 ```env
 ZERNIO_API_KEY=sk_...
-SITE_URL=https://your-public-domain.example/app.html
+SITE_URL=https://ineasypatcher.up.railway.app/app.html
 ```
 
 Не добавляйте ключ в `public/`, браузерный код или Git. После входа через Telegram пользователь подключает свой TikTok через OAuth; после обработки видео можно загрузить файл в Zernio и опубликовать его с описанием, приватностью и настройками взаимодействия. При публикации браузер передаёт файл потоком через сервер сайта в Zernio; сервер не записывает его на диск.
@@ -86,4 +86,4 @@ SITE_URL=https://your-public-domain.example/app.html
 
 ## Telegram Mini App
 
-Mini App открывается кнопкой «Открыть патчер» в клавиатуре бота и размещается в уже существующем `public/` на том же HTTPS-домене. Отдельный backend или сервер не нужен. При необходимости задайте `MINI_APP_URL=https://your-public-domain.example/miniapp.html`; по умолчанию URL строится из `SITE_URL`. Сервер проверяет Telegram `initData`, а Mini App использует существующие баланс и списание.
+Mini App открывается кнопкой «Открыть патчер» в клавиатуре бота и размещается в уже существующем `public/` на том же HTTPS-домене. Отдельный backend или сервер не нужен. Текущие URL: `SITE_URL=https://ineasypatcher.up.railway.app/app.html` и `MINI_APP_URL=https://ineasypatcher.up.railway.app/miniapp.html`. Если эти переменные уже заданы в Railway, обновите их там тоже. Сервер проверяет Telegram `initData`, а Mini App использует существующие баланс и списание.
