@@ -61,9 +61,6 @@ project/
 └── public/
     ├── index.html      # Лендинг с кнопкой входа
     ├── app.html         # Страница обработчика видео
-   ├── miniapp.html     # Отдельный Telegram Mini App
-   ├── miniapp.css      # Мобильные стили Mini App
-   ├── miniapp.js       # Telegram auth, локальная обработка и скачивание
     ├── style.css         # Общие стили
     ├── login.js           # Логика авторизации (создание/опрос сессии)
     └── app.js              # Логика дропзоны и предпросмотра
@@ -84,6 +81,3 @@ SITE_URL=https://ineasypatcher.up.railway.app/app.html
 
 Перед патчингом браузерный обработчик использует официальный CompressBase `downscaleVideo`: поддерживаемое видео до 4K и 10 минут локально уменьшается до 1080p, затем обновленный `patchVideo` добавляет метаданные. Обработку можно отменить; итоговый размер зависит от устройства. Патчинг и уменьшение не отправляют видео на сервер.
 
-## Telegram Mini App
-
-Mini App открывается кнопкой «Открыть патчер» в клавиатуре бота и размещается в уже существующем `public/` на том же HTTPS-домене. Отдельный backend или сервер не нужен. Текущие URL: `SITE_URL=https://ineasypatcher.up.railway.app/app.html` и `MINI_APP_URL=https://ineasypatcher.up.railway.app/miniapp.html`. Если эти переменные уже заданы в Railway, обновите их там тоже. Сервер проверяет Telegram `initData`, а Mini App использует существующие баланс и списание.

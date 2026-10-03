@@ -19,7 +19,6 @@ const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : nu
 const WEEKLY_FREE_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher.up.railway.app/app.html';
-const MINI_APP_URL = process.env.MINI_APP_URL || new URL('/miniapp.html', SITE_URL).toString();
 const WEBSITE_URL = new URL('/', SITE_URL).toString();
 
 const PACKAGES = [
@@ -48,9 +47,9 @@ const redis = new Redis({
 });
 
 const BTN = {
-  ru: { miniApp: '🔐 Патчер', website: '🌐 Основной сайт', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео' },
-  en: { miniApp: '🔐 Patcher', website: '🌐 Main website', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker' },
-  kk: { miniApp: '🔐 Патчер', website: '🌐 Негізгі сайт', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру' },
+  ru: { website: '🔗 Ссылка на сайт', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео' },
+  en: { website: '🔗 Website link', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker' },
+  kk: { website: '🔗 Сайт сілтемесі', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру' },
 };
 
 function langChoiceKeyboard() {
@@ -67,10 +66,10 @@ const TEXTS = {
       `👋 Привет, ${name}!\n\n` +
       `Добро пожаловать в INEASY PATCHER 🚀🔥\n\n` +
       `🎬 Как обработать видео:\n\n` +
-      `1️⃣ Откройте патчер кнопкой «${BTN.ru.miniApp}» в Telegram — вход выполнится автоматически.\n\n` +
-      `2️⃣ 🎥 Выберите видео и нажмите «Подготовить видео».\n\n` +
-      `3️⃣ ✅ Скачайте готовое видео и загрузите его в TikTok.\n\n` +
-      `Для полной версии сайта используйте кнопку «${BTN.ru.website}» внизу меню.\n\n` +
+      `1️⃣ Нажмите «${BTN.ru.website}» в меню и откройте ссылку в браузере телефона.\n\n` +
+      `2️⃣ 🔐 Войдите через Telegram на сайте.\n\n` +
+      `3️⃣ 🎥 Выберите видео и нажмите «Подготовить видео».\n\n` +
+      `4️⃣ ✅ Скачайте готовое видео и загрузите его в TikTok.\n\n` +
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `🔥 ЗАКОНЧИЛИСЬ ЛИМИТЫ? 🔥\n\n` +
       `💎 Не останавливай обработку!\n` +
@@ -81,7 +80,7 @@ const TEXTS = {
       `✨ Спасибо, что используете INEASY PATCHER!`,
     authSuccess: '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
     websiteButton: 'Открыть сайт',
-    websiteGuide: (url) => `Полная версия INEASY PATCHER:\n${url}\n\nЕсли ссылка открылась во внутреннем браузере Telegram, зажмите её и выберите «Открыть в браузере». Затем войдите через Telegram и следуйте инструкции на сайте.`,
+    websiteGuide: (url) => `Ссылка на INEASY PATCHER:\n${url}\n\nЧтобы сайт и обработка видео работали правильно, откройте его в браузере телефона. Если ссылка открылась внутри Telegram, зажмите её и выберите «Открыть в браузере», затем выберите Safari или Chrome. Во встроенном браузере Telegram инструменты сайта могут работать некорректно. После открытия войдите через Telegram и следуйте инструкции на сайте.`,
     packagesTitle: '🛒 Выберите пакет лимитов:',
     packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
     packageDetails: (count, price) =>
@@ -126,10 +125,10 @@ const TEXTS = {
       `👋 Hi, ${name}!\n\n` +
       `Welcome to INEASY PATCHER 🚀🔥\n\n` +
       `🎬 How to process a video:\n\n` +
-      `1️⃣ Tap “${BTN.en.miniApp}” in Telegram. Sign-in is automatic.\n\n` +
-      `2️⃣ 🎥 Choose a video and tap Prepare video.\n\n` +
-      `3️⃣ ✅ Download the finished video and upload it to TikTok.\n\n` +
-      `For the full website, tap “${BTN.en.website}” in the menu.\n\n` +
+      `1️⃣ Tap “${BTN.en.website}” and open the link in your phone browser.\n\n` +
+      `2️⃣ 🔐 Sign in with Telegram on the website.\n\n` +
+      `3️⃣ 🎥 Choose a video and tap Prepare video.\n\n` +
+      `4️⃣ ✅ Download the finished video and upload it to TikTok.\n\n` +
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `🔥 OUT OF LIMITS? 🔥\n\n` +
       `💎 Keep processing!\n` +
@@ -140,7 +139,7 @@ const TEXTS = {
       `✨ Thanks for using INEASY PATCHER!`,
     authSuccess: '✅ Successfully logged in!\n\nGo back to the website — you can start working now.',
     websiteButton: 'Open website',
-    websiteGuide: (url) => `Full INEASY PATCHER website:\n${url}\n\nIf Telegram opens its in-app browser, press and hold the link and choose “Open in Browser”. Then sign in with Telegram and follow the website instructions.`,
+    websiteGuide: (url) => `INEASY PATCHER website:\n${url}\n\nFor the site and video tools to work correctly, open it in your phone's browser. If it opens inside Telegram, press and hold the link, choose “Open in Browser”, then select Safari or Chrome. The website tools may not work correctly inside Telegram's browser. Sign in with Telegram and follow the website instructions.`,
     packagesTitle: '🛒 Choose a limits package:',
     packageButton: (count, perUnit, price) => `${count} videos × ${perUnit} ₸ = ${price.toLocaleString('en-US')} ₸`,
     packageDetails: (count, price) =>
@@ -185,10 +184,10 @@ const TEXTS = {
       `👋 Сәлем, ${name}!\n\n` +
       `INEASY PATCHER-ге қош келдіңіз 🚀🔥\n\n` +
       `🎬 Бейнені өңдеу жолы:\n\n` +
-      `1️⃣ Telegram-да «${BTN.kk.miniApp}» түймесін басыңыз — кіру автоматты түрде орындалады.\n\n` +
-      `2️⃣ 🎥 Бейнені таңдап, «Бейнені дайындау» түймесін басыңыз.\n\n` +
-      `3️⃣ ✅ Дайын файлды жүктеп алып, TikTok-қа салыңыз.\n\n` +
-      `Толық сайт үшін мәзірдегі «${BTN.kk.website}» түймесін басыңыз.\n\n` +
+      `1️⃣ «${BTN.kk.website}» түймесін басып, сілтемені телефон браузерінде ашыңыз.\n\n` +
+      `2️⃣ 🔐 Сайтқа Telegram арқылы кіріңіз.\n\n` +
+      `3️⃣ 🎥 Бейнені таңдап, «Бейнені дайындау» түймесін басыңыз.\n\n` +
+      `4️⃣ ✅ Дайын файлды жүктеп алып, TikTok-қа салыңыз.\n\n` +
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `🔥 ЛИМИТ БІТТІ МЕ? 🔥\n\n` +
       `💎 Өңдеуді жалғастырыңыз!\n` +
@@ -199,7 +198,7 @@ const TEXTS = {
       `✨ INEASY PATCHER-ді қолданғаныңыз үшін рақмет!`,
     authSuccess: '✅ Сәтті авторизациядан өттіңіз!\n\nСайтқа қайта оралыңыз — енді жұмыс істей аласыз.',
     websiteButton: 'Сайтты ашу',
-    websiteGuide: (url) => `INEASY PATCHER толық сайты:\n${url}\n\nСілтеме Telegram ішкі браузерінде ашылса, оны басып тұрып «Браузерде ашу» тармағын таңдаңыз. Содан кейін Telegram арқылы кіріп, сайттағы нұсқауларды орындаңыз.`,
+    websiteGuide: (url) => `INEASY PATCHER сайты:\n${url}\n\nСайт пен бейне құралдары дұрыс жұмыс істеуі үшін сілтемені телефон браузерінде ашыңыз. Telegram ішінде ашылса, сілтемені басып тұрып «Браузерде ашу» тармағын таңдап, Safari немесе Chrome браузерін ашыңыз. Telegram ішкі браузерінде сайт құралдары дұрыс істемеуі мүмкін. Сайтқа Telegram арқылы кіріп, нұсқауларды орындаңыз.`,
     packagesTitle: '🛒 Лимит пакетін таңдаңыз:',
     packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
     packageDetails: (count, price) =>
@@ -522,7 +521,6 @@ const bot = new Telegraf(BOT_TOKEN);
 function mainKeyboard(lang) {
   const b = BTN[lang];
   return Markup.keyboard([
-    [Markup.button.webApp(b.miniApp, MINI_APP_URL)],
     [b.buy],
     [b.check],
     [b.balance, b.profile],
@@ -723,47 +721,6 @@ function requireUserToken(req, res, next) {
   }
 }
 
-function verifyTelegramWebAppData(initData) {
-  if (typeof initData !== 'string' || initData.length > 8192) throw new Error('invalid_init_data');
-  const params = new URLSearchParams(initData);
-  const hashes = params.getAll('hash');
-  if (hashes.length !== 1 || !/^[a-f0-9]{64}$/i.test(hashes[0])) throw new Error('invalid_init_data');
-
-  const authDate = Number(params.get('auth_date'));
-  const now = Math.floor(Date.now() / 1000);
-  if (!Number.isSafeInteger(authDate) || authDate > now + 60 || now - authDate > 86400) {
-    throw new Error('expired_init_data');
-  }
-
-  const checkString = [...params.entries()]
-    .filter(([key]) => key !== 'hash')
-    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
-    .map(([key, value]) => `${key}=${value}`)
-    .join('\n');
-  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
-  const expectedHash = crypto.createHmac('sha256', secretKey).update(checkString).digest();
-  const suppliedHash = Buffer.from(hashes[0], 'hex');
-  if (suppliedHash.length !== expectedHash.length || !crypto.timingSafeEqual(suppliedHash, expectedHash)) {
-    throw new Error('invalid_init_data');
-  }
-
-  const userValues = params.getAll('user');
-  if (userValues.length !== 1) throw new Error('invalid_init_data');
-  const user = JSON.parse(userValues[0]);
-  if (!user || !user.id) throw new Error('invalid_init_data');
-  return user;
-}
-
-function requireMiniAppAuth(req, res, next) {
-  try {
-    req.telegramUser = verifyTelegramWebAppData(req.body && req.body.initData);
-    req.telegramId = String(req.telegramUser.id);
-    next();
-  } catch (error) {
-    res.status(401).json({ error: error.message === 'expired_init_data' ? 'telegram_auth_expired' : 'telegram_auth_invalid' });
-  }
-}
-
 async function zernioRequest(resource, options = {}) {
   if (!process.env.ZERNIO_API_KEY) {
     const error = new Error('TikTok publishing is not configured. Add ZERNIO_API_KEY on the server.');
@@ -830,45 +787,6 @@ app.get('/api/session/:id', (req, res) => {
     firstName: session.firstName || null,
     authToken: session.authorized ? createUserToken(session.telegramId) : null,
   });
-});
-
-app.post('/api/miniapp/session', requireMiniAppAuth, async (req, res) => {
-  try {
-    const [free, purchased, processed] = await Promise.all([
-      getFreeBalance(req.telegramId),
-      getPurchasedBalance(req.telegramId),
-      getPatchedCount(req.telegramId),
-    ]);
-    res.json({
-      authToken: createUserToken(req.telegramId),
-      user: {
-        id: req.telegramId,
-        firstName: req.telegramUser.first_name || '',
-        username: req.telegramUser.username || '',
-      },
-      free,
-      purchased,
-      balance: free + purchased,
-      processed,
-    });
-  } catch (error) {
-    console.error('Ошибка Mini App:', error);
-    res.status(500).json({ error: 'miniapp_session_failed' });
-  }
-});
-
-app.get('/api/miniapp/balance', requireUserToken, async (req, res) => {
-  try {
-    const [free, purchased, processed] = await Promise.all([
-      getFreeBalance(req.telegramId),
-      getPurchasedBalance(req.telegramId),
-      getPatchedCount(req.telegramId),
-    ]);
-    res.json({ free, purchased, balance: free + purchased, processed });
-  } catch (error) {
-    console.error('Ошибка баланса Mini App:', error);
-    res.status(500).json({ error: 'balance_fetch_failed' });
-  }
 });
 
 app.get('/api/tiktok/status', requireUserToken, async (req, res) => {
