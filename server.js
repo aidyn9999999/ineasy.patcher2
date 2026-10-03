@@ -80,8 +80,9 @@ const TEXTS = {
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `✨ Спасибо, что используете INEASY PATCHER!`,
     authSuccess: '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
-    subscribeRequired: '✕ Сначала подпишитесь на канал новостей @ineasynews, чтобы продолжить.',
+    subscribeRequired: '🔐 Чтобы продолжить, подпишитесь на наш новостной канал @ineasynews.\n\n📣 Там мы публикуем новости и обновления INEASY PATCHER.\n\nПосле подписки нажмите «✅ Я подписался» — мы проверим подписку.',
     subscribeFailed: '✕ Подписка не найдена. Подпишитесь на канал и попробуйте ещё раз.',
+    subscribeNotJoined: 'Вы не подписаны на канал. Подпишитесь, чтобы пользоваться патчером.',
     subscribeCheckError: 'Не удалось проверить подписку. Попробуйте позже или сообщите администратору.',
     subscribeButton: 'Подписаться на канал',
     checkSubscribeButton: '✅ Я подписался',
@@ -144,8 +145,9 @@ const TEXTS = {
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `✨ Thanks for using INEASY PATCHER!`,
     authSuccess: '✅ Successfully logged in!\n\nGo back to the website — you can start working now.',
-    subscribeRequired: '✕ Subscribe to the news channel @ineasynews before continuing.',
+    subscribeRequired: '🔐 Subscribe to our news channel @ineasynews to continue.\n\n📣 We share INEASY PATCHER news and updates there.\n\nAfter subscribing, tap “✅ I subscribed” and we will check your membership.',
     subscribeFailed: '✕ We could not find your subscription. Join the channel and try again.',
+    subscribeNotJoined: 'You have not joined the channel. Subscribe to use the patcher.',
     subscribeCheckError: 'Could not check your subscription. Try again later or contact support.',
     subscribeButton: 'Subscribe to the channel',
     checkSubscribeButton: '✅ I subscribed',
@@ -208,8 +210,9 @@ const TEXTS = {
       `━━━━━━━━━━━━━━━━━━\n\n` +
       `✨ INEASY PATCHER-ді қолданғаныңыз үшін рақмет!`,
     authSuccess: '✅ Сәтті авторизациядан өттіңіз!\n\nСайтқа қайта оралыңыз — енді жұмыс істей аласыз.',
-    subscribeRequired: '✕ Жалғастыру үшін @ineasynews жаңалықтар арнасына жазылыңыз.',
+    subscribeRequired: '🔐 Жалғастыру үшін @ineasynews жаңалықтар арнасына жазылыңыз.\n\n📣 Онда INEASY PATCHER жаңалықтары мен жаңартуларын жариялаймыз.\n\nЖазылған соң «✅ Жазылдым» түймесін басыңыз — жазылымды тексереміз.',
     subscribeFailed: '✕ Жазылым табылмады. Арнаға жазылып, қайта көріңіз.',
+    subscribeNotJoined: 'Сіз арнаға жазылмағансыз. Патчерді пайдалану үшін арнаға жазылыңыз.',
     subscribeCheckError: 'Жазылымды тексеру мүмкін болмады. Кейінірек қайталап көріңіз немесе қолдау қызметіне хабарласыңыз.',
     subscribeButton: 'Арнаға жазылу',
     checkSubscribeButton: '✅ Жазылдым',
@@ -571,10 +574,12 @@ async function confirmSiteLogin(ctx, sessionId) {
   const session = sessions.get(sessionId);
   const lang = await getLang(ctx.from.id);
   if (!session) {
+    if (ctx.callbackQuery) await ctx.answerCbQuery();
     await ctx.reply('Ссылка для входа устарела. Вернитесь на сайт и начните вход заново.');
     return;
   }
   if (session.telegramId && String(session.telegramId) !== String(ctx.from.id)) {
+    if (ctx.callbackQuery) await ctx.answerCbQuery();
     await ctx.reply('Эта ссылка для входа уже привязана к другому Telegram-аккаунту.');
     return;
   }
@@ -590,17 +595,33 @@ async function confirmSiteLogin(ctx, sessionId) {
     const subscribed = ['creator', 'administrator', 'member'].includes(member.status) ||
       (member.status === 'restricted' && member.is_member);
     if (!subscribed) {
-      await ctx.reply(TEXTS[lang].subscribeRequired, newsSubscriptionKeyboard(lang, sessionId));
+      if (ctx.callbackQuery) {
+        await ctx.answerCbQuery(TEXTS[lang].subscribeNotJoined);
+      } else {
+        await ctx.reply(TEXTS[lang].subscribeRequired, newsSubscriptionKeyboard(lang, sessionId));
+      }
       return;
     }
 
     session.authorized = true;
     session.subscriptionRequired = false;
     sessions.set(sessionId, session);
+    if (ctx.callbackQuery) {
+      await ctx.answerCbQuery();
+      try {
+        await ctx.deleteMessage();
+      } catch (error) {
+        console.error('Не удалось удалить сообщение о подписке:', error.message);
+      }
+    }
     await ctx.reply(TEXTS[lang].authSuccess, mainKeyboard(lang));
   } catch (error) {
     console.error('Не удалось проверить подписку на канал:', error.message);
-    await ctx.reply(TEXTS[lang].subscribeCheckError, newsSubscriptionKeyboard(lang, sessionId));
+    if (ctx.callbackQuery) {
+      await ctx.answerCbQuery(TEXTS[lang].subscribeCheckError);
+    } else {
+      await ctx.reply(TEXTS[lang].subscribeCheckError, newsSubscriptionKeyboard(lang, sessionId));
+    }
   }
 }
 
@@ -681,7 +702,6 @@ bot.action(/^pkg_(\d+)_(\d+)$/, async (ctx) => {
 });
 
 bot.action(/^verify_news_([\w-]+)$/, async (ctx) => {
-  await ctx.answerCbQuery();
   await confirmSiteLogin(ctx, ctx.match[1]);
 });
 
