@@ -604,9 +604,11 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
 .faq-section a { color: var(--accent); text-decoration: none; }
 
 .tiktok-publish-btn, .tiktok-connect-btn, .tiktok-submit-btn { min-height: 44px; border: 0; border-radius: 9px; padding: 11px 15px; background: var(--accent); color: #1a0d05; font-size: 13px; font-weight: 700; cursor: pointer; transition: background .15s ease, transform .15s ease; box-shadow: 0 0 18px rgba(255, 107, 0, 0.22); }
+.tiktok-publish-btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; flex: 0 0 auto; }
+.tiktok-publish-btn::before { content: ''; display: block; width: 18px; height: 18px; flex: 0 0 18px; background: url('https://cdn.simpleicons.org/tiktok/111111') center / contain no-repeat; }
 .tiktok-publish-btn:hover, .tiktok-connect-btn:hover, .tiktok-submit-btn:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 0 26px rgba(255, 107, 0, 0.4); }
 .processed-result { flex-wrap: wrap; }
-.tiktok-publish-btn { flex: 1 1 100%; }
+.tiktok-publish-btn { flex: 0 0 auto; }
 .tiktok-composer { max-width: 560px; max-height: min(88vh, 860px); max-height: min(88dvh, 860px); overflow-y: auto; background: var(--card); border-color: var(--card-border); }
 .tiktok-composer .modal-head { position: sticky; top: 0; z-index: 1; background: var(--card); }
 .tiktok-composer .modal-head h2 { margin: 0; color: var(--text); font-size: 17px; font-weight: 600; }

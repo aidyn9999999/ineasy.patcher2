@@ -797,6 +797,7 @@ async function refreshTikTokStatus() {
     renderTikTokOptions();
   } catch (error) {
     tiktokAccountStatus.textContent = error.status === 401 ? t('authExpired') : (error.message || t('connectFailed'));
+    if (error.status !== 401) tiktokConnectBtn.classList.remove('hidden');
   }
 }
 
@@ -805,6 +806,22 @@ async function openTikTokComposer() {
   tiktokComposerOverlay.classList.remove('hidden');
   if (tiktokPublishStatus) tiktokPublishStatus.textContent = '';
   await refreshTikTokStatus();
+}
+
+function monitorTikTokConnection(authWindow) {
+  let checks = 0;
+  const timer = window.setInterval(async () => {
+    checks += 1;
+    if (!authWindow.closed && checks < 240) return;
+    window.clearInterval(timer);
+
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      if (!tiktokComposerOverlay || tiktokComposerOverlay.classList.contains('hidden')) return;
+      await refreshTikTokStatus();
+      if (tiktokAccountId) return;
+      await new Promise((resolve) => window.setTimeout(resolve, 1500));
+    }
+  }, 750);
 }
 
 if (publishTiktokBtn) {
@@ -823,6 +840,7 @@ if (tiktokConnectBtn) {
       const data = await tiktokApi('/api/tiktok/connect');
       if (!authWindow) throw new Error(t('allowPopups'));
       authWindow.location.href = data.authUrl;
+      monitorTikTokConnection(authWindow);
     } catch (error) {
       if (authWindow) authWindow.close();
       tiktokAccountStatus.textContent = error.status === 401 ? t('authExpired') : (error.message || t('connectFailed'));
