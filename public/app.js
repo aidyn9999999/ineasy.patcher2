@@ -34,8 +34,7 @@ const translations = {
     newsText: 'Tutorials, updates, and giveaways',
     newsButton: 'View',
     process: 'Process video',
-    processing: 'Preparing video…',
-    processingSub: 'Preparing…',
+    progressLabel: 'Loading',
     ready: 'Video ready',
     readySub: 'Download your patched file',
     download: 'Download',
@@ -151,8 +150,7 @@ const translations = {
     newsText: 'Туториалы, обновления и розыгрыши',
     newsButton: 'Смотреть',
     process: 'Обработать видео',
-    processing: 'Подготавливаем видео…',
-    processingSub: 'Обработка…',
+    progressLabel: 'Загрузка',
     ready: 'Видео готово',
     readySub: 'Можно скачать обработанный файл',
     download: 'Скачать',
@@ -268,8 +266,7 @@ const translations = {
     newsText: 'Туториалдар, жаңартулар және ұтыс ойындары',
     newsButton: 'Көру',
     process: 'Бейнені өңдеу',
-    processing: 'Бейнені даярлау…',
-    processingSub: 'Өңдеу…',
+    progressLabel: 'Жүктелуде',
     ready: 'Бейне дайын',
     readySub: 'Өңделген файлын жүктеп алыңыз',
     download: 'Жүктеу',
@@ -417,8 +414,6 @@ function applyLanguage(lang) {
   setText('newsButton', pack.newsButton);
   setText('processBtn', pack.process);
   setText('cancelProcessBtn', pack.cancel);
-  setText('processingTitle', pack.processing);
-  setText('processingText', pack.processingSub);
   setText('resultTitle', pack.ready);
   setText('resultSub', pack.readySub);
   setText('downloadBtn', pack.download);
@@ -639,6 +634,7 @@ const processBtn = document.getElementById('processBtn');
 const cancelProcessBtn = document.getElementById('cancelProcessBtn');
 const processingState = document.getElementById('processingState');
 const processingText = document.getElementById('processingText');
+const processingPercent = document.getElementById('processingPercent');
 const processingProgress = document.getElementById('processingProgress');
 const processedResult = document.getElementById('processedResult');
 const downloadBtn = document.getElementById('downloadBtn');
@@ -838,6 +834,12 @@ function setProcessingState(type, text) {
   processingState.classList.toggle('completed', type === 'success');
   processingState.classList.toggle('failed', type === 'error');
   if (processingText) processingText.textContent = text;
+}
+
+function updateProcessingProgress(value) {
+  const percent = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+  if (processingPercent) processingPercent.textContent = `${t('progressLabel')}: ${percent}%`;
+  if (processingProgress) processingProgress.style.width = `${percent}%`;
 }
 
 function handleFile(file) {
@@ -1075,31 +1077,24 @@ if (processBtn) {
       processingState.classList.remove('completed', 'failed');
     }
     if (processedResult) processedResult.classList.add('hidden');
-    if (processingText) processingText.textContent = t('loadingText');
-    if (processingProgress) processingProgress.style.width = '';
+    if (processingText) processingText.textContent = '';
+    updateProcessingProgress(0);
 
     try {
       const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
       const scaledVideo = await downscaleVideo(sourceFile, {
         signal: controller.signal,
         onProgress: (fraction) => {
-          if (!processingProgress) return;
           const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
-          processingProgress.style.width = `${progress * 95}%`;
-        },
-        onStatus: (message) => {
-          if (processingText) processingText.textContent = localizePatchStatus(message);
+          updateProcessingProgress(progress * 95);
         },
       });
       controller.signal.throwIfAborted();
-      if (processingProgress) processingProgress.style.width = '95%';
+      updateProcessingProgress(95);
 
       const { patchVideo } = await import('https://compressbase.com/method-api/client.mjs');
       const outputBlob = await patchVideo(scaledVideo, {
         signal: controller.signal,
-        onStatus: (message) => {
-          if (processingText) processingText.textContent = localizePatchStatus(message);
-        },
       });
 
       await consumeProcessedVideo();
@@ -1110,14 +1105,14 @@ if (processBtn) {
         downloadBtn.download = `${sourceFile.name.replace(/\.[^.]+$/, '')}-ineasy.mp4`;
       }
 
-      if (processingText) processingText.textContent = t('successText');
-      if (processingProgress) processingProgress.style.width = '100%';
+      if (processingText) processingText.textContent = '';
+      updateProcessingProgress(100);
       if (processingState) processingState.classList.add('completed');
       if (processedResult) processedResult.classList.remove('hidden');
     } catch (error) {
       if (processingState) processingState.classList.add('failed');
       if (processingText) processingText.textContent = controller.signal.aborted ? t('processingCancelled') : localizePatchError(error.message);
-      if (processingProgress) processingProgress.style.width = '0%';
+      updateProcessingProgress(0);
       processBtn.disabled = false;
     } finally {
       processController = null;
@@ -1127,16 +1122,6 @@ if (processBtn) {
 }
 
 if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processController?.abort());
-
-function localizePatchStatus(message) {
-  const lang = STATE.lang || 'en';
-  const statuses = {
-    'Preparing fragmented MP4 on your device…': { ru: 'Подготавливаем MP4 на вашем устройстве…', kk: 'MP4 файл құрылғыда дайындалу…', en: 'Preparing MP4 on your device…' },
-    'Preparing MP4 metadata on your device…': { ru: 'Подготавливаем метаданные на устройстве…', kk: 'Метадеректер құрылғыда дайындалуда…', en: 'Preparing metadata on your device…' },
-    'Patching metadata…': { ru: 'Обновляем метаданные видео…', kk: 'Бейне метадеректері жаңартылуда…', en: 'Patching video metadata…' },
-  };
-  return statuses[message]?.[lang] || message;
-}
 
 function localizePatchError(message) {
   const lang = STATE.lang || 'en';
