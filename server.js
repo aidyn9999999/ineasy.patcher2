@@ -279,6 +279,53 @@ async function setLang(telegramId, lang) {
   await redis.set(`lang:${telegramId}`, lang);
 }
 
+function describeBotActivity(ctx) {
+  const callbackData = ctx.callbackQuery && ctx.callbackQuery.data;
+  if (callbackData) {
+    const packageMatch = callbackData.match(/^pkg_(\d+)_(\d+)$/);
+    if (packageMatch) return `Выбрал пакет: ${packageMatch[1]} видео за ${packageMatch[2]} ₸`;
+    if (/^lang_/.test(callbackData)) return `Выбрал язык: ${callbackData.slice(5)}`;
+    if (/^verify_news_/.test(callbackData)) return 'Нажал проверку подписки';
+    return 'Нажал кнопку в боте';
+  }
+
+  const message = ctx.message;
+  if (!message) return 'Действие в боте';
+  if (message.photo) return 'Отправил фото';
+  if (message.document) return `Отправил документ (${message.document.mime_type || 'тип не указан'})`;
+  if (message.text) {
+    const command = message.text.match(/^\/([\w]+)(?:@\w+)?/);
+    if (command) return `Команда /${command[1]}`;
+    if (extractTikTokUrl(message.text)) return 'Запустил проверку ссылки TikTok';
+    return `Отправил текстовое сообщение (${message.text.length} символов)`;
+  }
+  return 'Отправил сообщение';
+}
+
+async function logUserActivity(telegramId, action, details = {}) {
+  const key = `activity:${telegramId}`;
+  const entry = JSON.stringify({ at: new Date().toISOString(), action, ...details });
+  await redis.lpush(key, entry);
+  await redis.ltrim(key, 0, 49);
+  await redis.expire(key, 90 * 24 * 60 * 60);
+}
+
+async function recordUserActivity(telegramId, action, details = {}) {
+  try {
+    await logUserActivity(telegramId, action, details);
+  } catch (error) {
+    console.error('Не удалось записать действие пользователя:', error.message);
+  }
+}
+
+async function getUserActivity(telegramId, count = 20) {
+  const entries = await redis.lrange(`activity:${telegramId}`, 0, count - 1);
+  return entries.map((entry) => {
+    if (typeof entry !== 'string') return entry;
+    try { return JSON.parse(entry); } catch (error) { return null; }
+  }).filter(Boolean);
+}
+
 async function getBlockedUser(telegramId) {
   const value = await redis.get(`blocked:${telegramId}`);
   if (!value) return null;
@@ -298,21 +345,12 @@ async function blockUser(telegramId, reason, adminId) {
     blockedAt: new Date().toISOString(),
     blockedBy: String(adminId),
   });
-  await closeSupportChat(telegramId);
+  await recordUserActivity(telegramId, 'Аккаунт заблокирован', { details: String(reason || 'Причина не указана').slice(0, 200) });
 }
 
 async function unblockUser(telegramId) {
   await redis.del(`blocked:${telegramId}`);
-}
-
-async function closeSupportChat(telegramId) {
-  await redis.del(`supportAdmin:${telegramId}`);
-  if (ADMIN_ID) {
-    const activeTarget = await redis.get(`adminReplyTarget:${ADMIN_ID}`);
-    if (String(activeTarget) === String(telegramId)) {
-      await redis.del(`adminReplyTarget:${ADMIN_ID}`);
-    }
-  }
+  await recordUserActivity(telegramId, 'Блокировка снята');
 }
 
 function currentWeekKey() {
@@ -601,18 +639,9 @@ bot.use(async (ctx, next) => {
   const telegramId = ctx.from && String(ctx.from.id);
   if (!telegramId) return next();
 
-  if (ADMIN_ID && telegramId === ADMIN_ID) {
-    const text = ctx.message && ctx.message.text;
-    if (text && !text.startsWith('/')) {
-      const targetId = await redis.get(`adminReplyTarget:${ADMIN_ID}`);
-      if (targetId) {
-        await bot.telegram.sendMessage(String(targetId), text);
-        await ctx.reply(`✅ Сообщение отправлено пользователю ${targetId}.`);
-        return;
-      }
-    }
-    return next();
-  }
+  if (ADMIN_ID && telegramId === ADMIN_ID) return next();
+
+  await recordUserActivity(telegramId, describeBotActivity(ctx));
 
   const blocked = await getBlockedUser(telegramId);
   if (blocked) {
@@ -620,14 +649,6 @@ bot.use(async (ctx, next) => {
     const message = TEXTS[lang].accessBlocked;
     if (ctx.callbackQuery) await ctx.answerCbQuery(message, { show_alert: true });
     else if (ctx.message) await ctx.reply(message);
-    return;
-  }
-
-  const supportAdmin = await redis.get(`supportAdmin:${telegramId}`);
-  const text = ctx.message && ctx.message.text;
-  if (supportAdmin && ctx.message && !/^\/endchat(?:@\w+)?(?:\s|$)/i.test(text || '')) {
-    await bot.telegram.sendMessage(String(supportAdmin), `💬 Клиент ${telegramId} прислал сообщение:`);
-    await bot.telegram.copyMessage(String(supportAdmin), telegramId, ctx.message.message_id);
     return;
   }
 
@@ -698,6 +719,7 @@ async function createPurchaseOrder(ctx, count, price, lang) {
   };
   await redis.set(`purchase:${order.id}`, order);
   await redis.set(pendingKey, order.id, { ex: 24 * 60 * 60 });
+  await recordUserActivity(telegramId, 'Создан заказ на покупку', { details: `${count} видео, ${price} ₸` });
   await ctx.reply(TEXTS[lang].packageDetails(count, price, telegramId), mainKeyboard(lang));
 }
 
@@ -885,6 +907,7 @@ bot.on(['photo', 'document'], async (ctx) => {
   order.receiptType = receiptType;
   order.receiptReceivedAt = new Date().toISOString();
   await redis.set(`purchase:${order.id}`, order);
+  await recordUserActivity(telegramId, 'Отправлен чек', { details: `Заказ ${order.id}, ${order.count} видео` });
 
   const displayName = String(order.username ? `@${order.username}` : order.firstName || 'Без имени')
     .replace(/[\r\n]/g, ' ')
@@ -953,6 +976,9 @@ bot.action(/^purchase_(approve|reject)_([\w-]+)$/, async (ctx) => {
     transaction.set(`purchase:${orderId}`, updatedOrder);
     transaction.del(`pendingPurchase:${order.telegramId}`);
     await transaction.exec();
+    await recordUserActivity(order.telegramId, action === 'approve' ? 'Оплата подтверждена' : 'Чек отклонён', {
+      details: `Заказ ${order.id}, ${order.count} видео, ${order.price} ₸`,
+    });
 
     const lang = await getLang(order.telegramId);
     const customerMessage = action === 'approve'
@@ -1022,9 +1048,48 @@ bot.command('admin', async (ctx) => {
     '/removevideo <ID> <количество> [причина] — снять купленные видео\n' +
     '/block <ID> [причина] — заблокировать бота и сайт\n' +
     '/unblock <ID> — восстановить доступ\n' +
-    '/reply <ID> [сообщение] — начать чат с клиентом\n' +
-    '/endreply — завершить чат; клиент может отправить /endchat'
+    '/history <ID> [число] — последние действия, покупки и баланс'
   );
+});
+
+bot.command('history', async (ctx) => {
+  if (!isAdmin(ctx)) return;
+  const parts = ctx.message.text.trim().split(/\s+/);
+  const targetId = parts[1];
+  const requestedCount = Number(parts[2]) || 15;
+  const count = Math.min(20, Math.max(1, Math.floor(requestedCount)));
+  if (!targetId || !/^\d+$/.test(targetId)) {
+    await ctx.reply('Формат: /history <telegram_id> [число событий до 20]');
+    return;
+  }
+
+  try {
+    const [free, purchased, processed, blocked, events, pendingId] = await Promise.all([
+      getFreeBalance(targetId), getPurchasedBalance(targetId), getPatchedCount(targetId),
+      getBlockedUser(targetId), getUserActivity(targetId, count), redis.get(`pendingPurchase:${targetId}`),
+    ]);
+    const pendingOrder = pendingId ? await readPurchaseOrder(pendingId) : null;
+    const status = blocked ? `🚫 Заблокирован${blocked.reason ? `: ${blocked.reason}` : ''}` : '✅ Не заблокирован';
+    const pending = pendingOrder
+      ? `\n🧾 Заявка: ${pendingOrder.count} видео за ${pendingOrder.price} ₸ (${pendingOrder.status})`
+      : '';
+    const history = events.length
+      ? events.map((event) => {
+        const time = new Date(event.at).toLocaleString('ru-RU');
+        const details = event.details ? ` — ${event.details}` : '';
+        return `${time}: ${event.action}${details}`;
+      }).join('\n')
+      : 'Записей пока нет. Журнал начал собираться после обновления бота.';
+    await ctx.reply(
+      `👤 Пользователь ${targetId}\n${status}\n` +
+      `🆓 Бесплатные видео: ${free}\n💎 Купленные видео: ${purchased}\n` +
+      `🎬 Обработано видео: ${processed}${pending}\n\n` +
+      `Последние действия (UTC):\n${history}`
+    );
+  } catch (error) {
+    console.error('Ошибка history:', error);
+    await ctx.reply('❌ Не удалось получить историю пользователя.');
+  }
 });
 
 bot.command('addvideo', async (ctx) => {
@@ -1041,6 +1106,7 @@ bot.command('addvideo', async (ctx) => {
 
   try {
     const newBalance = await addPurchasedBalance(targetId, amount);
+    await recordUserActivity(targetId, 'Администратор добавил видео', { details: `${amount} видео` });
     ctx.reply(`✅ Зачислено ${amount} видео пользователю ${targetId}.\nНовый купленный баланс: ${newBalance}`);
   } catch (err) {
     console.error('Ошибка addvideo:', err);
@@ -1061,6 +1127,9 @@ bot.command('removevideo', async (ctx) => {
 
   try {
     const result = await removePurchasedBalance(targetId, amount);
+    await recordUserActivity(targetId, 'Администратор снял купленные видео', {
+      details: `${result.removed} видео${reason ? `; причина: ${reason}` : ''}`,
+    });
     console.log('Admin removed purchased video balance', JSON.stringify({
       adminId: String(ctx.from.id), targetId, requested: amount, removed: result.removed, reason,
     }));
@@ -1115,47 +1184,6 @@ bot.command('unblock', async (ctx) => {
     console.error('Ошибка unblock:', error);
     await ctx.reply('❌ Не удалось снять блокировку.');
   }
-});
-
-bot.command('reply', async (ctx) => {
-  if (!isAdmin(ctx)) return;
-  const parts = ctx.message.text.trim().split(/\s+/);
-  const targetId = parts[1];
-  const message = parts.slice(2).join(' ').trim();
-  if (!targetId || !/^\d+$/.test(targetId) || targetId === ADMIN_ID) {
-    await ctx.reply('Формат: /reply <telegram_id> [сообщение]');
-    return;
-  }
-  if (await isUserBlocked(targetId)) {
-    await ctx.reply('Пользователь заблокирован. Сначала выполните /unblock <telegram_id>.');
-    return;
-  }
-  try {
-    if (message) await bot.telegram.sendMessage(targetId, message);
-    else await bot.telegram.sendMessage(targetId, 'Администратор подключился к чату. Напишите сообщение, чтобы продолжить.');
-    const previousTarget = await redis.get(`adminReplyTarget:${ADMIN_ID}`);
-    if (previousTarget && String(previousTarget) !== targetId) await closeSupportChat(previousTarget);
-    await redis.set(`adminReplyTarget:${ADMIN_ID}`, targetId, { ex: 24 * 60 * 60 });
-    await redis.set(`supportAdmin:${targetId}`, ADMIN_ID, { ex: 24 * 60 * 60 });
-    await ctx.reply(`💬 Чат с ${targetId} открыт. Пишите сюда обычным сообщением; ответы клиента будут пересылаться в этот чат. Завершить: /endreply`);
-  } catch (error) {
-    console.error('Ошибка reply:', error);
-    await ctx.reply('❌ Не удалось начать чат. Убедитесь, что клиент запускал бота.');
-  }
-});
-
-bot.command('endreply', async (ctx) => {
-  if (!isAdmin(ctx)) return;
-  const targetId = await redis.get(`adminReplyTarget:${ADMIN_ID}`);
-  if (targetId) await closeSupportChat(targetId);
-  else await redis.del(`adminReplyTarget:${ADMIN_ID}`);
-  await ctx.reply(targetId ? `Чат с ${targetId} завершён.` : 'Активного чата нет.');
-});
-
-bot.command('endchat', async (ctx) => {
-  const telegramId = String(ctx.from.id);
-  await closeSupportChat(telegramId);
-  await ctx.reply('Чат с администратором завершён.', mainKeyboard(await getLang(telegramId)));
 });
 
 bot.hears([BTN.ru.check, BTN.en.check, BTN.kk.check], async (ctx) => {
@@ -1495,6 +1523,7 @@ app.post('/api/consume/:telegramId', requireUserToken, async (req, res) => {
     const telegramId = String(req.params.telegramId);
     if (telegramId !== req.telegramId) return res.status(403).json({ error: 'account_mismatch' });
     await consumeOneVideo(telegramId);
+    await recordUserActivity(telegramId, 'Обработано видео');
     const [free, purchased, patched] = await Promise.all([
       getFreeBalance(telegramId),
       getPurchasedBalance(telegramId),
