@@ -55,7 +55,7 @@
     <section class="view-section active" id="patchSection">
     <div class="patch-panel">
       <h1 class="patch-title" id="patchTitle">Prepare your video for TikTok.</h1>
-      <p class="patch-sub" id="patchSub">Patcher automatically selects the processing settings.</p>
+      <p class="patch-sub" id="patchSub">Patcher adjusts video parameters to help reduce noticeable quality loss after TikTok processing.</p>
 
       <div class="dropzone" id="dropzone">
         <input type="file" id="fileInput" accept="video/*">
@@ -74,7 +74,12 @@
         </div>
       </div>
 
-      <p class="local-note" id="localNote">Video stays on your device. Processing settings are auto-selected.</p>
+      <p class="local-note" id="localNote">Your video stays on your device. 1440p (2K) and 4K videos are automatically prepared in 1080p to reduce processing load.</p>
+      <p class="export-note" id="exportNote">For smoother playback, export in 1080p, 60 FPS, with a bitrate of 15–35 Mbps.</p>
+        <aside class="news-callout">
+          <p><span id="newsText">Tutorials, updates, and giveaways</span> <b>@ineasynews</b></p>
+          <a class="news-link" id="newsButton" href="https://t.me/ineasynews" target="_blank" rel="noopener">View</a>
+        </aside>
       <button class="process-btn" id="processBtn" type="button" disabled>Process video</button>
       <div class="processing-state hidden" id="processingState">
         <span class="processing-spinner"></span>
