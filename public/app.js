@@ -110,6 +110,7 @@ const translations = {
     processingCancelled: 'Processing cancelled.',
     loadingText: 'Preparing MP4 metadata on your device…',
     noBalance: 'No videos remain in your balance. Add videos to continue.',
+    balanceCheckFailed: 'Could not refresh your balance. Please try again.',
     balanceUpdateFailed: 'The video was patched, but the balance could not be updated. Contact support before processing again.',
     successText: 'Done. Video and audio stayed on your device; only MP4 metadata was sent.',
     checkResult: 'Result',
@@ -226,6 +227,7 @@ const translations = {
     processingCancelled: 'Обработка отменена.',
     loadingText: 'Проверяем MP4 и подготавливаем метаданные на устройстве…',
     noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
+    balanceCheckFailed: 'Не удалось проверить баланс. Попробуйте ещё раз.',
     balanceUpdateFailed: 'Видео обработано, но баланс не удалось обновить. Перед повторной обработкой обратитесь в поддержку.',
     successText: 'Готово. Видео и аудио не отправлялись; сервис получил только метаданные MP4.',
     checkResult: 'Результат проверки',
@@ -342,6 +344,7 @@ const translations = {
     processingCancelled: 'Өңдеу тоқтатылды.',
     loadingText: 'MP4 метадеректерін құрылғыда дайындаймыз…',
     noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
+    balanceCheckFailed: 'Балансты тексеру мүмкін болмады. Қайталап көріңіз.',
     balanceUpdateFailed: 'Бейне өңделді, бірақ баланс жаңартылмады. Қайталап өңдемей, қолдау қызметіне хабарласыңыз.',
     successText: 'Дайын. Бейне мен аудио жіберілмеді; сервис тек MP4 метадеректерін алды.',
     checkResult: 'Нәтиже',
@@ -528,6 +531,15 @@ let currentBalance = null;
 
 function renderBalance() {
   if (balanceLabel && currentBalance !== null) balanceLabel.textContent = `${currentBalance} ${t('videos')}`;
+  updateProcessButton();
+}
+
+function updateProcessButton() {
+  if (!processBtn) return;
+  const hasVideo = Boolean(fileInput && fileInput.files && fileInput.files[0]);
+  const hasCredits = Number.isFinite(currentBalance) && currentBalance > 0;
+  const hasResult = Boolean(processedResult && !processedResult.classList.contains('hidden'));
+  processBtn.disabled = !hasVideo || !hasCredits || Boolean(processController) || hasResult;
 }
 
 async function loadBalance() {
@@ -547,8 +559,28 @@ async function loadBalance() {
     currentBalance = data.balance;
     renderBalance();
   } catch (e) {
+    currentBalance = null;
+    updateProcessButton();
     if (balanceLabel) balanceLabel.textContent = '—';
   }
+}
+
+async function refreshBalanceForProcessing() {
+  const token = localStorage.getItem('tg_auth_token');
+  const response = await fetch(`/api/balance/${encodeURIComponent(tgId)}`, {
+    headers: { Authorization: `Bearer ${token || ''}` },
+  });
+  if (response.status === 401 || response.status === 403) {
+    localStorage.removeItem('tg_id');
+    localStorage.removeItem('tg_auth_token');
+    window.location.replace('/');
+    return false;
+  }
+  if (!response.ok) throw new Error('balance_fetch_failed');
+  const data = await response.json();
+  currentBalance = Number(data.balance);
+  renderBalance();
+  return currentBalance > 0;
 }
 
 async function consumeProcessedVideo() {
@@ -559,7 +591,11 @@ async function consumeProcessedVideo() {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    if (data.error === 'no_balance') throw new Error(t('noBalance'));
+    if (data.error === 'no_balance') {
+      currentBalance = 0;
+      renderBalance();
+      throw new Error(t('noBalance'));
+    }
     if (response.status === 401) throw new Error(t('authExpired'));
     throw new Error(t('balanceUpdateFailed'));
   }
@@ -860,7 +896,7 @@ function handleFile(file) {
   if (previewVideo) previewVideo.src = currentObjectUrl;
   if (fileMeta) fileMeta.textContent = `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
   if (previewWrap) previewWrap.classList.add('show');
-  if (processBtn) processBtn.disabled = false;
+  updateProcessButton();
   if (processingState) processingState.classList.add('hidden');
   if (processedResult) processedResult.classList.add('hidden');
 }
@@ -1066,7 +1102,20 @@ document.querySelectorAll('.nav-tab').forEach((tab) => {
 
 if (processBtn) {
   processBtn.addEventListener('click', async () => {
-    if (!fileInput || !fileInput.files[0]) return;
+    if (!fileInput || !fileInput.files[0] || processBtn.disabled) return;
+    processBtn.disabled = true;
+    try {
+      if (!await refreshBalanceForProcessing()) {
+        setProcessingState('error', t('noBalance'));
+        updateProcessButton();
+        return;
+      }
+    } catch (error) {
+      setProcessingState('error', t('balanceCheckFailed'));
+      updateProcessButton();
+      return;
+    }
+
     const sourceFile = fileInput.files[0];
     const controller = new AbortController();
     processController = controller;
@@ -1113,9 +1162,9 @@ if (processBtn) {
       if (processingState) processingState.classList.add('failed');
       if (processingText) processingText.textContent = controller.signal.aborted ? t('processingCancelled') : localizePatchError(error.message);
       updateProcessingProgress(0);
-      processBtn.disabled = false;
     } finally {
       processController = null;
+      updateProcessButton();
       if (cancelProcessBtn) cancelProcessBtn.disabled = true;
     }
   });
