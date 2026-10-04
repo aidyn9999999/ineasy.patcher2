@@ -89,13 +89,18 @@ const TEXTS = {
     websiteGuide: (url) => `Ссылка на INEASY PATCHER:\n${url}\n\nЧтобы сайт и обработка видео работали правильно, откройте его в браузере телефона. Если ссылка открылась внутри Telegram, зажмите её и выберите «Открыть в браузере», затем выберите Safari или Chrome. Во встроенном браузере Telegram инструменты сайта могут работать некорректно. После открытия войдите через Telegram и следуйте инструкции на сайте.`,
     packagesTitle: '🛒 Выберите пакет лимитов:',
     packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
-    packageDetails: (count, price) =>
+    packageDetails: (count, price, telegramId) =>
       `🛒 Пакет: ${count} видео за ${price.toLocaleString('ru-RU')} тенге\n\n` +
       `💳 Оплата на карту:\n${CARD_INFO}\n\n` +
-      `✅ После перевода отправьте сюда чек и ваш Telegram ID.\n\n` +
-      `🔎 Как узнать свой Telegram ID:\n` +
-      `1) Нажмите кнопку «${BTN.ru.profile}» внизу и скопируйте ID оттуда\n` +
-      `2) Либо зайдите на сайт — ID указан в углу экрана`,
+      `✅ После перевода отправьте сюда фото или PDF чека.\n` +
+      `Ваш Telegram ID: ${telegramId} (бот определит его автоматически).\n` +
+      `После проверки чека администратор вручную зачислит видео.`,
+    purchasePending: '⏳ Ваш чек уже отправлен и ожидает проверки администратором.',
+    receiptRequired: 'Сначала выберите пакет через кнопку «Купить лимиты», затем отправьте фото или PDF чека.',
+    receiptReceived: '✅ Чек отправлен администратору. Видео будут зачислены после проверки оплаты.',
+    purchaseApproved: (count) => `✅ Оплата подтверждена. На купленный баланс зачислено ${count} видео.`,
+    purchaseRejected: '❌ Чек отклонён. Если считаете это ошибкой, ответьте сюда или свяжитесь с администратором.',
+    accessBlocked: '⛔ Доступ к боту и сайту заблокирован администратором.',
     balance: (free, purchased) =>
       `💰 Ваш баланс:\n\n` +
       `🆓 Бесплатный (на этой неделе): ${free} видео\n` +
@@ -153,13 +158,18 @@ const TEXTS = {
     websiteGuide: (url) => `INEASY PATCHER website:\n${url}\n\nFor the site and video tools to work correctly, open it in your phone's browser. If it opens inside Telegram, press and hold the link, choose “Open in Browser”, then select Safari or Chrome. The website tools may not work correctly inside Telegram's browser. Sign in with Telegram and follow the website instructions.`,
     packagesTitle: '🛒 Choose a limits package:',
     packageButton: (count, perUnit, price) => `${count} videos × ${perUnit} ₸ = ${price.toLocaleString('en-US')} ₸`,
-    packageDetails: (count, price) =>
+    packageDetails: (count, price, telegramId) =>
       `🛒 Package: ${count} videos for ${price.toLocaleString('en-US')} tenge\n\n` +
       `💳 Card payment:\n${CARD_INFO}\n\n` +
-      `✅ After the transfer, send the receipt and your Telegram ID here.\n\n` +
-      `🔎 How to find your Telegram ID:\n` +
-      `1) Tap the «${BTN.en.profile}» button below and copy the ID from there\n` +
-      `2) Or open the website — the ID is shown in the corner of the screen`,
+      `✅ After payment, send a photo or PDF of the receipt here.\n` +
+      `Your Telegram ID is ${telegramId}; the bot adds it automatically.\n` +
+      `An administrator will review the receipt and add the videos manually.`,
+    purchasePending: '⏳ Your receipt has already been sent and is awaiting administrator review.',
+    receiptRequired: 'Choose a package with “Buy limits” first, then send a receipt photo or PDF.',
+    receiptReceived: '✅ Your receipt was sent to the administrator. Videos are added after payment is verified.',
+    purchaseApproved: (count) => `✅ Payment confirmed. ${count} videos were added to your purchased balance.`,
+    purchaseRejected: '❌ The receipt was declined. If you think this is an error, reply here or contact the administrator.',
+    accessBlocked: '⛔ Access to the bot and website has been blocked by an administrator.',
     balance: (free, purchased) =>
       `💰 Your balance:\n\n` +
       `🆓 Free (this week): ${free} videos\n` +
@@ -217,13 +227,18 @@ const TEXTS = {
     websiteGuide: (url) => `INEASY PATCHER сайты:\n${url}\n\nСайт пен бейне құралдары дұрыс жұмыс істеуі үшін сілтемені телефон браузерінде ашыңыз. Telegram ішінде ашылса, сілтемені басып тұрып «Браузерде ашу» тармағын таңдап, Safari немесе Chrome браузерін ашыңыз. Telegram ішкі браузерінде сайт құралдары дұрыс істемеуі мүмкін. Сайтқа Telegram арқылы кіріп, нұсқауларды орындаңыз.`,
     packagesTitle: '🛒 Лимит пакетін таңдаңыз:',
     packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
-    packageDetails: (count, price) =>
+    packageDetails: (count, price, telegramId) =>
       `🛒 Пакет: ${price.toLocaleString('ru-RU')} теңгеге ${count} видео\n\n` +
       `💳 Картаға төлем:\n${CARD_INFO}\n\n` +
-      `✅ Аударымнан кейін чек пен Telegram ID-іңізді осында жіберіңіз.\n\n` +
-      `🔎 Telegram ID-іңізді қалай табуға болады:\n` +
-      `1) Төмендегі «${BTN.kk.profile}» батырмасын басып, ID-ды сол жерден көшіріп алыңыз\n` +
-      `2) Немесе сайтқа кіріңіз — ID экранның бұрышында көрсетілген`,
+      `✅ Төлемнен кейін чектің фотосын немесе PDF нұсқасын осында жіберіңіз.\n` +
+      `Telegram ID: ${telegramId} (бот оны автоматты түрде анықтайды).\n` +
+      `Әкімші чекті тексеріп, видеоларды қолмен қосады.`,
+    purchasePending: '⏳ Чегіңіз әкімшіге жіберілді және тексеруді күтіп тұр.',
+    receiptRequired: 'Алдымен «Лимит сатып алу» түймесімен пакет таңдаңыз, содан кейін чек фотосын немесе PDF жіберіңіз.',
+    receiptReceived: '✅ Чек әкімшіге жіберілді. Төлем расталғаннан кейін видеолар қосылады.',
+    purchaseApproved: (count) => `✅ Төлем расталды. Сатып алынған балансыңызға ${count} видео қосылды.`,
+    purchaseRejected: '❌ Чек қабылданбады. Қате бар деп ойласаңыз, осы жерге жазыңыз немесе әкімшіге хабарласыңыз.',
+    accessBlocked: '⛔ Әкімші бот пен сайтқа кіруді бұғаттады.',
     balance: (free, purchased) =>
       `💰 Сіздің балансыңыз:\n\n` +
       `🆓 Тегін (осы аптада): ${free} видео\n` +
@@ -262,6 +277,42 @@ async function getLang(telegramId) {
 }
 async function setLang(telegramId, lang) {
   await redis.set(`lang:${telegramId}`, lang);
+}
+
+async function getBlockedUser(telegramId) {
+  const value = await redis.get(`blocked:${telegramId}`);
+  if (!value) return null;
+  if (typeof value === 'string') {
+    try { return JSON.parse(value); } catch (error) { return { reason: value }; }
+  }
+  return value;
+}
+
+async function isUserBlocked(telegramId) {
+  return Boolean(await getBlockedUser(telegramId));
+}
+
+async function blockUser(telegramId, reason, adminId) {
+  await redis.set(`blocked:${telegramId}`, {
+    reason: String(reason || '').trim().slice(0, 300),
+    blockedAt: new Date().toISOString(),
+    blockedBy: String(adminId),
+  });
+  await closeSupportChat(telegramId);
+}
+
+async function unblockUser(telegramId) {
+  await redis.del(`blocked:${telegramId}`);
+}
+
+async function closeSupportChat(telegramId) {
+  await redis.del(`supportAdmin:${telegramId}`);
+  if (ADMIN_ID) {
+    const activeTarget = await redis.get(`adminReplyTarget:${ADMIN_ID}`);
+    if (String(activeTarget) === String(telegramId)) {
+      await redis.del(`adminReplyTarget:${ADMIN_ID}`);
+    }
+  }
 }
 
 function currentWeekKey() {
@@ -307,6 +358,16 @@ async function getPurchasedBalance(telegramId) {
 async function addPurchasedBalance(telegramId, amount) {
   await getPurchasedBalance(telegramId);
   return redis.incrby(`purchased:${telegramId}`, amount);
+}
+
+async function removePurchasedBalance(telegramId, amount) {
+  await getPurchasedBalance(telegramId);
+  const [removed, remaining] = await redis.eval(
+    "local balance = tonumber(redis.call('GET', KEYS[1]) or '0'); local amount = tonumber(ARGV[1]); local removed = math.min(balance, amount); local remaining = balance - removed; if removed > 0 then redis.call('SET', KEYS[1], remaining); end; return {removed, remaining}",
+    [`purchased:${telegramId}`],
+    [String(amount)]
+  );
+  return { removed: Number(removed), remaining: Number(remaining) };
 }
 
 async function getPatchedCount(telegramId) {
@@ -536,6 +597,43 @@ setInterval(() => {
 
 const bot = new Telegraf(BOT_TOKEN);
 
+bot.use(async (ctx, next) => {
+  const telegramId = ctx.from && String(ctx.from.id);
+  if (!telegramId) return next();
+
+  if (ADMIN_ID && telegramId === ADMIN_ID) {
+    const text = ctx.message && ctx.message.text;
+    if (text && !text.startsWith('/')) {
+      const targetId = await redis.get(`adminReplyTarget:${ADMIN_ID}`);
+      if (targetId) {
+        await bot.telegram.sendMessage(String(targetId), text);
+        await ctx.reply(`✅ Сообщение отправлено пользователю ${targetId}.`);
+        return;
+      }
+    }
+    return next();
+  }
+
+  const blocked = await getBlockedUser(telegramId);
+  if (blocked) {
+    const lang = await getLang(telegramId);
+    const message = TEXTS[lang].accessBlocked;
+    if (ctx.callbackQuery) await ctx.answerCbQuery(message, { show_alert: true });
+    else if (ctx.message) await ctx.reply(message);
+    return;
+  }
+
+  const supportAdmin = await redis.get(`supportAdmin:${telegramId}`);
+  const text = ctx.message && ctx.message.text;
+  if (supportAdmin && ctx.message && !/^\/endchat(?:@\w+)?(?:\s|$)/i.test(text || '')) {
+    await bot.telegram.sendMessage(String(supportAdmin), `💬 Клиент ${telegramId} прислал сообщение:`);
+    await bot.telegram.copyMessage(String(supportAdmin), telegramId, ctx.message.message_id);
+    return;
+  }
+
+  return next();
+});
+
 function mainKeyboard(lang) {
   const b = BTN[lang];
   return Markup.keyboard([
@@ -554,6 +652,53 @@ function packagesKeyboard(lang) {
     return [Markup.button.callback(t.packageButton(count, perUnit, price), `pkg_${count}_${price}`)];
   });
   return Markup.inlineKeyboard(rows);
+}
+
+async function readPurchaseOrder(orderId) {
+  const order = await redis.get(`purchase:${orderId}`);
+  if (!order) return null;
+  if (typeof order === 'string') {
+    try { return JSON.parse(order); } catch (error) { return null; }
+  }
+  return order;
+}
+
+async function createPurchaseOrder(ctx, count, price, lang) {
+  const selectedPackage = PACKAGES.find(([packageCount, packagePrice]) =>
+    packageCount === count && packagePrice === price);
+  if (!selectedPackage) {
+    await ctx.reply('❌ Неизвестный пакет. Откройте меню покупки и выберите пакет из списка.');
+    return;
+  }
+
+  const telegramId = String(ctx.from.id);
+  const pendingKey = `pendingPurchase:${telegramId}`;
+  const existingId = await redis.get(pendingKey);
+  if (existingId) {
+    const existing = await readPurchaseOrder(existingId);
+    if (existing && existing.status === 'awaiting_review') {
+      await ctx.reply(TEXTS[lang].purchasePending, mainKeyboard(lang));
+      return;
+    }
+    if (existing && existing.status === 'awaiting_receipt') {
+      existing.status = 'cancelled';
+      await redis.set(`purchase:${existing.id}`, existing);
+    }
+  }
+
+  const order = {
+    id: uuidv4(),
+    telegramId,
+    username: ctx.from.username || null,
+    firstName: ctx.from.first_name || '',
+    count,
+    price,
+    status: 'awaiting_receipt',
+    createdAt: new Date().toISOString(),
+  };
+  await redis.set(`purchase:${order.id}`, order);
+  await redis.set(pendingKey, order.id, { ex: 24 * 60 * 60 });
+  await ctx.reply(TEXTS[lang].packageDetails(count, price, telegramId), mainKeyboard(lang));
 }
 
 async function sendWelcome(ctx, lang) {
@@ -658,7 +803,7 @@ bot.start(async (ctx) => {
   if (payload && payload.startsWith('buy_')) {
     const [, count, price] = payload.split('_');
     if (count && price) {
-      await ctx.reply(TEXTS[lang].packageDetails(Number(count), Number(price)), mainKeyboard(lang));
+      await createPurchaseOrder(ctx, Number(count), Number(price), lang);
       return;
     }
   }
@@ -700,21 +845,196 @@ bot.hears([BTN.ru.profile, BTN.en.profile, BTN.kk.profile], async (ctx) => sendP
 bot.action(/^pkg_(\d+)_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
   const lang = await getLang(ctx.from.id);
-  await ctx.reply(TEXTS[lang].packageDetails(Number(ctx.match[1]), Number(ctx.match[2])), mainKeyboard(lang));
+  await createPurchaseOrder(ctx, Number(ctx.match[1]), Number(ctx.match[2]), lang);
+});
+
+bot.on(['photo', 'document'], async (ctx) => {
+  const telegramId = String(ctx.from.id);
+  const lang = await getLang(telegramId);
+  if (!ADMIN_ID) {
+    await ctx.reply('❌ Проверка оплаты временно недоступна. Сообщите администратору.');
+    return;
+  }
+
+  const pendingId = await redis.get(`pendingPurchase:${telegramId}`);
+  const order = pendingId ? await readPurchaseOrder(pendingId) : null;
+  if (!order || order.status === 'cancelled') {
+    await ctx.reply(TEXTS[lang].receiptRequired, mainKeyboard(lang));
+    return;
+  }
+  if (order.status === 'awaiting_review') {
+    await ctx.reply(TEXTS[lang].purchasePending, mainKeyboard(lang));
+    return;
+  }
+  if (order.status !== 'awaiting_receipt') {
+    await ctx.reply(TEXTS[lang].receiptRequired, mainKeyboard(lang));
+    return;
+  }
+
+  const document = ctx.message.document;
+  if (document && !['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(document.mime_type)) {
+    await ctx.reply('Отправьте чек изображением или PDF-файлом.');
+    return;
+  }
+
+  const receiptType = ctx.message.photo ? 'photo' : 'document';
+  const fileId = ctx.message.photo
+    ? ctx.message.photo[ctx.message.photo.length - 1].file_id
+    : document.file_id;
+  order.status = 'awaiting_review';
+  order.receiptType = receiptType;
+  order.receiptReceivedAt = new Date().toISOString();
+  await redis.set(`purchase:${order.id}`, order);
+
+  const displayName = String(order.username ? `@${order.username}` : order.firstName || 'Без имени')
+    .replace(/[\r\n]/g, ' ')
+    .slice(0, 80);
+  const caption = [
+    '🧾 Новый чек на проверку',
+    `Заявка: ${order.id}`,
+    `Пользователь: ${displayName}`,
+    `Telegram ID: ${telegramId}`,
+    `Пакет: ${order.count} видео за ${order.price} ₸`,
+  ].join('\n');
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.callback('✅ Подтвердить и зачислить', `purchase_approve_${order.id}`)],
+    [Markup.button.callback('❌ Отклонить', `purchase_reject_${order.id}`), Markup.button.callback('🚫 Заблокировать', `block_user_${telegramId}`)],
+  ]);
+
+  try {
+    if (receiptType === 'photo') {
+      await bot.telegram.sendPhoto(ADMIN_ID, fileId, { caption, reply_markup: keyboard.reply_markup });
+    } else {
+      await bot.telegram.sendDocument(ADMIN_ID, fileId, { caption, reply_markup: keyboard.reply_markup });
+    }
+    await ctx.reply(TEXTS[lang].receiptReceived, mainKeyboard(lang));
+  } catch (error) {
+    order.status = 'awaiting_receipt';
+    delete order.receiptType;
+    delete order.receiptReceivedAt;
+    await redis.set(`purchase:${order.id}`, order);
+    console.error('Не удалось передать чек администратору:', error.message);
+    await ctx.reply('❌ Не удалось передать чек администратору. Попробуйте отправить его ещё раз.');
+  }
+});
+
+bot.action(/^purchase_(approve|reject)_([\w-]+)$/, async (ctx) => {
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) {
+    await ctx.answerCbQuery('Только администратор может проверять оплату.', { show_alert: true });
+    return;
+  }
+
+  const [, action, orderId] = ctx.match;
+  const lockKey = `purchaseLock:${orderId}`;
+  const lock = await redis.set(lockKey, String(ctx.from.id), { nx: true, ex: 60 });
+  if (!lock) {
+    await ctx.answerCbQuery('Заявка уже обрабатывается.');
+    return;
+  }
+
+  try {
+    const order = await readPurchaseOrder(orderId);
+    if (!order || order.status !== 'awaiting_review') {
+      await ctx.answerCbQuery('Заявка уже обработана или не найдена.', { show_alert: true });
+      return;
+    }
+
+    const updatedOrder = {
+      ...order,
+      status: action === 'approve' ? 'approved' : 'rejected',
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: String(ctx.from.id),
+    };
+    const transaction = redis.multi();
+    if (action === 'approve') {
+      await getPurchasedBalance(order.telegramId);
+      transaction.incrby(`purchased:${order.telegramId}`, order.count);
+    }
+    transaction.set(`purchase:${orderId}`, updatedOrder);
+    transaction.del(`pendingPurchase:${order.telegramId}`);
+    await transaction.exec();
+
+    const lang = await getLang(order.telegramId);
+    const customerMessage = action === 'approve'
+      ? TEXTS[lang].purchaseApproved(order.count)
+      : TEXTS[lang].purchaseRejected;
+    try {
+      await bot.telegram.sendMessage(order.telegramId, customerMessage, mainKeyboard(lang));
+    } catch (error) {
+      console.error('Не удалось уведомить пользователя об оплате:', error.message);
+    }
+
+    await ctx.answerCbQuery(action === 'approve' ? 'Пакет зачислен.' : 'Заявка отклонена.');
+    const previousCaption = ctx.callbackQuery.message.caption || `Заявка: ${orderId}`;
+    const resultLabel = action === 'approve' ? '✅ Оплата подтверждена, видео зачислены.' : '❌ Чек отклонён.';
+    try {
+      await ctx.editMessageCaption(`${previousCaption}\n\n${resultLabel}`, { reply_markup: { inline_keyboard: [] } });
+    } catch (error) {
+      console.error('Не удалось обновить сообщение с чеком:', error.message);
+    }
+  } catch (error) {
+    console.error('Ошибка обработки оплаты:', error);
+    await ctx.answerCbQuery('Не удалось обработать заявку. Проверьте логи сервера.', { show_alert: true });
+  } finally {
+    await redis.del(lockKey);
+  }
+});
+
+bot.action(/^block_user_(\d+)$/, async (ctx) => {
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) {
+    await ctx.answerCbQuery('Только администратор может блокировать пользователей.', { show_alert: true });
+    return;
+  }
+  const targetId = ctx.match[1];
+  if (targetId === ADMIN_ID) {
+    await ctx.answerCbQuery('Нельзя заблокировать администратора.', { show_alert: true });
+    return;
+  }
+  try {
+    await blockUser(targetId, 'Заблокирован из заявки на оплату', ctx.from.id);
+    await ctx.answerCbQuery(`Пользователь ${targetId} заблокирован.`);
+    try { await bot.telegram.sendMessage(targetId, TEXTS[await getLang(targetId)].accessBlocked); } catch (error) {}
+    const previousCaption = ctx.callbackQuery.message.caption || `Telegram ID: ${targetId}`;
+    try {
+      await ctx.editMessageCaption(`${previousCaption}\n\n🚫 Пользователь заблокирован.`, { reply_markup: { inline_keyboard: [] } });
+    } catch (error) {
+      console.error('Не удалось обновить сообщение с чеком:', error.message);
+    }
+  } catch (error) {
+    console.error('Ошибка блокировки пользователя:', error);
+    await ctx.answerCbQuery('Не удалось заблокировать пользователя.', { show_alert: true });
+  }
 });
 
 bot.action(/^verify_news_([\w-]+)$/, async (ctx) => {
   await confirmSiteLogin(ctx, ctx.match[1]);
 });
 
+function isAdmin(ctx) {
+  return Boolean(ADMIN_ID && ctx.from && String(ctx.from.id) === ADMIN_ID);
+}
+
+bot.command('admin', async (ctx) => {
+  if (!isAdmin(ctx)) return;
+  await ctx.reply(
+    'Команды администратора:\n' +
+    '/addvideo <ID> <количество> — добавить купленные видео\n' +
+    '/removevideo <ID> <количество> [причина] — снять купленные видео\n' +
+    '/block <ID> [причина] — заблокировать бота и сайт\n' +
+    '/unblock <ID> — восстановить доступ\n' +
+    '/reply <ID> [сообщение] — начать чат с клиентом\n' +
+    '/endreply — завершить чат; клиент может отправить /endchat'
+  );
+});
+
 bot.command('addvideo', async (ctx) => {
-  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
+  if (!isAdmin(ctx)) return;
 
   const parts = ctx.message.text.trim().split(/\s+/);
   const targetId = parts[1];
-  const amount = parseInt(parts[2], 10);
+  const amount = Number(parts[2]);
 
-  if (!targetId || !Number.isFinite(amount) || amount <= 0) {
+  if (!targetId || !/^\d+$/.test(targetId) || !Number.isSafeInteger(amount) || amount <= 0) {
     ctx.reply('Формат: /addvideo <telegram_id> <количество>');
     return;
   }
@@ -726,6 +1046,116 @@ bot.command('addvideo', async (ctx) => {
     console.error('Ошибка addvideo:', err);
     ctx.reply('❌ Не удалось обновить баланс. Проверьте логи сервера.');
   }
+});
+
+bot.command('removevideo', async (ctx) => {
+  if (!isAdmin(ctx)) return;
+  const parts = ctx.message.text.trim().split(/\s+/);
+  const targetId = parts[1];
+  const amount = Number(parts[2]);
+  const reason = parts.slice(3).join(' ').trim();
+  if (!targetId || !/^\d+$/.test(targetId) || !Number.isSafeInteger(amount) || amount <= 0) {
+    await ctx.reply('Формат: /removevideo <telegram_id> <количество> [причина]. Снимаются только купленные видео.');
+    return;
+  }
+
+  try {
+    const result = await removePurchasedBalance(targetId, amount);
+    console.log('Admin removed purchased video balance', JSON.stringify({
+      adminId: String(ctx.from.id), targetId, requested: amount, removed: result.removed, reason,
+    }));
+    await ctx.reply(`✅ Снято купленных видео: ${result.removed}. Остаток купленных: ${result.remaining}.`);
+    try {
+      const lang = await getLang(targetId);
+      const [free, purchased] = await Promise.all([getFreeBalance(targetId), getPurchasedBalance(targetId)]);
+      await bot.telegram.sendMessage(targetId, TEXTS[lang].balance(free, purchased), mainKeyboard(lang));
+    } catch (error) {
+      console.error('Не удалось уведомить пользователя о снятии баланса:', error.message);
+    }
+  } catch (error) {
+    console.error('Ошибка removevideo:', error);
+    await ctx.reply('❌ Не удалось изменить баланс. Проверьте логи сервера.');
+  }
+});
+
+bot.command('block', async (ctx) => {
+  if (!isAdmin(ctx)) return;
+  const parts = ctx.message.text.trim().split(/\s+/);
+  const targetId = parts[1];
+  const reason = parts.slice(2).join(' ').trim();
+  if (!targetId || !/^\d+$/.test(targetId) || targetId === ADMIN_ID) {
+    await ctx.reply('Формат: /block <telegram_id> [причина]. Нельзя заблокировать администратора.');
+    return;
+  }
+  try {
+    await blockUser(targetId, reason, ctx.from.id);
+    await ctx.reply(`🚫 Пользователь ${targetId} заблокирован в боте и на сайте.${reason ? `\nПричина: ${reason}` : ''}`);
+    try { await bot.telegram.sendMessage(targetId, TEXTS[await getLang(targetId)].accessBlocked); } catch (error) {}
+  } catch (error) {
+    console.error('Ошибка block:', error);
+    await ctx.reply('❌ Не удалось заблокировать пользователя.');
+  }
+});
+
+bot.command('unblock', async (ctx) => {
+  if (!isAdmin(ctx)) return;
+  const targetId = ctx.message.text.trim().split(/\s+/)[1];
+  if (!targetId || !/^\d+$/.test(targetId)) {
+    await ctx.reply('Формат: /unblock <telegram_id>');
+    return;
+  }
+  try {
+    await unblockUser(targetId);
+    await ctx.reply(`✅ Блокировка пользователя ${targetId} снята.`);
+    try {
+      const lang = await getLang(targetId);
+      await bot.telegram.sendMessage(targetId, '✅ Доступ восстановлен. Отправьте /start, чтобы продолжить.', mainKeyboard(lang));
+    } catch (error) {}
+  } catch (error) {
+    console.error('Ошибка unblock:', error);
+    await ctx.reply('❌ Не удалось снять блокировку.');
+  }
+});
+
+bot.command('reply', async (ctx) => {
+  if (!isAdmin(ctx)) return;
+  const parts = ctx.message.text.trim().split(/\s+/);
+  const targetId = parts[1];
+  const message = parts.slice(2).join(' ').trim();
+  if (!targetId || !/^\d+$/.test(targetId) || targetId === ADMIN_ID) {
+    await ctx.reply('Формат: /reply <telegram_id> [сообщение]');
+    return;
+  }
+  if (await isUserBlocked(targetId)) {
+    await ctx.reply('Пользователь заблокирован. Сначала выполните /unblock <telegram_id>.');
+    return;
+  }
+  try {
+    if (message) await bot.telegram.sendMessage(targetId, message);
+    else await bot.telegram.sendMessage(targetId, 'Администратор подключился к чату. Напишите сообщение, чтобы продолжить.');
+    const previousTarget = await redis.get(`adminReplyTarget:${ADMIN_ID}`);
+    if (previousTarget && String(previousTarget) !== targetId) await closeSupportChat(previousTarget);
+    await redis.set(`adminReplyTarget:${ADMIN_ID}`, targetId, { ex: 24 * 60 * 60 });
+    await redis.set(`supportAdmin:${targetId}`, ADMIN_ID, { ex: 24 * 60 * 60 });
+    await ctx.reply(`💬 Чат с ${targetId} открыт. Пишите сюда обычным сообщением; ответы клиента будут пересылаться в этот чат. Завершить: /endreply`);
+  } catch (error) {
+    console.error('Ошибка reply:', error);
+    await ctx.reply('❌ Не удалось начать чат. Убедитесь, что клиент запускал бота.');
+  }
+});
+
+bot.command('endreply', async (ctx) => {
+  if (!isAdmin(ctx)) return;
+  const targetId = await redis.get(`adminReplyTarget:${ADMIN_ID}`);
+  if (targetId) await closeSupportChat(targetId);
+  else await redis.del(`adminReplyTarget:${ADMIN_ID}`);
+  await ctx.reply(targetId ? `Чат с ${targetId} завершён.` : 'Активного чата нет.');
+});
+
+bot.command('endchat', async (ctx) => {
+  const telegramId = String(ctx.from.id);
+  await closeSupportChat(telegramId);
+  await ctx.reply('Чат с администратором завершён.', mainKeyboard(await getLang(telegramId)));
 });
 
 bot.hears([BTN.ru.check, BTN.en.check, BTN.kk.check], async (ctx) => {
@@ -778,7 +1208,7 @@ function createUserToken(telegramId) {
   return `${payload}.${signature}`;
 }
 
-function requireUserToken(req, res, next) {
+async function requireUserToken(req, res, next) {
   const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
   const [payload, signature] = token.split('.');
   if (!payload || !signature) return res.status(401).json({ error: 'authentication_required' });
@@ -790,16 +1220,26 @@ function requireUserToken(req, res, next) {
     return res.status(401).json({ error: 'authentication_required' });
   }
 
+  let session;
   try {
-    const session = JSON.parse(Buffer.from(payload, 'base64url').toString());
-    if (!session.telegramId || session.expiresAt < Date.now()) {
-      return res.status(401).json({ error: 'authentication_expired' });
-    }
-    req.telegramId = String(session.telegramId);
-    next();
+    session = JSON.parse(Buffer.from(payload, 'base64url').toString());
   } catch (error) {
     res.status(401).json({ error: 'authentication_required' });
+    return;
   }
+  if (!session.telegramId || session.expiresAt < Date.now()) {
+    return res.status(401).json({ error: 'authentication_expired' });
+  }
+  req.telegramId = String(session.telegramId);
+  try {
+    if (await isUserBlocked(req.telegramId)) {
+      return res.status(403).json({ error: 'user_blocked' });
+    }
+  } catch (error) {
+    console.error('Не удалось проверить блокировку пользователя:', error.message);
+    return res.status(503).json({ error: 'access_check_unavailable' });
+  }
+  return next();
 }
 
 async function zernioRequest(resource, options = {}) {
@@ -858,9 +1298,20 @@ app.post('/api/session', (req, res) => {
   res.json({ sessionId, botLink: `https://t.me/${BOT_USERNAME}?start=${sessionId}` });
 });
 
-app.get('/api/session/:id', (req, res) => {
+app.get('/api/session/:id', async (req, res) => {
   const session = sessions.get(req.params.id);
   if (!session) return res.status(404).json({ error: 'session_not_found' });
+  if (session.telegramId) {
+    try {
+      if (await isUserBlocked(session.telegramId)) {
+        session.authorized = false;
+        return res.status(403).json({ error: 'user_blocked' });
+      }
+    } catch (error) {
+      console.error('Не удалось проверить блокировку пользователя:', error.message);
+      return res.status(503).json({ error: 'access_check_unavailable' });
+    }
+  }
   res.json({
     authorized: session.authorized,
     subscriptionRequired: Boolean(session.subscriptionRequired),
@@ -1027,9 +1478,10 @@ app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
   }
 });
 
-app.get('/api/balance/:telegramId', async (req, res) => {
+app.get('/api/balance/:telegramId', requireUserToken, async (req, res) => {
   try {
     const id = req.params.telegramId;
+    if (String(id) !== req.telegramId) return res.status(403).json({ error: 'account_mismatch' });
     const [free, purchased] = await Promise.all([getFreeBalance(id), getPurchasedBalance(id)]);
     res.json({ free, purchased, balance: free + purchased });
   } catch (err) {
@@ -1058,7 +1510,7 @@ app.post('/api/consume/:telegramId', requireUserToken, async (req, res) => {
   }
 });
 
-app.post('/api/check-video', async (req, res) => {
+app.post('/api/check-video', requireUserToken, async (req, res) => {
   const url = extractTikTokUrl(req.body && req.body.url);
   if (!url) return res.status(400).json({ error: 'invalid_tiktok_url' });
 
@@ -1090,7 +1542,7 @@ app.listen(PORT, async () => {
     bot.launch();
     console.log('Бот слушает команды (локальный polling)...');
   }
-  if (!ADMIN_ID) console.log('⚠️  ADMIN_ID не задан — /addvideo работать не будет.');
+  if (!ADMIN_ID) console.log('⚠️  ADMIN_ID не задан — проверка чеков, админ-команды и модерация отключены.');
   ensureYtDlp().catch((e) => console.error('Не удалось установить yt-dlp:', e.message));
 });
 
