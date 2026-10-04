@@ -1554,11 +1554,15 @@ app.put('/api/tiktok/media/upload/:uploadId', requireUserToken, async (req, res)
     if (!saved) return res.status(404).json({ error: 'upload_expired' });
     upload = typeof saved === 'string' ? JSON.parse(saved) : saved;
     const target = new URL(upload.uploadUrl);
-    if (target.protocol !== 'https:' || target.hostname !== 'media.shortsync.app') {
+    if (target.protocol !== 'https:') {
       return res.status(502).json({ error: 'invalid_storage_upload_url' });
     }
-    if (req.headers['content-type'] !== upload.contentType || Number(req.headers['content-length']) !== upload.size) {
-      return res.status(400).json({ error: 'upload_size_or_type_mismatch' });
+    if (req.headers['content-type'] !== upload.contentType) {
+      return res.status(400).json({ error: 'upload_type_mismatch' });
+    }
+    const incomingLength = req.headers['content-length'] ? Number(req.headers['content-length']) : null;
+    if (incomingLength !== null && !Number.isNaN(incomingLength) && incomingLength !== upload.size) {
+      return res.status(400).json({ error: 'upload_size_mismatch' });
     }
 
     const upstream = https.request({
@@ -1652,7 +1656,7 @@ app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
       },
     });
     const posts = unwrapShortSyncData(response);
-    const post = Array.isArray(posts) ? posts[0] : null;
+    const post = Array.isArray(posts) ? posts[0] : (posts && typeof posts === 'object' ? posts : null);
     if (!post) throw new Error('ShortSync did not return a post result.');
     if (post.status === 'failed') {
       await redis.del(idempotencyKeyName);
