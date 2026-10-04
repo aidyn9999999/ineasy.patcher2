@@ -18,7 +18,7 @@ const NEWS_CHANNEL_ID = process.env.NEWS_CHANNEL_ID || '@ineasynews';
 const PORT = process.env.PORT || 3000;
 const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : null;
 const WEEKLY_FREE_BALANCE = 2;
-const CARD_INFO = '4400 4300 4955 5771\nИмя: Айдынбек Н.';
+const CARD_INFO = '4400 4300 4955 5771 или 705 542 37 05 (Freedom Bank, Halyk Bank, Kaspi.kz)\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher.up.railway.app/app.html';
 const WEBSITE_URL = new URL('/', SITE_URL).toString();
 
@@ -94,10 +94,11 @@ const TEXTS = {
       `💳 Оплата на карту:\n${CARD_INFO}\n\n` +
       `✅ После перевода отправьте сюда фото или PDF чека.\n` +
       `Ваш Telegram ID: ${telegramId} (бот определит его автоматически).\n` +
-      `После проверки чека администратор вручную зачислит видео.`,
+      `Проверка чеков: ежедневно с 06:30 до 00:00.\n` +
+      `Чек автоматически отправится администратору на проверку. После подтверждения баланс пополнится автоматически.`,
     purchasePending: '⏳ Ваш чек уже отправлен и ожидает проверки администратором.',
     receiptRequired: 'Сначала выберите пакет через кнопку «Купить лимиты», затем отправьте фото или PDF чека.',
-    receiptReceived: '✅ Чек отправлен администратору. Видео будут зачислены после проверки оплаты.',
+    receiptReceived: '✅ Чек автоматически отправлен администратору на проверку. Проверка проводится ежедневно с 06:30 до 00:00. После подтверждения баланс пополнится автоматически.',
     purchaseApproved: (count) => `✅ Оплата подтверждена. На купленный баланс зачислено ${count} видео.`,
     purchaseRejected: '❌ Чек отклонён. Если считаете это ошибкой, ответьте сюда или свяжитесь с администратором.',
     accessBlocked: '⛔ Доступ к боту и сайту заблокирован администратором.',
@@ -163,10 +164,11 @@ const TEXTS = {
       `💳 Card payment:\n${CARD_INFO}\n\n` +
       `✅ After payment, send a photo or PDF of the receipt here.\n` +
       `Your Telegram ID is ${telegramId}; the bot adds it automatically.\n` +
-      `An administrator will review the receipt and add the videos manually.`,
+      `Receipts are reviewed daily from 06:30 to 00:00.\n` +
+      `Your receipt is sent to the administrator automatically. Your balance is credited automatically after approval.`,
     purchasePending: '⏳ Your receipt has already been sent and is awaiting administrator review.',
     receiptRequired: 'Choose a package with “Buy limits” first, then send a receipt photo or PDF.',
-    receiptReceived: '✅ Your receipt was sent to the administrator. Videos are added after payment is verified.',
+    receiptReceived: '✅ Your receipt was sent to the administrator automatically. Reviews take place daily from 06:30 to 00:00. Your balance is credited automatically after approval.',
     purchaseApproved: (count) => `✅ Payment confirmed. ${count} videos were added to your purchased balance.`,
     purchaseRejected: '❌ The receipt was declined. If you think this is an error, reply here or contact the administrator.',
     accessBlocked: '⛔ Access to the bot and website has been blocked by an administrator.',
@@ -232,10 +234,11 @@ const TEXTS = {
       `💳 Картаға төлем:\n${CARD_INFO}\n\n` +
       `✅ Төлемнен кейін чектің фотосын немесе PDF нұсқасын осында жіберіңіз.\n` +
       `Telegram ID: ${telegramId} (бот оны автоматты түрде анықтайды).\n` +
-      `Әкімші чекті тексеріп, видеоларды қолмен қосады.`,
+      `Чектер күн сайын 06:30-дан 00:00-ге дейін тексеріледі.\n` +
+      `Чек әкімшіге автоматты түрде жіберіледі. Расталғаннан кейін баланс автоматты түрде толтырылады.`,
     purchasePending: '⏳ Чегіңіз әкімшіге жіберілді және тексеруді күтіп тұр.',
     receiptRequired: 'Алдымен «Лимит сатып алу» түймесімен пакет таңдаңыз, содан кейін чек фотосын немесе PDF жіберіңіз.',
-    receiptReceived: '✅ Чек әкімшіге жіберілді. Төлем расталғаннан кейін видеолар қосылады.',
+    receiptReceived: '✅ Чек әкімшіге автоматты түрде жіберілді. Тексеру күн сайын 06:30-дан 00:00-ге дейін жүргізіледі. Расталғаннан кейін баланс автоматты түрде толтырылады.',
     purchaseApproved: (count) => `✅ Төлем расталды. Сатып алынған балансыңызға ${count} видео қосылды.`,
     purchaseRejected: '❌ Чек қабылданбады. Қате бар деп ойласаңыз, осы жерге жазыңыз немесе әкімшіге хабарласыңыз.',
     accessBlocked: '⛔ Әкімші бот пен сайтқа кіруді бұғаттады.',
