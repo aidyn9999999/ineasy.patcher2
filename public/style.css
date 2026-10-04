@@ -808,6 +808,7 @@ button:focus-visible, .tg-btn:focus-visible {
 .result-meta strong { display: block; margin-top: 7px; overflow-wrap: anywhere; color: var(--text); font-size: 13px; }
 .result-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .result-grid > div { border-color: rgba(255, 107, 0, 0.12); background: rgba(255, 255, 255, 0.02); }
+.faq-section details p { max-width: 600px; margin: -4px 0 16px; color: var(--muted); font-size: 13px; line-height: 1.5; white-space: pre-line; overflow-wrap: anywhere; }
 
 @media (max-width: 600px) {
   .checker-panel { padding: 22px 18px; }
