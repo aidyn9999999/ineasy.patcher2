@@ -122,11 +122,11 @@ const translations = {
     noData: '—',
     faq: [
       ['What does INEASY Patcher do?', 'INEASY Patcher automatically prepares your video before publishing it to TikTok. It analyzes the source file and applies optimized processing parameters designed to minimize noticeable quality loss after upload.'],
-      ['Do I need to choose FPS, resolution or bitrate manually?', 'No. Patcher automatically determines the appropriate processing parameters.'],
+      ['Which export settings should I use?', 'Patcher selects its processing settings automatically. For a clean source, use vertical MP4 at 1080p and 60 FPS with a 15–35 Mbps bitrate. In TikTok, enable Upload HD before publishing.'],
       ['Does Patcher improve video quality?', 'Patcher is not a traditional AI upscaler and does not turn a low-quality video into native 4K. Its purpose is to prepare your original video correctly and preserve as much of its existing quality as possible during processing.'],
       ['Why shouldn’t I edit the video after processing?', 'The processed file is intended to be the final version. Re-editing, applying filters or exporting the video again can change its parameters and introduce additional quality loss. Use the processed file as your final upload.'],
       ['Should I export the video again from CapCut or another editor?', 'No. If you need music, text, effects or other edits, add them before processing the video with Patcher. Do not export the processed file again.'],
-      ['How do I use Patcher?', '1. Upload your original video.\n2. Select “Process video”.\n3. Wait for processing to finish.\n4. Download the processed file.\n5. Do not edit or export it again.\n6. Upload the final file to TikTok.\n7. Avoid unnecessary additional processing when publishing.'],
+      ['How do I prepare a video for TikTok?', '1. Sign in to INEASY.\n2. Finish editing your source video and export it before using Patcher.\n3. Upload it and select “Process video”.\n4. Wait for processing, then download the result.\n5. Do not edit or export the processed file again; avoid sending it through apps that recompress video.\n6. In TikTok, turn on Upload HD under More options and publish the processed file.\n7. After posting, paste the public link into Video Analyzer to review the delivered parameters.'],
       ['Does Patcher completely disable TikTok compression?', 'No. TikTok processes uploaded content on its own systems. Patcher cannot disable TikTok’s internal processing. Its purpose is to prepare the video with optimized parameters designed to minimize noticeable quality loss after publishing.']
     ],
   },
@@ -239,11 +239,11 @@ const translations = {
     noData: '—',
     faq: [
       ['Что делает INEASY Patcher?', 'INEASY Patcher автоматически подготавливает видео к публикации в TikTok. Он анализирует исходный файл и подбирает параметры обработки, чтобы свести к минимуму заметную потерю качества после загрузки.'],
-      ['Нужно ли вручную выбирать FPS, разрешение или битрейт?', 'Нет. Patcher автоматически определяет подходящие параметры обработки.'],
+      ['Какие настройки экспорта выбрать?', 'Параметры обработки INEASY подбирает автоматически. Для исходника подойдёт вертикальный MP4 в 1080p и 60 FPS с битрейтом 15–35 Мбит/с. Перед публикацией в TikTok включите Upload HD.'],
       ['Patcher улучшает качество видео?', 'Patcher — не AI-апскейлер: он не превращает видео низкого качества в исходное 4K. Его задача — правильно подготовить оригинал и по возможности сохранить его качество при обработке.'],
       ['Почему не следует редактировать видео после обработки?', 'Обработанный файл предназначен для публикации как финальная версия. Повторный монтаж, фильтры и экспорт могут изменить параметры и дополнительно снизить качество. Загружайте обработанный файл без изменений.'],
       ['Нужно ли повторно экспортировать видео из CapCut или другого редактора?', 'Нет. Добавьте музыку, текст, эффекты и другие изменения до обработки в Patcher. Не экспортируйте обработанный файл повторно.'],
-      ['Как пользоваться Patcher?', '1. Загрузите исходное видео.\n2. Нажмите «Обработать видео».\n3. Дождитесь завершения обработки.\n4. Скачайте готовый файл.\n5. Не редактируйте и не экспортируйте его повторно.\n6. Загрузите финальный файл в TikTok.\n7. Избегайте лишней повторной обработки при публикации.'],
+      ['Как подготовить видео к публикации в TikTok?', '1. Войдите в INEASY.\n2. Завершите монтаж исходного видео и экспортируйте его до обработки в Patcher.\n3. Загрузите видео и нажмите «Обработать видео».\n4. Дождитесь завершения и скачайте результат.\n5. Не редактируйте и не экспортируйте обработанный файл повторно; не пересылайте его через приложения, которые повторно сжимают видео.\n6. В TikTok откройте «Дополнительные настройки», включите Upload HD и опубликуйте обработанный файл.\n7. После публикации вставьте открытую ссылку в анализатор видео, чтобы проверить параметры ролика.'],
       ['Patcher полностью отключает сжатие TikTok?', 'Нет. TikTok обрабатывает загруженные видео на своих серверах. Patcher не может отключить внутреннюю обработку TikTok. Его задача — подготовить видео с оптимальными параметрами и свести к минимуму заметную потерю качества после публикации.']
     ],
   },
@@ -356,11 +356,11 @@ const translations = {
     noData: '—',
     faq: [
       ['INEASY Patcher не істейді?', 'INEASY Patcher TikTok-та жариялау алдында бейнеңізді автоматты түрде дайындайды. Ол бастапқы файлды талдап, жүктегеннен кейін сапаның көзге көрінетіндей төмендеуін барынша азайтуға арналған өңдеу параметрлерін қолданады.'],
-      ['FPS, ажыратымдылық немесе битрейтті қолмен таңдау керек пе?', 'Жоқ. Patcher қажетті өңдеу параметрлерін өзі анықтайды.'],
+      ['Қандай экспорт параметрлерін таңдау керек?', 'INEASY өңдеу параметрлерін автоматты түрде таңдайды. Бастапқы бейне үшін тік MP4, 1080p, 60 FPS және 15–35 Мбит/с битрейт ұсынылады. TikTok-та жарияламас бұрын Upload HD параметрін қосыңыз.'],
       ['Patcher бейне сапасын жақсарта ма?', 'Patcher дәстүрлі AI-апскейлер емес және сапасы төмен бейнені бастапқы 4K сапасына айналдырмайды. Оның мақсаты — бастапқы бейнені дұрыс дайындап, өңдеу кезінде бар сапасын мүмкіндігінше сақтау.'],
       ['Өңдеуден кейін бейнені неге өзгертпеу керек?', 'Өңделген файл — соңғы нұсқа. Қайта өңдеу, сүзгілер қосу немесе қайта экспорттау параметрлерді өзгертіп, сапаны қосымша төмендетуі мүмкін. Өңделген файлды соңғы жарияланым ретінде пайдаланыңыз.'],
       ['Бейнені CapCut немесе басқа редактордан қайта экспорттау керек пе?', 'Жоқ. Музыка, мәтін, эффектілер мен басқа өзгерістерді Patcher арқылы өңдеуге дейін қосыңыз. Өңделген файлды қайта экспорттамаңыз.'],
-      ['Patcher-ді қалай қолданамын?', '1. Бастапқы бейнені жүктеңіз.\n2. «Бейнені өңдеу» түймесін басыңыз.\n3. Өңдеу аяқталғанша күтіңіз.\n4. Дайын файлды жүктеп алыңыз.\n5. Оны қайта өңдемеңіз және экспорттамаңыз.\n6. Соңғы файлды TikTok-қа жүктеңіз.\n7. Жариялау кезінде қажетсіз қайта өңдеулерден аулақ болыңыз.'],
+      ['Бейнені TikTok-та жариялауға қалай дайындаймын?', '1. INEASY сайтына кіріңіз.\n2. Бастапқы бейнені өңдеп, Patcher қолданбай тұрып экспорттаңыз.\n3. Бейнені жүктеп, «Бейнені өңдеу» түймесін басыңыз.\n4. Өңдеу аяқталғанша күтіп, дайын файлды жүктеп алыңыз.\n5. Өңделген файлды қайта өңдемеңіз және экспорттамаңыз; бейнені қайта сығатын қолданбалар арқылы жібермеңіз.\n6. TikTok-та «Қосымша параметрлер» бөлімінен Upload HD функциясын қосып, өңделген файлды жариялаңыз.\n7. Жариялаған соң бейненің ашық сілтемесін анализаторға енгізіп, параметрлерін тексеріңіз.'],
       ['Patcher TikTok қысуын толығымен өшіре ме?', 'Жоқ. TikTok жүктелген бейнелерді өз жүйесінде өңдейді. Patcher TikTok-тың ішкі өңдеуін өшіре алмайды. Оның мақсаты — бейнені жариялауға дұрыс дайындап, сапаның айтарлықтай төмендеуін барынша азайту.']
     ],
   }
