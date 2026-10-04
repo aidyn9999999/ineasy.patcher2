@@ -85,6 +85,12 @@ const translations = {
     analyzerLoading: 'Analyzing your video…',
     analyzerDone: 'Analysis complete',
     analyzerError: 'Could not verify this link. Make sure the video is public.',
+    analyzerSource: 'Checking link',
+    analyzerAuthor: 'Creator',
+    analyzerRegion: 'Upload region',
+    analyzerRegionUnavailable: 'Not provided by TikTok',
+    analyzerSize: 'File size',
+    analyzerDuration: 'Duration',
     faqTitle: 'Everything important in one place',
     faqSupportText: 'Found a bug?',
     faqReport: 'Report',
@@ -189,10 +195,16 @@ const translations = {
     analyzerButton: 'Проверить видео',
     analyzerLabel: 'Ссылка на видео',
     analyzerPlaceholder: 'Вставьте ссылку',
-    analyzerSubmit: 'Анализировать',
+    analyzerSubmit: 'Проверить видео',
     analyzerLoading: 'Анализируем ваше видео…',
     analyzerDone: 'Проверка завершена',
     analyzerError: 'Не удалось проверить ссылку. Убедитесь, что видео открыто публично.',
+    analyzerSource: 'Проверяем ссылку',
+    analyzerAuthor: 'Автор',
+    analyzerRegion: 'Регион публикации',
+    analyzerRegionUnavailable: 'TikTok не передал данные',
+    analyzerSize: 'Размер файла',
+    analyzerDuration: 'Длительность',
     faqTitle: 'Всё важное, без лишнего',
     faqSupportText: 'Заметили ошибку?',
     faqReport: 'Сообщить',
@@ -301,6 +313,12 @@ const translations = {
     analyzerLoading: 'Бейнені талдаймыз…',
     analyzerDone: 'Тексеру аяқталды',
     analyzerError: 'Сілтемені тексеру мүмкін болмады. Бейне қоғамдық екенін тексеріңіз.',
+    analyzerSource: 'Сілтеме тексерілуде',
+    analyzerAuthor: 'Автор',
+    analyzerRegion: 'Жарияланған аймақ',
+    analyzerRegionUnavailable: 'TikTok дерек бермеді',
+    analyzerSize: 'Файл өлшемі',
+    analyzerDuration: 'Ұзақтығы',
     faqTitle: 'Маңызды мәліметтер барлығы бір жерде',
     faqSupportText: 'Қате таптыңыз ба?',
     faqReport: 'Ескерту',
@@ -875,14 +893,30 @@ if (clearBtn) {
 const checkerOpenBtn = document.getElementById('checkerOpenBtn');
 const checkerForm = document.getElementById('checkerForm');
 const checkerUrl = document.getElementById('checkerUrl');
+const checkerSource = document.getElementById('checkerSource');
 const checkerStatus = document.getElementById('checkerStatus');
 const checkerResult = document.getElementById('checkerResult');
+const analyzeBtn = document.getElementById('analyzeBtn');
 let checkerRequestToken = 0;
+
+function escapeAnalyzerValue(value) {
+  return String(value ?? '—').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
+}
 
 function resetAnalyzerUi() {
   if (!checkerStatus || !checkerResult) return;
   checkerStatus.className = 'checker-status';
   checkerStatus.textContent = '';
+  if (checkerSource) {
+    checkerSource.classList.add('hidden');
+    checkerSource.textContent = '';
+  }
   checkerResult.classList.add('hidden');
   checkerResult.innerHTML = '';
 }
@@ -915,10 +949,15 @@ if (checkerForm) {
       checkerResult.innerHTML = '';
       checkerResult.classList.add('hidden');
     }
+    if (checkerSource) {
+      checkerSource.textContent = `${t('analyzerSource')}: ${rawUrl}`;
+      checkerSource.classList.remove('hidden');
+    }
     if (checkerStatus) {
       checkerStatus.className = 'checker-status loading';
       checkerStatus.textContent = t('analyzerLoading');
     }
+    if (analyzeBtn) analyzeBtn.disabled = true;
 
     try {
       const response = await fetch('/api/check-video', {
@@ -931,14 +970,16 @@ if (checkerForm) {
       if (token !== checkerRequestToken) return;
       if (!response.ok) throw new Error(data.error || 'check_failed');
 
-      const quality = data.quality ?? '—';
-      const width = data.width ?? '—';
-      const height = data.height ?? '—';
-      const fps = data.fps ?? '—';
-      const codec = data.codec ?? '—';
-      const bitrate = data.bitrate ?? '—';
-      const size = data.size ?? '—';
-      const duration = data.duration ?? '—';
+      const quality = escapeAnalyzerValue(data.quality);
+      const width = escapeAnalyzerValue(data.width);
+      const height = escapeAnalyzerValue(data.height);
+      const fps = escapeAnalyzerValue(data.fps);
+      const codec = escapeAnalyzerValue(data.codec);
+      const bitrate = escapeAnalyzerValue(data.bitrate);
+      const size = escapeAnalyzerValue(data.size);
+      const duration = escapeAnalyzerValue(data.duration);
+      const author = escapeAnalyzerValue(data.author);
+      const region = escapeAnalyzerValue(data.region || t('analyzerRegionUnavailable'));
 
       if (checkerStatus) {
         checkerStatus.className = 'checker-status success';
@@ -948,11 +989,17 @@ if (checkerForm) {
       if (checkerResult) {
         checkerResult.innerHTML = `
           <div class="result-heading"><span>✓</span><div><small>${t('checkResult')}</small><strong>${t('analyzerDone')}</strong></div></div>
+          <div class="result-meta">
+            <div><small>${t('analyzerAuthor')}</small><strong>${author}</strong></div>
+            <div><small>${t('analyzerRegion')}</small><strong>${region}</strong></div>
+          </div>
           <div class="result-grid">
             <div><small>${t('quality')}</small><strong>${quality}p</strong><span>${width} × ${height}</span></div>
-            <div><small>${t('fps')}</small><strong>${fps} FPS</strong><span>${t('quality')}</span></div>
-            <div><small>${t('codec')}</small><strong>${codec}</strong><span>${t('codec')}</span></div>
-            <div><small>${t('bitrate')}</small><strong>${bitrate}</strong><span>${size} • ${duration}</span></div>
+            <div><small>${t('fps')}</small><strong>${fps} FPS</strong></div>
+            <div><small>${t('codec')}</small><strong>${codec}</strong></div>
+            <div><small>${t('bitrate')}</small><strong>${bitrate}</strong></div>
+            <div><small>${t('analyzerSize')}</small><strong>${size}</strong></div>
+            <div><small>${t('analyzerDuration')}</small><strong>${duration}</strong></div>
           </div>
         `;
         checkerResult.classList.remove('hidden');
@@ -963,6 +1010,8 @@ if (checkerForm) {
         checkerStatus.className = 'checker-status error';
         checkerStatus.textContent = t('analyzerError');
       }
+    } finally {
+      if (token === checkerRequestToken && analyzeBtn) analyzeBtn.disabled = false;
     }
   });
 }

@@ -106,13 +106,12 @@
         <h2 id="checkerTitle">Check video quality</h2>
         <p id="checkerDesc">Paste a public TikTok link. We'll analyze the original video and show real parameters.</p>
       </div>
-      <button class="checker-open-btn" id="checkerOpenBtn" type="button">Analyze video</button>
-      <form class="checker-form hidden" id="checkerForm">
-        <label for="checkerUrl" id="urlLabel">Video link</label>
+      <form class="checker-form" id="checkerForm">
         <div class="checker-input-row">
           <input id="checkerUrl" type="url" placeholder="Paste TikTok link" autocomplete="url" required>
           <button type="submit" id="analyzeBtn">Analyze</button>
         </div>
+        <p class="checker-source hidden" id="checkerSource" aria-live="polite"></p>
         <p class="checker-status" id="checkerStatus" aria-live="polite"></p>
       </form>
       <div class="checker-result hidden" id="checkerResult" aria-live="polite"></div>
