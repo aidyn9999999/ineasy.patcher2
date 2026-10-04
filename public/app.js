@@ -26,10 +26,13 @@ const translations = {
     videos: 'videos',
     report: 'Report',
     patchTitle: 'Prepare your video for TikTok.',
-    patchSub: 'Patcher automatically selects the processing settings.',
+    patchSub: 'Patcher changes internal video parameters to help minimize visible quality loss after upload to TikTok.',
     choose: 'Select video',
     chooseSub: 'Drag file here or click to browse',
-    localNote: 'Video stays on your device. Videos up to 4K / 10 minutes are reduced to 1080p; output size depends on your device.',
+    localNote: 'Your video stays on your device. 1440p (2K) and 4K videos are automatically prepared in 1080p to reduce processing load.',
+    exportNote: 'For smoother playback, export in 1080p, 60 FPS, with a bitrate of 15–35 Mbps.',
+    newsText: 'Tutorials, updates, and giveaways',
+    newsButton: 'View',
     process: 'Process video',
     processing: 'Preparing video…',
     processingSub: 'Preparing…',
@@ -140,10 +143,13 @@ const translations = {
     videos: 'видео',
     report: 'Сообщить',
     patchTitle: 'Подготовьте видео к публикации в TikTok.',
-    patchSub: 'Patcher автоматически подберёт параметры обработки.',
+    patchSub: 'Patcher корректирует внутренние параметры видео, чтобы уменьшить заметную потерю качества после загрузки в TikTok.',
     choose: 'Выберите видео',
     chooseSub: 'Перетащите файл сюда или нажмите, чтобы открыть устройство',
-    localNote: 'Видео остаётся на устройстве. Ролики до 4K и 10 минут уменьшаются до 1080p; размер результата зависит от устройства.',
+    localNote: 'Ваше видео остаётся на устройстве. Видео в 1440p (2K) и 4K автоматически подготавливается в 1080p, чтобы снизить нагрузку при обработке.',
+    exportNote: 'Для более плавного воспроизведения экспортируйте видео в 1080p, 60 FPS и с битрейтом 15–35 Мбит/с.',
+    newsText: 'Туториалы, обновления и розыгрыши',
+    newsButton: 'Смотреть',
     process: 'Обработать видео',
     processing: 'Подготавливаем видео…',
     processingSub: 'Обработка…',
@@ -254,10 +260,13 @@ const translations = {
     videos: 'бейне',
     report: 'Хабарлау',
     patchTitle: 'Бейнеңізді TikTok-та жариялауға дайындаңыз.',
-    patchSub: 'Patcher өңдеу параметрлерін автоматты түрде таңдайды.',
+    patchSub: 'Patcher бейненің ішкі параметрлерін өзгертіп, TikTok-қа жүктегеннен кейін сапаның көзге көрінетіндей төмендеуін азайтуға көмектеседі.',
     choose: 'Бейнені таңдаңыз',
     chooseSub: 'Файлды осы жерге сүйреп апарыңыз немесе құрылғыдан таңдаңыз',
-    localNote: 'Бейне құрылғыда қалады. 4K және 10 минутқа дейінгі бейне 1080p-ке дейін кішірейтіледі; нәтиже өлшемі құрылғыға байланысты.',
+    localNote: 'Бейнеңіз құрылғыңызда қалады. 1440p (2K) және 4K бейнелері өңдеу жүктемесін азайту үшін автоматты түрде 1080p форматына дайындалады.',
+    exportNote: 'Бірқалыпты ойнату үшін бейнені 1080p, 60 FPS және 15–35 Мбит/с битрейтпен экспорттаңыз.',
+    newsText: 'Туториалдар, жаңартулар және ұтыс ойындары',
+    newsButton: 'Көру',
     process: 'Бейнені өңдеу',
     processing: 'Бейнені даярлау…',
     processingSub: 'Өңдеу…',
@@ -403,6 +412,9 @@ function applyLanguage(lang) {
   setText('dzTitle', pack.choose);
   setText('dzSub', pack.chooseSub);
   setText('localNote', pack.localNote);
+  setText('exportNote', pack.exportNote);
+  setText('newsText', pack.newsText);
+  setText('newsButton', pack.newsButton);
   setText('processBtn', pack.process);
   setText('cancelProcessBtn', pack.cancel);
   setText('processingTitle', pack.processing);
