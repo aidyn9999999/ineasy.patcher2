@@ -54,8 +54,8 @@
     <!-- PATCHER SECTION -->
     <section class="view-section active" id="patchSection">
     <div class="patch-panel">
-      <h1 class="patch-title" id="patchTitle">Patcher auto-detects the right settings.</h1>
-      <p class="patch-sub" id="patchSub">Upload a video. We choose FPS, resolution and bitrate automatically.</p>
+      <h1 class="patch-title" id="patchTitle">Prepare your video for TikTok.</h1>
+      <p class="patch-sub" id="patchSub">Patcher automatically selects the processing settings.</p>
 
       <div class="dropzone" id="dropzone">
         <input type="file" id="fileInput" accept="video/*">
@@ -102,9 +102,9 @@
     <section class="view-section hidden" id="checkerSection">
     <section class="checker-panel" aria-labelledby="checkerTitle">
       <div class="checker-copy">
-        <p class="eyebrow" id="analyzerLabel">VIDEO INSIGHTS</p>
-        <h2 id="checkerTitle">Check video quality</h2>
-        <p id="checkerDesc">Paste a public TikTok link. We'll analyze the original video and show real parameters.</p>
+        <p class="eyebrow" id="analyzerLabel">VIDEO ANALYZER</p>
+        <h2 id="checkerTitle">Video Analyzer</h2>
+        <p id="checkerDesc">Check the parameters of your published video and compare them with the original file.</p>
       </div>
       <form class="checker-form" id="checkerForm">
         <div class="checker-input-row">
@@ -122,35 +122,41 @@
     <!-- HOW TO USE / FAQ SECTION -->
     <section class="view-section hidden" id="faqSection">
     <section class="faq-section" aria-labelledby="faqTitle">
-      <p class="eyebrow" id="faqLabel">HOW TO USE / FAQ</p>
-      <h2 id="faqTitle">Everything important in one place</h2>
+      <p class="eyebrow" id="faqLabel">FAQ / FREQUENTLY ASKED QUESTIONS</p>
+      <h2 id="faqTitle">Frequently asked questions</h2>
       <details>
-        <summary id="faq1q">Do I need to install anything?</summary>
-        <p id="faq1a">No. VideoPatcher works in your browser.</p>
+        <summary id="faq1q">What does INEASY Patcher do?</summary>
+        <p id="faq1a">INEASY Patcher automatically prepares your video before publishing it to TikTok. It analyzes the source file and applies optimized processing parameters designed to minimize noticeable quality loss after upload.</p>
       </details>
       <details>
-        <summary id="faq2q">What videos can I process?</summary>
-        <p id="faq2a">Vertical videos for TikTok and short formats.</p>
+        <summary id="faq2q">Do I need to choose FPS, resolution or bitrate manually?</summary>
+        <p id="faq2a">No. Patcher automatically determines the appropriate processing parameters.</p>
       </details>
       <details>
-        <summary id="faq3q">What happens after processing?</summary>
-        <p id="faq3a">You'll see the result and can download the patched file.</p>
+        <summary id="faq3q">Does Patcher improve video quality?</summary>
+        <p id="faq3a">Patcher is not a traditional AI upscaler and does not turn a low-quality video into native 4K. Its purpose is to prepare your original video correctly and preserve as much of its existing quality as possible during processing.</p>
       </details>
       <details>
-        <summary id="faq4q">Can I edit after patching?</summary>
-        <p id="faq4a">No. After processing, internal parameters change. Re-editing may cause errors.</p>
+        <summary id="faq4q">Why shouldn’t I edit the video after processing?</summary>
+        <p id="faq4a">The processed file is intended to be the final version. Re-editing, applying filters or exporting the video again can change its parameters and introduce additional quality loss. Use the processed file as your final upload.</p>
       </details>
       <details>
-        <summary id="faq5q">Does the patcher compress?</summary>
-        <p id="faq5a">We preserve quality and prepare optimized parameters for TikTok upload.</p>
+        <summary id="faq5q">Should I export the video again from CapCut or another editor?</summary>
+        <p id="faq5a">No. If you need music, text, effects or other edits, add them before processing the video with Patcher. Do not export the processed file again.</p>
       </details>
       <details>
-        <summary id="faq6q">Do I need to pick FPS, bitrate, or resolution?</summary>
-        <p id="faq6a">No. INEASY auto-detects compatible settings.</p>
+        <summary id="faq6q">How do I use Patcher?</summary>
+        <p id="faq6a">1. Upload your original video.
+      2. Select “Process video”.
+      3. Wait for processing to finish.
+      4. Download the processed file.
+      5. Do not edit or export it again.
+      6. Upload the final file to TikTok.
+      7. Avoid unnecessary additional processing when publishing.</p>
       </details>
       <details>
-        <summary id="faq7q">Where do I report bugs?</summary>
-        <p id="faq7a">Message the admin <a href="https://t.me/ineasyadmin">@ineasyadmin</a> on Telegram.</p>
+        <summary id="faq7q">Does Patcher completely disable TikTok compression?</summary>
+        <p id="faq7a">No. TikTok processes uploaded content on its own systems. Patcher cannot disable TikTok’s internal processing. Its purpose is to prepare the video with optimized parameters designed to minimize noticeable quality loss after publishing.</p>
       </details>
     </section>
     <p class="faq-support"><span id="faqSupportText">Found a bug?</span> <a id="faqReport" href="https://t.me/ineasyadmin?text=I%20found%20a%20bug%20on%20the%20site%20and%20want%20to%20report%20it" target="_blank">Report</a></p>
@@ -203,7 +209,7 @@
     </button>
     <button class="nav-tab" data-view="checkerSection" type="button">
       <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M9.96966 7.03031C9.67677 6.73742 9.67677 6.26254 9.96966 5.96965L13.0196 2.91966C15.2455 0.693772 18.8544 0.693771 21.0803 2.91966C23.3062 5.14555 23.3062 8.75443 21.0803 10.9803L18.0303 14.0303C17.7374 14.3232 17.2626 14.3232 16.9697 14.0303C16.6768 13.7374 16.6768 13.2625 16.9697 12.9696L20.0196 9.91966C21.6598 8.27956 21.6598 5.62042 20.0196 3.98032C18.3795 2.34022 15.7204 2.34022 14.0803 3.98032L11.0303 7.03031C10.7374 7.3232 10.2626 7.3232 9.96966 7.03031Z" fill="currentColor"/><path d="M15.5303 8.46965C15.8232 8.76254 15.8232 9.23742 15.5303 9.53031L9.5303 15.5303C9.23741 15.8232 8.76253 15.8232 8.46964 15.5303C8.17675 15.2374 8.17675 14.7625 8.46964 14.4696L14.4696 8.46965C14.7625 8.17676 15.2374 8.17676 15.5303 8.46965Z" fill="currentColor"/><path d="M14.0303 18.0303C14.3232 17.7374 14.3232 17.2625 14.0303 16.9696C13.7374 16.6768 13.2625 16.6768 12.9696 16.9696L9.91966 20.0196C8.27956 21.6597 5.62043 21.6597 3.98032 20.0196C2.34022 18.3795 2.34022 15.7204 3.98032 14.0803L7.03031 11.0303C7.3232 10.7374 7.3232 10.2625 7.03031 9.96965C6.73742 9.67676 6.26254 9.67676 5.96965 9.96965L2.91966 13.0196C0.693772 15.2455 0.693771 18.8544 2.91966 21.0803C5.14555 23.3062 8.75443 23.3062 10.9803 21.0803L14.0303 18.0303Z" fill="currentColor"/></svg></span>
-      <span id="navAnalyzer">VIDEO CHECKER</span>
+      <span id="navAnalyzer">VIDEO ANALYZER</span>
     </button>
     <button class="nav-tab" data-view="faqSection" type="button">
       <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M22.75 12C22.75 6.06294 17.9371 1.25 12 1.25C6.06294 1.25 1.25 6.06294 1.25 12C1.25 13.7183 1.65371 15.3445 2.37213 16.7869C2.47933 17.0021 2.50208 17.2219 2.4526 17.4068L1.857 19.6328C1.44927 21.1566 2.84337 22.5507 4.3672 22.143L6.59324 21.5474C6.77814 21.4979 6.99791 21.5207 7.21315 21.6279C8.65553 22.3463 10.2817 22.75 12 22.75C17.9371 22.75 22.75 17.9371 22.75 12ZM12 2.75C17.1086 2.75 21.25 6.89137 21.25 12C21.25 17.1086 17.1086 21.25 12 21.25C10.5189 21.25 9.12121 20.9025 7.88191 20.2852C7.38451 20.0375 6.78973 19.9421 6.20553 20.0984L3.97949 20.694C3.57066 20.8034 3.19663 20.4293 3.30602 20.0205L3.90163 17.7945C4.05794 17.2103 3.96254 16.6155 3.7148 16.1181C3.09752 14.8788 2.75 13.4811 2.75 12C2.75 6.89137 6.89137 2.75 12 2.75Z" fill="currentColor"/></svg></span>
@@ -212,7 +218,7 @@
   </nav>
 
   <footer class="site-footer">
-    <div><strong id="footerTitle">VideoPatcher</strong><span id="footerDesc">Keep quality. Publish confidently.</span></div>
+    <div><strong id="footerTitle">VideoPatcher</strong><span id="footerDesc">Prepare your video. Preserve its quality. Publish with confidence.</span></div>
     <nav aria-label="Footer Navigation">
       <a href="#" id="footerHome">Home</a>
       <a href="#faqTitle" id="footerFaq">FAQ</a>
