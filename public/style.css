@@ -700,3 +700,32 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
 @media (max-width: 600px) {
   .patch-title { font-size: 35px; }
 }
+
+@keyframes orangeButtonGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(255, 107, 0, 0.16), 0 0 18px rgba(255, 107, 0, 0.08); }
+  50% { box-shadow: 0 0 15px rgba(255, 107, 0, 0.38), 0 0 28px rgba(255, 107, 0, 0.16); }
+}
+
+button:not(:disabled), .tg-btn {
+  animation: orangeButtonGlow 2.8s ease-in-out infinite;
+}
+
+button:not(:disabled):hover, .tg-btn:hover {
+  animation: none;
+  box-shadow: 0 0 24px rgba(255, 107, 0, 0.46), 0 0 38px rgba(255, 107, 0, 0.2);
+}
+
+button:disabled {
+  animation: none;
+  box-shadow: none;
+}
+
+button:focus-visible, .tg-btn:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button:not(:disabled), .tg-btn { animation: none; }
+  button, .tg-btn { transition-duration: 0.01ms; }
+}
