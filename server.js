@@ -393,18 +393,12 @@ function currentWeekKey() {
 
 async function getFreeBalance(telegramId) {
   const weekKey = currentWeekKey();
-  const storedWeek = await redis.get(`freeWeek:${telegramId}`);
-  if (storedWeek !== weekKey) {
-    await redis.set(`freeWeek:${telegramId}`, weekKey);
-    await redis.set(`freeBalance:${telegramId}`, WEEKLY_FREE_BALANCE);
-    return WEEKLY_FREE_BALANCE;
-  }
-  const val = await redis.get(`freeBalance:${telegramId}`);
-  if (val === null || val === undefined) {
-    await redis.set(`freeBalance:${telegramId}`, WEEKLY_FREE_BALANCE);
-    return WEEKLY_FREE_BALANCE;
-  }
-  return Number(val);
+  const balance = await redis.eval(
+    "local week = redis.call('GET', KEYS[1]); if week ~= ARGV[1] then redis.call('SET', KEYS[1], ARGV[1]); redis.call('SET', KEYS[2], ARGV[2]); return ARGV[2]; end; local balance = redis.call('GET', KEYS[2]); if not balance then redis.call('SET', KEYS[2], ARGV[2]); return ARGV[2]; end; return balance",
+    [`freeWeek:${telegramId}`, `freeBalance:${telegramId}`],
+    [weekKey, String(WEEKLY_FREE_BALANCE)]
+  );
+  return Number(balance);
 }
 
 async function getPurchasedBalance(telegramId) {
@@ -444,17 +438,13 @@ async function getPatchedCount(telegramId) {
 }
 
 async function consumeOneVideo(telegramId) {
-  const free = await getFreeBalance(telegramId);
-  if (free > 0) {
-    await redis.decrby(`freeBalance:${telegramId}`, 1);
-  } else {
-    const purchased = await getPurchasedBalance(telegramId);
-    if (purchased <= 0) {
-      throw new Error('no_balance');
-    }
-    await redis.decrby(`purchased:${telegramId}`, 1);
-  }
-  await redis.incrby(`patched:${telegramId}`, 1);
+  await Promise.all([getFreeBalance(telegramId), getPurchasedBalance(telegramId)]);
+  const consumed = await redis.eval(
+    "local free = tonumber(redis.call('GET', KEYS[1]) or '0'); local purchased = tonumber(redis.call('GET', KEYS[2]) or '0'); if free > 0 then free = redis.call('DECR', KEYS[1]); elseif purchased > 0 then purchased = redis.call('DECR', KEYS[2]); else return 0; end; redis.call('INCR', KEYS[3]); return 1",
+    [`freeBalance:${telegramId}`, `purchased:${telegramId}`, `patched:${telegramId}`],
+    []
+  );
+  if (Number(consumed) !== 1) throw new Error('no_balance');
 }
 
 // ============ ЧЕКЕР ВИДЕО TIKTOK (yt-dlp) ============

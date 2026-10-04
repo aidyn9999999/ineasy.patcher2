@@ -544,6 +544,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 // --- Balance ---
 const balanceLabel = document.getElementById('balanceLabel');
 let currentBalance = null;
+let balanceRequestVersion = 0;
 
 function renderBalance() {
   if (balanceLabel && currentBalance !== null) balanceLabel.textContent = `${currentBalance} ${t('videos')}`;
@@ -568,11 +569,13 @@ function updateProcessButton() {
 }
 
 async function loadBalance() {
+  const requestVersion = ++balanceRequestVersion;
   try {
     const token = localStorage.getItem('tg_auth_token');
     const res = await fetch(`/api/balance/${encodeURIComponent(tgId)}`, {
       headers: { Authorization: `Bearer ${token || ''}` },
     });
+    if (requestVersion !== balanceRequestVersion) return;
     if (res.status === 401 || res.status === 403) {
       localStorage.removeItem('tg_id');
       localStorage.removeItem('tg_auth_token');
@@ -581,9 +584,11 @@ async function loadBalance() {
     }
     if (!res.ok) throw new Error('balance_fetch_failed');
     const data = await res.json();
+    if (requestVersion !== balanceRequestVersion) return;
     currentBalance = data.balance;
     renderBalance();
   } catch (e) {
+    if (requestVersion !== balanceRequestVersion) return;
     currentBalance = null;
     updateProcessButton();
     if (balanceLabel) balanceLabel.textContent = '—';
@@ -591,10 +596,12 @@ async function loadBalance() {
 }
 
 async function refreshBalanceForProcessing() {
+  const requestVersion = ++balanceRequestVersion;
   const token = localStorage.getItem('tg_auth_token');
   const response = await fetch(`/api/balance/${encodeURIComponent(tgId)}`, {
     headers: { Authorization: `Bearer ${token || ''}` },
   });
+  if (requestVersion !== balanceRequestVersion) return false;
   if (response.status === 401 || response.status === 403) {
     localStorage.removeItem('tg_id');
     localStorage.removeItem('tg_auth_token');
@@ -603,12 +610,14 @@ async function refreshBalanceForProcessing() {
   }
   if (!response.ok) throw new Error('balance_fetch_failed');
   const data = await response.json();
+  if (requestVersion !== balanceRequestVersion) return false;
   currentBalance = Number(data.balance);
   renderBalance();
   return currentBalance > 0;
 }
 
 async function consumeProcessedVideo() {
+  const requestVersion = ++balanceRequestVersion;
   const token = localStorage.getItem('tg_auth_token');
   const response = await fetch(`/api/consume/${encodeURIComponent(tgId)}`, {
     method: 'POST',
@@ -617,15 +626,19 @@ async function consumeProcessedVideo() {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (data.error === 'no_balance') {
-      currentBalance = 0;
-      renderBalance();
+      if (requestVersion === balanceRequestVersion) {
+        currentBalance = 0;
+        renderBalance();
+      }
       throw new Error(t('noBalance'));
     }
     if (response.status === 401) throw new Error(t('authExpired'));
     throw new Error(t('balanceUpdateFailed'));
   }
-  currentBalance = data.free + data.purchased;
-  renderBalance();
+  if (requestVersion === balanceRequestVersion) {
+    currentBalance = data.free + data.purchased;
+    renderBalance();
+  }
   return data;
 }
 
