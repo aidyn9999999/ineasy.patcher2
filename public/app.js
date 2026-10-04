@@ -537,7 +537,17 @@ function renderBalance() {
 
 async function loadBalance() {
   try {
-    const res = await fetch(`/api/balance/${tgId}`);
+    const token = localStorage.getItem('tg_auth_token');
+    const res = await fetch(`/api/balance/${encodeURIComponent(tgId)}`, {
+      headers: { Authorization: `Bearer ${token || ''}` },
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('tg_id');
+      localStorage.removeItem('tg_auth_token');
+      window.location.replace('/');
+      return;
+    }
+    if (!res.ok) throw new Error('balance_fetch_failed');
     const data = await res.json();
     currentBalance = data.balance;
     renderBalance();
@@ -974,7 +984,10 @@ if (checkerForm) {
     try {
       const response = await fetch('/api/check-video', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('tg_auth_token') || ''}`,
+        },
         body: JSON.stringify({ url: rawUrl }),
       });
 
