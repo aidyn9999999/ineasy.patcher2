@@ -509,6 +509,7 @@ async function analyzeTikTok(url) {
   const width = real.width || meta.width;
   const height = real.height || meta.height;
   const bytes = real.bytes || meta.bytes;
+  const uploadRegion = info.region || info.country || info.uploader_location || info.location;
   return {
     quality: Math.min(width || 0, height || 0) || '—',
     width: width || '—',
@@ -520,6 +521,7 @@ async function analyzeTikTok(url) {
     size: bytes ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : '—',
     ext: v.ext || info.ext || '—',
     author: info.uploader ? `@${info.uploader}` : (info.creator || '—'),
+    region: typeof uploadRegion === 'string' ? uploadRegion : null,
   };
 }
 
