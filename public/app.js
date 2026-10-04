@@ -41,13 +41,13 @@ const translations = {
     publishTikTok: 'Publish to TikTok',
     publishNow: 'Publish now',
     publishTitle: 'Publish to TikTok',
-    connectTikTok: 'Connect TikTok',
-    checkingTikTok: 'Checking TikTok connection…',
-    connectedAs: 'Connected as',
-    uploadNotice: 'When publishing, this video streams through our server to Zernio and TikTok. This site does not save it.',
-    allowPopups: 'Allow pop-ups to connect TikTok in a new tab.',
+    connectTikTok: 'Check connection',
+    checkingTikTok: 'Checking shared TikTok connection…',
+    connectedAs: 'Shared account',
+    uploadNotice: 'This video is sent to ShortSync and published from the shared INEASY TikTok account.',
     uploadFailed: 'The video upload failed. Please try again.',
-    connectHint: 'Connect a TikTok account to continue.',
+    connectHint: 'No TikTok account is connected to the ShortSync workspace. Ask the administrator to connect one there.',
+    connectFailed: 'Could not read the shared ShortSync connection.',
     captionLabel: 'Description',
     captionHint: 'Add hashtags with # and mention accounts with @',
     privacyLabel: 'Who can watch this video',
@@ -59,7 +59,6 @@ const translations = {
     duetLabel: 'Allow Duet',
     stitchLabel: 'Allow Stitch',
     aiLabel: 'AI-generated content',
-    adsOnlyLabel: 'Only show in ads',
     commercialLabel: 'Commercial content disclosure',
     commercialNone: 'None',
     commercialOwnBrand: 'Your brand',
@@ -73,7 +72,6 @@ const translations = {
     publishSuccess: 'Video published to TikTok.',
     publishPending: 'TikTok accepted the video and is processing the post.',
     draftSuccess: 'Draft sent to TikTok. Finish visibility and publishing in the TikTok app.',
-    connectFailed: 'Could not connect TikTok. Check the server setup and try again.',
     publishFailed: 'TikTok could not publish this video. Check the options and try again.',
     authExpired: 'Your session expired. Sign in again to publish.',
     close: 'Close',
@@ -162,13 +160,13 @@ const translations = {
     publishTikTok: 'Опубликовать в TikTok',
     publishNow: 'Опубликовать сейчас',
     publishTitle: 'Публикация в TikTok',
-    connectTikTok: 'Подключить TikTok',
-    checkingTikTok: 'Проверяем подключение TikTok…',
-    connectedAs: 'Подключён аккаунт',
-    uploadNotice: 'При публикации видео пройдет через сервер сайта в Zernio и TikTok. Сайт не сохраняет файл.',
-    allowPopups: 'Разрешите всплывающие окна для входа в TikTok в новой вкладке.',
+    connectTikTok: 'Проверить подключение',
+    checkingTikTok: 'Проверяем общий TikTok-аккаунт в ShortSync…',
+    connectedAs: 'Общий аккаунт',
+    uploadNotice: 'Видео передаётся в ShortSync и публикуется из общего TikTok-аккаунта INEASY.',
     uploadFailed: 'Не удалось загрузить видео. Попробуйте ещё раз.',
-    connectHint: 'Подключите аккаунт TikTok, чтобы продолжить.',
+    connectHint: 'В ShortSync не подключён общий TikTok-аккаунт. Попросите администратора подключить его в ShortSync.',
+    connectFailed: 'Не удалось получить статус общего подключения ShortSync.',
     captionLabel: 'Описание',
     captionHint: 'Добавьте хештеги через # и упоминания через @',
     privacyLabel: 'Кто может смотреть это видео',
@@ -180,7 +178,6 @@ const translations = {
     duetLabel: 'Разрешить дуэты',
     stitchLabel: 'Разрешить Stitch',
     aiLabel: 'Контент создан с помощью ИИ',
-    adsOnlyLabel: 'Показывать только в рекламе',
     commercialLabel: 'Маркировка коммерческого контента',
     commercialNone: 'Нет',
     commercialOwnBrand: 'Продвижение своего бренда',
@@ -194,7 +191,6 @@ const translations = {
     publishSuccess: 'Видео опубликовано в TikTok.',
     publishPending: 'TikTok принял видео и обрабатывает публикацию.',
     draftSuccess: 'Черновик отправлен в TikTok. Завершите настройку видимости и публикацию в приложении TikTok.',
-    connectFailed: 'Не удалось подключить TikTok. Проверьте настройки сервера и попробуйте снова.',
     publishFailed: 'Не удалось опубликовать видео в TikTok. Проверьте настройки и попробуйте снова.',
     authExpired: 'Сессия истекла. Войдите снова, чтобы опубликовать видео.',
     close: 'Закрыть',
@@ -283,13 +279,13 @@ const translations = {
     publishTikTok: 'TikTok-қа жариялау',
     publishNow: 'Қазір жариялау',
     publishTitle: 'TikTok-қа жариялау',
-    connectTikTok: 'TikTok-ты қосу',
-    checkingTikTok: 'TikTok байланысын тексеру…',
-    connectedAs: 'Қосылған аккаунт',
-    uploadNotice: 'Жариялау кезінде бейне серверіміз арқылы Zernio мен TikTok-қа жіберіледі. Сайт файлды сақтамайды.',
-    allowPopups: 'TikTok-қа жаңа қойындыда кіру үшін қалқымалы терезелерге рұқсат беріңіз.',
+    connectTikTok: 'Байланысты тексеру',
+    checkingTikTok: 'ShortSync ортақ TikTok аккаунтын тексеріп жатыр…',
+    connectedAs: 'Ортақ аккаунт',
+    uploadNotice: 'Бейне ShortSync-ке жіберіліп, ортақ INEASY TikTok аккаунтынан жарияланады.',
     uploadFailed: 'Бейне жүктелмеді. Қайталап көріңіз.',
-    connectHint: 'Жалғастыру үшін TikTok аккаунтын қосыңыз.',
+    connectHint: 'ShortSync жүйесінде ортақ TikTok аккаунты қосылмаған. Әкімшіден оны ShortSync жүйесіне қосуды сұраңыз.',
+    connectFailed: 'ShortSync ортақ байланысын оқу мүмкін болмады.',
     captionLabel: 'Сипаттама',
     captionHint: '# арқылы хештег, @ арқылы аккаунтты белгілеңіз',
     privacyLabel: 'Бұл бейнені кім көре алады',
@@ -301,7 +297,6 @@ const translations = {
     duetLabel: 'Дуэтке рұқсат беру',
     stitchLabel: 'Stitch-ке рұқсат беру',
     aiLabel: 'ЖИ жасаған контент',
-    adsOnlyLabel: 'Тек жарнамада көрсету',
     commercialLabel: 'Коммерциялық контент белгісі',
     commercialNone: 'Жоқ',
     commercialOwnBrand: 'Өз брендіңіз',
@@ -315,7 +310,6 @@ const translations = {
     publishSuccess: 'Бейне TikTok-та жарияланды.',
     publishPending: 'TikTok бейнені қабылдады және жариялап жатыр.',
     draftSuccess: 'Черновик TikTok-қа жіберілді. Жариялауды TikTok қолданбасында аяқтаңыз.',
-    connectFailed: 'TikTok қосылмады. Сервер баптауларын тексеріп, қайталап көріңіз.',
     publishFailed: 'Бейне TikTok-та жарияланбады. Параметрлерді тексеріп, қайталап көріңіз.',
     authExpired: 'Сеанс аяқталды. Жариялау үшін қайта кіріңіз.',
     close: 'Жабу',
@@ -446,7 +440,6 @@ function applyLanguage(lang) {
   setText('tiktokDuetLabel', pack.duetLabel);
   setText('tiktokStitchLabel', pack.stitchLabel);
   setText('tiktokAiLabel', pack.aiLabel);
-  setText('tiktokAdsOnlyLabel', pack.adsOnlyLabel);
   setText('tiktokCommercialLabel', pack.commercialLabel);
   setText('tiktokPreviewLabel', pack.previewLabel);
   setText('tiktokConsentLabel', pack.consentLabel);
@@ -808,22 +801,6 @@ async function openTikTokComposer() {
   await refreshTikTokStatus();
 }
 
-function monitorTikTokConnection(authWindow) {
-  let checks = 0;
-  const timer = window.setInterval(async () => {
-    checks += 1;
-    if (!authWindow.closed && checks < 240) return;
-    window.clearInterval(timer);
-
-    for (let attempt = 0; attempt < 6; attempt += 1) {
-      if (!tiktokComposerOverlay || tiktokComposerOverlay.classList.contains('hidden')) return;
-      await refreshTikTokStatus();
-      if (tiktokAccountId) return;
-      await new Promise((resolve) => window.setTimeout(resolve, 1500));
-    }
-  }, 750);
-}
-
 if (publishTiktokBtn) {
   publishTiktokBtn.addEventListener('click', (event) => {
     event.preventDefault();
@@ -833,17 +810,11 @@ if (publishTiktokBtn) {
 }
 if (tiktokConnectBtn) {
   tiktokConnectBtn.addEventListener('click', async () => {
-    const authWindow = window.open('about:blank', '_blank');
     tiktokConnectBtn.disabled = true;
-    tiktokAccountStatus.textContent = t('connecting');
     try {
-      const data = await tiktokApi('/api/tiktok/connect');
-      if (!authWindow) throw new Error(t('allowPopups'));
-      authWindow.location.href = data.authUrl;
-      monitorTikTokConnection(authWindow);
+      await refreshTikTokStatus();
     } catch (error) {
-      if (authWindow) authWindow.close();
-      tiktokAccountStatus.textContent = error.status === 401 ? t('authExpired') : (error.message || t('connectFailed'));
+      tiktokAccountStatus.textContent = error.message || t('connectFailed');
     } finally {
       tiktokConnectBtn.disabled = false;
     }
@@ -892,8 +863,8 @@ if (tiktokPublishForm) {
       const result = await tiktokApi('/api/tiktok/publish', {
         method: 'POST',
         body: JSON.stringify({
-          accountId: tiktokAccountId,
-          publicUrl: uploaded.publicUrl,
+          connectionId: tiktokAccountId,
+          uploadId: uploaded.uploadId,
           content: tiktokCaption.value.trim(),
           privacyLevel: tiktokPrivacy.value,
           allowComment: document.getElementById('tiktokAllowComments').checked,
@@ -901,7 +872,6 @@ if (tiktokPublishForm) {
           allowStitch: document.getElementById('tiktokAllowStitch').checked,
           madeWithAi: document.getElementById('tiktokMadeWithAi').checked,
           commercialContentType: document.getElementById('tiktokCommercialType').value,
-          adsOnly: document.getElementById('tiktokAdsOnly').checked,
           confirmedPreview: document.getElementById('tiktokPreviewConfirmed').checked,
           consentGiven: document.getElementById('tiktokConsentGiven').checked,
         }),
