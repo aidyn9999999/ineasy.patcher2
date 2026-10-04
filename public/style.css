@@ -578,7 +578,7 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
 .notice-banner p { margin: 0; font-size: 13px; }
 .process-btn { width: 100%; margin-top: 20px; border: 0; border-radius: 10px; padding: 15px; background: var(--accent); color: #1a0d05; font: 700 14px 'Manrope', sans-serif; cursor: pointer; transition: all 0.15s ease; box-shadow: 0 0 18px rgba(255, 107, 0, 0.22); }
 .process-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 0 26px rgba(255, 107, 0, 0.4); background: var(--accent-hover); }
-.process-btn:disabled { opacity: .45; cursor: not-allowed; }
+.process-btn:disabled { opacity: .55; background: #171411; color: #8c8177; cursor: not-allowed; box-shadow: none; }
 .processing-state { position: relative; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: center; margin-top: 16px; padding: 15px; border: 1px solid var(--card-border); border-radius: 12px; background: var(--bg); }
 .processing-state strong, .processing-state span { display: block; }
 .processing-state strong { color: var(--text); font-size: 13px; }

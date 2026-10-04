@@ -48,9 +48,9 @@ const redis = new Redis({
 });
 
 const BTN = {
-  ru: { website: '🔗 Ссылка на сайт', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео' },
-  en: { website: '🔗 Website link', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker' },
-  kk: { website: '🔗 Сайт сілтемесі', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру' },
+  ru: { website: '🔗 Ссылка на сайт', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео', invite: '👥 Пригласить друга' },
+  en: { website: '🔗 Website link', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker', invite: '👥 Invite a friend' },
+  kk: { website: '🔗 Сайт сілтемесі', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру', invite: '👥 Дос шақыру' },
 };
 
 function langChoiceKeyboard() {
@@ -67,7 +67,7 @@ const TEXTS = {
       `👋 Привет, ${name}!\n\n` +
       `Добро пожаловать в INEASY PATCHER 🚀🔥\n\n` +
       `🎬 Как обработать видео:\n\n` +
-      `1️⃣ Нажмите «${BTN.ru.website}» в меню и откройте ссылку в браузере телефона.\n\n` +
+      `1️⃣ Нажмите «${BTN.ru.website}» в меню бота. Если ссылка открылась внутри Telegram, удерживайте её и выберите «Открыть в браузере» — Chrome или Safari. Не используйте встроенный браузер Telegram.\n\n` +
       `2️⃣ 🔐 Войдите через Telegram на сайте.\n\n` +
       `3️⃣ 🎥 Выберите видео и нажмите «Подготовить видео».\n\n` +
       `4️⃣ ✅ Скачайте готовое видео и загрузите его в TikTok.\n\n` +
@@ -85,6 +85,15 @@ const TEXTS = {
     subscribeCheckError: 'Не удалось проверить подписку. Попробуйте позже или сообщите администратору.',
     subscribeButton: '📢 Подписаться на канал',
     checkSubscribeButton: '✅ Я подписался',
+    inviteButton: BTN.ru.invite,
+    inviteShareButton: '📨 Поделиться ссылкой',
+    inviteMessage: (link) => `👥 Пригласите друга в INEASY Patcher. За каждого нового пользователя начислим вам 1 видео после того, как он впервые запустит бота и подтвердит подписку на @ineasynews.\n\nВаша ссылка:\n${link}`,
+    inviteShareText: 'Попробуй INEASY Patcher. Запусти бота по моей ссылке, подпишись на @ineasynews и подтверди подписку.',
+    referralJoinPrompt: 'Чтобы получить приглашённое видео, подпишитесь на @ineasynews и нажмите «Проверить подписку».',
+    referralVerifyButton: '✅ Проверить подписку',
+    referralJoinSuccess: '✅ Подписка подтверждена. Пригласившему начислено 1 видео. Нажмите /start, чтобы открыть меню.',
+    referralNotEligible: 'ℹ️ Бонус выдаётся один раз за нового пользователя, который впервые запускает бота по приглашению и подписывается на @ineasynews.',
+    referralRewarded: (id) => `🎉 Вашему приглашённому пользователю ${id} начислен 1 бонус за подписку и запуск бота.`,
     websiteButton: 'Открыть сайт',
     websiteGuide: (url) => `Ссылка на INEASY PATCHER:\n${url}\n\nЧтобы сайт и обработка видео работали правильно, откройте его в браузере телефона. Если ссылка открылась внутри Telegram, зажмите её и выберите «Открыть в браузере», затем выберите Safari или Chrome. Во встроенном браузере Telegram инструменты сайта могут работать некорректно. После открытия войдите через Telegram и следуйте инструкции на сайте.`,
     packagesTitle: '🛒 Выберите пакет лимитов:',
@@ -137,7 +146,7 @@ const TEXTS = {
       `👋 Hi, ${name}!\n\n` +
       `Welcome to INEASY PATCHER 🚀🔥\n\n` +
       `🎬 How to process a video:\n\n` +
-      `1️⃣ Tap “${BTN.en.website}” and open the link in your phone browser.\n\n` +
+      `1️⃣ Tap “${BTN.en.website}” in the bot menu. If the link opens inside Telegram, press and hold it, then choose “Open in Browser” and select Chrome or Safari. Do not use Telegram's built-in browser.\n\n` +
       `2️⃣ 🔐 Sign in with Telegram on the website.\n\n` +
       `3️⃣ 🎥 Choose a video and tap Prepare video.\n\n` +
       `4️⃣ ✅ Download the finished video and upload it to TikTok.\n\n` +
@@ -155,6 +164,15 @@ const TEXTS = {
     subscribeCheckError: 'Could not check your subscription. Try again later or contact support.',
     subscribeButton: '📢 Subscribe to the channel',
     checkSubscribeButton: '✅ I subscribed',
+    inviteButton: BTN.en.invite,
+    inviteShareButton: '📨 Share invite link',
+    inviteMessage: (link) => `👥 Invite a friend to INEASY Patcher. Earn 1 video credit for each new user after they start the bot for the first time and confirm their @ineasynews subscription.\n\nYour link:\n${link}`,
+    inviteShareText: 'Try INEASY Patcher. Start the bot with my link and subscribe to @ineasynews to activate the invite.',
+    referralJoinPrompt: 'To qualify for the invite, subscribe to @ineasynews and tap “Verify subscription”.',
+    referralVerifyButton: '✅ Verify subscription',
+    referralJoinSuccess: '✅ Subscription verified. Your inviter received 1 video credit. Send /start to open the menu.',
+    referralNotEligible: 'ℹ️ The reward is available once per new user who starts the bot from an invite and subscribes to @ineasynews.',
+    referralRewarded: (id) => `🎉 Your invited user ${id} started the bot and verified their subscription. You received 1 video credit.`,
     websiteButton: 'Open website',
     websiteGuide: (url) => `INEASY PATCHER website:\n${url}\n\nFor the site and video tools to work correctly, open it in your phone's browser. If it opens inside Telegram, press and hold the link, choose “Open in Browser”, then select Safari or Chrome. The website tools may not work correctly inside Telegram's browser. Sign in with Telegram and follow the website instructions.`,
     packagesTitle: '🛒 Choose a limits package:',
@@ -207,7 +225,7 @@ const TEXTS = {
       `👋 Сәлем, ${name}!\n\n` +
       `INEASY PATCHER-ге қош келдіңіз 🚀🔥\n\n` +
       `🎬 Бейнені өңдеу жолы:\n\n` +
-      `1️⃣ «${BTN.kk.website}» түймесін басып, сілтемені телефон браузерінде ашыңыз.\n\n` +
+      `1️⃣ Бот мәзіріндегі «${BTN.kk.website}» түймесін басыңыз. Сілтеме Telegram ішінде ашылса, оны басып тұрып, «Браузерде ашу» тармағын таңдаңыз да, Chrome немесе Safari қолданыңыз. Telegram-ның ішкі браузерін пайдаланбаңыз.\n\n` +
       `2️⃣ 🔐 Сайтқа Telegram арқылы кіріңіз.\n\n` +
       `3️⃣ 🎥 Бейнені таңдап, «Бейнені дайындау» түймесін басыңыз.\n\n` +
       `4️⃣ ✅ Дайын файлды жүктеп алып, TikTok-қа салыңыз.\n\n` +
@@ -225,6 +243,15 @@ const TEXTS = {
     subscribeCheckError: 'Жазылымды тексеру мүмкін болмады. Кейінірек қайталап көріңіз немесе қолдау қызметіне хабарласыңыз.',
     subscribeButton: '📢 Арнаға жазылу',
     checkSubscribeButton: '✅ Жазылдым',
+    inviteButton: BTN.kk.invite,
+    inviteShareButton: '📨 Шақыру сілтемесін бөлісу',
+    inviteMessage: (link) => `👥 Досыңызды INEASY Patcher-ге шақырыңыз. Әр жаңа пайдаланушы ботты алғаш рет іске қосып, @ineasynews арнасына жазылғанын растағаннан кейін сізге 1 видео беріледі.\n\nСілтемеңіз:\n${link}`,
+    inviteShareText: 'INEASY Patcher қолданып көріңіз. Менің сілтемем арқылы ботты іске қосып, @ineasynews арнасына жазылыңыз.',
+    referralJoinPrompt: 'Шақыру бонусы үшін @ineasynews арнасына жазылып, «Жазылымды тексеру» түймесін басыңыз.',
+    referralVerifyButton: '✅ Жазылымды тексеру',
+    referralJoinSuccess: '✅ Жазылым расталды. Сізді шақырған адамға 1 видео берілді. Мәзірді ашу үшін /start жіберіңіз.',
+    referralNotEligible: 'ℹ️ Бонус ботты шақыру сілтемесімен алғаш рет іске қосып, @ineasynews арнасына жазылған жаңа пайдаланушы үшін бір рет беріледі.',
+    referralRewarded: (id) => `🎉 Сіз шақырған ${id} пайдаланушы ботты іске қосып, жазылымын растады. Сізге 1 видео берілді.`,
     websiteButton: 'Сайтты ашу',
     websiteGuide: (url) => `INEASY PATCHER сайты:\n${url}\n\nСайт пен бейне құралдары дұрыс жұмыс істеуі үшін сілтемені телефон браузерінде ашыңыз. Telegram ішінде ашылса, сілтемені басып тұрып «Браузерде ашу» тармағын таңдап, Safari немесе Chrome браузерін ашыңыз. Telegram ішкі браузерінде сайт құралдары дұрыс істемеуі мүмкін. Сайтқа Telegram арқылы кіріп, нұсқауларды орындаңыз.`,
     packagesTitle: '🛒 Лимит пакетін таңдаңыз:',
@@ -666,6 +693,7 @@ function mainKeyboard(lang) {
     [b.balance, b.profile],
     [b.lang],
     [b.website],
+    [b.invite],
   ]).resize();
 }
 
@@ -816,9 +844,86 @@ async function sendProfile(ctx, lang) {
   await ctx.reply(TEXTS[lang].profile(username, id, patched, free, purchased), mainKeyboard(lang));
 }
 
+async function sendInvite(ctx, lang) {
+  const link = `https://t.me/${BOT_USERNAME}?start=ref_${ctx.from.id}`;
+  const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(TEXTS[lang].inviteShareText)}`;
+  await ctx.reply(TEXTS[lang].inviteMessage(link), Markup.inlineKeyboard([
+    [Markup.button.url(TEXTS[lang].inviteShareButton, shareUrl)],
+  ]));
+}
+
+function referralSubscriptionKeyboard(lang, referrerId) {
+  return Markup.inlineKeyboard([
+    [Markup.button.url(TEXTS[lang].subscribeButton, 'https://t.me/ineasynews')],
+    [Markup.button.callback(TEXTS[lang].referralVerifyButton, `verify_ref_${referrerId}`)],
+  ]);
+}
+
+async function awardReferral(inviteeId, referrerId) {
+  if (!/^\d+$/.test(referrerId) || referrerId === inviteeId || await isUserBlocked(referrerId)) return false;
+  await getPurchasedBalance(referrerId);
+  const awarded = await redis.eval(
+    "if redis.call('EXISTS', KEYS[1]) == 1 then return 0 end; redis.call('SET', KEYS[1], ARGV[1]); redis.call('INCRBY', KEYS[2], 1); return 1",
+    [`referralInviter:${inviteeId}`, `purchased:${referrerId}`],
+    [referrerId]
+  );
+  if (Number(awarded) !== 1) return false;
+
+  await redis.del(`pendingReferral:${inviteeId}`);
+  await recordUserActivity(referrerId, 'Получен бонус за приглашение', { details: `Новый пользователь ${inviteeId}` });
+  await recordUserActivity(inviteeId, 'Выполнил условия приглашения', { details: `Пригласивший ${referrerId}` });
+  try {
+    await bot.telegram.sendMessage(referrerId, TEXTS[await getLang(referrerId)].referralRewarded(inviteeId), mainKeyboard(await getLang(referrerId)));
+  } catch (error) {
+    console.error('Не удалось уведомить пригласившего о бонусе:', error.message);
+  }
+  return true;
+}
+
+async function handleReferralStart(ctx, referrerId, isFirstStart) {
+  const inviteeId = String(ctx.from.id);
+  const lang = await getLang(inviteeId);
+  if (!/^\d+$/.test(referrerId) || referrerId === inviteeId || await redis.get(`referralInviter:${inviteeId}`) || await isUserBlocked(referrerId)) {
+    await ctx.reply(TEXTS[lang].referralNotEligible, mainKeyboard(lang));
+    return;
+  }
+  if (!isFirstStart) {
+    const pendingReferrer = await redis.get(`pendingReferral:${inviteeId}`);
+    if (String(pendingReferrer) === referrerId) {
+      await ctx.reply(TEXTS[lang].referralJoinPrompt, referralSubscriptionKeyboard(lang, referrerId));
+      return;
+    }
+    await ctx.reply(TEXTS[lang].referralNotEligible, mainKeyboard(lang));
+    return;
+  }
+
+  try {
+    const member = await bot.telegram.getChatMember(NEWS_CHANNEL_ID, inviteeId);
+    const subscribed = ['creator', 'administrator', 'member'].includes(member.status) ||
+      (member.status === 'restricted' && member.is_member);
+    if (!subscribed) {
+      await redis.set(`pendingReferral:${inviteeId}`, referrerId, { ex: 7 * 24 * 60 * 60 });
+      await ctx.reply(TEXTS[lang].referralJoinPrompt, referralSubscriptionKeyboard(lang, referrerId));
+      return;
+    }
+
+    const awarded = await awardReferral(inviteeId, referrerId);
+    await ctx.reply(awarded ? TEXTS[lang].referralJoinSuccess : TEXTS[lang].referralNotEligible, mainKeyboard(lang));
+  } catch (error) {
+    console.error('Не удалось проверить приглашение:', error.message);
+    await ctx.reply(TEXTS[lang].subscribeCheckError, mainKeyboard(lang));
+  }
+}
+
 bot.start(async (ctx) => {
+  const firstStart = await redis.set(`botStarted:${ctx.from.id}`, '1', { nx: true });
   const lang = await getLang(ctx.from.id);
   const payload = ctx.startPayload ? ctx.startPayload.trim() : null;
+
+  if (payload && payload.startsWith('ref_')) {
+    await handleReferralStart(ctx, payload.slice(4), firstStart === 'OK');
+    return;
+  }
 
   if (payload && payload !== 'buyvideo' && !payload.startsWith('buy_') && sessions.has(payload)) {
     await confirmSiteLogin(ctx, payload);
@@ -838,6 +943,7 @@ bot.start(async (ctx) => {
 
 bot.command('buyvideo', async (ctx) => sendPackagesMenu(ctx, await getLang(ctx.from.id)));
 bot.command('autorization', async (ctx) => sendWelcome(ctx, await getLang(ctx.from.id)));
+bot.command('invite', async (ctx) => sendInvite(ctx, await getLang(ctx.from.id)));
 bot.command('balance', async (ctx) => sendBalance(ctx, await getLang(ctx.from.id)));
 bot.command('profile', async (ctx) => sendProfile(ctx, await getLang(ctx.from.id)));
 
@@ -864,6 +970,7 @@ bot.action(/^lang_(ru|en|kk)$/, async (ctx) => {
 });
 
 bot.hears([BTN.ru.buy, BTN.en.buy, BTN.kk.buy], async (ctx) => sendPackagesMenu(ctx, await getLang(ctx.from.id)));
+bot.hears([BTN.ru.invite, BTN.en.invite, BTN.kk.invite], async (ctx) => sendInvite(ctx, await getLang(ctx.from.id)));
 bot.hears([BTN.ru.balance, BTN.en.balance, BTN.kk.balance], async (ctx) => sendBalance(ctx, await getLang(ctx.from.id)));
 bot.hears([BTN.ru.profile, BTN.en.profile, BTN.kk.profile], async (ctx) => sendProfile(ctx, await getLang(ctx.from.id)));
 
@@ -871,6 +978,34 @@ bot.action(/^pkg_(\d+)_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
   const lang = await getLang(ctx.from.id);
   await createPurchaseOrder(ctx, Number(ctx.match[1]), Number(ctx.match[2]), lang);
+});
+
+bot.action(/^verify_ref_(\d+)$/, async (ctx) => {
+  const inviteeId = String(ctx.from.id);
+  const referrerId = ctx.match[1];
+  const lang = await getLang(inviteeId);
+  const pendingReferrer = await redis.get(`pendingReferral:${inviteeId}`);
+  if (String(pendingReferrer) !== referrerId) {
+    await ctx.answerCbQuery(TEXTS[lang].referralNotEligible, { show_alert: true });
+    return;
+  }
+
+  try {
+    const member = await bot.telegram.getChatMember(NEWS_CHANNEL_ID, inviteeId);
+    const subscribed = ['creator', 'administrator', 'member'].includes(member.status) ||
+      (member.status === 'restricted' && member.is_member);
+    if (!subscribed) {
+      await ctx.answerCbQuery(TEXTS[lang].subscribeFailed, { show_alert: true });
+      return;
+    }
+
+    const awarded = await awardReferral(inviteeId, referrerId);
+    await ctx.answerCbQuery();
+    await ctx.reply(awarded ? TEXTS[lang].referralJoinSuccess : TEXTS[lang].referralNotEligible, mainKeyboard(lang));
+  } catch (error) {
+    console.error('Не удалось подтвердить подписку для приглашения:', error.message);
+    await ctx.answerCbQuery(TEXTS[lang].subscribeCheckError, { show_alert: true });
+  }
 });
 
 bot.on(['photo', 'document'], async (ctx) => {
