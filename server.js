@@ -17,6 +17,8 @@ const BOT_USERNAME = process.env.BOT_USERNAME || 'ineasybot';
 const NEWS_CHANNEL_ID = process.env.NEWS_CHANNEL_ID || '@ineasynews';
 const PORT = process.env.PORT || 3000;
 const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : null;
+const SHORTSYNC_API_BASE = 'https://api.shortsync.app/v1';
+const SHORTSYNC_CONNECTION_ID = process.env.SHORTSYNC_CONNECTION_ID ? String(process.env.SHORTSYNC_CONNECTION_ID).trim() : null;
 const WEEKLY_FREE_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771 или 705 542 37 05 (Freedom Bank, Halyk Bank, Kaspi.kz)\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher.up.railway.app/app.html';
@@ -645,7 +647,6 @@ async function analyzeTikTok(url) {
 }
 
 const sessions = new Map();
-const tiktokProfilePromises = new Map();
 setInterval(() => {
   const now = Date.now();
   for (const [id, s] of sessions.entries()) {
@@ -1398,54 +1399,77 @@ async function requireUserToken(req, res, next) {
   return next();
 }
 
-async function zernioRequest(resource, options = {}) {
-  if (!process.env.ZERNIO_API_KEY) {
-    const error = new Error('TikTok publishing is not configured. Add ZERNIO_API_KEY on the server.');
+async function shortSyncRequest(resource, options = {}) {
+  if (!process.env.SHORTSYNC_API_KEY) {
+    const error = new Error('ShortSync API is not configured. Add SHORTSYNC_API_KEY on the server.');
     error.status = 503;
     throw error;
   }
-  const response = await fetch(`https://zernio.com/api/v1${resource}`, {
+
+  const headers = {
+    Authorization: `Bearer ${process.env.SHORTSYNC_API_KEY}`,
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    ...options.headers,
+  };
+  const response = await fetch(`${SHORTSYNC_API_BASE}${resource}`, {
     ...options,
-    headers: {
-      Authorization: `Bearer ${process.env.ZERNIO_API_KEY}`,
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
-      ...options.headers,
-    },
+    headers,
     ...(options.body ? { body: JSON.stringify(options.body) } : {}),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = new Error(data.error || data.message || 'TikTok provider request failed.');
+    const error = new Error(data.message || data.error?.message || `ShortSync API request failed (${response.status}).`);
     error.status = response.status >= 400 && response.status < 500 ? response.status : 502;
+    error.code = data.code || data.error?.code || null;
     throw error;
   }
   return data;
 }
 
-async function getTiktokProfile(telegramId) {
-  const key = `tiktokProfile:${telegramId}`;
-  const existing = await redis.get(key);
-  if (existing) return existing;
-  if (tiktokProfilePromises.has(telegramId)) return tiktokProfilePromises.get(telegramId);
-
-  const pending = zernioRequest('/profiles', {
-    method: 'POST',
-    body: { name: `telegram_${telegramId}` },
-  }).then(async (data) => {
-    if (!data.profile || !data.profile._id) throw new Error('Zernio did not return a profile id.');
-    await redis.set(key, data.profile._id);
-    return data.profile._id;
-  }).finally(() => tiktokProfilePromises.delete(telegramId));
-  tiktokProfilePromises.set(telegramId, pending);
-  return pending;
+function unwrapShortSyncData(response) {
+  return response && Object.prototype.hasOwnProperty.call(response, 'data') ? response.data : response;
 }
 
-async function getUserTiktokAccount(telegramId) {
-  const profileId = await redis.get(`tiktokProfile:${telegramId}`);
-  if (!profileId) return { profileId: null, account: null };
-  const data = await zernioRequest(`/accounts?profileId=${encodeURIComponent(profileId)}`);
-  const account = (data.accounts || []).find((item) => item.platform === 'tiktok' && item.isActive);
-  return { profileId, account: account || null };
+async function getSharedTikTokConnection() {
+  let connection;
+  if (SHORTSYNC_CONNECTION_ID) {
+    const response = await shortSyncRequest(`/connections/${encodeURIComponent(SHORTSYNC_CONNECTION_ID)}`);
+    connection = unwrapShortSyncData(response);
+  } else {
+    const response = await shortSyncRequest('/connections?platform=tiktok&status=active&limit=100');
+    const activeConnections = (unwrapShortSyncData(response) || []).filter((item) => item.platform === 'tiktok' && item.status === 'active');
+    if (activeConnections.length > 1) {
+      const error = new Error('Several TikTok connections exist. Set SHORTSYNC_CONNECTION_ID to select the shared account.');
+      error.status = 503;
+      throw error;
+    }
+    connection = activeConnections[0] || null;
+  }
+
+  if (!connection || connection.platform !== 'tiktok' || connection.status !== 'active') return null;
+  return connection;
+}
+
+function shortSyncTikTokCreatorInfo() {
+  return {
+    privacyLevels: [
+      { value: 'PUBLIC_TO_EVERYONE', label: 'Public' },
+      { value: 'MUTUAL_FOLLOW_FRIENDS', label: 'Friends' },
+      { value: 'SELF_ONLY', label: 'Private' },
+    ],
+    commercialContentTypes: [
+      { value: 'none', label: 'None' },
+      { value: 'brand_organic', label: 'Your brand' },
+      { value: 'brand_content', label: 'Branded content' },
+    ],
+    postingLimits: {
+      interactionSettings: {
+        allow_comment: { enabled: true, default: true },
+        allow_duet: { enabled: true, default: true },
+        allow_stitch: { enabled: true, default: true },
+      },
+    },
+  };
 }
 
 app.post('/api/session', (req, res) => {
@@ -1480,34 +1504,17 @@ app.get('/api/session/:id', async (req, res) => {
 
 app.get('/api/tiktok/status', requireUserToken, async (req, res) => {
   try {
-    const { profileId, account } = await getUserTiktokAccount(req.telegramId);
-    if (!profileId || !account) return res.json({ connected: false });
-    const creator = await zernioRequest(`/accounts/${encodeURIComponent(account._id)}/tiktok/creator-info?mediaType=video`);
+    const connection = await getSharedTikTokConnection();
+    if (!connection) return res.json({ connected: false, sharedAccount: true });
     res.json({
       connected: true,
-      account: { id: account._id, username: account.username || '' },
-      creatorInfo: creator,
+      sharedAccount: true,
+      account: { id: connection.id, username: connection.display_name || '' },
+      creatorInfo: shortSyncTikTokCreatorInfo(),
     });
   } catch (error) {
     res.status(error.status || 502).json({ error: error.message || 'tiktok_status_failed' });
   }
-});
-
-app.get('/api/tiktok/connect', requireUserToken, async (req, res) => {
-  try {
-    const profileId = await getTiktokProfile(req.telegramId);
-    const callbackUrl = `${new URL(SITE_URL).origin}/tiktok/callback`;
-    const query = new URLSearchParams({ profileId, redirect_url: callbackUrl });
-    const result = await zernioRequest(`/connect/tiktok?${query}`);
-    if (!result.authUrl) return res.status(502).json({ error: 'tiktok_auth_url_missing' });
-    res.json({ authUrl: result.authUrl });
-  } catch (error) {
-    res.status(error.status || 502).json({ error: error.message || 'tiktok_connect_failed' });
-  }
-});
-
-app.get('/tiktok/callback', (req, res) => {
-  res.type('html').send('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TikTok connected</title></head><body><p>TikTok connected. Return to the INEASY tab.</p><script>window.close()</script></body></html>');
 });
 
 app.post('/api/tiktok/media/presign', requireUserToken, async (req, res) => {
@@ -1515,19 +1522,25 @@ app.post('/api/tiktok/media/presign', requireUserToken, async (req, res) => {
   if (typeof filename !== 'string' || !filename.toLowerCase().endsWith('.mp4') || contentType !== 'video/mp4') {
     return res.status(400).json({ error: 'unsupported_video_format' });
   }
-  if (!Number.isSafeInteger(size) || size < 1 || size > 4 * 1024 * 1024 * 1024) {
+  if (!Number.isSafeInteger(size) || size < 1 || size > 2 * 1024 * 1024 * 1024) {
     return res.status(400).json({ error: 'video_size_out_of_range' });
   }
   try {
-    const result = await zernioRequest('/media/presign', {
+    const result = unwrapShortSyncData(await shortSyncRequest('/uploads', {
       method: 'POST',
-      body: { filename: path.basename(filename), contentType, size },
-    });
-    const uploadId = uuidv4();
+      body: { filename: path.basename(filename) },
+    }));
+    if (!result.upload_id || !result.presigned_url) throw new Error('ShortSync did not return an upload ticket.');
+    const uploadId = result.upload_id;
     const uploadKey = `tiktokUpload:${req.telegramId}:${uploadId}`;
-    const uploadRecord = JSON.stringify({ uploadUrl: result.uploadUrl, publicUrl: result.publicUrl, contentType, size });
+    const uploadRecord = JSON.stringify({
+      uploadUrl: result.presigned_url,
+      requiredHeaders: result.required_headers || {},
+      contentType,
+      size,
+    });
     await redis.set(uploadKey, uploadRecord, { ex: Math.min(3600, Math.max(60, Number(result.expiresIn) || 3600)) });
-    res.json({ uploadId, publicUrl: result.publicUrl });
+    res.json({ uploadId, requiredHeaders: result.required_headers || {} });
   } catch (error) {
     res.status(error.status || 502).json({ error: error.message || 'media_upload_setup_failed' });
   }
@@ -1541,7 +1554,7 @@ app.put('/api/tiktok/media/upload/:uploadId', requireUserToken, async (req, res)
     if (!saved) return res.status(404).json({ error: 'upload_expired' });
     upload = typeof saved === 'string' ? JSON.parse(saved) : saved;
     const target = new URL(upload.uploadUrl);
-    if (target.protocol !== 'https:' || !target.hostname.endsWith('.r2.cloudflarestorage.com')) {
+    if (target.protocol !== 'https:' || target.hostname !== 'media.shortsync.app') {
       return res.status(502).json({ error: 'invalid_storage_upload_url' });
     }
     if (req.headers['content-type'] !== upload.contentType || Number(req.headers['content-length']) !== upload.size) {
@@ -1553,15 +1566,27 @@ app.put('/api/tiktok/media/upload/:uploadId', requireUserToken, async (req, res)
       port: target.port || 443,
       path: `${target.pathname}${target.search}`,
       method: 'PUT',
-      headers: { 'Content-Type': upload.contentType, 'Content-Length': String(upload.size) },
+      headers: {
+        ...upload.requiredHeaders,
+        'Content-Type': upload.contentType,
+        'Content-Length': String(upload.size),
+      },
     }, (storageResponse) => {
       storageResponse.resume();
-      storageResponse.on('end', () => {
+      storageResponse.on('end', async () => {
         if (storageResponse.statusCode < 200 || storageResponse.statusCode >= 300) {
           return res.status(502).json({ error: 'media_storage_upload_failed' });
         }
-        redis.del(uploadKey).catch(() => {});
-        res.json({ publicUrl: upload.publicUrl });
+        try {
+          const finalized = unwrapShortSyncData(await shortSyncRequest(`/uploads/${encodeURIComponent(req.params.uploadId)}`));
+          if (!finalized || finalized.status !== 'ready') return res.status(409).json({ error: 'media_upload_not_ready' });
+          await redis.set(`shortSyncReadyUpload:${req.telegramId}:${req.params.uploadId}`, '1', { ex: 24 * 60 * 60 });
+          await redis.del(uploadKey);
+          res.json({ uploadId: req.params.uploadId });
+        } catch (error) {
+          console.error('ShortSync upload finalization failed:', error.message);
+          res.status(error.status || 502).json({ error: error.message || 'media_upload_finalize_failed' });
+        }
       });
     });
     upstream.on('error', (error) => {
@@ -1575,59 +1600,68 @@ app.put('/api/tiktok/media/upload/:uploadId', requireUserToken, async (req, res)
 });
 
 app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
-  const { accountId, publicUrl, content, privacyLevel, allowComment, allowDuet, allowStitch, madeWithAi, commercialContentType, adsOnly, confirmedPreview, consentGiven } = req.body || {};
+  const { connectionId, uploadId, content, privacyLevel, allowComment, allowDuet, allowStitch, madeWithAi, commercialContentType, confirmedPreview, consentGiven } = req.body || {};
   if (typeof content !== 'string' || !content.trim() || content.length > 2200) return res.status(400).json({ error: 'invalid_caption' });
   if (!confirmedPreview || !consentGiven) return res.status(400).json({ error: 'publishing_consent_required' });
-  let mediaUrl;
-  try {
-    mediaUrl = new URL(publicUrl);
-    if (mediaUrl.protocol !== 'https:' || mediaUrl.hostname !== 'media.zernio.com') throw new Error('invalid');
-  } catch (error) {
-    return res.status(400).json({ error: 'invalid_media_url' });
+  if (typeof uploadId !== 'string' || typeof connectionId !== 'string') return res.status(400).json({ error: 'upload_or_connection_required' });
+  const allowedPrivacyLevels = ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'];
+  if (!allowedPrivacyLevels.includes(privacyLevel)) return res.status(400).json({ error: 'privacy_level_not_available' });
+  if (!['none', 'brand_organic', 'brand_content'].includes(commercialContentType)) {
+    return res.status(400).json({ error: 'invalid_commercial_content_type' });
+  }
+  if (commercialContentType !== 'none' && privacyLevel === 'SELF_ONLY') {
+    return res.status(400).json({ error: 'branded_content_cannot_be_private' });
   }
 
   try {
-    const { profileId, account } = await getUserTiktokAccount(req.telegramId);
-    if (!profileId || !account || account._id !== accountId) return res.status(403).json({ error: 'tiktok_account_not_connected' });
-    const creator = await zernioRequest(`/accounts/${encodeURIComponent(accountId)}/tiktok/creator-info?mediaType=video`);
-    const privacyLevels = (creator.privacyLevels || []).map((level) => level.value);
-    if (!privacyLevels.includes(privacyLevel)) return res.status(400).json({ error: 'privacy_level_not_available' });
-    const commercialTypes = (creator.commercialContentTypes || []).map((item) => item.value);
-    if (!['none', 'brand_organic', 'brand_content'].includes(commercialContentType)
-      || (commercialTypes.length > 0 && !commercialTypes.includes(commercialContentType))) {
-      return res.status(400).json({ error: 'invalid_commercial_content_type' });
-    }
-    if (commercialContentType !== 'none' && privacyLevel === 'SELF_ONLY') {
-      return res.status(400).json({ error: 'branded_content_cannot_be_private' });
-    }
+    const connection = await getSharedTikTokConnection();
+    if (!connection || connection.id !== connectionId) return res.status(403).json({ error: 'tiktok_account_not_connected' });
+    const readyUploadKey = `shortSyncReadyUpload:${req.telegramId}:${uploadId}`;
+    if (!await redis.get(readyUploadKey)) return res.status(404).json({ error: 'upload_not_found_or_expired' });
 
     const isDraft = privacyLevel !== 'PUBLIC_TO_EVERYONE';
-    const result = await zernioRequest('/posts', {
+    const idempotencyKeyName = `shortSyncPostKey:${req.telegramId}:${uploadId}`;
+    let idempotencyKey = await redis.get(idempotencyKeyName);
+    if (!idempotencyKey) {
+      idempotencyKey = crypto.randomUUID();
+      await redis.set(idempotencyKeyName, idempotencyKey, { ex: 24 * 60 * 60 });
+    }
+
+    const response = await shortSyncRequest('/posts', {
       method: 'POST',
-      headers: { 'x-request-id': crypto.randomUUID() },
+      headers: { 'Idempotency-Key': idempotencyKey },
       body: {
-        content,
-        mediaItems: [{ type: 'video', url: mediaUrl.toString() }],
-        platforms: [{ platform: 'tiktok', accountId }],
-        tiktokSettings: {
-          privacy_level: privacyLevel,
-          allow_comment: Boolean(allowComment),
-          allow_duet: Boolean(allowDuet),
-          allow_stitch: Boolean(allowStitch),
-          content_preview_confirmed: true,
-          express_consent_given: true,
-          video_made_with_ai: Boolean(madeWithAi),
-          commercialContentType,
-          isAdsOnly: Boolean(adsOnly),
-          ...(isDraft ? { draft: true } : {}),
-        },
-        publishNow: true,
+        upload_id: uploadId,
+        publish_mode: 'immediate',
+        caption: content.trim(),
+        targets: [{
+          connection_id: connectionId,
+          platform_options: {
+            tiktok: {
+              post_mode: isDraft ? 'draft' : 'direct',
+              privacy_level: privacyLevel,
+              disable_comment: !Boolean(allowComment),
+              disable_duet: !Boolean(allowDuet),
+              disable_stitch: !Boolean(allowStitch),
+              is_aigc: Boolean(madeWithAi),
+              is_branded_content: commercialContentType === 'brand_content',
+              is_your_brand: commercialContentType === 'brand_organic',
+            },
+          },
+        }],
       },
     });
-    res.status(result.post && result.post.status === 'failed' ? 502 : 200).json({
-      post: result.post || null,
+    const posts = unwrapShortSyncData(response);
+    const post = Array.isArray(posts) ? posts[0] : null;
+    if (!post) throw new Error('ShortSync did not return a post result.');
+    if (post.status === 'failed') {
+      await redis.del(idempotencyKeyName);
+      return res.status(502).json({ error: post.error?.message || post.error?.code || 'tiktok_publish_failed', code: post.error?.code || null });
+    }
+    await redis.del(readyUploadKey, idempotencyKeyName);
+    res.status(201).json({
+      post,
       draft: isDraft,
-      error: result.post && result.post.platforms && result.post.platforms[0] && result.post.platforms[0].errorMessage,
     });
   } catch (error) {
     res.status(error.status || 502).json({ error: error.message || 'tiktok_publish_failed' });
