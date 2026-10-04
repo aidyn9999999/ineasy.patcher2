@@ -111,6 +111,10 @@ const translations = {
     loadingText: 'Preparing MP4 metadata on your device…',
     noBalance: 'No videos remain in your balance. Add videos to continue.',
     balanceCheckFailed: 'Could not refresh your balance. Please try again.',
+    noCreditsTitle: 'You are out of video credits',
+    noCreditsText: 'Add credits to process another video.',
+    buyOnSite: 'Buy on the site',
+    buyInTelegram: 'Buy in Telegram',
     balanceUpdateFailed: 'The video was patched, but the balance could not be updated. Contact support before processing again.',
     successText: 'Done. Video and audio stayed on your device; only MP4 metadata was sent.',
     checkResult: 'Result',
@@ -228,6 +232,10 @@ const translations = {
     loadingText: 'Проверяем MP4 и подготавливаем метаданные на устройстве…',
     noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
     balanceCheckFailed: 'Не удалось проверить баланс. Попробуйте ещё раз.',
+    noCreditsTitle: 'Лимиты закончились',
+    noCreditsText: 'Пополните баланс, чтобы снова обрабатывать видео.',
+    buyOnSite: 'Купить на сайте',
+    buyInTelegram: 'Купить в Telegram',
     balanceUpdateFailed: 'Видео обработано, но баланс не удалось обновить. Перед повторной обработкой обратитесь в поддержку.',
     successText: 'Готово. Видео и аудио не отправлялись; сервис получил только метаданные MP4.',
     checkResult: 'Результат проверки',
@@ -345,6 +353,10 @@ const translations = {
     loadingText: 'MP4 метадеректерін құрылғыда дайындаймыз…',
     noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
     balanceCheckFailed: 'Балансты тексеру мүмкін болмады. Қайталап көріңіз.',
+    noCreditsTitle: 'Видео лимиті таусылды',
+    noCreditsText: 'Келесі видеоны өңдеу үшін балансты толтырыңыз.',
+    buyOnSite: 'Сайттан сатып алу',
+    buyInTelegram: 'Telegram-нан сатып алу',
     balanceUpdateFailed: 'Бейне өңделді, бірақ баланс жаңартылмады. Қайталап өңдемей, қолдау қызметіне хабарласыңыз.',
     successText: 'Дайын. Бейне мен аудио жіберілмеді; сервис тек MP4 метадеректерін алды.',
     checkResult: 'Нәтиже',
@@ -411,6 +423,10 @@ function applyLanguage(lang) {
   setText('patchSub', pack.patchSub);
   setText('dzTitle', pack.choose);
   setText('dzSub', pack.chooseSub);
+  setText('noCreditsTitle', pack.noCreditsTitle);
+  setText('noCreditsText', pack.noCreditsText);
+  setText('buyOnSiteBtn', pack.buyOnSite);
+  setText('buyInTelegram', pack.buyInTelegram);
   setText('localNote', pack.localNote);
   setText('exportNote', pack.exportNote);
   setText('newsText', pack.newsText);
@@ -531,7 +547,16 @@ let currentBalance = null;
 
 function renderBalance() {
   if (balanceLabel && currentBalance !== null) balanceLabel.textContent = `${currentBalance} ${t('videos')}`;
+  updateDropzoneAvailability();
   updateProcessButton();
+}
+
+function updateDropzoneAvailability() {
+  const locked = currentBalance === 0;
+  if (dropzone) dropzone.classList.toggle('locked', locked);
+  if (dropzoneContent) dropzoneContent.classList.toggle('hidden', locked);
+  if (balanceLock) balanceLock.classList.toggle('hidden', !locked);
+  if (fileInput) fileInput.disabled = locked;
 }
 
 function updateProcessButton() {
@@ -662,6 +687,8 @@ if (modalOverlay) {
 // --- File upload + patcher ---
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
+const dropzoneContent = document.getElementById('dropzoneContent');
+const balanceLock = document.getElementById('balanceLock');
 const previewWrap = document.getElementById('previewWrap');
 const previewVideo = document.getElementById('previewVideo');
 const fileMeta = document.getElementById('fileMeta');
@@ -879,6 +906,10 @@ function updateProcessingProgress(value) {
 }
 
 function handleFile(file) {
+  if (currentBalance === 0) {
+    updateDropzoneAvailability();
+    return;
+  }
   const isVideo = file && (file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name));
   if (!isVideo || file.size < 16 || file.size > 8 * 1024 ** 3) {
     setProcessingState('error', t('errorInvalidFile'));
@@ -902,8 +933,17 @@ function handleFile(file) {
 }
 
 if (dropzone) {
-  dropzone.addEventListener('click', () => fileInput && fileInput.click());
+  dropzone.addEventListener('click', (event) => {
+    if (currentBalance === 0 || event.target.closest('.balance-lock-actions')) return;
+    if (fileInput) fileInput.click();
+  });
 }
+
+const buyOnSiteBtn = document.getElementById('buyOnSiteBtn');
+if (buyOnSiteBtn) buyOnSiteBtn.addEventListener('click', (event) => {
+  event.stopPropagation();
+  plusBtn?.click();
+});
 
 if (fileInput) {
   fileInput.addEventListener('change', (e) => {
@@ -916,6 +956,7 @@ if (dropzone) {
   ['dragenter', 'dragover'].forEach(evt => {
     dropzone.addEventListener(evt, (e) => {
       e.preventDefault();
+      if (currentBalance === 0) return;
       dropzone.classList.add('drag');
     });
   });
@@ -928,6 +969,7 @@ if (dropzone) {
   });
 
   dropzone.addEventListener('drop', (e) => {
+    if (currentBalance === 0) return;
     const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
     if (file) handleFile(file);
   });

@@ -862,3 +862,24 @@ button:focus-visible, .tg-btn:focus-visible {
 }
 .news-link:hover { transform: translateY(-1px); background: #55dc91; box-shadow: 0 0 22px rgba(56, 200, 120, 0.4); }
 .news-link:focus-visible { outline: 2px solid #80f0ae; outline-offset: 3px; }
+
+.dropzone.locked { border-style: solid; border-color: rgba(255, 107, 0, 0.28); background: #17110d; cursor: default; }
+.dropzone-content.hidden, .balance-lock.hidden { display: none; }
+.balance-lock { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 190px; padding: 8px; }
+.balance-lock-icon { width: 34px; height: 34px; margin-bottom: 12px; color: var(--accent); }
+.balance-lock-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; margin-top: 18px; }
+.balance-buy-site, .balance-buy-telegram { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 15px; border-radius: 8px; font: 700 12px 'Manrope', sans-serif; text-decoration: none; }
+.balance-buy-site { border: 0; background: var(--accent); color: #1a0d05; box-shadow: 0 0 16px rgba(255, 107, 0, 0.25); cursor: pointer; }
+.balance-buy-telegram { border: 1px solid rgba(255, 107, 0, 0.35); color: var(--text); }
+.balance-buy-site:hover { background: var(--accent-hover); }
+.balance-buy-telegram:hover { border-color: var(--accent); color: var(--accent-hover); }
+
+.bottom-nav { padding: 4px 8px calc(4px + env(safe-area-inset-bottom)); }
+.bottom-nav .nav-tab { gap: 2px; padding: 5px 4px; font-size: 9px; }
+.nav-icon { width: 14px; height: 14px; }
+.nav-icon svg { width: 14px; height: 14px; }
+
+@media (max-width: 420px) {
+  .balance-lock-actions { width: 100%; flex-direction: column; }
+  .balance-buy-site, .balance-buy-telegram { width: min(100%, 220px); }
+}
