@@ -982,39 +982,6 @@ function updateProcessingProgress(value) {
   if (processingProgress) processingProgress.style.width = `${percent}%`;
 }
 
-function readPreviewDimensions(signal) {
-  if (previewVideo?.videoWidth && previewVideo?.videoHeight) {
-    return Promise.resolve({ width: previewVideo.videoWidth, height: previewVideo.videoHeight });
-  }
-  return new Promise((resolve, reject) => {
-    const cleanup = () => {
-      previewVideo?.removeEventListener('loadedmetadata', onLoaded);
-      previewVideo?.removeEventListener('error', onError);
-      signal.removeEventListener('abort', onAbort);
-    };
-    const onLoaded = () => {
-      cleanup();
-      if (previewVideo.videoWidth && previewVideo.videoHeight) {
-        resolve({ width: previewVideo.videoWidth, height: previewVideo.videoHeight });
-      } else {
-        reject(new Error('Could not read video dimensions.'));
-      }
-    };
-    const onError = () => {
-      cleanup();
-      reject(new Error('Could not read video dimensions.'));
-    };
-    const onAbort = () => {
-      cleanup();
-      reject(new Error('Processing cancelled.'));
-    };
-    previewVideo.addEventListener('loadedmetadata', onLoaded);
-    previewVideo.addEventListener('error', onError);
-    signal.addEventListener('abort', onAbort, { once: true });
-    if (signal.aborted) onAbort();
-  });
-}
-
 function handleFile(file) {
   if (currentBalance === 0) {
     updateDropzoneAvailability();
@@ -1294,6 +1261,7 @@ if (processBtn) {
     }
 
     const sourceFile = fileInput.files[0];
+    const postingDevice = 'phone';
     const controller = new AbortController();
     processController = controller;
     processBtn.disabled = true;
@@ -1307,24 +1275,24 @@ if (processBtn) {
     updateProcessingProgress(0);
 
     try {
-      const { width: videoWidth, height: videoHeight } = await readPreviewDimensions(controller.signal);
-      let patchInput = sourceFile;
-      if (Math.min(videoWidth, videoHeight) > 1080) {
-        const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
-        patchInput = await downscaleVideo(sourceFile, {
-          signal: controller.signal,
-          onProgress: (fraction) => {
-            const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
-            updateProcessingProgress(progress * 90);
-          },
-        });
-      }
+      const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
+      const patchInput = await downscaleVideo(sourceFile, {
+        postingDevice,
+        signal: controller.signal,
+        onStatus: (status) => {
+          if (processingText) processingText.textContent = status;
+        },
+        onProgress: (fraction) => {
+          const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
+          updateProcessingProgress(progress * 90);
+        },
+      });
       controller.signal.throwIfAborted();
       updateProcessingProgress(95);
       const { patchVideo } = await import('https://compressbase.com/method-api/client.mjs');
       const outputBlob = await patchVideo(patchInput, {
         signal: controller.signal,
-        postingDevice: 'phone',
+        postingDevice,
         onStatus: (status) => {
           if (processingText) processingText.textContent = status;
         },
