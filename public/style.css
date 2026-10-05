@@ -1102,3 +1102,64 @@ button:focus-visible, .tg-btn:focus-visible { outline-color: var(--accent); }
   .bottom-nav .nav-tab { min-height: 46px; font-size: 9px; }
   .site-footer { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
 }
+
+.autopost-hint {
+  flex: 0 0 100%;
+  margin: -5px 0 0 30px;
+  color: var(--muted);
+  font-size: 10px;
+  opacity: 0.7;
+}
+.zernio-key-panel { display: grid; gap: 10px; }
+.zernio-key-panel.hidden, .tiktok-account-panel.hidden { display: none; }
+.zernio-connect-copy { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.zernio-key-row { display: flex; align-items: stretch; gap: 8px; }
+.zernio-key-row input {
+  min-width: 0;
+  flex: 1;
+  height: 44px;
+  border: 1px solid #41413c;
+  border-radius: 6px;
+  padding: 0 12px;
+  background: #141413;
+  color: var(--text);
+  font: 400 12px 'Manrope', sans-serif;
+}
+.zernio-key-row input:focus { outline: 2px solid rgba(200, 255, 0, 0.2); border-color: var(--accent); }
+.zernio-key-row input::placeholder { color: #777770; }
+.zernio-key-link, .tiktok-change-key-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #41413c;
+  border-radius: 6px;
+  padding: 0 12px;
+  background: transparent;
+  color: var(--text);
+  font: 600 11px 'Manrope', sans-serif;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.zernio-key-link:hover, .tiktok-change-key-btn:hover { border-color: var(--accent); color: var(--accent); }
+.zernio-key-hint { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.tiktok-account-panel { display: grid; gap: 12px; }
+.tiktok-account-status { display: flex; align-items: center; gap: 8px; margin: 0; }
+.tiktok-account-status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #777770;
+}
+.tiktok-account-status.online::before { background: #69e17b; box-shadow: 0 0 10px rgba(105, 225, 123, 0.55); }
+.tiktok-account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.tiktok-change-key-btn { min-height: 44px; }
+.zernio-key-panel .tiktok-connect-btn { justify-self: start; }
+
+@media (max-width: 600px) {
+  .zernio-key-row { flex-direction: column; }
+  .zernio-key-link { min-height: 40px; }
+  .tiktok-account-actions > button { flex: 1 1 100%; }
+}

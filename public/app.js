@@ -38,16 +38,29 @@ const translations = {
     ready: 'Video ready',
     readySub: 'Download your patched file',
     download: 'Download',
-    publishTikTok: 'Publish to TikTok',
+    publishTikTok: 'Auto-post with TikTok',
+    autopostHint: 'Quick auto-post with Zernio',
     publishNow: 'Publish now',
     publishTitle: 'Publish to TikTok',
-    connectTikTok: 'Check connection',
-    checkingTikTok: 'Checking shared TikTok connection…',
-    connectedAs: 'Shared account',
-    uploadNotice: 'This video is sent to ShortSync and published from the shared INEASY TikTok account.',
+    connectTikTok: 'Connect TikTok account',
+    checkingTikTok: 'Checking your Zernio connection…',
+    connectedAs: 'Online ·',
+    uploadNotice: 'Your processed video will be uploaded to your TikTok account through Zernio.',
     uploadFailed: 'The video upload failed. Please try again.',
-    connectHint: 'No TikTok account is connected to the ShortSync workspace. Ask the administrator to connect one there.',
-    connectFailed: 'Could not read the shared ShortSync connection.',
+    connectHint: 'Zernio is connected. Connect your TikTok account to continue.',
+    connectFailed: 'Could not verify your Zernio connection.',
+    zernioConnectCopy: 'Connect your Zernio API key to publish from your TikTok account.',
+    zernioKeyLabel: 'Zernio API key',
+    zernioKeyPlaceholder: 'Paste your Zernio API key here',
+    zernioGetApiKey: 'Get API key',
+    zernioSaveKey: 'Connect Zernio',
+    zernioChangeKey: 'Change API key',
+    zernioKeyHint: 'Your key is encrypted on the server and never saved in this browser.',
+    zernioKeyRequired: 'Enter your Zernio API key first.',
+    invalidZernioKey: 'That Zernio API key is invalid. Check it and try again.',
+    zernioKeySaved: 'Zernio connected. Now connect your TikTok account.',
+    zernioConnectFailed: 'Could not connect to Zernio. Check the API key and try again.',
+    popupBlocked: 'Allow pop-ups for this site to connect TikTok.',
     captionLabel: 'Description',
     captionHint: 'Add hashtags with # and mention accounts with @',
     privacyLabel: 'Who can watch this video',
@@ -65,7 +78,7 @@ const translations = {
     commercialPartner: 'Paid partnership',
     previewLabel: 'I reviewed the video and caption.',
     consentLabel: 'I authorize publishing this content to TikTok.',
-    draftNotice: 'Friends-only and private videos are sent as drafts. Review all settings and finish publishing in TikTok.',
+    draftNotice: 'The selected privacy setting will be applied when this video is published.',
     connecting: 'Opening TikTok sign-in…',
     uploading: 'Uploading video…',
     publishing: 'Publishing to TikTok…',
@@ -157,16 +170,29 @@ const translations = {
     ready: 'Видео готово',
     readySub: 'Можно скачать обработанный файл',
     download: 'Скачать',
-    publishTikTok: 'Опубликовать в TikTok',
+    publishTikTok: 'Автопост TikTok',
+    autopostHint: 'Быстрая публикация через Zernio',
     publishNow: 'Опубликовать сейчас',
     publishTitle: 'Публикация в TikTok',
-    connectTikTok: 'Проверить подключение',
-    checkingTikTok: 'Проверяем общий TikTok-аккаунт в ShortSync…',
-    connectedAs: 'Общий аккаунт',
-    uploadNotice: 'Видео передаётся в ShortSync и публикуется из общего TikTok-аккаунта INEASY.',
+    connectTikTok: 'Подключить аккаунт TikTok',
+    checkingTikTok: 'Проверяем подключение к Zernio…',
+    connectedAs: 'В сети ·',
+    uploadNotice: 'Обработанное видео будет загружено в ваш TikTok через Zernio.',
     uploadFailed: 'Не удалось загрузить видео. Попробуйте ещё раз.',
-    connectHint: 'В ShortSync не подключён общий TikTok-аккаунт. Попросите администратора подключить его в ShortSync.',
-    connectFailed: 'Не удалось получить статус общего подключения ShortSync.',
+    connectHint: 'Zernio подключён. Подключите аккаунт TikTok, чтобы продолжить.',
+    connectFailed: 'Не удалось проверить подключение к Zernio.',
+    zernioConnectCopy: 'Подключите API-ключ Zernio для публикации в своём аккаунте TikTok.',
+    zernioKeyLabel: 'API-ключ Zernio',
+    zernioKeyPlaceholder: 'Вставьте сюда API-ключ Zernio',
+    zernioGetApiKey: 'Получить API-ключ',
+    zernioSaveKey: 'Подключить Zernio',
+    zernioChangeKey: 'Изменить API-ключ',
+    zernioKeyHint: 'Ключ шифруется на сервере и не сохраняется в этом браузере.',
+    zernioKeyRequired: 'Сначала введите API-ключ Zernio.',
+    invalidZernioKey: 'API-ключ Zernio не подошёл. Проверьте его и попробуйте ещё раз.',
+    zernioKeySaved: 'Zernio подключён. Теперь подключите аккаунт TikTok.',
+    zernioConnectFailed: 'Не удалось подключиться к Zernio. Проверьте API-ключ.',
+    popupBlocked: 'Разрешите всплывающие окна для подключения TikTok.',
     captionLabel: 'Описание',
     captionHint: 'Добавьте хештеги через # и упоминания через @',
     privacyLabel: 'Кто может смотреть это видео',
@@ -184,7 +210,7 @@ const translations = {
     commercialPartner: 'Платное партнёрство',
     previewLabel: 'Я проверил видео и описание.',
     consentLabel: 'Я разрешаю опубликовать этот контент в TikTok.',
-    draftNotice: 'Видео для друзей или личное будет отправлено в черновики. Проверьте настройки и завершите публикацию в TikTok.',
+    draftNotice: 'Выбранные настройки приватности применятся при публикации видео.',
     connecting: 'Открываем вход в TikTok…',
     uploading: 'Загружаем видео…',
     publishing: 'Публикуем в TikTok…',
@@ -276,16 +302,29 @@ const translations = {
     ready: 'Бейне дайын',
     readySub: 'Өңделген файлын жүктеп алыңыз',
     download: 'Жүктеу',
-    publishTikTok: 'TikTok-қа жариялау',
+    publishTikTok: 'TikTok автожариялау',
+    autopostHint: 'Zernio арқылы жылдам жариялау',
     publishNow: 'Қазір жариялау',
     publishTitle: 'TikTok-қа жариялау',
-    connectTikTok: 'Байланысты тексеру',
-    checkingTikTok: 'ShortSync ортақ TikTok аккаунтын тексеріп жатыр…',
-    connectedAs: 'Ортақ аккаунт',
-    uploadNotice: 'Бейне ShortSync-ке жіберіліп, ортақ INEASY TikTok аккаунтынан жарияланады.',
+    connectTikTok: 'TikTok аккаунтын қосу',
+    checkingTikTok: 'Zernio байланысын тексеріп жатырмыз…',
+    connectedAs: 'Желіде ·',
+    uploadNotice: 'Өңделген бейне Zernio арқылы TikTok аккаунтыңызға жүктеледі.',
     uploadFailed: 'Бейне жүктелмеді. Қайталап көріңіз.',
-    connectHint: 'ShortSync жүйесінде ортақ TikTok аккаунты қосылмаған. Әкімшіден оны ShortSync жүйесіне қосуды сұраңыз.',
-    connectFailed: 'ShortSync ортақ байланысын оқу мүмкін болмады.',
+    connectHint: 'Zernio қосылды. Жалғастыру үшін TikTok аккаунтын қосыңыз.',
+    connectFailed: 'Zernio байланысын тексеру мүмкін болмады.',
+    zernioConnectCopy: 'TikTok аккаунтыңыздан жариялау үшін Zernio API кілтін қосыңыз.',
+    zernioKeyLabel: 'Zernio API кілті',
+    zernioKeyPlaceholder: 'Zernio API кілтін осында енгізіңіз',
+    zernioGetApiKey: 'API кілтін алу',
+    zernioSaveKey: 'Zernio-ны қосу',
+    zernioChangeKey: 'API кілтін өзгерту',
+    zernioKeyHint: 'Кілт серверде шифрланады және браузерде сақталмайды.',
+    zernioKeyRequired: 'Алдымен Zernio API кілтін енгізіңіз.',
+    invalidZernioKey: 'Zernio API кілті жарамсыз. Тексеріп, қайталап көріңіз.',
+    zernioKeySaved: 'Zernio қосылды. Енді TikTok аккаунтын қосыңыз.',
+    zernioConnectFailed: 'Zernio-ға қосылу мүмкін болмады. API кілтін тексеріңіз.',
+    popupBlocked: 'TikTok-ты қосу үшін қалқымалы терезелерге рұқсат беріңіз.',
     captionLabel: 'Сипаттама',
     captionHint: '# арқылы хештег, @ арқылы аккаунтты белгілеңіз',
     privacyLabel: 'Бұл бейнені кім көре алады',
@@ -303,7 +342,7 @@ const translations = {
     commercialPartner: 'Ақылы серіктестік',
     previewLabel: 'Бейне мен сипаттаманы тексердім.',
     consentLabel: 'Осы контентті TikTok-та жариялауға рұқсат беремін.',
-    draftNotice: 'Достарға немесе жеке бейне черновикке жіберіледі. Баптауларды тексеріп, жариялауды TikTok-та аяқтаңыз.',
+    draftNotice: 'Таңдалған құпиялық параметрі бейне жарияланғанда қолданылады.',
     connecting: 'TikTok жүйесіне кіру ашылуда…',
     uploading: 'Бейне жүктелуде…',
     publishing: 'TikTok-та жариялануда…',
@@ -431,7 +470,16 @@ function applyLanguage(lang) {
   setText('resultSub', pack.readySub);
   setText('downloadBtn', pack.download);
   setText('publishTiktokBtn', pack.publishTikTok);
+  setText('autopostHint', pack.autopostHint);
   setText('publishModalTitle', pack.publishTitle);
+  setText('zernioConnectCopy', pack.zernioConnectCopy);
+  setText('zernioKeyLabel', pack.zernioKeyLabel);
+  setText('zernioGetApiKey', pack.zernioGetApiKey);
+  setText('zernioSaveKeyBtn', pack.zernioSaveKey);
+  setText('zernioChangeKeyBtn', pack.zernioChangeKey);
+  setText('zernioKeyHint', pack.zernioKeyHint);
+  const zernioApiKeyInput = document.getElementById('zernioApiKey');
+  if (zernioApiKeyInput) zernioApiKeyInput.placeholder = pack.zernioKeyPlaceholder;
   setText('tiktokCaptionLabel', pack.captionLabel);
   setText('tiktokUploadNotice', pack.uploadNotice);
   setText('tiktokCaptionHint', pack.captionHint);
@@ -709,6 +757,12 @@ const processedResult = document.getElementById('processedResult');
 const downloadBtn = document.getElementById('downloadBtn');
 const publishTiktokBtn = document.getElementById('publishTiktokBtn');
 const tiktokComposerOverlay = document.getElementById('tiktokComposerOverlay');
+const zernioKeyPanel = document.getElementById('zernioKeyPanel');
+const zernioApiKeyInput = document.getElementById('zernioApiKey');
+const zernioSaveKeyBtn = document.getElementById('zernioSaveKeyBtn');
+const zernioChangeKeyBtn = document.getElementById('zernioChangeKeyBtn');
+const zernioKeyHint = document.getElementById('zernioKeyHint');
+const tiktokAccountPanel = document.getElementById('tiktokAccountPanel');
 const tiktokAccountStatus = document.getElementById('tiktokAccountStatus');
 const tiktokConnectBtn = document.getElementById('tiktokConnectBtn');
 const tiktokPublishForm = document.getElementById('tiktokPublishForm');
@@ -774,11 +828,16 @@ function updateTikTokPrivacyNote() {
 async function refreshTikTokStatus() {
   if (!tiktokAccountStatus || !tiktokConnectBtn || !tiktokPublishForm) return;
   tiktokAccountStatus.textContent = t('checkingTikTok');
+  tiktokAccountStatus.classList.remove('online');
+  tiktokAccountPanel.classList.add('hidden');
   tiktokPublishForm.classList.add('hidden');
   tiktokConnectBtn.classList.add('hidden');
   try {
     const data = await tiktokApi('/api/tiktok/status');
+    zernioKeyPanel.classList.toggle('hidden', Boolean(data.configured));
+    tiktokAccountPanel.classList.toggle('hidden', !data.configured);
     if (!data.connected) {
+      tiktokAccountId = null;
       tiktokAccountStatus.textContent = t('connectHint');
       tiktokConnectBtn.classList.remove('hidden');
       return;
@@ -786,11 +845,19 @@ async function refreshTikTokStatus() {
     tiktokAccountId = data.account.id;
     tiktokCreatorInfo = data.creatorInfo;
     tiktokAccountStatus.textContent = `${t('connectedAs')} @${data.account.username}`;
+    tiktokAccountStatus.classList.add('online');
     tiktokPublishForm.classList.remove('hidden');
     renderTikTokOptions();
   } catch (error) {
-    tiktokAccountStatus.textContent = error.status === 401 ? t('authExpired') : (error.message || t('connectFailed'));
-    if (error.status !== 401) tiktokConnectBtn.classList.remove('hidden');
+    if (error.message === 'invalid_zernio_api_key') {
+      zernioKeyPanel.classList.remove('hidden');
+      tiktokAccountPanel.classList.add('hidden');
+      zernioKeyHint.textContent = t('invalidZernioKey');
+    } else {
+      tiktokAccountPanel.classList.remove('hidden');
+      tiktokAccountStatus.textContent = error.status === 401 ? t('authExpired') : (error.message || t('connectFailed'));
+      tiktokConnectBtn.classList.remove('hidden');
+    }
   }
 }
 
@@ -808,12 +875,50 @@ if (publishTiktokBtn) {
     openTikTokComposer();
   });
 }
-if (tiktokConnectBtn) {
-  tiktokConnectBtn.addEventListener('click', async () => {
-    tiktokConnectBtn.disabled = true;
+if (zernioSaveKeyBtn) {
+  zernioSaveKeyBtn.addEventListener('click', async () => {
+    const apiKey = zernioApiKeyInput.value.trim();
+    if (!apiKey) {
+      zernioKeyHint.textContent = t('zernioKeyRequired');
+      zernioApiKeyInput.focus();
+      return;
+    }
+    zernioSaveKeyBtn.disabled = true;
+    zernioKeyHint.textContent = t('checkingTikTok');
     try {
+      await tiktokApi('/api/tiktok/key', {
+        method: 'POST',
+        body: JSON.stringify({ apiKey }),
+      });
+      zernioApiKeyInput.value = '';
+      zernioKeyHint.textContent = t('zernioKeySaved');
       await refreshTikTokStatus();
     } catch (error) {
+      zernioKeyHint.textContent = error.message === 'invalid_zernio_api_key' ? t('invalidZernioKey') : (error.message || t('zernioConnectFailed'));
+    } finally {
+      zernioSaveKeyBtn.disabled = false;
+    }
+  });
+}
+if (zernioChangeKeyBtn) {
+  zernioChangeKeyBtn.addEventListener('click', () => {
+    zernioKeyPanel.classList.remove('hidden');
+    tiktokAccountPanel.classList.add('hidden');
+    tiktokPublishForm.classList.add('hidden');
+    zernioApiKeyInput.focus();
+  });
+}
+if (tiktokConnectBtn) {
+  tiktokConnectBtn.addEventListener('click', async () => {
+    const connectWindow = window.open('about:blank', 'ineasy-zernio-connect', 'popup,width=520,height=760');
+    tiktokConnectBtn.disabled = true;
+    tiktokAccountStatus.textContent = t('connecting');
+    try {
+      const data = await tiktokApi('/api/tiktok/connect');
+      if (connectWindow) connectWindow.location.href = data.authUrl;
+      else tiktokAccountStatus.textContent = t('popupBlocked');
+    } catch (error) {
+      connectWindow?.close();
       tiktokAccountStatus.textContent = error.message || t('connectFailed');
     } finally {
       tiktokConnectBtn.disabled = false;
@@ -839,6 +944,11 @@ if (tiktokComposerOverlay) {
   window.addEventListener('focus', () => {
     if (!tiktokComposerOverlay.classList.contains('hidden')) refreshTikTokStatus();
   });
+  window.addEventListener('message', (event) => {
+    if (event.origin === window.location.origin && event.data?.type === 'ineasy-zernio-oauth-return') {
+      refreshTikTokStatus();
+    }
+  });
 }
 
 if (tiktokPublishForm) {
@@ -863,7 +973,7 @@ if (tiktokPublishForm) {
       const result = await tiktokApi('/api/tiktok/publish', {
         method: 'POST',
         body: JSON.stringify({
-          connectionId: tiktokAccountId,
+          accountId: tiktokAccountId,
           uploadId: uploaded.uploadId,
           content: tiktokCaption.value.trim(),
           privacyLevel: tiktokPrivacy.value,
@@ -877,14 +987,17 @@ if (tiktokPublishForm) {
         }),
       });
       if (tiktokPublishStatus) {
-        const publishState = result.post?.status || result.post?.platforms?.[0]?.status;
+        const platformResult = result.post?.platforms?.find((item) => item.platform === 'tiktok');
+        const publishState = platformResult?.status || result.post?.status;
         tiktokPublishStatus.textContent = result.draft
           ? t('draftSuccess')
           : publishState === 'published' ? t('publishSuccess') : t('publishPending');
       }
     } catch (error) {
       if (tiktokPublishStatus) {
-        tiktokPublishStatus.textContent = error.status === 401 ? t('authExpired') : (error.message || t('publishFailed'));
+        tiktokPublishStatus.textContent = error.status === 401
+          ? t('authExpired')
+          : error.message === 'invalid_zernio_api_key' ? t('invalidZernioKey') : (error.message || t('publishFailed'));
       }
     } finally {
       tiktokSubmitBtn.disabled = false;
@@ -1229,6 +1342,12 @@ function localizePatchError(message) {
 
 const savedLanguage = localStorage.getItem('ineasy-language') || 'en';
 applyLanguage(savedLanguage);
+
+const zernioOAuthParams = new URLSearchParams(window.location.search);
+if (window.opener && (zernioOAuthParams.get('connected') === 'tiktok' || zernioOAuthParams.has('error'))) {
+  window.opener.postMessage({ type: 'ineasy-zernio-oauth-return' }, window.location.origin);
+  window.close();
+}
 
 document.querySelectorAll('[data-lang]').forEach((button) => {
   button.addEventListener('click', () => {

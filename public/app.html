@@ -109,6 +109,7 @@
         </div>
         <a id="downloadBtn" href="#" download class="download-link">Download</a>
         <button id="publishTiktokBtn" class="tiktok-publish-btn" type="button">Publish to TikTok</button>
+        <small class="autopost-hint" id="autopostHint">Quick auto-post with Zernio</small>
       </div>
       <p class="compressbase-credit">Powered by <a href="https://compressbase.com/" target="_blank" rel="noopener">CompressBase</a></p>
     </div>
@@ -186,10 +187,25 @@
         <button class="modal-close" id="tiktokModalClose" type="button" aria-label="Close">×</button>
       </div>
       <div class="modal-body">
-        <p class="tiktok-account-status" id="tiktokAccountStatus" role="status">Checking TikTok connection…</p>
-        <button class="tiktok-connect-btn" id="tiktokConnectBtn" type="button">Check connection</button>
+        <section class="zernio-key-panel" id="zernioKeyPanel">
+          <p class="zernio-connect-copy" id="zernioConnectCopy">Connect your Zernio API key to publish from your TikTok account.</p>
+          <label class="tiktok-field-label" for="zernioApiKey" id="zernioKeyLabel">Zernio API key</label>
+          <div class="zernio-key-row">
+            <input id="zernioApiKey" type="password" placeholder="Paste your Zernio API key here" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <a class="zernio-key-link" id="zernioGetApiKey" href="https://zernio.com/dashboard/api-keys" target="_blank" rel="noopener">Get API key</a>
+          </div>
+          <button class="tiktok-connect-btn" id="zernioSaveKeyBtn" type="button">Connect Zernio</button>
+          <p class="zernio-key-hint" id="zernioKeyHint">Your key is encrypted on the server and never saved in this browser.</p>
+        </section>
+        <section class="tiktok-account-panel hidden" id="tiktokAccountPanel">
+          <p class="tiktok-account-status" id="tiktokAccountStatus" role="status" aria-live="polite">TikTok account is not connected.</p>
+          <div class="tiktok-account-actions">
+            <button class="tiktok-connect-btn" id="tiktokConnectBtn" type="button">Connect TikTok account</button>
+            <button class="tiktok-change-key-btn" id="zernioChangeKeyBtn" type="button">Change API key</button>
+          </div>
+        </section>
         <form class="tiktok-publish-form hidden" id="tiktokPublishForm">
-          <p class="tiktok-upload-notice" id="tiktokUploadNotice">This video is sent to ShortSync and published from the shared INEASY TikTok account.</p>
+          <p class="tiktok-upload-notice" id="tiktokUploadNotice">Your processed video will be uploaded to your TikTok account through Zernio.</p>
           <label class="tiktok-field-label" for="tiktokCaption" id="tiktokCaptionLabel">Description</label>
           <textarea id="tiktokCaption" maxlength="2200" rows="4" required></textarea>
           <div class="tiktok-caption-hint"><span id="tiktokCaptionHint">Add hashtags with # and mention accounts with @</span><span id="tiktokCaptionCount">0 / 2200</span></div>
