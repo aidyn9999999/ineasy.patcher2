@@ -885,3 +885,220 @@ button:focus-visible, .tg-btn:focus-visible {
   .balance-lock-actions { width: 100%; flex-direction: column; }
   .balance-buy-site, .balance-buy-telegram { width: min(100%, 220px); }
 }
+
+/* INEASY training-console visual refresh */
+:root {
+  --bg: #111110;
+  --bg-2: #171716;
+  --card: #1d1d1c;
+  --card-border: #353532;
+  --text: #f4f3ef;
+  --muted: #999993;
+  --accent: #c8ff00;
+  --accent-hover: #dcff4b;
+  --accent-dim: rgba(200, 255, 0, 0.12);
+  --accent-glow: rgba(200, 255, 0, 0.2);
+  --success: #c8ff00;
+  --danger: #ff6262;
+  --radius: 8px;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(70, 66, 57, 0.2), transparent 52%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.012) 0 1px, transparent 1px 16px),
+    var(--bg);
+}
+
+.app-shell { background: transparent; }
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 16px clamp(16px, 4vw, 48px);
+  border-color: #292927;
+  background: rgba(20, 20, 19, 0.94);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(16px);
+}
+.topbar .brand {
+  color: var(--text);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 30px !important;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.language-dock { border-radius: 8px; background: #151514; box-shadow: none; }
+.language-dock button { border-radius: 5px; }
+.language-dock button.active, .language-dock button:hover { background: var(--accent); color: #11120b; }
+.balance-pill { border-radius: 8px; background: #151514; }
+.copy-id-btn:hover, .faq-section a, .compressbase-credit a { color: var(--accent); }
+
+.app-main {
+  align-items: stretch;
+  gap: 20px;
+  max-width: 920px;
+  padding: 28px 22px 124px;
+}
+.notice-banner {
+  border-color: rgba(200, 255, 0, 0.2);
+  border-radius: 8px;
+  background: rgba(200, 255, 0, 0.07);
+  color: #d9f28e;
+}
+.notice-banner span { background: var(--accent); color: #11120b; }
+.view-section.active { animation: sectionArrive 260ms ease-out both; }
+@keyframes sectionArrive {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.patch-panel, .checker-panel, .faq-section {
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: rgba(27, 27, 26, 0.94);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+}
+.patch-panel { max-width: none; padding: 26px; }
+.patch-title {
+  color: var(--text);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 0.98;
+  text-transform: uppercase;
+}
+.patch-sub { color: #aaa9a3; }
+.eyebrow { color: var(--accent); }
+.news-callout {
+  border-color: #373733;
+  border-radius: 7px;
+  background: #222220;
+}
+.news-callout b { color: var(--accent); }
+.news-link {
+  border-radius: 6px;
+  background: var(--accent);
+  box-shadow: none;
+  color: #101109;
+}
+.news-link:hover { background: var(--accent-hover); box-shadow: 0 0 18px var(--accent-glow); }
+.dropzone {
+  border: 1px dashed #51514a;
+  border-radius: 8px;
+  background: #151514;
+}
+.dropzone.drag { border-color: var(--accent); background: var(--accent-dim); }
+.dropzone svg, .balance-lock-icon { color: var(--accent); }
+.preview-wrap, .processing-state, .checker-result, .pkg-row {
+  border-color: #383834;
+  border-radius: 8px;
+  background: #151514;
+}
+.export-note { color: #cbe865; }
+.local-note { color: #a5a49e; }
+
+.process-btn, .checker-open-btn, .checker-input-row button, .pkg-buy,
+.processed-result a, .tiktok-publish-btn, .tiktok-connect-btn, .tiktok-submit-btn,
+.balance-buy-site {
+  border-radius: 6px;
+  background: var(--accent);
+  color: #101109;
+  box-shadow: none;
+}
+.process-btn:not(:disabled):hover, .checker-open-btn:hover, .checker-input-row button:hover,
+.pkg-buy:hover, .processed-result a:hover, .tiktok-publish-btn:hover,
+.tiktok-connect-btn:hover, .tiktok-submit-btn:hover, .balance-buy-site:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+.process-btn:disabled { background: #292927; color: #777770; }
+.checker-panel {
+  padding: 28px;
+  border-color: var(--card-border);
+  background: #1b1b1a;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+}
+.checker-copy h2, .faq-section h2, .tiktok-composer .modal-head h2 {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.checker-copy h2, .faq-section h2 { font-size: 30px; }
+.checker-input-row input, .tiktok-publish-form textarea, .tiktok-publish-form select {
+  border-color: #41413c;
+  border-radius: 6px;
+  background: #141413;
+}
+.checker-input-row input:focus, .tiktok-publish-form textarea:focus, .tiktok-publish-form select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(200, 255, 0, 0.14);
+}
+.checker-result { background: #171716; }
+.result-heading > span { background: var(--accent); color: #101109; }
+.result-heading small, .result-grid small, .result-meta small { color: var(--accent); }
+.result-meta > div, .result-grid > div {
+  border-color: #363632;
+  border-radius: 6px;
+  background: #20201f;
+}
+.faq-section { padding: 24px; }
+.faq-section details { border-color: #393936; }
+.faq-section summary { font-weight: 700; }
+.faq-section summary::after { color: var(--accent); }
+.faq-section details p { color: #aaa9a3; }
+.checker-support a, .faq-support a { color: var(--accent); }
+
+.bottom-nav {
+  left: 50%;
+  right: auto;
+  width: min(100%, 620px);
+  transform: translateX(-50%);
+  padding: 7px 10px calc(7px + env(safe-area-inset-bottom));
+  border: 1px solid #393936;
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: rgba(25, 25, 24, 0.97);
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px);
+}
+.bottom-nav .nav-tab {
+  min-height: 52px;
+  gap: 4px;
+  border-radius: 6px;
+  color: #8d8d86;
+  font-size: 10px;
+  font-weight: 800;
+}
+.bottom-nav .nav-tab.active, .bottom-nav .nav-tab:hover {
+  background: rgba(200, 255, 0, 0.09);
+  color: var(--accent);
+}
+.nav-icon, .nav-icon svg { width: 18px; height: 18px; }
+
+.modal, .tiktok-composer { border-radius: 8px; background: #1c1c1b; }
+.modal-overlay { background: rgba(0, 0, 0, 0.76); backdrop-filter: blur(8px); }
+.tiktok-upload-notice, .tiktok-draft-note {
+  border-radius: 6px;
+  border-color: #3c3c37;
+  background: #242422;
+}
+button:not(:disabled), .tg-btn { animation: none; }
+button:focus-visible, .tg-btn:focus-visible { outline-color: var(--accent); }
+
+@media (max-width: 600px) {
+  .topbar { padding: 12px 14px; }
+  .topbar .brand { font-size: 25px !important; }
+  .app-main { gap: 14px; padding: 18px 12px 108px; }
+  .patch-panel { padding: 20px 16px; }
+  .patch-title { font-size: 34px; }
+  .checker-panel { padding: 20px 16px; }
+  .faq-section { padding: 20px 16px; }
+  .bottom-nav {
+    width: 100%;
+    border-right: 0;
+    border-left: 0;
+    border-radius: 0;
+  }
+  .bottom-nav .nav-tab { min-height: 46px; font-size: 9px; }
+  .site-footer { padding-bottom: calc(104px + env(safe-area-inset-bottom)); }
+}
