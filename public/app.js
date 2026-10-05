@@ -946,7 +946,13 @@ if (tiktokComposerOverlay) {
   });
   window.addEventListener('message', (event) => {
     if (event.origin === window.location.origin && event.data?.type === 'ineasy-zernio-oauth-return') {
-      refreshTikTokStatus();
+      if (event.data.error) {
+        tiktokAccountPanel.classList.remove('hidden');
+        tiktokAccountStatus.textContent = `${t('connectFailed')} (${event.data.error})`;
+        tiktokConnectBtn.classList.remove('hidden');
+      } else {
+        refreshTikTokStatus();
+      }
     }
   });
 }
@@ -1345,7 +1351,10 @@ applyLanguage(savedLanguage);
 
 const zernioOAuthParams = new URLSearchParams(window.location.search);
 if (window.opener && (zernioOAuthParams.get('connected') === 'tiktok' || zernioOAuthParams.has('error'))) {
-  window.opener.postMessage({ type: 'ineasy-zernio-oauth-return' }, window.location.origin);
+  window.opener.postMessage({
+    type: 'ineasy-zernio-oauth-return',
+    error: zernioOAuthParams.get('error'),
+  }, window.location.origin);
   window.close();
 }
 
