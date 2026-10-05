@@ -18,7 +18,7 @@ const NEWS_CHANNEL_ID = process.env.NEWS_CHANNEL_ID || '@ineasynews';
 const PORT = process.env.PORT || 3000;
 const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : null;
 const ZERNIO_API_BASE = 'https://zernio.com/api/v1';
-const TIKTOK_CAPTION_SUFFIX = '@ineasybot-ineasy.site(сайт)';
+const TIKTOK_CAPTION_SUFFIX = '@ineasybot или ineasy.site(веб сайт)\n#ineasybot';
 const WEEKLY_FREE_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771 или 705 542 37 05 (Freedom Bank, Halyk Bank, Kaspi.kz)\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasy.site/app.html';
@@ -637,13 +637,32 @@ async function analyzeTikTok(url) {
   };
 }
 
-const sessions = new Map();
-setInterval(() => {
-  const now = Date.now();
-  for (const [id, s] of sessions.entries()) {
-    if (!s.authorized && now - s.createdAt > 30 * 60 * 1000) sessions.delete(id);
+const LOGIN_SESSION_TTL_SECONDS = 30 * 60;
+
+async function getLoginSession(sessionId) {
+  const key = `loginSession:${sessionId}`;
+  const value = await redis.get(key);
+  if (!value) return null;
+  let session = value;
+  if (typeof value === 'string') {
+    try { session = JSON.parse(value); } catch (error) { return null; }
   }
-}, 60 * 60 * 1000);
+  if (!session.createdAt || Date.now() - session.createdAt > LOGIN_SESSION_TTL_SECONDS * 1000) {
+    await redis.del(key);
+    return null;
+  }
+  return session;
+}
+
+async function setLoginSession(sessionId, session) {
+  const remainingSeconds = Math.ceil((session.createdAt + LOGIN_SESSION_TTL_SECONDS * 1000 - Date.now()) / 1000);
+  if (remainingSeconds <= 0) {
+    await redis.del(`loginSession:${sessionId}`);
+    return false;
+  }
+  await redis.set(`loginSession:${sessionId}`, session, { ex: remainingSeconds });
+  return true;
+}
 
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -750,7 +769,7 @@ function newsSubscriptionKeyboard(lang, sessionId) {
 }
 
 async function confirmSiteLogin(ctx, sessionId) {
-  const session = sessions.get(sessionId);
+  const session = await getLoginSession(sessionId);
   const lang = await getLang(ctx.from.id);
   const isSubscriptionCheck = Boolean(ctx.callbackQuery);
   if (!session) {
@@ -770,7 +789,12 @@ async function confirmSiteLogin(ctx, sessionId) {
   session.username = ctx.from.username || null;
   session.firstName = ctx.from.first_name || '';
   session.subscriptionRequired = true;
-  sessions.set(sessionId, session);
+  if (!await setLoginSession(sessionId, session)) {
+    const message = 'Ссылка для входа устарела. Вернитесь на сайт и начните вход заново.';
+    if (isSubscriptionCheck) await ctx.answerCbQuery(message, { show_alert: true });
+    else await ctx.reply(message);
+    return;
+  }
 
   try {
     const member = await bot.telegram.getChatMember(NEWS_CHANNEL_ID, ctx.from.id);
@@ -787,7 +811,7 @@ async function confirmSiteLogin(ctx, sessionId) {
 
     session.authorized = true;
     session.subscriptionRequired = false;
-    sessions.set(sessionId, session);
+    await setLoginSession(sessionId, session);
     if (isSubscriptionCheck) {
       await ctx.answerCbQuery();
       try {
@@ -907,7 +931,7 @@ bot.start(async (ctx) => {
     return;
   }
 
-  if (payload && payload !== 'buyvideo' && !payload.startsWith('buy_') && sessions.has(payload)) {
+  if (payload && payload !== 'buyvideo' && !payload.startsWith('buy_') && await getLoginSession(payload)) {
     await confirmSiteLogin(ctx, payload);
     return;
   }
@@ -1460,19 +1484,25 @@ async function getZernioTikTokAccount(apiKey, accountId) {
   return accounts.find((account) => account.platform === 'tiktok' && account.isActive !== false && (!accountId || account._id === accountId)) || null;
 }
 
-app.post('/api/session', (req, res) => {
+app.post('/api/session', async (req, res) => {
   const sessionId = uuidv4();
-  sessions.set(sessionId, { authorized: false, createdAt: Date.now() });
-  res.json({ sessionId, botLink: `https://t.me/${BOT_USERNAME}?start=${sessionId}` });
+  try {
+    await setLoginSession(sessionId, { authorized: false, createdAt: Date.now() });
+    res.json({ sessionId, botLink: `https://t.me/${BOT_USERNAME}?start=${sessionId}` });
+  } catch (error) {
+    console.error('Не удалось создать login-сессию:', error.message);
+    res.status(503).json({ error: 'login_session_unavailable' });
+  }
 });
 
 app.get('/api/session/:id', async (req, res) => {
-  const session = sessions.get(req.params.id);
+  const session = await getLoginSession(req.params.id);
   if (!session) return res.status(404).json({ error: 'session_not_found' });
   if (session.telegramId) {
     try {
       if (await isUserBlocked(session.telegramId)) {
         session.authorized = false;
+        await setLoginSession(req.params.id, session);
         return res.status(403).json({ error: 'user_blocked' });
       }
     } catch (error) {

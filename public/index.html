@@ -28,11 +28,13 @@
         Войти через Telegram
       </button>
       <p class="hint">Откроется бот <b>@ineasybot</b> — нажмите «Запустить» в чате.</p>
+      <p class="browser-warning">Если вход не проходит, откройте сайт в Chrome или другом браузере. Safari и встроенный браузер Telegram могут не завершить подтверждение.</p>
     </div>
 
     <div class="stage hidden" id="stage-waiting">
       <div class="spinner" aria-hidden="true"></div>
       <p class="waiting-text">Ждём подтверждение в Telegram…</p>
+      <a class="link-btn hidden" id="telegramFallbackLink" href="https://t.me/ineasybot" target="_blank" rel="noopener">Открыть Telegram</a>
       <button class="link-btn" id="cancelBtn">Отменить</button>
     </div>
 

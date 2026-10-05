@@ -1,17 +1,38 @@
 // --- Auth + layout ---
-const tgId = localStorage.getItem('tg_id');
-const tgAuthToken = localStorage.getItem('tg_auth_token');
+function getBrowserValue(key) {
+  try {
+    const value = localStorage.getItem(key);
+    if (value !== null) return value;
+  } catch (error) {}
+  try { return sessionStorage.getItem(key); } catch (error) { return null; }
+}
+
+function setBrowserValue(key, value) {
+  try {
+    localStorage.setItem(key, value);
+    return;
+  } catch (error) {}
+  try { sessionStorage.setItem(key, value); } catch (error) {}
+}
+
+function removeBrowserValue(key) {
+  try { localStorage.removeItem(key); } catch (error) {}
+  try { sessionStorage.removeItem(key); } catch (error) {}
+}
+
+const tgId = getBrowserValue('tg_id');
+const tgAuthToken = getBrowserValue('tg_auth_token');
 
 if (!tgId || !tgAuthToken) {
   window.location.href = '/';
 }
 
 const STATE = {
-  lang: localStorage.getItem('ineasy-language') || 'en',
+  lang: getBrowserValue('ineasy-language') || 'en',
 };
 let tiktokCreatorInfo = null;
 let tiktokAccountId = null;
-const TIKTOK_CAPTION_SUFFIX = '@ineasybot-ineasy.site(сайт)';
+const TIKTOK_CAPTION_SUFFIX = '@ineasybot или ineasy.site(веб сайт)\n#ineasybot';
 
 const translations = {
   en: {
@@ -63,7 +84,7 @@ const translations = {
     zernioConnectFailed: 'Could not connect to Zernio. Check the API key and try again.',
     popupBlocked: 'Allow pop-ups for this site to connect TikTok.',
     captionLabel: 'Description',
-    captionHint: '#hashtag @mention user',
+    captionHint: '#ineasybot',
     privacyLabel: 'Who can watch this video',
     privacyPublic: 'Everyone',
     privacyFriends: 'Friends',
@@ -194,7 +215,7 @@ const translations = {
     zernioConnectFailed: 'Не удалось подключиться к Zernio. Проверьте API-ключ.',
     popupBlocked: 'Разрешите всплывающие окна для подключения TikTok.',
     captionLabel: 'Описание',
-    captionHint: '#хештег @ответить пользователя',
+    captionHint: '#ineasybot',
     privacyLabel: 'Кто может смотреть это видео',
     privacyPublic: 'Все',
     privacyFriends: 'Друзья',
@@ -325,7 +346,7 @@ const translations = {
     zernioConnectFailed: 'Zernio-ға қосылу мүмкін болмады. API кілтін тексеріңіз.',
     popupBlocked: 'TikTok-ты қосу үшін қалқымалы терезелерге рұқсат беріңіз.',
     captionLabel: 'Сипаттама',
-    captionHint: '#хештег @пайдаланушыны белгілеу',
+    captionHint: '#ineasybot',
     privacyLabel: 'Бұл бейнені кім көре алады',
     privacyPublic: 'Барлығы',
     privacyFriends: 'Достар',
@@ -417,7 +438,7 @@ function t(key) {
 
 async function tiktokApi(url, options = {}) {
   const headers = new Headers(options.headers || {});
-  headers.set('Authorization', `Bearer ${localStorage.getItem('tg_auth_token') || ''}`);
+  headers.set('Authorization', `Bearer ${getBrowserValue('tg_auth_token') || ''}`);
   if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   const response = await fetch(url, { ...options, headers });
   const data = await response.json().catch(() => ({}));
@@ -437,7 +458,7 @@ function setText(id, value) {
 function applyLanguage(lang) {
   lang = translations[lang] ? lang : 'en';
   STATE.lang = lang;
-  localStorage.setItem('ineasy-language', lang);
+  setBrowserValue('ineasy-language', lang);
   document.documentElement.lang = lang;
 
   const pack = translations[lang] || translations.en;
@@ -574,7 +595,7 @@ document.getElementById('copyIdBtn').addEventListener('click', () => {
 });
 
 document.getElementById('logoutBtn').addEventListener('click', () => {
-  ['tg_id', 'tg_username', 'tg_first_name', 'tg_auth_token'].forEach((key) => localStorage.removeItem(key));
+  ['tg_id', 'tg_username', 'tg_first_name', 'tg_auth_token'].forEach(removeBrowserValue);
   window.location.href = '/';
 });
 
@@ -608,14 +629,14 @@ function updateProcessButton() {
 async function loadBalance() {
   const requestVersion = ++balanceRequestVersion;
   try {
-    const token = localStorage.getItem('tg_auth_token');
+    const token = getBrowserValue('tg_auth_token');
     const res = await fetch(`/api/balance/${encodeURIComponent(tgId)}`, {
       headers: { Authorization: `Bearer ${token || ''}` },
     });
     if (requestVersion !== balanceRequestVersion) return;
     if (res.status === 401 || res.status === 403) {
-      localStorage.removeItem('tg_id');
-      localStorage.removeItem('tg_auth_token');
+      removeBrowserValue('tg_id');
+      removeBrowserValue('tg_auth_token');
       window.location.replace('/');
       return;
     }
@@ -634,14 +655,14 @@ async function loadBalance() {
 
 async function refreshBalanceForProcessing() {
   const requestVersion = ++balanceRequestVersion;
-  const token = localStorage.getItem('tg_auth_token');
+  const token = getBrowserValue('tg_auth_token');
   const response = await fetch(`/api/balance/${encodeURIComponent(tgId)}`, {
     headers: { Authorization: `Bearer ${token || ''}` },
   });
   if (requestVersion !== balanceRequestVersion) return false;
   if (response.status === 401 || response.status === 403) {
-    localStorage.removeItem('tg_id');
-    localStorage.removeItem('tg_auth_token');
+    removeBrowserValue('tg_id');
+    removeBrowserValue('tg_auth_token');
     window.location.replace('/');
     return false;
   }
@@ -655,7 +676,7 @@ async function refreshBalanceForProcessing() {
 
 async function consumeProcessedVideo() {
   const requestVersion = ++balanceRequestVersion;
-  const token = localStorage.getItem('tg_auth_token');
+  const token = getBrowserValue('tg_auth_token');
   const response = await fetch(`/api/consume/${encodeURIComponent(tgId)}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token || ''}` },
@@ -1145,7 +1166,7 @@ if (checkerForm) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('tg_auth_token') || ''}`,
+          Authorization: `Bearer ${getBrowserValue('tg_auth_token') || ''}`,
         },
         body: JSON.stringify({ url: rawUrl }),
       });
@@ -1279,9 +1300,6 @@ if (processBtn) {
       const patchInput = await downscaleVideo(sourceFile, {
         postingDevice,
         signal: controller.signal,
-        onStatus: (status) => {
-          if (processingText) processingText.textContent = status;
-        },
         onProgress: (fraction) => {
           const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
           updateProcessingProgress(progress * 90);
@@ -1293,9 +1311,6 @@ if (processBtn) {
       const outputBlob = await patchVideo(patchInput, {
         signal: controller.signal,
         postingDevice,
-        onStatus: (status) => {
-          if (processingText) processingText.textContent = status;
-        },
       });
 
       await consumeProcessedVideo();
@@ -1336,7 +1351,7 @@ function localizePatchError(message) {
   return message || ({ ru: 'Не удалось обработать видео. Попробуйте ещё раз.', kk: 'Бейнені өңдеу мүмкін болмады. Қайталап көріңіз.', en: 'Unable to process the video. Please try again.' })[lang];
 }
 
-const savedLanguage = localStorage.getItem('ineasy-language') || 'en';
+const savedLanguage = getBrowserValue('ineasy-language') || 'en';
 applyLanguage(savedLanguage);
 
 const zernioOAuthParams = new URLSearchParams(window.location.search);
