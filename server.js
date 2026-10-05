@@ -18,6 +18,7 @@ const NEWS_CHANNEL_ID = process.env.NEWS_CHANNEL_ID || '@ineasynews';
 const PORT = process.env.PORT || 3000;
 const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : null;
 const ZERNIO_API_BASE = 'https://zernio.com/api/v1';
+const TIKTOK_CAPTION_PREFIX = 'inesybot-ineasy.site(сайт)';
 const WEEKLY_FREE_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771 или 705 542 37 05 (Freedom Bank, Halyk Bank, Kaspi.kz)\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasy.site/app.html';
@@ -49,9 +50,9 @@ const redis = new Redis({
 });
 
 const BTN = {
-  ru: { website: '🔗 Ссылка на сайт', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео', invite: '👥 Пригласить друга' },
-  en: { website: '🔗 Website link', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker', invite: '👥 Invite a friend' },
-  kk: { website: '🔗 Сайт сілтемесі', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру', invite: '👥 Дос шақыру' },
+  ru: { website: '📘 Как использовать и ссылка сайта', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео', invite: '👥 Пригласить друга' },
+  en: { website: '📘 How to use / Website', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker', invite: '👥 Invite a friend' },
+  kk: { website: '📘 Қолдану нұсқаулығы / Сайт', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру', invite: '👥 Дос шақыру' },
 };
 
 function langChoiceKeyboard() {
@@ -66,20 +67,11 @@ const TEXTS = {
   ru: {
     welcome: (name) =>
       `👋 Привет, ${name}!\n\n` +
-      `Добро пожаловать в INEASY PATCHER 🚀🔥\n\n` +
-      `🎬 Как обработать видео:\n\n` +
-      `заходите в сайт https://ineasy.site Если ссылка открылась внутри Telegram, удерживайте её и выберите «Открыть в браузере» — Chrome или Safari. Не используйте встроенный браузер Telegram.\n\n` +
-      `2️⃣ 🔐 Войдите через Telegram на сайте.\n\n` +
-      `3️⃣ 🎥 Выберите видео и нажмите «Подготовить видео».\n\n` +
-      `4️⃣ ✅ Скачайте готовое видео и загрузите его в TikTok.\n\n` +
-      `━━━━━━━━━━━━━━━━━━\n\n` +
-      `🔥 ЗАКОНЧИЛИСЬ ЛИМИТЫ? 🔥\n\n` +
-      `💎 Не останавливай обработку!\n` +
-      `🛒 КУПИТЬ ДОПОЛНИТЕЛЬНЫЕ ЛИМИТЫ\n\n` +
-      `💰 Выгодная цена • Быстрая активация • Больше обработок\n\n` +
-      `👇 Нажмите кнопку «${BTN.ru.buy}» внизу экрана! 👇\n\n` +
-      `━━━━━━━━━━━━━━━━━━\n\n` +
-      `✨ Спасибо, что используете INEASY PATCHER!`,
+      `✨ Добро пожаловать в INEASY PATCHER\n\n` +
+      `1️⃣ Заходите на сайт https://ineasy.site. Если ссылка открылась внутри Telegram, удерживайте её и выберите «Открыть в браузере» — Chrome или Safari. Не используйте встроенный браузер Telegram.\n\n` +
+      `2️⃣ Войдите через Telegram, выберите видео и нажмите «Обработать видео».\n` +
+      `3️⃣ Загрузите файл на tiktok.com/upload или используйте «Пост в сайте (легкий)».\n\n` +
+      `📘 Откройте «${BTN.ru.website}» для короткой инструкции. Лимиты и баланс доступны в меню.`,
     authSuccess: '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
     subscribeRequired: '📣 Чтобы продолжить, подпишитесь на канал @ineasynews. После подписки нажмите «Я подписался» — мы проверим доступ.',
     subscribeFailed: 'Вы не подписаны на канал. Чтобы пользоваться патчером, сначала подпишитесь.',
@@ -95,8 +87,8 @@ const TEXTS = {
     referralJoinSuccess: '✅ Подписка подтверждена. Пригласившему начислено 1 видео. Нажмите /start, чтобы открыть меню.',
     referralNotEligible: 'ℹ️ Бонус выдаётся один раз за нового пользователя, который впервые запускает бота по приглашению и подписывается на @ineasynews.',
     referralRewarded: (id) => `🎉 Вашему приглашённому пользователю ${id} начислен 1 бонус за подписку и запуск бота.`,
-    websiteButton: 'Открыть сайт',
-    websiteGuide: (url) => `Ссылка на INEASY PATCHER:\n${url}\n\nЧтобы сайт и обработка видео работали правильно, откройте его в браузере телефона. Если ссылка открылась внутри Telegram, зажмите её и выберите «Открыть в браузере», затем выберите Safari или Chrome. Во встроенном браузере Telegram инструменты сайта могут работать некорректно. После открытия войдите через Telegram и следуйте инструкции на сайте.`,
+    websiteButton: '🌐 Открыть ineasy.site',
+    websiteGuide: (url) => `📘 Как пользоваться INEASY\n\n1. Откройте ${url} и войдите через Telegram.\n2. Выберите видео и нажмите «Обработать видео».\n3. Опубликуйте файл на tiktok.com/upload или нажмите «Пост в сайте (легкий)». Для публикации на сайте один раз добавьте API-ключ Zernio и используйте аккаунт TikTok, подключённый в Zernio.\n\nКак работает пост: INEASY передаёт обработанное видео в Zernio, а Zernio отправляет его в TikTok.\n\nЕсли ссылка открылась внутри Telegram, удерживайте её и выберите «Открыть в браузере» — Chrome или Safari. Не используйте встроенный браузер Telegram.`,
     packagesTitle: '🛒 Выберите пакет лимитов:',
     packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
     packageDetails: (count, price, telegramId) =>
@@ -174,8 +166,8 @@ const TEXTS = {
     referralJoinSuccess: '✅ Subscription verified. Your inviter received 1 video credit. Send /start to open the menu.',
     referralNotEligible: 'ℹ️ The reward is available once per new user who starts the bot from an invite and subscribes to @ineasynews.',
     referralRewarded: (id) => `🎉 Your invited user ${id} started the bot and verified their subscription. You received 1 video credit.`,
-    websiteButton: 'Open website',
-    websiteGuide: (url) => `INEASY PATCHER website:\n${url}\n\nFor the site and video tools to work correctly, open it in your phone's browser. If it opens inside Telegram, press and hold the link, choose “Open in Browser”, then select Safari or Chrome. The website tools may not work correctly inside Telegram's browser. Sign in with Telegram and follow the website instructions.`,
+    websiteButton: '🌐 Open ineasy.site',
+    websiteGuide: (url) => `📘 How to use INEASY\n\n1. Open ${url} and sign in with Telegram.\n2. Choose a video and process it.\n3. Upload it at tiktok.com/upload or use “Post on site (easy)”. For site publishing, add your Zernio API key once and use a TikTok account linked in Zernio.\n\nHow it works: INEASY sends the processed video to Zernio, and Zernio sends it to TikTok.\n\nIf Telegram opens the link internally, press and hold it, choose “Open in Browser”, then select Chrome or Safari. Do not use Telegram's built-in browser.`,
     packagesTitle: '🛒 Choose a limits package:',
     packageButton: (count, perUnit, price) => `${count} videos × ${perUnit} ₸ = ${price.toLocaleString('en-US')} ₸`,
     packageDetails: (count, price, telegramId) =>
@@ -253,8 +245,8 @@ const TEXTS = {
     referralJoinSuccess: '✅ Жазылым расталды. Сізді шақырған адамға 1 видео берілді. Мәзірді ашу үшін /start жіберіңіз.',
     referralNotEligible: 'ℹ️ Бонус ботты шақыру сілтемесімен алғаш рет іске қосып, @ineasynews арнасына жазылған жаңа пайдаланушы үшін бір рет беріледі.',
     referralRewarded: (id) => `🎉 Сіз шақырған ${id} пайдаланушы ботты іске қосып, жазылымын растады. Сізге 1 видео берілді.`,
-    websiteButton: 'Сайтты ашу',
-    websiteGuide: (url) => `INEASY PATCHER сайты:\n${url}\n\nСайт пен бейне құралдары дұрыс жұмыс істеуі үшін сілтемені телефон браузерінде ашыңыз. Telegram ішінде ашылса, сілтемені басып тұрып «Браузерде ашу» тармағын таңдап, Safari немесе Chrome браузерін ашыңыз. Telegram ішкі браузерінде сайт құралдары дұрыс істемеуі мүмкін. Сайтқа Telegram арқылы кіріп, нұсқауларды орындаңыз.`,
+    websiteButton: '🌐 ineasy.site ашу',
+    websiteGuide: (url) => `📘 INEASY пайдалану\n\n1. ${url} сайтына кіріп, Telegram арқылы авторизациядан өтіңіз.\n2. Бейнені таңдап, өңдеңіз.\n3. Файлды tiktok.com/upload сайтына жүктеңіз немесе «Сайтқа жариялау (жеңіл)» түймесін пайдаланыңыз. Ол үшін Zernio API кілтін бір рет енгізіп, TikTok аккаунтын Zernio-ға байланыстырыңыз.\n\nЖариялау жолы: INEASY өңделген бейнені Zernio-ға жібереді, ал Zernio оны TikTok-қа жүктейді.\n\nСілтеме Telegram ішінде ашылса, оны басып тұрып, «Браузерде ашу» тармағын таңдаңыз. Chrome немесе Safari қолданыңыз.`,
     packagesTitle: '🛒 Лимит пакетін таңдаңыз:',
     packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
     packageDetails: (count, price, telegramId) =>
@@ -343,12 +335,12 @@ async function logUserActivity(telegramId, action, details = {}) {
 
 async function recordUserActivity(telegramId, action, details = {}) {
   try {
-    await logUserActivity(telegramId, action, details);
-  } catch (error) {
+    websiteButton: '🌐 Open ineasy.site',
+    websiteGuide: (url) => `📘 How to use INEASY\n\n1. Open ${url} and sign in with Telegram.\n2. Choose a video and process it.\n3. Upload it at tiktok.com/upload or use “Post on site (easy)”. For site publishing, add your Zernio API key once and use a TikTok account linked in Zernio.\n\nHow it works: INEASY sends the processed video to Zernio, and Zernio sends it to TikTok.\n\nIf Telegram opens the link internally, press and hold it, choose “Open in Browser”, then select Chrome or Safari. Do not use Telegram's built-in browser.`,
     console.error('Не удалось записать действие пользователя:', error.message);
   }
-}
-
+    websiteButton: '🌐 ineasy.site ашу',
+    websiteGuide: (url) => `📘 INEASY пайдалану\n\n1. ${url} сайтына кіріп, Telegram арқылы авторизациядан өтіңіз.\n2. Бейнені таңдап, өңдеңіз.\n3. Файлды tiktok.com/upload сайтына жүктеңіз немесе «Сайтқа жариялау (жеңіл)» түймесін пайдаланыңыз. Ол үшін Zernio API кілтін бір рет енгізіп, TikTok аккаунтын Zernio-ға байланыстырыңыз.\n\nЖариялау жолы: INEASY өңделген бейнені Zernio-ға жібереді, ал Zernio оны TikTok-қа жүктейді.\n\nСілтеме Telegram ішінде ашылса, оны басып тұрып, «Браузерде ашу» тармағын таңдаңыз. Chrome немесе Safari қолданыңыз.`,
 async function getUserActivity(telegramId, count = 20) {
   const entries = await redis.lrange(`activity:${telegramId}`, 0, count - 1);
   return entries.map((entry) => {
@@ -1643,7 +1635,12 @@ app.put('/api/tiktok/media/upload/:uploadId', requireUserToken, async (req, res)
 
 app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
   const { accountId, uploadId, content, privacyLevel, allowComment, allowDuet, allowStitch, madeWithAi, commercialContentType, confirmedPreview, consentGiven } = req.body || {};
-  if (typeof content !== 'string' || !content.trim() || content.length > 2200) return res.status(400).json({ error: 'invalid_caption' });
+  if (typeof content !== 'string' || content.length > 2200) return res.status(400).json({ error: 'invalid_caption' });
+  const trimmedContent = content.trim();
+  const caption = trimmedContent.toLocaleLowerCase().startsWith(TIKTOK_CAPTION_PREFIX.toLocaleLowerCase())
+    ? trimmedContent
+    : `${TIKTOK_CAPTION_PREFIX}${trimmedContent ? `\n${trimmedContent}` : ''}`;
+  if (caption.length > 2200) return res.status(400).json({ error: 'invalid_caption' });
   if (!confirmedPreview || !consentGiven) return res.status(400).json({ error: 'publishing_consent_required' });
   if (typeof uploadId !== 'string' || typeof accountId !== 'string') return res.status(400).json({ error: 'upload_or_account_required' });
   const allowedPrivacyLevels = ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'];
@@ -1690,7 +1687,7 @@ app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey },
       body: {
-        content: content.trim(),
+        content: caption,
         mediaItems: [{ url: publicUrl, type: 'video' }],
         platforms: [{ platform: 'tiktok', accountId, platformSpecificData }],
         publishNow: true,

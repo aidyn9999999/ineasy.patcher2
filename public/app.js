@@ -11,6 +11,7 @@ const STATE = {
 };
 let tiktokCreatorInfo = null;
 let tiktokAccountId = null;
+const TIKTOK_CAPTION_PREFIX = 'inesybot-ineasy.site(сайт)';
 
 const translations = {
   en: {
@@ -66,7 +67,6 @@ const translations = {
     privacyLabel: 'Who can watch this video',
     privacyPublic: 'Everyone',
     privacyFriends: 'Friends',
-    privacyFollowers: 'Followers',
     privacyPrivate: 'Only you',
     commentsLabel: 'Allow comments',
     duetLabel: 'Allow Duet',
@@ -198,7 +198,6 @@ const translations = {
     privacyLabel: 'Кто может смотреть это видео',
     privacyPublic: 'Все',
     privacyFriends: 'Друзья',
-    privacyFollowers: 'Подписчики',
     privacyPrivate: 'Только я',
     commentsLabel: 'Разрешить комментарии',
     duetLabel: 'Разрешить дуэты',
@@ -330,7 +329,6 @@ const translations = {
     privacyLabel: 'Бұл бейнені кім көре алады',
     privacyPublic: 'Барлығы',
     privacyFriends: 'Достар',
-    privacyFollowers: 'Жазылушылар',
     privacyPrivate: 'Тек мен',
     commentsLabel: 'Пікірлерге рұқсат беру',
     duetLabel: 'Дуэтке рұқсат беру',
@@ -482,6 +480,9 @@ function applyLanguage(lang) {
   setText('tiktokUploadNotice', pack.uploadNotice);
   setText('tiktokCaptionHint', pack.captionHint);
   setText('tiktokPrivacyLabel', pack.privacyLabel);
+  setText('tiktokPrivacyPublic', pack.privacyPublic);
+  setText('tiktokPrivacyFriends', pack.privacyFriends);
+  setText('tiktokPrivacyPrivate', pack.privacyPrivate);
   setText('tiktokCommentsLabel', pack.commentsLabel);
   setText('tiktokDuetLabel', pack.duetLabel);
   setText('tiktokAiLabel', pack.aiLabel);
@@ -774,24 +775,6 @@ let processController = null;
 
 function renderTikTokOptions() {
   if (!tiktokCreatorInfo || !tiktokPrivacy) return;
-  const privacyLabels = {
-    MUTUAL_FOLLOW_FRIENDS: t('privacyFriends'),
-    SELF_ONLY: t('privacyPrivate'),
-  };
-  const availableLevels = tiktokCreatorInfo.privacyLevels || [];
-  const restrictedLevels = availableLevels.length
-    ? availableLevels.filter((level) => ['MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'].includes(level.value))
-    : [{ value: 'MUTUAL_FOLLOW_FRIENDS' }, { value: 'SELF_ONLY' }];
-  tiktokPrivacy.replaceChildren(...restrictedLevels.map((level) => {
-    const option = document.createElement('option');
-    option.value = level.value;
-    option.textContent = privacyLabels[level.value] || level.label || level.value;
-    return option;
-  }));
-  if ([...tiktokPrivacy.options].some((option) => option.value === 'MUTUAL_FOLLOW_FRIENDS')) {
-    tiktokPrivacy.value = 'MUTUAL_FOLLOW_FRIENDS';
-  }
-
   const settings = tiktokCreatorInfo.postingLimits?.interactionSettings || {};
   [['tiktokAllowComments', 'allow_comment'], ['tiktokAllowDuet', 'allow_duet']].forEach(([id, key]) => {
     const input = document.getElementById(id);
@@ -817,6 +800,12 @@ function renderTikTokOptions() {
       }));
     }
   updateTikTokPrivacyNote();
+}
+
+function ensureTikTokCaptionPrefix(value) {
+  const caption = String(value || '').trim();
+  if (caption.toLocaleLowerCase().startsWith(TIKTOK_CAPTION_PREFIX.toLocaleLowerCase())) return caption;
+  return `${TIKTOK_CAPTION_PREFIX}${caption ? `\n${caption}` : ''}`.slice(0, 2200);
 }
 
 function updateTikTokPrivacyNote() {
@@ -861,6 +850,10 @@ async function refreshTikTokStatus() {
 async function openTikTokComposer() {
   if (!tiktokComposerOverlay) return;
   tiktokComposerOverlay.classList.remove('hidden');
+  if (tiktokCaption) {
+    tiktokCaption.value = ensureTikTokCaptionPrefix(tiktokCaption.value);
+    if (tiktokCaptionCount) tiktokCaptionCount.textContent = `${tiktokCaption.value.length} / 2200`;
+  }
   if (tiktokPublishStatus) tiktokPublishStatus.textContent = '';
   await refreshTikTokStatus();
   tiktokComposerOverlay.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -943,7 +936,7 @@ if (tiktokPublishForm) {
         body: JSON.stringify({
           accountId: tiktokAccountId,
           uploadId: uploaded.uploadId,
-          content: tiktokCaption.value.trim(),
+          content: ensureTikTokCaptionPrefix(tiktokCaption.value),
           privacyLevel: tiktokPrivacy.value,
           allowComment: document.getElementById('tiktokAllowComments').checked,
           allowDuet: document.getElementById('tiktokAllowDuet').checked,

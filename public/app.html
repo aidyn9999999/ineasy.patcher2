@@ -215,7 +215,11 @@
             <div class="tiktok-caption-hint"><span id="tiktokCaptionHint">#хештег @ответить пользователя</span><span id="tiktokCaptionCount">0 / 2200</span></div>
 
           <label class="tiktok-field-label" for="tiktokPrivacy" id="tiktokPrivacyLabel">Who can watch this video</label>
-          <select id="tiktokPrivacy" required></select>
+          <select id="tiktokPrivacy" required>
+            <option id="tiktokPrivacyPublic" value="PUBLIC_TO_EVERYONE">Все</option>
+            <option id="tiktokPrivacyFriends" value="MUTUAL_FOLLOW_FRIENDS">Друзья</option>
+            <option id="tiktokPrivacyPrivate" value="SELF_ONLY">Только я</option>
+          </select>
 
           <div class="tiktok-toggle-grid">
             <label><input id="tiktokAllowComments" type="checkbox"><span id="tiktokCommentsLabel">Allow comments</span></label>
