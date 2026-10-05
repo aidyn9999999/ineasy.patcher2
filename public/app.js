@@ -11,7 +11,7 @@ const STATE = {
 };
 let tiktokCreatorInfo = null;
 let tiktokAccountId = null;
-const TIKTOK_CAPTION_PREFIX = 'inesybot-ineasy.site(сайт)';
+const TIKTOK_CAPTION_SUFFIX = '@ineasybot-ineasy.site(сайт)';
 
 const translations = {
   en: {
@@ -802,10 +802,10 @@ function renderTikTokOptions() {
   updateTikTokPrivacyNote();
 }
 
-function ensureTikTokCaptionPrefix(value) {
+function buildTikTokCaption(value) {
   const caption = String(value || '').trim();
-  if (caption.toLocaleLowerCase().startsWith(TIKTOK_CAPTION_PREFIX.toLocaleLowerCase())) return caption;
-  return `${TIKTOK_CAPTION_PREFIX}${caption ? `\n${caption}` : ''}`.slice(0, 2200);
+  if (caption.endsWith(TIKTOK_CAPTION_SUFFIX)) return caption;
+  return `${caption}${caption ? '\n' : ''}${TIKTOK_CAPTION_SUFFIX}`;
 }
 
 function updateTikTokPrivacyNote() {
@@ -818,12 +818,17 @@ async function refreshTikTokStatus() {
   if (!tiktokAccountStatus || !tiktokPublishForm) return;
   tiktokAccountStatus.textContent = t('checkingTikTok');
   tiktokAccountStatus.classList.remove('online');
-  tiktokAccountPanel.classList.add('hidden');
+  zernioKeyPanel.classList.add('hidden');
+  tiktokAccountPanel.classList.remove('hidden');
   tiktokPublishForm.classList.add('hidden');
   try {
     const data = await tiktokApi('/api/tiktok/status');
-    zernioKeyPanel.classList.toggle('hidden', Boolean(data.configured));
-    tiktokAccountPanel.classList.toggle('hidden', !data.configured);
+    if (!data.configured) {
+      zernioKeyPanel.classList.remove('hidden');
+      tiktokAccountPanel.classList.add('hidden');
+      tiktokAccountId = null;
+      return;
+    }
     if (!data.connected) {
       tiktokAccountId = null;
       tiktokAccountStatus.textContent = t('connectHint');
@@ -850,10 +855,6 @@ async function refreshTikTokStatus() {
 async function openTikTokComposer() {
   if (!tiktokComposerOverlay) return;
   tiktokComposerOverlay.classList.remove('hidden');
-  if (tiktokCaption) {
-    tiktokCaption.value = ensureTikTokCaptionPrefix(tiktokCaption.value);
-    if (tiktokCaptionCount) tiktokCaptionCount.textContent = `${tiktokCaption.value.length} / 2200`;
-  }
   if (tiktokPublishStatus) tiktokPublishStatus.textContent = '';
   await refreshTikTokStatus();
   tiktokComposerOverlay.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -903,6 +904,7 @@ if (zernioChangeKeyBtn) {
 }
 if (tiktokPrivacy) tiktokPrivacy.addEventListener('change', updateTikTokPrivacyNote);
 if (tiktokCaption && tiktokCaptionCount) {
+  tiktokCaption.maxLength = 2200 - TIKTOK_CAPTION_SUFFIX.length - 1;
   tiktokCaption.addEventListener('input', () => {
     tiktokCaptionCount.textContent = `${tiktokCaption.value.length} / 2200`;
   });
@@ -936,7 +938,7 @@ if (tiktokPublishForm) {
         body: JSON.stringify({
           accountId: tiktokAccountId,
           uploadId: uploaded.uploadId,
-          content: ensureTikTokCaptionPrefix(tiktokCaption.value),
+          content: buildTikTokCaption(tiktokCaption.value),
           privacyLevel: tiktokPrivacy.value,
           allowComment: document.getElementById('tiktokAllowComments').checked,
           allowDuet: document.getElementById('tiktokAllowDuet').checked,
@@ -978,6 +980,39 @@ function updateProcessingProgress(value) {
   const percent = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
   if (processingPercent) processingPercent.textContent = `${t('progressLabel')}: ${percent}%`;
   if (processingProgress) processingProgress.style.width = `${percent}%`;
+}
+
+function readPreviewDimensions(signal) {
+  if (previewVideo?.videoWidth && previewVideo?.videoHeight) {
+    return Promise.resolve({ width: previewVideo.videoWidth, height: previewVideo.videoHeight });
+  }
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      previewVideo?.removeEventListener('loadedmetadata', onLoaded);
+      previewVideo?.removeEventListener('error', onError);
+      signal.removeEventListener('abort', onAbort);
+    };
+    const onLoaded = () => {
+      cleanup();
+      if (previewVideo.videoWidth && previewVideo.videoHeight) {
+        resolve({ width: previewVideo.videoWidth, height: previewVideo.videoHeight });
+      } else {
+        reject(new Error('Could not read video dimensions.'));
+      }
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error('Could not read video dimensions.'));
+    };
+    const onAbort = () => {
+      cleanup();
+      reject(new Error('Processing cancelled.'));
+    };
+    previewVideo.addEventListener('loadedmetadata', onLoaded);
+    previewVideo.addEventListener('error', onError);
+    signal.addEventListener('abort', onAbort, { once: true });
+    if (signal.aborted) onAbort();
+  });
 }
 
 function handleFile(file) {
@@ -1272,20 +1307,27 @@ if (processBtn) {
     updateProcessingProgress(0);
 
     try {
-      const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
-      const scaledVideo = await downscaleVideo(sourceFile, {
-        signal: controller.signal,
-        onProgress: (fraction) => {
-          const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
-          updateProcessingProgress(progress * 95);
-        },
-      });
+      const { width: videoWidth, height: videoHeight } = await readPreviewDimensions(controller.signal);
+      let patchInput = sourceFile;
+      if (Math.min(videoWidth, videoHeight) > 1080) {
+        const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
+        patchInput = await downscaleVideo(sourceFile, {
+          signal: controller.signal,
+          onProgress: (fraction) => {
+            const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
+            updateProcessingProgress(progress * 90);
+          },
+        });
+      }
       controller.signal.throwIfAborted();
       updateProcessingProgress(95);
-
       const { patchVideo } = await import('https://compressbase.com/method-api/client.mjs');
-      const outputBlob = await patchVideo(scaledVideo, {
+      const outputBlob = await patchVideo(patchInput, {
         signal: controller.signal,
+        postingDevice: 'phone',
+        onStatus: (status) => {
+          if (processingText) processingText.textContent = status;
+        },
       });
 
       await consumeProcessedVideo();
