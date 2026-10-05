@@ -335,12 +335,12 @@ async function logUserActivity(telegramId, action, details = {}) {
 
 async function recordUserActivity(telegramId, action, details = {}) {
   try {
-    websiteButton: '🌐 Open ineasy.site',
-    websiteGuide: (url) => `📘 How to use INEASY\n\n1. Open ${url} and sign in with Telegram.\n2. Choose a video and process it.\n3. Upload it at tiktok.com/upload or use “Post on site (easy)”. For site publishing, add your Zernio API key once and use a TikTok account linked in Zernio.\n\nHow it works: INEASY sends the processed video to Zernio, and Zernio sends it to TikTok.\n\nIf Telegram opens the link internally, press and hold it, choose “Open in Browser”, then select Chrome or Safari. Do not use Telegram's built-in browser.`,
+    await logUserActivity(telegramId, action, details);
+  } catch (error) {
     console.error('Не удалось записать действие пользователя:', error.message);
   }
-    websiteButton: '🌐 ineasy.site ашу',
-    websiteGuide: (url) => `📘 INEASY пайдалану\n\n1. ${url} сайтына кіріп, Telegram арқылы авторизациядан өтіңіз.\n2. Бейнені таңдап, өңдеңіз.\n3. Файлды tiktok.com/upload сайтына жүктеңіз немесе «Сайтқа жариялау (жеңіл)» түймесін пайдаланыңыз. Ол үшін Zernio API кілтін бір рет енгізіп, TikTok аккаунтын Zernio-ға байланыстырыңыз.\n\nЖариялау жолы: INEASY өңделген бейнені Zernio-ға жібереді, ал Zernio оны TikTok-қа жүктейді.\n\nСілтеме Telegram ішінде ашылса, оны басып тұрып, «Браузерде ашу» тармағын таңдаңыз. Chrome немесе Safari қолданыңыз.`,
+}
+
 async function getUserActivity(telegramId, count = 20) {
   const entries = await redis.lrange(`activity:${telegramId}`, 0, count - 1);
   return entries.map((entry) => {
