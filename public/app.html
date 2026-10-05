@@ -15,11 +15,6 @@
 <div class="app-shell">
   <header class="topbar">
     <div class="brand">INEASY</div>
-    <div class="language-dock" id="languageDock" aria-label="Language">
-      <button type="button" data-lang="ru">RU</button>
-      <button type="button" data-lang="kk">KZ</button>
-      <button type="button" data-lang="en">EN</button>
-    </div>
     <div class="balance-pill" id="balancePill">
       <span class="id-part"><span id="idCaption">ID:</span> <b id="tgIdLabel">—</b></span>
       <button class="copy-id-btn" id="copyIdBtn" aria-label="Copy ID">⧉</button>
@@ -49,15 +44,28 @@
   </div>
 
   <main class="app-main">
-    <div class="notice-banner"><span>!</span><p id="noticeBannerText">If video duration shows 0:00 after patching, this is normal. The file works fine.</p></div>
+    <aside class="community-callout" aria-label="Telegram">
+      <div class="news-callout">
+        <div class="news-copy">
+          <strong>Будь в курсе Ineasy</strong>
+          <p>Новые туториалы, обновления проекта и эксклюзивные розыгрыши — в нашем Telegram-канале <b>@ineasynews</b></p>
+        </div>
+        <a class="news-link" id="newsButton" href="https://t.me/ineasynews" target="_blank" rel="noopener" aria-label="@ineasynews">↗</a>
+      </div>
+      <div class="language-dock" id="languageDock" aria-label="Language">
+        <button type="button" data-lang="ru">RU</button>
+        <button type="button" data-lang="kk">KZ</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+    </aside>
+    <div class="notice-banner">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.9945 16H12.0035" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <p id="noticeBannerText">If video duration shows 0:00 after patching, this is normal. The file works fine.</p>
+    </div>
 
     <!-- PATCHER SECTION -->
     <section class="view-section active" id="patchSection">
     <div class="patch-panel">
-      <aside class="news-callout">
-        <p><span id="newsText">Tutorials, updates, and giveaways</span> <b>@ineasynews</b></p>
-        <a class="news-link" id="newsButton" href="https://t.me/ineasynews" target="_blank" rel="noopener">View</a>
-      </aside>
       <h1 class="patch-title" id="patchTitle">Prepare your video for TikTok.</h1>
       <p class="patch-sub" id="patchSub">Patcher adjusts video parameters to help reduce noticeable quality loss after TikTok processing.</p>
 
@@ -102,7 +110,7 @@
         <button class="cancel-process-btn" id="cancelProcessBtn" type="button" disabled>Cancel</button>
       </div>
       <div class="processed-result hidden" id="processedResult">
-        <span>✓</span>
+        <span class="result-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5 9.2 16.5 19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <div>
           <strong id="resultTitle">Video ready</strong>
           <small id="resultSub">Download your patched file</small>
@@ -180,7 +188,7 @@
     </section>
   </main>
 
-  <div class="modal-overlay tiktok-overlay hidden" id="tiktokComposerOverlay" role="dialog" aria-modal="true" aria-labelledby="publishModalTitle">
+  <div class="modal-overlay tiktok-overlay hidden" id="tiktokComposerOverlay" aria-labelledby="publishModalTitle">
     <section class="modal tiktok-composer">
       <div class="modal-head">
         <h2 id="publishModalTitle">Publish to TikTok</h2>
@@ -199,16 +207,12 @@
         </section>
         <section class="tiktok-account-panel hidden" id="tiktokAccountPanel">
           <p class="tiktok-account-status" id="tiktokAccountStatus" role="status" aria-live="polite">TikTok account is not connected.</p>
-          <div class="tiktok-account-actions">
-            <button class="tiktok-connect-btn" id="tiktokConnectBtn" type="button">Connect TikTok account</button>
-            <button class="tiktok-change-key-btn" id="zernioChangeKeyBtn" type="button">Change API key</button>
-          </div>
         </section>
         <form class="tiktok-publish-form hidden" id="tiktokPublishForm">
           <p class="tiktok-upload-notice" id="tiktokUploadNotice">Your processed video will be uploaded to your TikTok account through Zernio.</p>
           <label class="tiktok-field-label" for="tiktokCaption" id="tiktokCaptionLabel">Description</label>
           <textarea id="tiktokCaption" maxlength="2200" rows="4" required></textarea>
-          <div class="tiktok-caption-hint"><span id="tiktokCaptionHint">Add hashtags with # and mention accounts with @</span><span id="tiktokCaptionCount">0 / 2200</span></div>
+            <div class="tiktok-caption-hint"><span id="tiktokCaptionHint">#хештег @ответить пользователя</span><span id="tiktokCaptionCount">0 / 2200</span></div>
 
           <label class="tiktok-field-label" for="tiktokPrivacy" id="tiktokPrivacyLabel">Who can watch this video</label>
           <select id="tiktokPrivacy" required></select>
@@ -216,17 +220,14 @@
           <div class="tiktok-toggle-grid">
             <label><input id="tiktokAllowComments" type="checkbox"><span id="tiktokCommentsLabel">Allow comments</span></label>
             <label><input id="tiktokAllowDuet" type="checkbox"><span id="tiktokDuetLabel">Allow Duet</span></label>
-            <label><input id="tiktokAllowStitch" type="checkbox"><span id="tiktokStitchLabel">Allow Stitch</span></label>
             <label><input id="tiktokMadeWithAi" type="checkbox"><span id="tiktokAiLabel">AI-generated content</span></label>
           </div>
-
-          <label class="tiktok-field-label" for="tiktokCommercialType" id="tiktokCommercialLabel">Commercial content disclosure</label>
-          <select id="tiktokCommercialType"></select>
           <p class="tiktok-draft-note hidden" id="tiktokDraftNote">Friends-only and private videos are sent as drafts. Finish visibility and publishing in TikTok.</p>
 
           <label class="tiktok-consent"><input id="tiktokPreviewConfirmed" type="checkbox" required><span id="tiktokPreviewLabel">I reviewed the video and caption.</span></label>
           <label class="tiktok-consent"><input id="tiktokConsentGiven" type="checkbox" required><span id="tiktokConsentLabel">I authorize publishing this content to TikTok.</span></label>
           <button class="tiktok-submit-btn" id="tiktokSubmitBtn" type="submit">Publish now</button>
+          <button class="tiktok-change-key-btn" id="zernioChangeKeyBtn" type="button">Change API key</button>
         </form>
         <p class="tiktok-publish-status" id="tiktokPublishStatus" role="status" aria-live="polite"></p>
       </div>
@@ -253,7 +254,7 @@
     <nav aria-label="Footer Navigation">
       <a href="#" id="footerHome">Home</a>
       <a href="#faqTitle" id="footerFaq">FAQ</a>
-      <a href="mailto:support@videopatcher.app" id="footerSupport">Support</a>
+      <a href="mailto:support@ineasy.site" id="footerSupport">Support</a>
     </nav>
     <a class="footer-telegram" href="https://t.me/ineasyadmin?text=I%20found%20a%20bug%20on%20the%20site%20and%20want%20to%20report%20it" target="_blank" rel="noopener" id="footerTelegram">Telegram</a>
   </footer>

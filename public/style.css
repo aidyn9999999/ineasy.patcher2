@@ -141,6 +141,9 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
   box-shadow: 0 0 28px rgba(255,107,0,0.42), 0 6px 22px rgba(255,107,0,0.22);
 }
 .tg-btn:active { transform: scale(0.98); }
+.telegram-login-icon { flex: 0 0 20px; transition: transform .2s ease; }
+.tg-btn:hover .telegram-login-icon, .tg-btn:focus-visible .telegram-login-icon { animation: telegramPlane 420ms cubic-bezier(.2,1.3,.4,1) both; }
+@keyframes telegramPlane { 0% { transform: translate(0, 0) rotate(0); } 55% { transform: translate(2px, -2px) rotate(-8deg); } 100% { transform: translate(0, 0) rotate(0); } }
 
 .hint {
   color: var(--muted);
@@ -176,7 +179,7 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
 .error-text { color: var(--danger); font-size: 14px; margin: 0 0 4px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .spinner { animation: none; }
+  .spinner, .tg-btn:hover .telegram-login-icon, .tg-btn:focus-visible .telegram-login-icon { animation: none; }
 }
 
 /* ---------- App / processor page ---------- */
@@ -1158,8 +1161,51 @@ button:focus-visible, .tg-btn:focus-visible { outline-color: var(--accent); }
 .tiktok-change-key-btn { min-height: 44px; }
 .zernio-key-panel .tiktok-connect-btn { justify-self: start; }
 
+.community-callout { display: grid; justify-items: center; gap: 3px; width: 100%; }
+.community-callout .news-callout { width: 100%; max-width: 920px; margin: 0; padding: 9px 12px; border: 0; border-left: 2px solid var(--accent); border-radius: 0; background: transparent; }
+.community-callout .news-copy { min-width: 0; }
+.community-callout .news-copy strong { display: block; color: var(--text); font-size: 14px; font-weight: 700; }
+.community-callout .news-callout p { margin-top: 2px; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.community-callout .news-callout b { color: var(--accent); }
+.community-callout .news-link { min-width: 30px; min-height: 30px; padding: 0 8px; font-size: 15px; }
+.community-callout .language-dock { justify-self: start; margin: 0 0 0 10px; padding: 2px; border: 0; background: transparent; }
+.community-callout .language-dock button { padding: 4px 6px; font-size: 9px; }
+.notice-banner { align-items: center; }
+.notice-banner > svg { width: 20px; height: 20px; flex: 0 0 20px; color: var(--accent); }
+.notice-banner span { display: none; }
+.processed-result { animation: resultArrive 340ms cubic-bezier(.2,.8,.2,1) both; }
+.result-mark { display: grid; place-items: center; flex: 0 0 24px; width: 24px; height: 24px; border-radius: 50%; color: #11120b; background: var(--accent); animation: resultMarkPop 420ms cubic-bezier(.2,1.5,.4,1) both; }
+.result-mark svg { width: 16px; height: 16px; }
+@keyframes resultArrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes resultMarkPop { from { opacity: 0; transform: scale(.45) rotate(-20deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
+@keyframes tabIconPop { from { opacity: .5; transform: translateY(3px) scale(.78); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.nav-icon.icon-arrive { animation: tabIconPop 280ms cubic-bezier(.2,1.3,.4,1) both; }
+.tiktok-overlay { position: static; inset: auto; z-index: auto; display: block; width: 100%; padding: 0; background: transparent; backdrop-filter: none; }
+.tiktok-overlay.hidden { display: none; }
+.tiktok-composer { width: min(100% - 32px, 760px); max-width: 760px; max-height: none; margin: 0 auto 28px; overflow: visible; border: 1px solid var(--card-border); box-shadow: 0 14px 36px rgba(0, 0, 0, .2); animation: sectionArrive 260ms ease-out both; }
+.tiktok-composer .modal-head { position: static; display: flex; align-items: center; justify-content: space-between; padding: 15px 18px 0; }
+.tiktok-composer .modal-head h2 { margin: 0; color: var(--text); font-size: 20px; }
+.tiktok-composer .modal-body { display: grid; gap: 12px; padding: 14px 18px 18px; }
+.tiktok-publish-form { gap: 10px; }
+.tiktok-toggle-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tiktok-caption-hint { font-size: 10px; }
+.tiktok-publish-form textarea { min-height: 78px; }
+.tiktok-change-key-btn { width: 100%; color: var(--muted); }
+.tiktok-change-key-btn:hover { color: var(--accent); }
+.composer-close { width: 30px; height: 30px; border: 1px solid var(--card-border); border-radius: 6px; background: transparent; color: var(--muted); font-size: 20px; cursor: pointer; }
+.composer-close:hover { border-color: var(--accent); color: var(--accent); }
+.zernio-key-link { border: 1px solid #f28a3c; color: #ff9a4d; font-size: 11px; }
+.zernio-key-link:hover { border-color: #ffb274; color: #ffb274; }
+.zernio-key-panel .tiktok-connect-btn { background: #f28a3c; color: #17110d; box-shadow: none; }
+.zernio-key-panel .tiktok-connect-btn:hover { background: #ffab6b; box-shadow: 0 0 16px rgba(242, 138, 60, .25); }
+@media (prefers-reduced-motion: reduce) {
+  .processed-result, .result-mark, .nav-icon.icon-arrive, .tiktok-composer { animation: none; }
+}
+
 @media (max-width: 600px) {
   .zernio-key-row { flex-direction: column; }
   .zernio-key-link { min-height: 40px; }
-  .tiktok-account-actions > button { flex: 1 1 100%; }
+  .tiktok-composer { width: calc(100% - 24px); }
+  .tiktok-composer .modal-body { padding-inline: 14px; }
+  .tiktok-toggle-grid { grid-template-columns: 1fr; }
 }

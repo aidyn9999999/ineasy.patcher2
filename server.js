@@ -20,7 +20,7 @@ const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : nu
 const ZERNIO_API_BASE = 'https://zernio.com/api/v1';
 const WEEKLY_FREE_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771 или 705 542 37 05 (Freedom Bank, Halyk Bank, Kaspi.kz)\nИмя: Айдынбек Н.';
-const SITE_URL = process.env.SITE_URL || 'https://ineasypatcher.up.railway.app/app.html';
+const SITE_URL = process.env.SITE_URL || 'https://ineasy.site/app.html';
 const WEBSITE_URL = new URL('/', SITE_URL).toString();
 
 const PACKAGES = [
@@ -68,7 +68,7 @@ const TEXTS = {
       `👋 Привет, ${name}!\n\n` +
       `Добро пожаловать в INEASY PATCHER 🚀🔥\n\n` +
       `🎬 Как обработать видео:\n\n` +
-      `1️⃣ Нажмите «${BTN.ru.website}» в меню бота. Если ссылка открылась внутри Telegram, удерживайте её и выберите «Открыть в браузере» — Chrome или Safari. Не используйте встроенный браузер Telegram.\n\n` +
+      `заходите в сайт https://ineasy.site Если ссылка открылась внутри Telegram, удерживайте её и выберите «Открыть в браузере» — Chrome или Safari. Не используйте встроенный браузер Telegram.\n\n` +
       `2️⃣ 🔐 Войдите через Telegram на сайте.\n\n` +
       `3️⃣ 🎥 Выберите видео и нажмите «Подготовить видео».\n\n` +
       `4️⃣ ✅ Скачайте готовое видео и загрузите его в TikTok.\n\n` +

@@ -38,7 +38,7 @@ const translations = {
     ready: 'Video ready',
     readySub: 'Download your patched file',
     download: 'Download',
-    publishTikTok: 'Auto-post with TikTok',
+    publishTikTok: 'Post on site (easy)',
     autopostHint: 'Quick auto-post with Zernio',
     publishNow: 'Publish now',
     publishTitle: 'Publish to TikTok',
@@ -47,7 +47,7 @@ const translations = {
     connectedAs: 'Online ·',
     uploadNotice: 'Your processed video will be uploaded to your TikTok account through Zernio.',
     uploadFailed: 'The video upload failed. Please try again.',
-    connectHint: 'Zernio is connected. Connect your TikTok account to continue.',
+    connectHint: 'No TikTok account is linked to this Zernio key. Link it in Zernio, then reopen this section.',
     connectFailed: 'Could not verify your Zernio connection.',
     zernioConnectCopy: 'Connect your Zernio API key to publish from your TikTok account.',
     zernioKeyLabel: 'Zernio API key',
@@ -58,11 +58,11 @@ const translations = {
     zernioKeyHint: 'Your key is encrypted on the server and never saved in this browser.',
     zernioKeyRequired: 'Enter your Zernio API key first.',
     invalidZernioKey: 'That Zernio API key is invalid. Check it and try again.',
-    zernioKeySaved: 'Zernio connected. Now connect your TikTok account.',
+    zernioKeySaved: 'Zernio API key saved. Checking for your TikTok account…',
     zernioConnectFailed: 'Could not connect to Zernio. Check the API key and try again.',
     popupBlocked: 'Allow pop-ups for this site to connect TikTok.',
     captionLabel: 'Description',
-    captionHint: 'Add hashtags with # and mention accounts with @',
+    captionHint: '#hashtag @mention user',
     privacyLabel: 'Who can watch this video',
     privacyPublic: 'Everyone',
     privacyFriends: 'Friends',
@@ -170,7 +170,7 @@ const translations = {
     ready: 'Видео готово',
     readySub: 'Можно скачать обработанный файл',
     download: 'Скачать',
-    publishTikTok: 'Автопост TikTok',
+    publishTikTok: 'Пост в сайте (легкий)',
     autopostHint: 'Быстрая публикация через Zernio',
     publishNow: 'Опубликовать сейчас',
     publishTitle: 'Публикация в TikTok',
@@ -179,7 +179,7 @@ const translations = {
     connectedAs: 'В сети ·',
     uploadNotice: 'Обработанное видео будет загружено в ваш TikTok через Zernio.',
     uploadFailed: 'Не удалось загрузить видео. Попробуйте ещё раз.',
-    connectHint: 'Zernio подключён. Подключите аккаунт TikTok, чтобы продолжить.',
+    connectHint: 'Аккаунт TikTok для этого ключа Zernio не найден. Подключите его в Zernio и откройте этот раздел снова.',
     connectFailed: 'Не удалось проверить подключение к Zernio.',
     zernioConnectCopy: 'Подключите API-ключ Zernio для публикации в своём аккаунте TikTok.',
     zernioKeyLabel: 'API-ключ Zernio',
@@ -190,11 +190,11 @@ const translations = {
     zernioKeyHint: 'Ключ шифруется на сервере и не сохраняется в этом браузере.',
     zernioKeyRequired: 'Сначала введите API-ключ Zernio.',
     invalidZernioKey: 'API-ключ Zernio не подошёл. Проверьте его и попробуйте ещё раз.',
-    zernioKeySaved: 'Zernio подключён. Теперь подключите аккаунт TikTok.',
+    zernioKeySaved: 'API-ключ Zernio сохранён. Проверяем аккаунт TikTok…',
     zernioConnectFailed: 'Не удалось подключиться к Zernio. Проверьте API-ключ.',
     popupBlocked: 'Разрешите всплывающие окна для подключения TikTok.',
     captionLabel: 'Описание',
-    captionHint: 'Добавьте хештеги через # и упоминания через @',
+    captionHint: '#хештег @ответить пользователя',
     privacyLabel: 'Кто может смотреть это видео',
     privacyPublic: 'Все',
     privacyFriends: 'Друзья',
@@ -302,7 +302,7 @@ const translations = {
     ready: 'Бейне дайын',
     readySub: 'Өңделген файлын жүктеп алыңыз',
     download: 'Жүктеу',
-    publishTikTok: 'TikTok автожариялау',
+    publishTikTok: 'Сайтқа жариялау (жеңіл)',
     autopostHint: 'Zernio арқылы жылдам жариялау',
     publishNow: 'Қазір жариялау',
     publishTitle: 'TikTok-қа жариялау',
@@ -311,7 +311,7 @@ const translations = {
     connectedAs: 'Желіде ·',
     uploadNotice: 'Өңделген бейне Zernio арқылы TikTok аккаунтыңызға жүктеледі.',
     uploadFailed: 'Бейне жүктелмеді. Қайталап көріңіз.',
-    connectHint: 'Zernio қосылды. Жалғастыру үшін TikTok аккаунтын қосыңыз.',
+    connectHint: 'Бұл Zernio кілтіне TikTok аккаунты қосылмаған. Оны Zernio ішінде қосып, осы бөлімді қайта ашыңыз.',
     connectFailed: 'Zernio байланысын тексеру мүмкін болмады.',
     zernioConnectCopy: 'TikTok аккаунтыңыздан жариялау үшін Zernio API кілтін қосыңыз.',
     zernioKeyLabel: 'Zernio API кілті',
@@ -322,11 +322,11 @@ const translations = {
     zernioKeyHint: 'Кілт серверде шифрланады және браузерде сақталмайды.',
     zernioKeyRequired: 'Алдымен Zernio API кілтін енгізіңіз.',
     invalidZernioKey: 'Zernio API кілті жарамсыз. Тексеріп, қайталап көріңіз.',
-    zernioKeySaved: 'Zernio қосылды. Енді TikTok аккаунтын қосыңыз.',
+    zernioKeySaved: 'Zernio API кілті сақталды. TikTok аккаунтын тексеріп жатырмыз…',
     zernioConnectFailed: 'Zernio-ға қосылу мүмкін болмады. API кілтін тексеріңіз.',
     popupBlocked: 'TikTok-ты қосу үшін қалқымалы терезелерге рұқсат беріңіз.',
     captionLabel: 'Сипаттама',
-    captionHint: '# арқылы хештег, @ арқылы аккаунтты белгілеңіз',
+    captionHint: '#хештег @пайдаланушыны белгілеу',
     privacyLabel: 'Бұл бейнені кім көре алады',
     privacyPublic: 'Барлығы',
     privacyFriends: 'Достар',
@@ -462,8 +462,6 @@ function applyLanguage(lang) {
   setText('buyInTelegram', pack.buyInTelegram);
   setText('localNote', pack.localNote);
   setText('exportNote', pack.exportNote);
-  setText('newsText', pack.newsText);
-  setText('newsButton', pack.newsButton);
   setText('processBtn', pack.process);
   setText('cancelProcessBtn', pack.cancel);
   setText('resultTitle', pack.ready);
@@ -486,13 +484,10 @@ function applyLanguage(lang) {
   setText('tiktokPrivacyLabel', pack.privacyLabel);
   setText('tiktokCommentsLabel', pack.commentsLabel);
   setText('tiktokDuetLabel', pack.duetLabel);
-  setText('tiktokStitchLabel', pack.stitchLabel);
   setText('tiktokAiLabel', pack.aiLabel);
-  setText('tiktokCommercialLabel', pack.commercialLabel);
   setText('tiktokPreviewLabel', pack.previewLabel);
   setText('tiktokConsentLabel', pack.consentLabel);
   setText('tiktokDraftNote', pack.draftNotice);
-  setText('tiktokConnectBtn', pack.connectTikTok);
   setText('tiktokSubmitBtn', pack.publishNow);
   if (tiktokCreatorInfo) renderTikTokOptions();
   setText('noticeBannerText', pack.notice);
@@ -507,7 +502,7 @@ function applyLanguage(lang) {
   setText('faqSupportText', pack.faqSupportText);
   setText('checkerReport', pack.report);
   setText('faqReport', pack.report);
-  setText('footerTitle', 'VideoPatcher');
+  setText('footerTitle', 'INEASY');
   setText('footerDesc', pack.footerDesc);
   setText('footerHome', pack.footerHome);
   setText('footerFaq', pack.footerFaq);
@@ -764,7 +759,6 @@ const zernioChangeKeyBtn = document.getElementById('zernioChangeKeyBtn');
 const zernioKeyHint = document.getElementById('zernioKeyHint');
 const tiktokAccountPanel = document.getElementById('tiktokAccountPanel');
 const tiktokAccountStatus = document.getElementById('tiktokAccountStatus');
-const tiktokConnectBtn = document.getElementById('tiktokConnectBtn');
 const tiktokPublishForm = document.getElementById('tiktokPublishForm');
 const tiktokPublishStatus = document.getElementById('tiktokPublishStatus');
 const tiktokCaption = document.getElementById('tiktokCaption');
@@ -781,23 +775,25 @@ let processController = null;
 function renderTikTokOptions() {
   if (!tiktokCreatorInfo || !tiktokPrivacy) return;
   const privacyLabels = {
-    PUBLIC_TO_EVERYONE: t('privacyPublic'),
     MUTUAL_FOLLOW_FRIENDS: t('privacyFriends'),
-    FOLLOWER_OF_CREATOR: t('privacyFollowers'),
     SELF_ONLY: t('privacyPrivate'),
   };
-  tiktokPrivacy.replaceChildren(...(tiktokCreatorInfo.privacyLevels || []).map((level) => {
+  const availableLevels = tiktokCreatorInfo.privacyLevels || [];
+  const restrictedLevels = availableLevels.length
+    ? availableLevels.filter((level) => ['MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'].includes(level.value))
+    : [{ value: 'MUTUAL_FOLLOW_FRIENDS' }, { value: 'SELF_ONLY' }];
+  tiktokPrivacy.replaceChildren(...restrictedLevels.map((level) => {
     const option = document.createElement('option');
     option.value = level.value;
     option.textContent = privacyLabels[level.value] || level.label || level.value;
     return option;
   }));
-  if ([...tiktokPrivacy.options].some((option) => option.value === 'PUBLIC_TO_EVERYONE')) {
-    tiktokPrivacy.value = 'PUBLIC_TO_EVERYONE';
+  if ([...tiktokPrivacy.options].some((option) => option.value === 'MUTUAL_FOLLOW_FRIENDS')) {
+    tiktokPrivacy.value = 'MUTUAL_FOLLOW_FRIENDS';
   }
 
   const settings = tiktokCreatorInfo.postingLimits?.interactionSettings || {};
-  [['tiktokAllowComments', 'allow_comment'], ['tiktokAllowDuet', 'allow_duet'], ['tiktokAllowStitch', 'allow_stitch']].forEach(([id, key]) => {
+  [['tiktokAllowComments', 'allow_comment'], ['tiktokAllowDuet', 'allow_duet']].forEach(([id, key]) => {
     const input = document.getElementById(id);
     const setting = settings[key];
     if (input) {
@@ -807,15 +803,19 @@ function renderTikTokOptions() {
   });
 
   const commercialSelect = document.getElementById('tiktokCommercialType');
-  if (commercialSelect) {
-    const commercialLabels = { none: t('commercialNone'), brand_organic: t('commercialOwnBrand'), brand_content: t('commercialPartner') };
-    commercialSelect.replaceChildren(...(tiktokCreatorInfo.commercialContentTypes || [{ value: 'none' }]).map((item) => {
-      const option = document.createElement('option');
-      option.value = item.value;
-      option.textContent = commercialLabels[item.value] || item.label || item.value;
-      return option;
-    }));
-  }
+    if (commercialSelect) {
+      const commercialLabels = { 
+        none: t('commercialNone'), 
+        brand_organic: t('commercialOwnBrand'), 
+        brand_content: t('commercialPartner') 
+      };
+      commercialSelect.replaceChildren(...(tiktokCreatorInfo.commercialContentTypes || [{ value: 'none' }]).map((item) => {
+        const option = document.createElement('option');
+        option.value = item.value;
+        option.textContent = commercialLabels[item.value] || item.label || item.value;
+        return option;
+      }));
+    }
   updateTikTokPrivacyNote();
 }
 
@@ -826,12 +826,11 @@ function updateTikTokPrivacyNote() {
 }
 
 async function refreshTikTokStatus() {
-  if (!tiktokAccountStatus || !tiktokConnectBtn || !tiktokPublishForm) return;
+  if (!tiktokAccountStatus || !tiktokPublishForm) return;
   tiktokAccountStatus.textContent = t('checkingTikTok');
   tiktokAccountStatus.classList.remove('online');
   tiktokAccountPanel.classList.add('hidden');
   tiktokPublishForm.classList.add('hidden');
-  tiktokConnectBtn.classList.add('hidden');
   try {
     const data = await tiktokApi('/api/tiktok/status');
     zernioKeyPanel.classList.toggle('hidden', Boolean(data.configured));
@@ -839,7 +838,6 @@ async function refreshTikTokStatus() {
     if (!data.connected) {
       tiktokAccountId = null;
       tiktokAccountStatus.textContent = t('connectHint');
-      tiktokConnectBtn.classList.remove('hidden');
       return;
     }
     tiktokAccountId = data.account.id;
@@ -856,7 +854,6 @@ async function refreshTikTokStatus() {
     } else {
       tiktokAccountPanel.classList.remove('hidden');
       tiktokAccountStatus.textContent = error.status === 401 ? t('authExpired') : (error.message || t('connectFailed'));
-      tiktokConnectBtn.classList.remove('hidden');
     }
   }
 }
@@ -866,6 +863,7 @@ async function openTikTokComposer() {
   tiktokComposerOverlay.classList.remove('hidden');
   if (tiktokPublishStatus) tiktokPublishStatus.textContent = '';
   await refreshTikTokStatus();
+  tiktokComposerOverlay.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 if (publishTiktokBtn) {
@@ -905,27 +903,11 @@ if (zernioChangeKeyBtn) {
     zernioKeyPanel.classList.remove('hidden');
     tiktokAccountPanel.classList.add('hidden');
     tiktokPublishForm.classList.add('hidden');
+    tiktokAccountId = null;
+    tiktokCreatorInfo = null;
     zernioApiKeyInput.focus();
   });
 }
-if (tiktokConnectBtn) {
-  tiktokConnectBtn.addEventListener('click', async () => {
-    const connectWindow = window.open('about:blank', 'ineasy-zernio-connect', 'popup,width=520,height=760');
-    tiktokConnectBtn.disabled = true;
-    tiktokAccountStatus.textContent = t('connecting');
-    try {
-      const data = await tiktokApi('/api/tiktok/connect');
-      if (connectWindow) connectWindow.location.href = data.authUrl;
-      else tiktokAccountStatus.textContent = t('popupBlocked');
-    } catch (error) {
-      connectWindow?.close();
-      tiktokAccountStatus.textContent = error.message || t('connectFailed');
-    } finally {
-      tiktokConnectBtn.disabled = false;
-    }
-  });
-}
-
 if (tiktokPrivacy) tiktokPrivacy.addEventListener('change', updateTikTokPrivacyNote);
 if (tiktokCaption && tiktokCaptionCount) {
   tiktokCaption.addEventListener('input', () => {
@@ -935,26 +917,6 @@ if (tiktokCaption && tiktokCaptionCount) {
 if (tiktokComposerOverlay) {
   const closeTikTokComposer = () => tiktokComposerOverlay.classList.add('hidden');
   document.getElementById('tiktokModalClose').addEventListener('click', closeTikTokComposer);
-  tiktokComposerOverlay.addEventListener('click', (event) => {
-    if (event.target === tiktokComposerOverlay) closeTikTokComposer();
-  });
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') closeTikTokComposer();
-  });
-  window.addEventListener('focus', () => {
-    if (!tiktokComposerOverlay.classList.contains('hidden')) refreshTikTokStatus();
-  });
-  window.addEventListener('message', (event) => {
-    if (event.origin === window.location.origin && event.data?.type === 'ineasy-zernio-oauth-return') {
-      if (event.data.error) {
-        tiktokAccountPanel.classList.remove('hidden');
-        tiktokAccountStatus.textContent = `${t('connectFailed')} (${event.data.error})`;
-        tiktokConnectBtn.classList.remove('hidden');
-      } else {
-        refreshTikTokStatus();
-      }
-    }
-  });
 }
 
 if (tiktokPublishForm) {
@@ -985,9 +947,9 @@ if (tiktokPublishForm) {
           privacyLevel: tiktokPrivacy.value,
           allowComment: document.getElementById('tiktokAllowComments').checked,
           allowDuet: document.getElementById('tiktokAllowDuet').checked,
-          allowStitch: document.getElementById('tiktokAllowStitch').checked,
+          allowStitch: false,
           madeWithAi: document.getElementById('tiktokMadeWithAi').checked,
-          commercialContentType: document.getElementById('tiktokCommercialType').value,
+          commercialContentType: 'none',
           confirmedPreview: document.getElementById('tiktokPreviewConfirmed').checked,
           consentGiven: document.getElementById('tiktokConsentGiven').checked,
         }),
@@ -1042,6 +1004,7 @@ function handleFile(file) {
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
   patchedDownloadUrl = null;
   processedVideoBlob = null;
+    if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
   currentObjectUrl = URL.createObjectURL(file);
 
   if (previewVideo) previewVideo.src = currentObjectUrl;
@@ -1050,6 +1013,7 @@ function handleFile(file) {
   updateProcessButton();
   if (processingState) processingState.classList.add('hidden');
   if (processedResult) processedResult.classList.add('hidden');
+  if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
 }
 
 if (dropzone) {
@@ -1241,6 +1205,24 @@ if (checkerForm) {
   });
 }
 
+function applyProvidedNavIcons() {
+  const icons = {
+    patchSection: '<path fill-rule="evenodd" clip-rule="evenodd" d="M11.9426 1.25h.1148c2.3084 0 4.1174 0 5.5289.18975 1.4447.19424 2.5848.59958 3.4796 1.49439.8948.89481 1.3001 2.03483 1.4944 3.47957.1897 1.41148.1897 3.22052.1897 5.52889v.1148c0 2.3084 0 4.1174-.1897 5.5289-.1943 1.4447-.5996 2.5848-1.4944 3.4796-.8948.8948-2.0349 1.3001-3.4796 1.4944-1.4115.1897-3.2205.1897-5.5289.1897h-.1148c-2.30837 0-4.11741 0-5.52889-.1897-1.44474-.1943-2.58476-.5996-3.47957-1.4944-.89481-.8948-1.30015-2.0349-1.49439-3.4796C1.24998 16.1748 1.24999 14.3658 1.25 12.0574v-.1148c-.00001-2.30837-.00002-4.11741.18975-5.52889.19424-1.44474.59958-2.58476 1.49439-3.47957.89481-.89481 2.03483-1.30015 3.47957-1.49439C7.82519 1.24998 9.63423 1.24999 11.9426 1.25ZM6.61358 2.92637c-1.27841.17188-2.04913.49877-2.61878 1.06843-.56966.56965-.89655 1.34037-1.06843 2.61878C2.75159 7.91356 2.75 9.62177 2.75 12c0 2.3782.00159 4.0864.17637 5.3864.17188 1.2784.49877 2.0491 1.06843 2.6188.56965.5697 1.34037.8966 2.61878 1.0684C7.91356 21.2484 9.62177 21.25 12 21.25c2.3782 0 4.0864-.0016 5.3864-.1764 1.2784-.1718 2.0491-.4987 2.6188-1.0684.5697-.5697.8966-1.3404 1.0684-2.6188C21.2484 16.0864 21.25 14.3782 21.25 12c0-2.37823-.0016-4.08644-.1764-5.38642-.1718-1.27841-.4987-2.04913-1.0684-2.61878-.5697-.56966-1.3404-.89655-2.6188-1.06843C16.0864 2.75159 14.3782 2.75 12 2.75c-2.37823 0-4.08644.00159-5.38642.17637ZM5.5 7.25c.41421 0 .75.33579.75.75v3.25h3.31482V8c0-.41421.33578-.75.75-.75s.75.33579.75.75v8c0 .4142-.33578.75-.75.75s-.75-.3358-.75-.75v-3.25H6.25V16c0 .4142-.33579.75-.75.75s-.75-.3358-.75-.75V8c0-.41421.33579-.75.75-.75Zm6.4722 1.55c0-.98021.9031-1.55 1.713-1.55 2.9372 0 5.5648 2.00248 5.5648 4.75s-2.6276 4.75-5.5648 4.75c-.8099 0-1.713-.5698-1.713-1.55V8.8Zm1.5.02154v6.35696c.0027.0027.0063.0062.0113.0103.0326.0271.1015.0612.2017.0612 2.3811 0 4.0648-1.5792 4.0648-3.25s-1.6837-3.25-4.0648-3.25c-.1002 0-.1691.0342-.2017.0612-.005.0042-.0086.0076-.0113.0104Z"/>',
+    checkerSection: '<path d="M2 9V6.5C2 4.01 4.01 2 6.5 2H9M15 2h2.5C19.99 2 22 4.01 22 6.5V9M22 15v2.5c0 2.49-2.01 4.5-4.5 4.5H15M9 22H6.5C4.01 22 2 19.99 2 17.5V15M17 9.5v5c0 2-1 3-3 3h-4c-2 0-3-1-3-3v-5c0-2 1-3 3-3h4c2 0 3 1 3 3ZM19 12H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+    faqSection: '<path d="M12 21.6666C17.3386 21.6666 21.6666 17.3386 21.6666 12C21.6666 6.6613 17.3386 2.3333 12 2.3333C6.6613 2.3333 2.3333 6.6613 2.3333 12C2.3333 17.3386 6.6613 21.6666 12 21.6666Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 17V12.3333C12 11.9652 11.7014 11.6666 11.3333 11.6666H10.3333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9C11.264 9 10.6666 8.4013 10.6666 7.6666C10.6666 6.932 11.264 6.3333 12 6.3333C12.736 6.3333 13.3333 6.932 13.3333 7.6666C13.3333 8.4013 12.736 9 12 9Z" fill="currentColor"/>'
+  };
+  document.querySelectorAll('.nav-tab').forEach((tab) => {
+    const icon = tab.querySelector('.nav-icon svg');
+    if (icon && icons[tab.dataset.view]) {
+      icon.setAttribute('viewBox', '0 0 24 24');
+      icon.setAttribute('fill', tab.dataset.view === 'patchSection' ? 'currentColor' : 'none');
+      icon.innerHTML = icons[tab.dataset.view];
+    }
+  });
+}
+
+applyProvidedNavIcons();
+
 // --- Tabs ---
 document.querySelectorAll('.nav-tab').forEach((tab) => {
   tab.addEventListener('click', () => {
@@ -1254,6 +1236,11 @@ document.querySelectorAll('.nav-tab').forEach((tab) => {
     });
     tab.classList.add('active');
     tab.setAttribute('aria-current', 'page');
+    const icon = tab.querySelector('.nav-icon');
+    if (icon) {
+      icon.classList.remove('icon-arrive');
+      requestAnimationFrame(() => icon.classList.add('icon-arrive'));
+    }
     const target = document.getElementById(tab.dataset.view);
     if (target) {
       target.classList.remove('hidden');
