@@ -599,7 +599,7 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
 .cancel-process-btn:disabled { opacity: .45; cursor: not-allowed; }
 .processing-spinner { width: 22px; height: 22px; border: 2px solid var(--card-border); border-top-color: var(--accent); border-radius: 50%; animation: spin .8s linear infinite; }
 .progress-track { grid-column: 1 / -1; height: 4px; overflow: hidden; border-radius: 5px; background: var(--accent-dim); }
-.progress-track i { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--accent); transition: width .6s ease; }
+.progress-track i { display: block; width: 0; height: 100%; border-radius: inherit; background: var(--accent); transition: width .12s ease-out; }
 .processed-result { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 15px; border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; background: rgba(16, 185, 129, 0.08); }
 .processed-result > span { color: var(--success); font-size: 20px; }
 .processed-result strong, .processed-result small { display: block; }

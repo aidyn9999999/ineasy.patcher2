@@ -10,7 +10,7 @@ if (canvasHost && hero && 'WebGLRenderingContext' in window) {
   camera.lookAt(0, 1.5, 0);
 
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1));
   renderer.setSize(canvasHost.clientWidth, canvasHost.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.setClearColor(0x000000, 0);
@@ -24,7 +24,7 @@ if (canvasHost && hero && 'WebGLRenderingContext' in window) {
   coolLight.position.set(7, 8, -8);
   scene.add(coolLight);
 
-  const terrain = new THREE.PlaneGeometry(38, 23, 150, 88);
+  const terrain = new THREE.PlaneGeometry(38, 23, 96, 56);
   const positions = terrain.attributes.position;
   const colors = [];
   const forest = new THREE.Color('#24483e');
@@ -90,15 +90,19 @@ if (canvasHost && hero && 'WebGLRenderingContext' in window) {
 
   let frameId = 0;
   let isVisible = true;
+  let lastRenderAt = 0;
   const draw = (time = 0) => {
     if (!isVisible) return;
-    const scrollProgress = THREE.MathUtils.clamp(-hero.getBoundingClientRect().top / Math.max(hero.clientHeight, 1), 0, 1);
-    const scale = 0.98 + scrollProgress * 0.23;
-    mountain.scale.set(scale, scale, scale);
-    mountain.rotation.z += (pointer.x - mountain.rotation.z) * 0.025;
-    mountain.rotation.x = -0.025 + pointer.y;
-    mountain.position.y = -3.4 + scrollProgress * 0.18 + Math.sin(time * 0.00035) * 0.035;
-    renderer.render(scene, camera);
+    if (!lastRenderAt || time - lastRenderAt >= 1000 / 30) {
+      const scrollProgress = THREE.MathUtils.clamp(-hero.getBoundingClientRect().top / Math.max(hero.clientHeight, 1), 0, 1);
+      const scale = 0.98 + scrollProgress * 0.23;
+      mountain.scale.set(scale, scale, scale);
+      mountain.rotation.z += (pointer.x - mountain.rotation.z) * 0.025;
+      mountain.rotation.x = -0.025 + pointer.y;
+      mountain.position.y = -3.4 + scrollProgress * 0.18 + Math.sin(time * 0.00035) * 0.035;
+      renderer.render(scene, camera);
+      lastRenderAt = time;
+    }
     frameId = requestAnimationFrame(draw);
   };
   const visibilityObserver = new IntersectionObserver(([entry]) => {

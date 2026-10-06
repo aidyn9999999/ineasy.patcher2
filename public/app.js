@@ -1301,9 +1301,9 @@ function readVideoDuration(file, signal) {
 }
 
 function getPostingDeviceForPlatform() {
-  const isAppleMobile = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+  const isPhoneMode = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  return isAppleMobile ? 'phone' : 'pc';
+  return isPhoneMode ? 'phone' : 'pc';
 }
 
 function handleFile(file) {
@@ -1637,12 +1637,19 @@ if (processBtn) {
       const isMp4 = sourceFile.type === 'video/mp4' || /\.mp4$/i.test(sourceFile.name);
       const downscale = async (file, progressStart, progressRange) => {
         const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
+        let lastProgressUpdateAt = 0;
+        let lastProgressPercent = -1;
         return downscaleVideo(file, {
           signal: controller.signal,
           onStatus: () => {},
           onProgress: (fraction) => {
             const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
-            updateProcessingProgress(progressStart + progress * progressRange);
+            const percent = Math.round(progressStart + progress * progressRange);
+            const now = performance.now();
+            if (percent === lastProgressPercent || now - lastProgressUpdateAt < 100) return;
+            lastProgressUpdateAt = now;
+            lastProgressPercent = percent;
+            updateProcessingProgress(percent);
           },
         });
       };
