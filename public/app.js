@@ -47,8 +47,8 @@ const translations = {
     analyzerEyebrow: 'VIDEO ANALYZER',
     videos: 'videos',
     report: 'Report',
-    patchTitle: 'Prepare your video for TikTok.',
-    patchSub: 'Patcher changes internal video parameters to help minimize visible quality loss after upload to TikTok.',
+    patchTitle: 'Patch your video now.',
+    patchSub: 'Publish in high quality.',
     choose: 'Select video',
     chooseSub: 'Drag file here or click to browse',
     localNote: 'Your video stays on your device. 1440p (2K) and 4K videos are automatically prepared in 1080p to reduce processing load.',
@@ -179,8 +179,8 @@ const translations = {
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
     videos: 'видео',
     report: 'Сообщить',
-    patchTitle: 'Подготовьте видео к публикации в TikTok.',
-    patchSub: 'Patcher корректирует внутренние параметры видео, чтобы уменьшить заметную потерю качества после загрузки в TikTok.',
+    patchTitle: 'Патчите видео прямо сейчас.',
+    patchSub: 'Публикуйте в высоком качестве.',
     choose: 'Выберите видео',
     chooseSub: 'Перетащите файл сюда или нажмите, чтобы открыть устройство',
     localNote: 'Ваше видео остаётся на устройстве. Видео в 1440p (2K) и 4K автоматически подготавливается в 1080p, чтобы снизить нагрузку при обработке.',
@@ -311,8 +311,8 @@ const translations = {
     analyzerEyebrow: 'БЕЙНЕ АНАЛИЗАТОРЫ',
     videos: 'бейне',
     report: 'Хабарлау',
-    patchTitle: 'Бейнеңізді TikTok-та жариялауға дайындаңыз.',
-    patchSub: 'Patcher бейненің ішкі параметрлерін өзгертіп, TikTok-қа жүктегеннен кейін сапаның көзге көрінетіндей төмендеуін азайтуға көмектеседі.',
+    patchTitle: 'Бейнеңізді қазір патчтаңыз.',
+    patchSub: 'Жоғары сапада жариялаңыз.',
     choose: 'Бейнені таңдаңыз',
     chooseSub: 'Файлды осы жерге сүйреп апарыңыз немесе құрылғыдан таңдаңыз',
     localNote: 'Бейнеңіз құрылғыңызда қалады. 1440p (2K) және 4K бейнелері өңдеу жүктемесін азайту үшін автоматты түрде 1080p форматына дайындалады.',
@@ -607,6 +607,16 @@ const balanceLabel = document.getElementById('balanceLabel');
 let currentBalance = null;
 let balanceRequestVersion = 0;
 
+function balanceTotal(data) {
+  const free = Number(data.free);
+  const purchased = Number(data.purchased);
+  const total = Number.isFinite(free) && Number.isFinite(purchased)
+    ? free + purchased
+    : Number(data.balance);
+  if (!Number.isFinite(total) || total < 0) throw new Error('balance_fetch_failed');
+  return total;
+}
+
 function renderBalance() {
   if (balanceLabel && currentBalance !== null) balanceLabel.textContent = `${currentBalance} ${t('videos')}`;
   updateDropzoneAvailability();
@@ -624,7 +634,7 @@ function updateDropzoneAvailability() {
 function updateProcessButton() {
   if (!processBtn) return;
   const hasVideo = Boolean(fileInput && fileInput.files && fileInput.files[0]);
-  const hasCredits = Number.isFinite(currentBalance) && currentBalance > 0;
+  const hasCredits = currentBalance === null || (Number.isFinite(currentBalance) && currentBalance > 0);
   const hasResult = Boolean(processedResult && !processedResult.classList.contains('hidden'));
   processBtn.disabled = !hasVideo || !hasCredits || Boolean(processController) || hasResult;
 }
@@ -635,6 +645,7 @@ async function loadBalance() {
     const token = getBrowserValue('tg_auth_token');
     const res = await fetch(`/api/balance/${encodeURIComponent(tgId)}`, {
       headers: { Authorization: `Bearer ${token || ''}` },
+      cache: 'no-store',
     });
     if (requestVersion !== balanceRequestVersion) return;
     if (res.status === 401 || res.status === 403) {
@@ -646,11 +657,12 @@ async function loadBalance() {
     if (!res.ok) throw new Error('balance_fetch_failed');
     const data = await res.json();
     if (requestVersion !== balanceRequestVersion) return;
-    currentBalance = data.balance;
+    currentBalance = balanceTotal(data);
     renderBalance();
   } catch (e) {
     if (requestVersion !== balanceRequestVersion) return;
     currentBalance = null;
+    updateDropzoneAvailability();
     updateProcessButton();
     if (balanceLabel) balanceLabel.textContent = '—';
   }
@@ -661,6 +673,7 @@ async function refreshBalanceForProcessing() {
   const token = getBrowserValue('tg_auth_token');
   const response = await fetch(`/api/balance/${encodeURIComponent(tgId)}`, {
     headers: { Authorization: `Bearer ${token || ''}` },
+    cache: 'no-store',
   });
   if (requestVersion !== balanceRequestVersion) return false;
   if (response.status === 401 || response.status === 403) {
@@ -672,7 +685,7 @@ async function refreshBalanceForProcessing() {
   if (!response.ok) throw new Error('balance_fetch_failed');
   const data = await response.json();
   if (requestVersion !== balanceRequestVersion) return false;
-  currentBalance = Number(data.balance);
+  currentBalance = balanceTotal(data);
   renderBalance();
   return currentBalance > 0;
 }
@@ -704,6 +717,12 @@ async function consumeProcessedVideo() {
 }
 
 loadBalance();
+window.addEventListener('focus', () => {
+  if (!processController) loadBalance();
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && !processController) loadBalance();
+});
 
 // --- Packages ---
 const BOT_USERNAME = 'ineasybot';
