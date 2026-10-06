@@ -54,11 +54,10 @@ const translations = {
     localNote: 'Your video stays on your device. 1440p (2K) and 4K videos are automatically prepared in 1080p to reduce processing load.',
     exportNote: 'For smoother playback, export in 1080p, 60 FPS, with a bitrate of 15–35 Mbps.',
     postingDeviceLabel: 'Where will you post this video?',
-    postingDevicePlaceholder: 'Choose a posting mode',
     postingDevicePc: 'PC',
-    postingDevicePhone: 'Phone',
-    postingDevicePhoneGhost: 'Phone (ghost)',
-    choosePostingDevice: 'Choose PC, Phone, or Phone (ghost) before processing.',
+    postingDeviceIphone: 'iPhone',
+    postingDeviceAndroid: 'Android',
+    choosePostingDevice: 'Choose your device before processing.',
     communityTitle: 'Stay in the loop with Ineasy',
     communityBody: 'New tutorials, project updates, and exclusive giveaways on our Telegram channel',
     newsText: 'Tutorials, updates, and giveaways',
@@ -72,6 +71,7 @@ const translations = {
     autopostHint: 'Quick auto-post with Zernio',
     autopostScrollHint: 'The publishing section is below. Scroll down to continue.',
     publishNow: 'Publish now',
+    scheduleSubmit: 'Schedule post',
     publishTitle: 'Publish to TikTok',
     connectTikTok: 'Connect TikTok account',
     checkingTikTok: 'Checking your Zernio connection…',
@@ -93,26 +93,35 @@ const translations = {
     zernioConnectFailed: 'Could not connect to Zernio. Check the API key and try again.',
     popupBlocked: 'Allow pop-ups for this site to connect TikTok.',
     captionLabel: 'Description',
-    captionHint: '#ineasybot',
-    privacyLabel: 'Who can watch this video',
+    captionHint: '#hashtags  @mentions',
+    privacyLabel: 'Who can see this video?',
     privacyPublic: 'Everyone',
     privacyFriends: 'Friends',
     privacyPrivate: 'Only you',
+    privacyDescription: 'Choose who can see your post',
+    interactionsTitle: 'Interactions',
+    interactionsDescription: 'Choose what viewers can do with your video',
     commentsLabel: 'Allow comments',
-    duetLabel: 'Allow Duet',
+    duetLabel: 'Allow duet',
     stitchLabel: 'Allow Stitch',
     aiLabel: 'AI-generated content',
     commercialLabel: 'Commercial content disclosure',
     commercialNone: 'None',
     commercialOwnBrand: 'Your brand',
     commercialPartner: 'Paid partnership',
-    previewLabel: 'I reviewed the video and caption.',
-    consentLabel: 'I authorize publishing this content to TikTok.',
+    scheduleTitle: 'When should it post?',
+    scheduleNow: 'Post now',
+    scheduleLater: 'Schedule for later',
+    scheduledForLabel: 'Date and time',
+    timezoneHint: 'Times use {timezone}.',
+    scheduleInvalid: 'Choose a future date and time.',
+    consentLabel: 'I confirm I have the rights to this video and music, allow copyright checks, and agree to TikTok’s posting rules.',
     draftNotice: 'The selected privacy setting will be applied when this video is published.',
     connecting: 'Opening TikTok sign-in…',
     uploading: 'Uploading video…',
     publishing: 'Publishing to TikTok…',
     publishSuccess: 'Video published to TikTok.',
+    publishScheduled: 'Video scheduled for publishing.',
     publishPending: 'TikTok accepted the video and is processing the post.',
     draftSuccess: 'Draft sent to TikTok. Finish visibility and publishing in the TikTok app.',
     publishFailed: 'TikTok could not publish this video. Check the options and try again.',
@@ -194,11 +203,10 @@ const translations = {
     localNote: 'Ваше видео остаётся на устройстве. Видео в 1440p (2K) и 4K автоматически подготавливается в 1080p, чтобы снизить нагрузку при обработке.',
     exportNote: 'Для более плавного воспроизведения экспортируйте видео в 1080p, 60 FPS и с битрейтом 15–35 Мбит/с.',
     postingDeviceLabel: 'Где будете публиковать видео?',
-    postingDevicePlaceholder: 'Выберите режим публикации',
-    postingDevicePc: 'PC',
-    postingDevicePhone: 'Phone',
-    postingDevicePhoneGhost: 'Phone (ghost)',
-    choosePostingDevice: 'Перед обработкой выберите PC, Phone или Phone (ghost).',
+    postingDevicePc: 'ПК',
+    postingDeviceIphone: 'iPhone',
+    postingDeviceAndroid: 'Android',
+    choosePostingDevice: 'Перед обработкой выберите устройство.',
     communityTitle: 'Будь в курсе Ineasy',
     communityBody: 'Новые туториалы, обновления проекта и эксклюзивные розыгрыши — в нашем Telegram-канале',
     newsText: 'Туториалы, обновления и розыгрыши',
@@ -212,6 +220,7 @@ const translations = {
     autopostHint: 'Быстрая публикация через Zernio',
     autopostScrollHint: 'Раздел публикации ниже. Прокрутите страницу вниз.',
     publishNow: 'Опубликовать сейчас',
+    scheduleSubmit: 'Запланировать публикацию',
     publishTitle: 'Публикация в TikTok',
     connectTikTok: 'Подключить аккаунт TikTok',
     checkingTikTok: 'Проверяем подключение к Zernio…',
@@ -233,26 +242,35 @@ const translations = {
     zernioConnectFailed: 'Не удалось подключиться к Zernio. Проверьте API-ключ.',
     popupBlocked: 'Разрешите всплывающие окна для подключения TikTok.',
     captionLabel: 'Описание',
-    captionHint: '#ineasybot',
-    privacyLabel: 'Кто может смотреть это видео',
+    captionHint: '#хештеги  @упоминания',
+    privacyLabel: 'Кто может увидеть это видео?',
     privacyPublic: 'Все',
     privacyFriends: 'Друзья',
     privacyPrivate: 'Только я',
+    privacyDescription: 'Выберите, кто увидит публикацию',
+    interactionsTitle: 'Взаимодействия',
+    interactionsDescription: 'Разрешите зрителям взаимодействовать с видео',
     commentsLabel: 'Разрешить комментарии',
     duetLabel: 'Разрешить дуэты',
-    stitchLabel: 'Разрешить Stitch',
+    stitchLabel: 'Разрешить склейку (Stitch)',
     aiLabel: 'Контент создан с помощью ИИ',
     commercialLabel: 'Маркировка коммерческого контента',
     commercialNone: 'Нет',
     commercialOwnBrand: 'Продвижение своего бренда',
     commercialPartner: 'Платное партнёрство',
-    previewLabel: 'Я проверил видео и описание.',
-    consentLabel: 'Я разрешаю опубликовать этот контент в TikTok.',
+    scheduleTitle: 'Когда опубликовать?',
+    scheduleNow: 'Сейчас',
+    scheduleLater: 'Запланировать',
+    scheduledForLabel: 'Дата и время публикации',
+    timezoneHint: 'Часовой пояс: {timezone}.',
+    scheduleInvalid: 'Выберите будущие дату и время.',
+    consentLabel: 'Подтверждаю права на видео и музыку, разрешаю проверку авторских прав и принимаю правила публикации TikTok.',
     draftNotice: 'Выбранные настройки приватности применятся при публикации видео.',
     connecting: 'Открываем вход в TikTok…',
     uploading: 'Загружаем видео…',
     publishing: 'Публикуем в TikTok…',
     publishSuccess: 'Видео опубликовано в TikTok.',
+    publishScheduled: 'Публикация запланирована.',
     publishPending: 'TikTok принял видео и обрабатывает публикацию.',
     draftSuccess: 'Черновик отправлен в TikTok. Завершите настройку видимости и публикацию в приложении TikTok.',
     publishFailed: 'Не удалось опубликовать видео в TikTok. Проверьте настройки и попробуйте снова.',
@@ -334,11 +352,10 @@ const translations = {
     localNote: 'Бейнеңіз құрылғыңызда қалады. 1440p (2K) және 4K бейнелері өңдеу жүктемесін азайту үшін автоматты түрде 1080p форматына дайындалады.',
     exportNote: 'Бірқалыпты ойнату үшін бейнені 1080p, 60 FPS және 15–35 Мбит/с битрейтпен экспорттаңыз.',
     postingDeviceLabel: 'Бейнені қайда жариялайсыз?',
-    postingDevicePlaceholder: 'Жариялау режимін таңдаңыз',
     postingDevicePc: 'PC',
-    postingDevicePhone: 'Phone',
-    postingDevicePhoneGhost: 'Phone (ghost)',
-    choosePostingDevice: 'Өңдемес бұрын PC, Phone немесе Phone (ghost) таңдаңыз.',
+    postingDeviceIphone: 'iPhone',
+    postingDeviceAndroid: 'Android',
+    choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
     communityTitle: 'Ineasy жаңалықтарынан хабардар болыңыз',
     communityBody: 'Жаңа нұсқаулықтар, жоба жаңалықтары және арнайы ұтыстар Telegram арнамызда',
     newsText: 'Туториалдар, жаңартулар және ұтыс ойындары',
@@ -352,6 +369,7 @@ const translations = {
     autopostHint: 'Zernio арқылы жылдам жариялау',
     autopostScrollHint: 'Жариялау бөлімі төменде. Жалғастыру үшін төмен қарай айналдырыңыз.',
     publishNow: 'Қазір жариялау',
+    scheduleSubmit: 'Жариялауды жоспарлау',
     publishTitle: 'TikTok-қа жариялау',
     connectTikTok: 'TikTok аккаунтын қосу',
     checkingTikTok: 'Zernio байланысын тексеріп жатырмыз…',
@@ -373,26 +391,35 @@ const translations = {
     zernioConnectFailed: 'Zernio-ға қосылу мүмкін болмады. API кілтін тексеріңіз.',
     popupBlocked: 'TikTok-ты қосу үшін қалқымалы терезелерге рұқсат беріңіз.',
     captionLabel: 'Сипаттама',
-    captionHint: '#ineasybot',
-    privacyLabel: 'Бұл бейнені кім көре алады',
+    captionHint: '#хештегтер  @белгілер',
+    privacyLabel: 'Бұл жазбаны кім көре алады?',
     privacyPublic: 'Барлығы',
     privacyFriends: 'Достар',
     privacyPrivate: 'Тек мен',
+    privacyDescription: 'Жазбаны кім көре алатынын таңдаңыз',
+    interactionsTitle: 'Әрекеттесу',
+    interactionsDescription: 'Көрермендерге бейнемен әрекеттесуге рұқсат беріңіз',
     commentsLabel: 'Пікірлерге рұқсат беру',
     duetLabel: 'Дуэтке рұқсат беру',
-    stitchLabel: 'Stitch-ке рұқсат беру',
+    stitchLabel: 'Stitch арқылы біріктіруге рұқсат беру',
     aiLabel: 'ЖИ жасаған контент',
     commercialLabel: 'Коммерциялық контент белгісі',
     commercialNone: 'Жоқ',
     commercialOwnBrand: 'Өз брендіңіз',
     commercialPartner: 'Ақылы серіктестік',
-    previewLabel: 'Бейне мен сипаттаманы тексердім.',
-    consentLabel: 'Осы контентті TikTok-та жариялауға рұқсат беремін.',
+    scheduleTitle: 'Қашан жариялансын?',
+    scheduleNow: 'Қазір жариялау',
+    scheduleLater: 'Кейінге жоспарлау',
+    scheduledForLabel: 'Жариялау күні мен уақыты',
+    timezoneHint: 'Уақыт белдеуі: {timezone}.',
+    scheduleInvalid: 'Болашақ күн мен уақытты таңдаңыз.',
+    consentLabel: 'Бұл бейне мен музыкаға құқығым бар екенін растаймын, авторлық құқықты тексеруге рұқсат беремін және TikTok жариялау ережелерін қабылдаймын.',
     draftNotice: 'Таңдалған құпиялық параметрі бейне жарияланғанда қолданылады.',
     connecting: 'TikTok жүйесіне кіру ашылуда…',
     uploading: 'Бейне жүктелуде…',
     publishing: 'TikTok-та жариялануда…',
     publishSuccess: 'Бейне TikTok-та жарияланды.',
+    publishScheduled: 'Жариялау жоспарланды.',
     publishPending: 'TikTok бейнені қабылдады және жариялап жатыр.',
     draftSuccess: 'Черновик TikTok-қа жіберілді. Жариялауды TikTok қолданбасында аяқтаңыз.',
     publishFailed: 'Бейне TikTok-та жарияланбады. Параметрлерді тексеріп, қайталап көріңіз.',
@@ -509,10 +536,9 @@ function applyLanguage(lang) {
   setText('localNote', pack.localNote);
   setText('exportNote', pack.exportNote);
   setText('postingDeviceLabel', pack.postingDeviceLabel);
-  setText('postingDevicePlaceholder', pack.postingDevicePlaceholder);
   setText('postingDevicePc', pack.postingDevicePc);
-  setText('postingDevicePhone', pack.postingDevicePhone);
-  setText('postingDevicePhoneGhost', pack.postingDevicePhoneGhost);
+  setText('postingDeviceIphone', pack.postingDeviceIphone);
+  setText('postingDeviceAndroid', pack.postingDeviceAndroid);
   setText('communityTitle', pack.communityTitle);
   setText('communityBody', pack.communityBody);
   setText('processBtn', pack.process);
@@ -534,15 +560,26 @@ function applyLanguage(lang) {
   setText('tiktokCaptionLabel', pack.captionLabel);
   setText('tiktokUploadNotice', pack.uploadNotice);
   setText('tiktokCaptionHint', pack.captionHint);
+  const captionInput = document.getElementById('tiktokCaption');
+  if (captionInput) captionInput.placeholder = pack.captionHint;
   setText('tiktokPrivacyLabel', pack.privacyLabel);
   setText('tiktokPrivacyPublic', pack.privacyPublic);
   setText('tiktokPrivacyFriends', pack.privacyFriends);
   setText('tiktokPrivacyPrivate', pack.privacyPrivate);
+  setText('tiktokPrivacyDescription', pack.privacyDescription);
+  setText('tiktokInteractionsTitle', pack.interactionsTitle);
+  setText('tiktokInteractionsDescription', pack.interactionsDescription);
   setText('tiktokCommentsLabel', pack.commentsLabel);
   setText('tiktokDuetLabel', pack.duetLabel);
+  setText('tiktokStitchLabel', pack.stitchLabel);
   setText('tiktokAiLabel', pack.aiLabel);
-  setText('tiktokPreviewLabel', pack.previewLabel);
   setText('tiktokConsentLabel', pack.consentLabel);
+  setText('tiktokScheduleTitle', pack.scheduleTitle);
+  setText('tiktokScheduleNow', pack.scheduleNow);
+  setText('tiktokScheduleLater', pack.scheduleLater);
+  setText('tiktokScheduledForLabel', pack.scheduledForLabel);
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  setText('tiktokTimezoneHint', pack.timezoneHint.replace('{timezone}', timezone));
   setText('tiktokDraftNote', pack.draftNotice);
   setText('tiktokSubmitBtn', pack.publishNow);
   if (tiktokCreatorInfo) renderTikTokOptions();
@@ -819,6 +856,7 @@ const previewVideo = document.getElementById('previewVideo');
 const fileMeta = document.getElementById('fileMeta');
 const clearBtn = document.getElementById('clearBtn');
 const processBtn = document.getElementById('processBtn');
+const postingDeviceField = document.getElementById('postingDeviceField');
 const postingDeviceSelect = document.getElementById('postingDevice');
 const cancelProcessBtn = document.getElementById('cancelProcessBtn');
 const processingState = document.getElementById('processingState');
@@ -842,6 +880,8 @@ const tiktokCaption = document.getElementById('tiktokCaption');
 const tiktokCaptionCount = document.getElementById('tiktokCaptionCount');
 const tiktokPrivacy = document.getElementById('tiktokPrivacy');
 const tiktokDraftNote = document.getElementById('tiktokDraftNote');
+const tiktokScheduleField = document.getElementById('tiktokScheduleField');
+const tiktokScheduledFor = document.getElementById('tiktokScheduledFor');
 const tiktokSubmitBtn = document.getElementById('tiktokSubmitBtn');
 let processedVideoBlob = null;
 
@@ -851,8 +891,20 @@ let processController = null;
 
 function renderTikTokOptions() {
   if (!tiktokCreatorInfo || !tiktokPrivacy) return;
+  const allowedPrivacy = new Set((tiktokCreatorInfo.privacyLevels || []).map((level) => level.value));
+  const privacyInputs = [...document.querySelectorAll('input[name="tiktokPrivacyChoice"]')];
+  privacyInputs.forEach((input) => {
+    input.disabled = allowedPrivacy.size > 0 && !allowedPrivacy.has(input.value);
+    input.closest('.privacy-choice')?.classList.toggle('unavailable', input.disabled);
+  });
+  let selectedPrivacy = privacyInputs.find((input) => input.checked && !input.disabled);
+  if (!selectedPrivacy) {
+    selectedPrivacy = privacyInputs.find((input) => !input.disabled);
+    if (selectedPrivacy) selectedPrivacy.checked = true;
+  }
+  if (selectedPrivacy) updateTikTokPrivacyChoice(selectedPrivacy);
   const settings = tiktokCreatorInfo.postingLimits?.interactionSettings || {};
-  [['tiktokAllowComments', 'allow_comment'], ['tiktokAllowDuet', 'allow_duet']].forEach(([id, key]) => {
+  [['tiktokAllowComments', 'allow_comment'], ['tiktokAllowDuet', 'allow_duet'], ['tiktokAllowStitch', 'allow_stitch']].forEach(([id, key]) => {
     const input = document.getElementById(id);
     const setting = settings[key];
     if (input) {
@@ -886,8 +938,33 @@ function buildTikTokCaption(value) {
 
 function updateTikTokPrivacyNote() {
   if (tiktokDraftNote && tiktokPrivacy) {
-    tiktokDraftNote.classList.toggle('hidden', tiktokPrivacy.value === 'PUBLIC_TO_EVERYONE');
+    tiktokDraftNote.classList.toggle('hidden', tiktokPrivacy.value === 'PUBLIC_TO_EVERYONE' && !isTikTokScheduled());
   }
+}
+
+function isTikTokScheduled() {
+  return document.querySelector('input[name="tiktokScheduleMode"]:checked')?.value === 'later';
+}
+
+function updateTikTokScheduleField() {
+  const scheduled = isTikTokScheduled();
+  if (tiktokScheduleField) tiktokScheduleField.classList.toggle('hidden', !scheduled);
+  if (tiktokSubmitBtn) tiktokSubmitBtn.textContent = t(scheduled ? 'scheduleSubmit' : 'publishNow');
+  if (tiktokScheduledFor) {
+    tiktokScheduledFor.required = scheduled;
+    const localNow = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    tiktokScheduledFor.min = localNow;
+  }
+  updateTikTokPrivacyNote();
+}
+
+function updateTikTokPrivacyChoice(input) {
+  if (!tiktokPrivacy || !input) return;
+  tiktokPrivacy.value = input.value;
+  document.querySelectorAll('.privacy-choice').forEach((choice) => {
+    choice.classList.toggle('selected', choice.contains(input));
+  });
+  updateTikTokPrivacyNote();
 }
 
 async function refreshTikTokStatus() {
@@ -983,7 +1060,13 @@ if (zernioChangeKeyBtn) {
     zernioApiKeyInput.focus();
   });
 }
-if (tiktokPrivacy) tiktokPrivacy.addEventListener('change', updateTikTokPrivacyNote);
+document.querySelectorAll('input[name="tiktokPrivacyChoice"]').forEach((input) => {
+  input.addEventListener('change', () => updateTikTokPrivacyChoice(input));
+});
+document.querySelectorAll('input[name="tiktokScheduleMode"]').forEach((input) => {
+  input.addEventListener('change', updateTikTokScheduleField);
+});
+updateTikTokScheduleField();
 if (tiktokCaption && tiktokCaptionCount) {
   tiktokCaption.maxLength = 2200 - TIKTOK_CAPTION_SUFFIX.length - 1;
   tiktokCaption.addEventListener('input', () => {
@@ -1032,6 +1115,13 @@ if (tiktokPublishForm) {
   tiktokPublishForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!processedVideoBlob || !tiktokAccountId) return;
+    const scheduledFor = isTikTokScheduled() ? tiktokScheduledFor.value : '';
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    if (scheduledFor && (!Number.isFinite(new Date(scheduledFor).getTime()) || new Date(scheduledFor).getTime() <= Date.now())) {
+      if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('scheduleInvalid');
+      tiktokScheduleField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     tiktokSubmitBtn.disabled = true;
     try {
       if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('uploading');
@@ -1056,19 +1146,23 @@ if (tiktokPublishForm) {
           privacyLevel: tiktokPrivacy.value,
           allowComment: document.getElementById('tiktokAllowComments').checked,
           allowDuet: document.getElementById('tiktokAllowDuet').checked,
-          allowStitch: false,
+          allowStitch: document.getElementById('tiktokAllowStitch').checked,
           madeWithAi: document.getElementById('tiktokMadeWithAi').checked,
           commercialContentType: 'none',
-          confirmedPreview: document.getElementById('tiktokPreviewConfirmed').checked,
+          scheduledFor: scheduledFor || null,
+          timezone,
+          confirmedPreview: document.getElementById('tiktokConsentGiven').checked,
           consentGiven: document.getElementById('tiktokConsentGiven').checked,
         }),
       });
       if (tiktokPublishStatus) {
         const platformResult = result.post?.platforms?.find((item) => item.platform === 'tiktok');
         const publishState = platformResult?.status || result.post?.status;
-        tiktokPublishStatus.textContent = result.draft
-          ? t('draftSuccess')
-          : publishState === 'published' ? t('publishSuccess') : t('publishPending');
+        tiktokPublishStatus.textContent = scheduledFor
+          ? t('publishScheduled')
+          : result.draft
+            ? t('draftSuccess')
+            : publishState === 'published' ? t('publishSuccess') : t('publishPending');
       }
     } catch (error) {
       if (tiktokPublishStatus) {
@@ -1136,6 +1230,17 @@ function handleFile(file) {
   }
   const isVideo = file && (file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name));
   if (!isVideo || file.size < 16 || file.size > 8 * 1024 ** 3) {
+    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+    currentObjectUrl = null;
+    if (previewVideo) previewVideo.src = '';
+    if (previewWrap) previewWrap.classList.remove('show');
+    if (postingDeviceField) postingDeviceField.classList.add('hidden');
+    if (postingDeviceSelect) postingDeviceSelect.value = '';
+    document.querySelectorAll('[data-posting-device]').forEach((button) => {
+      button.classList.remove('selected');
+      button.setAttribute('aria-pressed', 'false');
+    });
+    if (fileInput) fileInput.value = '';
     setProcessingState('error', t('errorInvalidFile'));
     if (processBtn) processBtn.disabled = true;
     return;
@@ -1152,6 +1257,12 @@ function handleFile(file) {
   if (previewVideo) previewVideo.src = currentObjectUrl;
   if (fileMeta) fileMeta.textContent = `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
   if (previewWrap) previewWrap.classList.add('show');
+  if (postingDeviceField) postingDeviceField.classList.remove('hidden');
+  if (postingDeviceSelect) postingDeviceSelect.value = '';
+  document.querySelectorAll('[data-posting-device]').forEach((button) => {
+    button.classList.remove('selected');
+    button.setAttribute('aria-pressed', 'false');
+  });
   updateProcessButton();
   if (processingState) processingState.classList.add('hidden');
   if (processedResult) processedResult.classList.add('hidden');
@@ -1177,7 +1288,17 @@ if (fileInput) {
     if (file) handleFile(file);
   });
 }
-if (postingDeviceSelect) postingDeviceSelect.addEventListener('change', updateProcessButton);
+document.querySelectorAll('[data-posting-device]').forEach((button) => {
+  button.addEventListener('click', () => {
+    if (postingDeviceSelect) postingDeviceSelect.value = button.dataset.postingDevice;
+    document.querySelectorAll('[data-posting-device]').forEach((option) => {
+      const selected = option === button;
+      option.classList.toggle('selected', selected);
+      option.setAttribute('aria-pressed', String(selected));
+    });
+    updateProcessButton();
+  });
+});
 
 if (dropzone) {
   ['dragenter', 'dragover'].forEach(evt => {
@@ -1208,6 +1329,12 @@ if (clearBtn) {
     if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
     if (previewVideo) previewVideo.src = '';
     if (previewWrap) previewWrap.classList.remove('show');
+    if (postingDeviceField) postingDeviceField.classList.add('hidden');
+    if (postingDeviceSelect) postingDeviceSelect.value = '';
+    document.querySelectorAll('[data-posting-device]').forEach((button) => {
+      button.classList.remove('selected');
+      button.setAttribute('aria-pressed', 'false');
+    });
     if (fileInput) fileInput.value = '';
     if (processBtn) processBtn.disabled = true;
     if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);

@@ -99,14 +99,14 @@
 
       <p class="local-note" id="localNote">Your video stays on your device. 1440p (2K) and 4K videos are automatically prepared in 1080p to reduce processing load.</p>
       <p class="export-note" id="exportNote">For smoother playback, export in 1080p, 60 FPS, with a bitrate of 15–35 Mbps.</p>
-      <div class="posting-device-field">
+      <div class="posting-device-field hidden" id="postingDeviceField">
         <label class="tiktok-field-label" for="postingDevice" id="postingDeviceLabel">Where will you post this video?</label>
-        <select id="postingDevice" required>
-          <option value="" id="postingDevicePlaceholder">Choose a posting mode</option>
-          <option value="pc" id="postingDevicePc">PC</option>
-          <option value="phone" id="postingDevicePhone">Phone</option>
-          <option value="phone-ghost" id="postingDevicePhoneGhost">Phone (ghost)</option>
-        </select>
+        <input id="postingDevice" type="hidden" value="">
+        <div class="posting-device-options" role="group" aria-labelledby="postingDeviceLabel">
+          <button type="button" data-posting-device="pc" aria-pressed="false" id="postingDevicePc">ПК</button>
+          <button type="button" data-posting-device="phone" aria-pressed="false" id="postingDeviceIphone">iPhone</button>
+          <button type="button" data-posting-device="phone-ghost" aria-pressed="false" id="postingDeviceAndroid">Android</button>
+        </div>
       </div>
       <button class="process-btn" id="processBtn" type="button" disabled>Process video</button>
       <div class="processing-state hidden" id="processingState">
@@ -220,25 +220,46 @@
         <form class="tiktok-publish-form hidden" id="tiktokPublishForm">
           <p class="tiktok-upload-notice" id="tiktokUploadNotice">Your processed video will be uploaded to your TikTok account through Zernio.</p>
           <label class="tiktok-field-label" for="tiktokCaption" id="tiktokCaptionLabel">Description</label>
-          <textarea id="tiktokCaption" maxlength="2200" rows="4"></textarea>
-            <div class="tiktok-caption-hint"><span id="tiktokCaptionHint">#хештег @ответить пользователя</span><span id="tiktokCaptionCount">0 / 2200</span></div>
+          <textarea id="tiktokCaption" maxlength="2200" rows="3" placeholder="#хештеги  @упоминания"></textarea>
+          <div class="tiktok-caption-hint"><span id="tiktokCaptionHint">#хештеги  @упоминания</span><span id="tiktokCaptionCount">0 / 2200</span></div>
 
-          <label class="tiktok-field-label" for="tiktokPrivacy" id="tiktokPrivacyLabel">Who can watch this video</label>
-          <select id="tiktokPrivacy" required>
-            <option id="tiktokPrivacyPublic" value="PUBLIC_TO_EVERYONE">Все</option>
-            <option id="tiktokPrivacyFriends" value="MUTUAL_FOLLOW_FRIENDS">Друзья</option>
-            <option id="tiktokPrivacyPrivate" value="SELF_ONLY">Только я</option>
-          </select>
+          <fieldset class="post-options-group">
+            <legend id="tiktokPrivacyLabel">Кто может увидеть это видео</legend>
+            <p class="post-options-description" id="tiktokPrivacyDescription">Выберите видимость перед публикацией</p>
+            <div class="privacy-choice-grid" role="radiogroup" aria-labelledby="tiktokPrivacyLabel">
+              <label class="privacy-choice"><input type="radio" name="tiktokPrivacyChoice" value="PUBLIC_TO_EVERYONE" checked><span id="tiktokPrivacyPublic">Все</span></label>
+              <label class="privacy-choice"><input type="radio" name="tiktokPrivacyChoice" value="MUTUAL_FOLLOW_FRIENDS"><span id="tiktokPrivacyFriends">Друзья</span></label>
+              <label class="privacy-choice"><input type="radio" name="tiktokPrivacyChoice" value="SELF_ONLY"><span id="tiktokPrivacyPrivate">Только я</span></label>
+            </div>
+            <input id="tiktokPrivacy" type="hidden" value="PUBLIC_TO_EVERYONE">
+          </fieldset>
 
-          <div class="tiktok-toggle-grid">
-            <label><input id="tiktokAllowComments" type="checkbox"><span id="tiktokCommentsLabel">Allow comments</span></label>
-            <label><input id="tiktokAllowDuet" type="checkbox"><span id="tiktokDuetLabel">Allow Duet</span></label>
-            <label><input id="tiktokMadeWithAi" type="checkbox"><span id="tiktokAiLabel">AI-generated content</span></label>
-          </div>
+          <fieldset class="post-options-group">
+            <legend id="tiktokInteractionsTitle">Взаимодействия</legend>
+            <p class="post-options-description" id="tiktokInteractionsDescription">Разрешите зрителям взаимодействовать с видео</p>
+            <div class="tiktok-toggle-grid">
+              <label><input id="tiktokAllowComments" type="checkbox"><span id="tiktokCommentsLabel">Разрешить комментарии</span></label>
+              <label><input id="tiktokAllowDuet" type="checkbox"><span id="tiktokDuetLabel">Разрешить дуэты</span></label>
+              <label><input id="tiktokAllowStitch" type="checkbox"><span id="tiktokStitchLabel">Разрешить Stitch</span></label>
+            </div>
+          </fieldset>
+          <label class="tiktok-ai-toggle"><input id="tiktokMadeWithAi" type="checkbox"><span id="tiktokAiLabel">Контент создан с помощью ИИ</span></label>
+
+          <fieldset class="post-options-group schedule-group">
+            <legend id="tiktokScheduleTitle">Когда опубликовать?</legend>
+            <div class="schedule-choice-grid" role="radiogroup" aria-labelledby="tiktokScheduleTitle">
+              <label class="schedule-choice"><input type="radio" name="tiktokScheduleMode" value="now" checked><span id="tiktokScheduleNow">Сейчас</span></label>
+              <label class="schedule-choice"><input type="radio" name="tiktokScheduleMode" value="later"><span id="tiktokScheduleLater">Запланировать</span></label>
+            </div>
+            <div class="schedule-time-field hidden" id="tiktokScheduleField">
+              <label class="tiktok-field-label" for="tiktokScheduledFor" id="tiktokScheduledForLabel">Дата и время публикации</label>
+              <input id="tiktokScheduledFor" type="datetime-local">
+              <small id="tiktokTimezoneHint"></small>
+            </div>
+          </fieldset>
           <p class="tiktok-draft-note hidden" id="tiktokDraftNote">Friends-only and private videos are sent as drafts. Finish visibility and publishing in TikTok.</p>
 
-          <label class="tiktok-consent"><input id="tiktokPreviewConfirmed" type="checkbox" required><span id="tiktokPreviewLabel">I reviewed the video and caption.</span></label>
-          <label class="tiktok-consent"><input id="tiktokConsentGiven" type="checkbox" required><span id="tiktokConsentLabel">I authorize publishing this content to TikTok.</span></label>
+          <label class="tiktok-consent"><input id="tiktokConsentGiven" type="checkbox" required><span id="tiktokConsentLabel">Подтверждаю, что имею права на видео и музыку и принимаю правила публикации TikTok.</span></label>
           <button class="tiktok-submit-btn" id="tiktokSubmitBtn" type="submit">Publish now</button>
           <button class="tiktok-change-key-btn" id="zernioChangeKeyBtn" type="button">Change API key</button>
         </form>

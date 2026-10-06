@@ -1496,6 +1496,32 @@ async function getZernioTikTokAccount(apiKey, accountId) {
   return accounts.find((account) => account.platform === 'tiktok' && account.isActive !== false && (!accountId || account._id === accountId)) || null;
 }
 
+function parseScheduleInstant(localDateTime, timeZone) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(localDateTime || '');
+  if (!match || typeof timeZone !== 'string' || timeZone.length > 100) return null;
+  const requested = match.slice(1).map(Number);
+  const targetAsUtc = Date.UTC(requested[0], requested[1] - 1, requested[2], requested[3], requested[4]);
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  });
+  let instant = targetAsUtc;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const parts = Object.fromEntries(formatter.formatToParts(new Date(instant)).map((part) => [part.type, part.value]));
+    const representedAsUtc = Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day), Number(parts.hour), Number(parts.minute));
+    instant += targetAsUtc - representedAsUtc;
+  }
+  const resolved = Object.fromEntries(formatter.formatToParts(new Date(instant)).map((part) => [part.type, Number(part.value)]));
+  const resolvedParts = [resolved.year, resolved.month, resolved.day, resolved.hour, resolved.minute];
+  if (resolvedParts.some((value, index) => value !== requested[index])) return null;
+  return instant;
+}
+
 app.post('/api/session', async (req, res) => {
   const sessionId = uuidv4();
   try {
@@ -1676,7 +1702,7 @@ app.put('/api/tiktok/media/upload/:uploadId', requireUserToken, async (req, res)
 });
 
 app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
-  const { accountId, uploadId, content, privacyLevel, allowComment, allowDuet, allowStitch, madeWithAi, commercialContentType, confirmedPreview, consentGiven } = req.body || {};
+  const { accountId, uploadId, content, privacyLevel, allowComment, allowDuet, allowStitch, madeWithAi, commercialContentType, confirmedPreview, consentGiven, scheduledFor, timezone } = req.body || {};
   if (typeof content !== 'string' || content.length > 2200) return res.status(400).json({ error: 'invalid_caption' });
   const trimmedContent = content.trim();
   const caption = trimmedContent.endsWith(TIKTOK_CAPTION_SUFFIX)
@@ -1692,6 +1718,13 @@ app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
   }
   if (commercialContentType !== 'none' && privacyLevel === 'SELF_ONLY') {
     return res.status(400).json({ error: 'branded_content_cannot_be_private' });
+  }
+  let scheduledAt = null;
+  if (scheduledFor !== null && scheduledFor !== undefined && scheduledFor !== '') {
+    try { scheduledAt = parseScheduleInstant(scheduledFor, timezone); } catch (error) { scheduledAt = null; }
+    if (scheduledAt === null || scheduledAt <= Date.now()) {
+      return res.status(400).json({ error: 'invalid_schedule_time' });
+    }
   }
 
   try {
@@ -1732,7 +1765,7 @@ app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
         content: caption,
         mediaItems: [{ url: publicUrl, type: 'video' }],
         platforms: [{ platform: 'tiktok', accountId, platformSpecificData }],
-        publishNow: true,
+        ...(scheduledAt === null ? { publishNow: true } : { scheduledFor, timezone }),
       },
     });
     const result = unwrapZernioData(response);

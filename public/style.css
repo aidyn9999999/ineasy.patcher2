@@ -629,14 +629,28 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
 .tiktok-publish-form { display: grid; gap: 9px; }
 .tiktok-publish-form.hidden { display: none; }
 .tiktok-field-label { margin-top: 7px; color: var(--text); font-size: 12px; font-weight: 600; }
-.tiktok-publish-form textarea, .tiktok-publish-form select { width: 100%; min-height: 44px; border: 1px solid var(--card-border); border-radius: 8px; padding: 10px 12px; background: var(--bg); color: var(--text); font: 400 13px 'Manrope', sans-serif; }
-.tiktok-publish-form textarea { min-height: 96px; resize: vertical; line-height: 1.5; }
-.tiktok-publish-form textarea:focus, .tiktok-publish-form select:focus { outline: 2px solid rgba(255, 107, 0, .35); border-color: var(--accent); }
+.tiktok-publish-form textarea, .tiktok-publish-form select, .schedule-time-field input { width: 100%; min-height: 44px; border: 1px solid var(--card-border); border-radius: 8px; padding: 10px 12px; background: var(--bg); color: var(--text); font: 400 13px 'Manrope', sans-serif; }
+.tiktok-publish-form textarea { min-height: 78px; resize: vertical; line-height: 1.45; }
+.tiktok-publish-form textarea::placeholder { color: var(--muted); opacity: .8; }
+.tiktok-publish-form textarea:focus, .tiktok-publish-form select:focus, .schedule-time-field input:focus { outline: 2px solid rgba(255, 107, 0, .35); border-color: var(--accent); }
 .tiktok-caption-hint { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 10px; line-height: 1.4; }
 .tiktok-caption-hint span:last-child { flex: 0 0 auto; }
-.tiktok-toggle-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 7px 0; }
-.tiktok-toggle-grid label, .tiktok-consent { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); font-size: 12px; line-height: 1.45; }
-.tiktok-toggle-grid input, .tiktok-consent input { flex: 0 0 auto; margin: 2px 0 0; accent-color: var(--accent); }
+.post-options-group { min-width: 0; margin: 2px 0 0; padding: 12px; border: 1px solid var(--card-border); border-radius: 10px; background: rgba(12, 12, 11, .55); }
+.post-options-group legend { padding: 0 4px; color: var(--text); font-size: 14px; font-weight: 700; }
+.post-options-description { margin: 0 0 10px; color: var(--muted); font-size: 11px; line-height: 1.4; }
+.privacy-choice-grid, .schedule-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.privacy-choice, .schedule-choice { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; min-height: 44px; padding: 9px 10px; border: 1px solid var(--card-border); border-radius: 8px; background: #171716; color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; }
+.privacy-choice.selected, .schedule-choice:has(input:checked) { border-color: var(--accent); background: var(--accent-dim); }
+.privacy-choice.unavailable { opacity: .45; cursor: not-allowed; }
+.privacy-choice input, .schedule-choice input { flex: 0 0 auto; width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.tiktok-toggle-grid { display: grid; grid-template-columns: 1fr; gap: 7px; padding: 0; }
+.tiktok-toggle-grid label, .tiktok-ai-toggle, .tiktok-consent { display: flex; align-items: flex-start; gap: 8px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.tiktok-toggle-grid input, .tiktok-ai-toggle input, .tiktok-consent input { flex: 0 0 auto; margin: 2px 0 0; accent-color: var(--accent); }
+.tiktok-ai-toggle { padding: 2px 4px; }
+.schedule-time-field { display: grid; gap: 5px; margin-top: 10px; }
+.schedule-time-field.hidden { display: none; }
+.schedule-time-field .tiktok-field-label { margin: 0; }
+.schedule-time-field small { color: var(--muted); font-size: 10px; }
 .tiktok-toggle-grid input:disabled { opacity: .45; }
 .tiktok-draft-note { margin: 0; padding: 10px 12px; border: 1px solid rgba(246, 201, 107, .25); border-radius: 8px; background: rgba(246, 201, 107, .08); color: #f6c96b; font-size: 11px; line-height: 1.45; }
 .tiktok-draft-note.hidden { display: none; }
@@ -1183,10 +1197,13 @@ button, .tg-btn, .news-link, .download-link, .balance-buy-site, .balance-buy-tel
 .community-callout .news-link { min-width: 30px; min-height: 30px; padding: 0 8px; font-size: 15px; }
 .community-callout .language-dock { justify-self: start; margin: 0 0 0 10px; padding: 2px; border: 0; background: transparent; }
 .community-callout .language-dock button { padding: 4px 6px; font-size: 9px; }
-.posting-device-field { display: grid; gap: 6px; margin-top: 16px; }
+.posting-device-field { display: grid; gap: 8px; margin-top: 16px; }
 .posting-device-field .tiktok-field-label { margin: 0; }
-.posting-device-field select { width: 100%; min-height: 44px; border: 1px solid #41413c; border-radius: 14px; padding: 0 12px; background: #141413; color: var(--text); font: 500 13px 'Manrope', sans-serif; }
-.posting-device-field select:focus { outline: 2px solid rgba(200, 255, 0, .14); border-color: var(--accent); }
+.posting-device-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.posting-device-options button { min-width: 0; min-height: 44px; border: 1px solid var(--card-border); border-radius: 14px; padding: 8px 6px; background: #141413; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+.posting-device-options button.selected { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); box-shadow: 0 0 14px var(--accent-glow); }
+.posting-device-options button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 360px) { .posting-device-options { gap: 5px; } .posting-device-options button { padding-inline: 3px; font-size: 11px; } }
 .notice-banner { align-items: center; }
 .notice-banner > svg { width: 20px; height: 20px; flex: 0 0 20px; color: var(--accent); }
 .notice-banner span { display: none; }
@@ -1204,9 +1221,16 @@ button, .tg-btn, .news-link, .download-link, .balance-buy-site, .balance-buy-tel
 .tiktok-composer .modal-head h2 { margin: 0; color: var(--text); font-size: 20px; }
 .tiktok-composer .modal-body { display: grid; gap: 12px; padding: 14px 18px 18px; }
 .tiktok-publish-form { gap: 10px; }
-.tiktok-toggle-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.tiktok-toggle-grid { grid-template-columns: 1fr; }
 .tiktok-caption-hint { font-size: 10px; }
 .tiktok-publish-form textarea { min-height: 78px; }
+.privacy-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.privacy-choice.selected { border-color: var(--accent); background: rgba(200, 255, 0, .1); }
+.privacy-choice input, .schedule-choice input { accent-color: var(--accent); }
+.schedule-choice-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.schedule-choice:has(input:checked) { border-color: var(--accent); background: rgba(200, 255, 0, .1); }
+.tiktok-ai-toggle { padding: 4px; }
+.tiktok-consent { padding: 10px; border: 1px solid #3c3c37; border-radius: 8px; background: #242422; }
 .tiktok-change-key-btn { width: 100%; color: var(--muted); }
 .tiktok-change-key-btn:hover { color: var(--accent); }
 .composer-close { width: 30px; height: 30px; border: 1px solid var(--card-border); border-radius: 6px; background: transparent; color: var(--muted); font-size: 20px; cursor: pointer; }
