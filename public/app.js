@@ -62,6 +62,7 @@ const translations = {
     download: 'Download',
     publishTikTok: 'Post on site (easy)',
     autopostHint: 'Quick auto-post with Zernio',
+    autopostScrollHint: 'The publishing section is below. Scroll down to continue.',
     publishNow: 'Publish now',
     publishTitle: 'Publish to TikTok',
     connectTikTok: 'Connect TikTok account',
@@ -193,6 +194,7 @@ const translations = {
     download: 'Скачать',
     publishTikTok: 'Пост в сайте (легкий)',
     autopostHint: 'Быстрая публикация через Zernio',
+    autopostScrollHint: 'Раздел публикации ниже. Прокрутите страницу вниз.',
     publishNow: 'Опубликовать сейчас',
     publishTitle: 'Публикация в TikTok',
     connectTikTok: 'Подключить аккаунт TikTok',
@@ -324,6 +326,7 @@ const translations = {
     download: 'Жүктеу',
     publishTikTok: 'Сайтқа жариялау (жеңіл)',
     autopostHint: 'Zernio арқылы жылдам жариялау',
+    autopostScrollHint: 'Жариялау бөлімі төменде. Жалғастыру үшін төмен қарай айналдырыңыз.',
     publishNow: 'Қазір жариялау',
     publishTitle: 'TikTok-қа жариялау',
     connectTikTok: 'TikTok аккаунтын қосу',
@@ -876,9 +879,14 @@ async function refreshTikTokStatus() {
 async function openTikTokComposer() {
   if (!tiktokComposerOverlay) return;
   tiktokComposerOverlay.classList.remove('hidden');
+  const autopostHint = document.getElementById('autopostHint');
+  if (autopostHint) {
+    autopostHint.textContent = t('autopostScrollHint');
+    autopostHint.classList.add('attention');
+  }
   if (tiktokPublishStatus) tiktokPublishStatus.textContent = '';
-  await refreshTikTokStatus();
   tiktokComposerOverlay.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  await refreshTikTokStatus();
 }
 
 if (publishTiktokBtn) {
@@ -931,8 +939,41 @@ if (tiktokCaption && tiktokCaptionCount) {
   });
 }
 if (tiktokComposerOverlay) {
-  const closeTikTokComposer = () => tiktokComposerOverlay.classList.add('hidden');
+  const closeTikTokComposer = () => {
+    tiktokComposerOverlay.classList.add('hidden');
+    const autopostHint = document.getElementById('autopostHint');
+    if (autopostHint) {
+      autopostHint.textContent = t('autopostHint');
+      autopostHint.classList.remove('attention');
+    }
+  };
   document.getElementById('tiktokModalClose').addEventListener('click', closeTikTokComposer);
+}
+
+if (downloadBtn) {
+  downloadBtn.addEventListener('click', async (event) => {
+    const isAppleMobile = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isAppleMobile || !processedVideoBlob) return;
+    event.preventDefault();
+    const openVideoFallback = () => window.open(patchedDownloadUrl || downloadBtn.href, '_blank', 'noopener');
+    if (typeof File !== 'function' || typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') {
+      openVideoFallback();
+      return;
+    }
+    const file = new File([processedVideoBlob], downloadBtn.download || 'ineasy-video.mp4', { type: 'video/mp4' });
+    let canShareFile = false;
+    try { canShareFile = navigator.canShare({ files: [file] }); } catch (error) {}
+    if (!canShareFile) {
+      openVideoFallback();
+      return;
+    }
+    try {
+      await navigator.share({ files: [file], title: file.name });
+    } catch (error) {
+      if (error.name !== 'AbortError') openVideoFallback();
+    }
+  });
 }
 
 if (tiktokPublishForm) {

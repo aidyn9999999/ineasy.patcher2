@@ -1114,6 +1114,8 @@ button:focus-visible, .tg-btn:focus-visible { outline-color: var(--accent); }
   font-size: 10px;
   opacity: 0.7;
 }
+.autopost-hint.attention { color: var(--accent); font-size: 12px; font-weight: 700; opacity: 1; animation: scrollHintPulse 1.4s ease-in-out 2; }
+@keyframes scrollHintPulse { 50% { text-shadow: 0 0 12px var(--accent-glow); } }
 .zernio-key-panel { display: grid; gap: 10px; }
 .zernio-key-panel.hidden, .tiktok-account-panel.hidden { display: none; }
 .zernio-connect-copy { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
@@ -1161,6 +1163,11 @@ button:focus-visible, .tg-btn:focus-visible { outline-color: var(--accent); }
 .tiktok-account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .tiktok-change-key-btn { min-height: 44px; }
 .zernio-key-panel .tiktok-connect-btn { justify-self: start; }
+
+button, .tg-btn, .news-link, .download-link, .balance-buy-site, .balance-buy-telegram,
+.checker-open-btn, .pkg-buy, .zernio-key-link, .tiktok-change-key-btn {
+  border-radius: 14px !important;
+}
 
 .community-callout { display: grid; justify-items: center; gap: 3px; width: 100%; }
 .community-callout .news-callout { width: 100%; max-width: 920px; margin: 0; padding: 9px 12px; border: 0; border-left: 2px solid var(--accent); border-radius: 0; background: transparent; }
