@@ -158,6 +158,7 @@ const translations = {
     errorInvalidFile: 'Choose a supported video up to 8 GiB.',
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
+    processingTimedOut: 'Processing took longer than 3 minutes. Try a shorter video or a different device option.',
     noBalance: 'No videos remain in your balance. Add videos to continue.',
     balanceCheckFailed: 'Could not refresh your balance. Please try again.',
     noCreditsTitle: 'You are out of video credits',
@@ -306,6 +307,7 @@ const translations = {
     errorInvalidFile: 'Выберите поддерживаемое видео размером до 8 GiB.',
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
+    processingTimedOut: 'Обработка длится больше 3 минут. Попробуйте короткое видео или другой режим устройства.',
     noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
     balanceCheckFailed: 'Не удалось проверить баланс. Попробуйте ещё раз.',
     noCreditsTitle: 'Лимиты закончились',
@@ -454,6 +456,7 @@ const translations = {
     errorInvalidFile: '8 GiB-ке дейін қолдау көрсетілетін бейне таңдаңыз.',
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
+    processingTimedOut: 'Өңдеу 3 минуттан ұзақ жүріп жатыр. Қысқарақ бейнені немесе басқа құрылғы режимін таңдаңыз.',
     noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
     balanceCheckFailed: 'Балансты тексеру мүмкін болмады. Қайталап көріңіз.',
     noCreditsTitle: 'Видео лимиті таусылды',
@@ -1546,6 +1549,11 @@ if (processBtn) {
       return;
     }
     const controller = new AbortController();
+    let processingTimedOut = false;
+    const processingTimeoutId = setTimeout(() => {
+      processingTimedOut = true;
+      controller.abort();
+    }, 180000);
     processController = controller;
     processBtn.disabled = true;
     if (cancelProcessBtn) cancelProcessBtn.disabled = false;
@@ -1558,29 +1566,40 @@ if (processBtn) {
     updateProcessingProgress(0);
 
     try {
-      const { width, height } = await readVideoDimensions(controller.signal);
       let patchInput = sourceFile;
       const isMp4 = sourceFile.type === 'video/mp4' || /\.mp4$/i.test(sourceFile.name);
-      if (!isMp4 || Math.min(width, height) > 1080) {
+      const downscale = async (file, progressStart, progressRange) => {
         const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
-        patchInput = await downscaleVideo(sourceFile, {
-          postingDevice,
+        return downscaleVideo(file, {
           signal: controller.signal,
+          onStatus: () => {},
           onProgress: (fraction) => {
             const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
-            updateProcessingProgress(progress * 90);
+            updateProcessingProgress(progressStart + progress * progressRange);
           },
         });
+      };
+
+      if (!isMp4) {
+        patchInput = await downscale(sourceFile, 0, 85);
       } else {
         updateProcessingProgress(90);
       }
       controller.signal.throwIfAborted();
       updateProcessingProgress(95);
       const { patchVideo } = await import('https://compressbase.com/method-api/client.mjs');
-      const outputBlob = await patchVideo(patchInput, {
-        signal: controller.signal,
-        postingDevice,
-      });
+      const patchOptions = { signal: controller.signal, postingDevice, onStatus: () => {} };
+      let outputBlob;
+      try {
+        outputBlob = await patchVideo(patchInput, patchOptions);
+      } catch (error) {
+        if (!isMp4 || !/above 1080p|pls downscale/i.test(error.message || '')) throw error;
+        controller.signal.throwIfAborted();
+        patchInput = await downscale(sourceFile, 90, 5);
+        controller.signal.throwIfAborted();
+        outputBlob = await patchVideo(patchInput, patchOptions);
+      }
+      controller.signal.throwIfAborted();
 
       await consumeProcessedVideo();
       processedVideoBlob = outputBlob;
@@ -1596,9 +1615,12 @@ if (processBtn) {
       if (processedResult) processedResult.classList.remove('hidden');
     } catch (error) {
       if (processingState) processingState.classList.add('failed');
-      if (processingText) processingText.textContent = controller.signal.aborted ? t('processingCancelled') : localizePatchError(error.message);
+      if (processingText) processingText.textContent = processingTimedOut
+        ? t('processingTimedOut')
+        : controller.signal.aborted ? t('processingCancelled') : localizePatchError(error.message);
       updateProcessingProgress(0);
     } finally {
+      clearTimeout(processingTimeoutId);
       processController = null;
       updateProcessButton();
       if (cancelProcessBtn) cancelProcessBtn.disabled = true;
