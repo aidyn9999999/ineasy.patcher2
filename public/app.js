@@ -42,7 +42,25 @@ const translations = {
     packages: 'Paid packages',
     packageHint: 'Click “Buy” to open @ineasybot and receive payment details.',
     buy: 'Buy',
-    nav: ['PATCHER', 'VIDEO ANALYZER', 'FAQ'],
+    nav: ['HOME', 'PATCHER', 'VIDEO CHECK', 'FAQ'],
+    homeKicker: 'INEASY VIDEO PATCHER',
+    homeTitle: 'Sharp video. No unnecessary re-exports.',
+    homeIntro: 'Prepare your finished edit for publishing. Your video stays on your device and processing runs in your browser.',
+    homeCta: 'Go to processing',
+    comparisonKicker: 'QUALITY',
+    comparisonTitle: 'Compare before and after',
+    comparisonIntro: 'Drag the divider to compare the image.',
+    comparisonDisclaimer: 'Visual illustration only, not a preview of a specific processed video. TikTok controls the final published quality.',
+    workflowKicker: 'THREE STEPS',
+    workflowTitle: 'From edit to post',
+    stepOneTitle: 'Upload your finished edit',
+    stepOneBody: 'Add your video after editing. Prepare music, text, and effects first.',
+    stepTwoTitle: 'Tap “Process video”',
+    stepTwoBody: 'Compatible MP4 files are patched without re-encoding. Processing runs in your browser; only metadata is sent to the API.',
+    stepThreeTitle: 'Publish through Zernio',
+    stepThreeBody: 'Tap “Auto-post”, connect your Zernio API key, review the caption, and publish to TikTok.',
+    localProcessingCopy: 'Video and audio stay on your device. Videos above 1080p or in unsupported formats may be prepared locally in your browser; compatible MP4 video is not re-encoded by the patcher.',
+    homeBottomCta: 'Start processing',
     faqLabel: 'FAQ / FREQUENTLY ASKED QUESTIONS',
     analyzerEyebrow: 'VIDEO ANALYZER',
     videos: 'videos',
@@ -190,7 +208,25 @@ const translations = {
     packages: 'Платные пакеты',
     packageHint: 'Нажмите «Купить» — откроется бот @ineasybot, он пришлёт реквизиты для оплаты.',
     buy: 'Купить',
-    nav: ['ПАТЧЕР', 'АНАЛИЗАТОР', 'FAQ'],
+    nav: ['ГЛАВНАЯ', 'ПАТЧЕР', 'ПРОВЕРКА ВИДЕО', 'FAQ'],
+    homeKicker: 'INEASY VIDEO PATCHER',
+    homeTitle: 'Чёткое видео. Без лишних пересохранений.',
+    homeIntro: 'Подготовьте готовый монтаж к публикации. Видео остаётся на устройстве, обработка проходит в браузере.',
+    homeCta: 'Перейти к обработке',
+    comparisonKicker: 'КАЧЕСТВО',
+    comparisonTitle: 'Сравните до и после',
+    comparisonIntro: 'Потяните разделитель, чтобы сравнить изображение.',
+    comparisonDisclaimer: 'Визуальный пример, а не предпросмотр результата обработки конкретного видео. Итоговое качество публикации зависит от TikTok.',
+    workflowKicker: 'ТРИ ШАГА',
+    workflowTitle: 'От монтажа до публикации',
+    stepOneTitle: 'Загрузите готовый монтаж',
+    stepOneBody: 'Добавьте видео после монтажа: музыку, текст и эффекты подготовьте заранее.',
+    stepTwoTitle: 'Нажмите «Обработать видео»',
+    stepTwoBody: 'Совместимый MP4 патчится без повторного сжатия. Обработка проходит в браузере; API получает только метаданные.',
+    stepThreeTitle: 'Опубликуйте через Zernio',
+    stepThreeBody: 'Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и опубликуйте видео в TikTok.',
+    localProcessingCopy: 'Видео и звук остаются на устройстве. Видео выше 1080p или неподдерживаемого формата может локально подготавливаться в браузере; совместимый MP4 патчер повторно не перекодирует.',
+    homeBottomCta: 'Начать обработку',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
     videos: 'видео',
@@ -338,7 +374,25 @@ const translations = {
     packages: 'Ақылы пакеттер',
     packageHint: '«Сатып алу» түймесін басыңыз — бот @ineasybot сізге төлем реквизиттерін жіберетін болады.',
     buy: 'Сатып алу',
-    nav: ['ПАТЧЕР', 'БЕЙНЕ АНАЛИЗАТОРЫ', 'FAQ'],
+    nav: ['БАСТЫ', 'ПАТЧЕР', 'БЕЙНЕНІ ТЕКСЕРУ', 'FAQ'],
+    homeKicker: 'INEASY VIDEO PATCHER',
+    homeTitle: 'Анық видео. Артық қайта экспорттаусыз.',
+    homeIntro: 'Дайын монтажды жариялауға әзірлеңіз. Видео құрылғыңызда қалады, өңдеу браузерде орындалады.',
+    homeCta: 'Өңдеуге өту',
+    comparisonKicker: 'САПА',
+    comparisonTitle: 'Алды мен кейінін салыстырыңыз',
+    comparisonIntro: 'Суретті салыстыру үшін бөлгішті жылжытыңыз.',
+    comparisonDisclaimer: 'Бұл тек көрнекі мысал, нақты өңделген видеоның алдын ала көрінісі емес. Жарияланған видеоны TikTok өзі өңдейді.',
+    workflowKicker: 'ҮШ ҚАДАМ',
+    workflowTitle: 'Монтаждан жариялауға дейін',
+    stepOneTitle: 'Дайын монтажды жүктеңіз',
+    stepOneBody: 'Видеоны монтаждан кейін қосыңыз. Музыка, мәтін және әсерлерді алдын ала дайындаңыз.',
+    stepTwoTitle: '«Бейнені өңдеу» түймесін басыңыз',
+    stepTwoBody: 'Үйлесімді MP4 қайта қысылмай патчталады. Өңдеу браузерде орындалады; API тек метадеректер алады.',
+    stepThreeTitle: 'Zernio арқылы жариялаңыз',
+    stepThreeBody: '«Автожариялау» түймесін басып, Zernio API кілтін қосыңыз, сипаттаманы тексеріп, TikTok-қа жариялаңыз.',
+    localProcessingCopy: 'Видео мен аудио құрылғыңызда қалады. 1080p-ден жоғары немесе қолдау көрсетілмейтін форматтағы видео браузерде жергілікті дайындалуы мүмкін; үйлесімді MP4 қайта кодталмайды.',
+    homeBottomCta: 'Өңдеуді бастау',
     faqLabel: 'FAQ / ЖИІ ҚОЙЫЛАТЫН СҰРАҚТАР',
     analyzerEyebrow: 'БЕЙНЕ АНАЛИЗАТОРЫ',
     videos: 'бейне',
@@ -519,9 +573,28 @@ function applyLanguage(lang) {
   setText('logoutLabel', pack.logout);
   setText('packagesTitle', pack.packages);
   setText('packagesHint', pack.packageHint);
-  setText('navPatcher', pack.nav[0]);
-  setText('navAnalyzer', pack.nav[1]);
-  setText('navFaq', pack.nav[2]);
+  setText('navHome', pack.nav[0]);
+  setText('navPatcher', pack.nav[1]);
+  setText('navAnalyzer', pack.nav[2]);
+  setText('navFaq', pack.nav[3]);
+  setText('homeKicker', pack.homeKicker);
+  setText('homeTitle', pack.homeTitle);
+  setText('homeIntro', pack.homeIntro);
+  setText('homeCta', pack.homeCta);
+  setText('comparisonKicker', pack.comparisonKicker);
+  setText('comparisonTitle', pack.comparisonTitle);
+  setText('comparisonIntro', pack.comparisonIntro);
+  setText('comparisonDisclaimer', pack.comparisonDisclaimer);
+  setText('workflowKicker', pack.workflowKicker);
+  setText('workflowTitle', pack.workflowTitle);
+  setText('stepOneTitle', pack.stepOneTitle);
+  setText('stepOneBody', pack.stepOneBody);
+  setText('stepTwoTitle', pack.stepTwoTitle);
+  setText('stepTwoBody', pack.stepTwoBody);
+  setText('stepThreeTitle', pack.stepThreeTitle);
+  setText('stepThreeBody', pack.stepThreeBody);
+  setText('localProcessingCopy', pack.localProcessingCopy);
+  setText('homeBottomCta', pack.homeBottomCta);
   setText('patchTitle', pack.patchTitle);
   setText('patchSub', pack.patchSub);
   setText('dzTitle', pack.choose);
@@ -1460,6 +1533,7 @@ if (checkerForm) {
 
 function applyProvidedNavIcons() {
   const icons = {
+    homeSection: '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
     patchSection: '<path fill-rule="evenodd" clip-rule="evenodd" d="M11.9426 1.25h.1148c2.3084 0 4.1174 0 5.5289.18975 1.4447.19424 2.5848.59958 3.4796 1.49439.8948.89481 1.3001 2.03483 1.4944 3.47957.1897 1.41148.1897 3.22052.1897 5.52889v.1148c0 2.3084 0 4.1174-.1897 5.5289-.1943 1.4447-.5996 2.5848-1.4944 3.4796-.8948.8948-2.0349 1.3001-3.4796 1.4944-1.4115.1897-3.2205.1897-5.5289.1897h-.1148c-2.30837 0-4.11741 0-5.52889-.1897-1.44474-.1943-2.58476-.5996-3.47957-1.4944-.89481-.8948-1.30015-2.0349-1.49439-3.4796C1.24998 16.1748 1.24999 14.3658 1.25 12.0574v-.1148c-.00001-2.30837-.00002-4.11741.18975-5.52889.19424-1.44474.59958-2.58476 1.49439-3.47957.89481-.89481 2.03483-1.30015 3.47957-1.49439C7.82519 1.24998 9.63423 1.24999 11.9426 1.25ZM6.61358 2.92637c-1.27841.17188-2.04913.49877-2.61878 1.06843-.56966.56965-.89655 1.34037-1.06843 2.61878C2.75159 7.91356 2.75 9.62177 2.75 12c0 2.3782.00159 4.0864.17637 5.3864.17188 1.2784.49877 2.0491 1.06843 2.6188.56965.5697 1.34037.8966 2.61878 1.0684C7.91356 21.2484 9.62177 21.25 12 21.25c2.3782 0 4.0864-.0016 5.3864-.1764 1.2784-.1718 2.0491-.4987 2.6188-1.0684.5697-.5697.8966-1.3404 1.0684-2.6188C21.2484 16.0864 21.25 14.3782 21.25 12c0-2.37823-.0016-4.08644-.1764-5.38642-.1718-1.27841-.4987-2.04913-1.0684-2.61878-.5697-.56966-1.3404-.89655-2.6188-1.06843C16.0864 2.75159 14.3782 2.75 12 2.75c-2.37823 0-4.08644.00159-5.38642.17637ZM5.5 7.25c.41421 0 .75.33579.75.75v3.25h3.31482V8c0-.41421.33578-.75.75-.75s.75.33579.75.75v8c0 .4142-.33578.75-.75.75s-.75-.3358-.75-.75v-3.25H6.25V16c0 .4142-.33579.75-.75.75s-.75-.3358-.75-.75V8c0-.41421.33579-.75.75-.75Zm6.4722 1.55c0-.98021.9031-1.55 1.713-1.55 2.9372 0 5.5648 2.00248 5.5648 4.75s-2.6276 4.75-5.5648 4.75c-.8099 0-1.713-.5698-1.713-1.55V8.8Zm1.5.02154v6.35696c.0027.0027.0063.0062.0113.0103.0326.0271.1015.0612.2017.0612 2.3811 0 4.0648-1.5792 4.0648-3.25s-1.6837-3.25-4.0648-3.25c-.1002 0-.1691.0342-.2017.0612-.005.0042-.0086.0076-.0113.0104Z"/>',
     checkerSection: '<path d="M2 9V6.5C2 4.01 4.01 2 6.5 2H9M15 2h2.5C19.99 2 22 4.01 22 6.5V9M22 15v2.5c0 2.49-2.01 4.5-4.5 4.5H15M9 22H6.5C4.01 22 2 19.99 2 17.5V15M17 9.5v5c0 2-1 3-3 3h-4c-2 0-3-1-3-3v-5c0-2 1-3 3-3h4c2 0 3 1 3 3ZM19 12H5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
     faqSection: '<path d="M12 21.6666C17.3386 21.6666 21.6666 17.3386 21.6666 12C21.6666 6.6613 17.3386 2.3333 12 2.3333C6.6613 2.3333 2.3333 6.6613 2.3333 12C2.3333 17.3386 6.6613 21.6666 12 21.6666Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 17V12.3333C12 11.9652 11.7014 11.6666 11.3333 11.6666H10.3333" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9C11.264 9 10.6666 8.4013 10.6666 7.6666C10.6666 6.932 11.264 6.3333 12 6.3333C12.736 6.3333 13.3333 6.932 13.3333 7.6666C13.3333 8.4013 12.736 9 12 9Z" fill="currentColor"/>'
@@ -1501,6 +1575,21 @@ document.querySelectorAll('.nav-tab').forEach((tab) => {
     }
   });
 });
+
+document.querySelectorAll('[data-open-view]').forEach((button) => {
+  button.addEventListener('click', () => {
+    document.querySelector(`.nav-tab[data-view="${button.dataset.openView}"]`)?.click();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+});
+
+const comparisonRange = document.getElementById('comparisonRange');
+const qualityComparison = document.getElementById('qualityComparison');
+if (comparisonRange && qualityComparison) {
+  const updateComparison = () => qualityComparison.style.setProperty('--compare-split', `${comparisonRange.value}%`);
+  comparisonRange.addEventListener('input', updateComparison);
+  updateComparison();
+}
 
 if (processBtn) {
   processBtn.addEventListener('click', async () => {

@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="home.css">
 </head>
 <body>
 
@@ -63,8 +64,54 @@
       <p id="noticeBannerText">If video duration shows 0:00 after patching, this is normal. The file works fine.</p>
     </div>
 
+    <section class="view-section home-section active" id="homeSection">
+      <section class="home-hero" id="homeHero" aria-labelledby="homeTitle">
+        <img class="home-hero-photo" src="https://images.unsplash.com/photo-1510798831971-661eb04b3739?auto=format&amp;fit=crop&amp;w=2200&amp;q=88" alt="Дом у горного леса на закате" fetchpriority="high">
+        <div class="home-hero-shade" aria-hidden="true"></div>
+        <div class="home-scene-canvas" id="mountainScene" aria-hidden="true"></div>
+        <div class="home-hero-copy">
+          <p class="home-eyebrow" id="homeKicker">INEASY VIDEO PATCHER</p>
+          <h1 id="homeTitle">Чёткое видео. Без лишних пересохранений.</h1>
+          <p class="home-intro" id="homeIntro">Подготовьте готовый монтаж к публикации. Видео остаётся на устройстве, обработка проходит в браузере.</p>
+          <button class="home-cta" type="button" data-open-view="patchSection"><span id="homeCta">Перейти к обработке</span><span aria-hidden="true">↗</span></button>
+        </div>
+        <div class="home-hero-foot" aria-hidden="true"><span>LOCAL BROWSER PROCESSING</span><span>1080P READY</span></div>
+      </section>
+
+      <section class="home-content-section" aria-labelledby="comparisonTitle">
+        <div class="home-section-heading">
+          <p class="home-eyebrow" id="comparisonKicker">КАЧЕСТВО</p>
+          <h2 id="comparisonTitle">Сравните до и после</h2>
+          <p id="comparisonIntro">Потяните разделитель, чтобы увидеть разницу.</p>
+        </div>
+        <div class="quality-comparison" id="qualityComparison" style="--compare-split: 50%">
+          <img class="comparison-image comparison-after" src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&amp;fit=crop&amp;w=1800&amp;q=88" alt="Современный загородный дом" loading="lazy">
+          <div class="comparison-before-wrap"><img class="comparison-image comparison-before" src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&amp;fit=crop&amp;w=1800&amp;q=88" alt="" loading="lazy"></div>
+          <div class="comparison-label comparison-label-before"><strong>540p</strong><span>30 FPS</span></div>
+          <div class="comparison-label comparison-label-after"><strong>1080p</strong><span>60 FPS</span></div>
+          <div class="comparison-divider" aria-hidden="true"><span>↔</span></div>
+          <input class="comparison-range" id="comparisonRange" type="range" min="8" max="92" value="50" aria-label="Сравнить изображение до и после">
+        </div>
+        <p class="comparison-disclaimer" id="comparisonDisclaimer">Визуальный пример, а не предпросмотр результата обработки конкретного видео. Итоговое качество публикации зависит от TikTok.</p>
+      </section>
+
+      <section class="home-content-section home-workflow" aria-labelledby="workflowTitle">
+        <div class="home-section-heading">
+          <p class="home-eyebrow" id="workflowKicker">ТРИ ШАГА</p>
+          <h2 id="workflowTitle">От монтажа до публикации</h2>
+        </div>
+        <div class="workflow-grid">
+          <article class="workflow-step"><span class="workflow-number">01</span><h3 id="stepOneTitle">Загрузите готовый монтаж</h3><p id="stepOneBody">Добавьте видео после монтажа: музыку, текст и эффекты подготовьте заранее.</p></article>
+          <article class="workflow-step"><span class="workflow-number">02</span><h3 id="stepTwoTitle">Нажмите «Обработать видео»</h3><p id="stepTwoBody">Подходящий MP4 патчится без повторного сжатия. Подготовка проходит в браузере; на сервер отправляются только метаданные.</p></article>
+          <article class="workflow-step"><span class="workflow-number">03</span><h3 id="stepThreeTitle">Опубликуйте через Zernio</h3><p id="stepThreeBody">Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и отправьте видео в TikTok.</p></article>
+        </div>
+        <div class="home-local-note"><span class="home-local-icon" aria-hidden="true">↗</span><p id="localProcessingCopy">Видео и звук остаются на устройстве. Видео выше 1080p или неподдерживаемого формата может локально подготавливаться в браузере; обычный MP4 не перекодируется патчером.</p></div>
+        <button class="home-cta home-cta-bottom" type="button" data-open-view="patchSection"><span id="homeBottomCta">Начать обработку</span><span aria-hidden="true">↗</span></button>
+      </section>
+    </section>
+
     <!-- PATCHER SECTION -->
-    <section class="view-section active" id="patchSection">
+    <section class="view-section hidden" id="patchSection">
     <div class="patch-panel">
       <h1 class="patch-title" id="patchTitle">Prepare your video for TikTok.</h1>
       <p class="patch-sub" id="patchSub">Patcher adjusts video parameters to help reduce noticeable quality loss after TikTok processing.</p>
@@ -261,7 +308,11 @@
   </div>
 
   <nav class="bottom-nav" aria-label="Navigation">
-    <button class="nav-tab active" data-view="patchSection" type="button" aria-current="page">
+    <button class="nav-tab active" data-view="homeSection" type="button" aria-current="page">
+      <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></span>
+      <span id="navHome">ГЛАВНАЯ</span>
+    </button>
+    <button class="nav-tab" data-view="patchSection" type="button">
       <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="m13.3 5.8-5 7h3.9l-1.5 5.4 5-7h-3.9l1.5-5.4Z" fill="currentColor"/></svg></span>
       <span id="navPatcher">PATCHER</span>
     </button>
@@ -278,7 +329,7 @@
   <footer class="site-footer">
     <div><strong id="footerTitle">VideoPatcher</strong><span id="footerDesc">Prepare your video. Preserve its quality. Publish with confidence.</span></div>
     <nav aria-label="Footer Navigation">
-      <a href="#" id="footerHome">Home</a>
+      <a href="#homeSection" id="footerHome">Home</a>
       <a href="#faqTitle" id="footerFaq">FAQ</a>
       <a href="mailto:support@ineasy.site" id="footerSupport">Support</a>
     </nav>
@@ -287,5 +338,6 @@
 </div>
 
 <script src="app.js"></script>
+<script type="module" src="home-scene.js"></script>
 </body>
 </html>
