@@ -99,6 +99,7 @@ const translations = {
     privacyFriends: 'Friends',
     privacyPrivate: 'Only you',
     privacyDescription: 'Choose who can see your post',
+    privacyUnavailable: 'TikTok does not allow every visibility option for this account.',
     interactionsTitle: 'Interactions',
     interactionsDescription: 'Choose what viewers can do with your video',
     commentsLabel: 'Allow comments',
@@ -159,6 +160,8 @@ const translations = {
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
     processingTimedOut: 'Processing took longer than 3 minutes. Try a shorter video or a different device option.',
+    videoTooLong: 'Choose a video that is 1 minute or shorter.',
+    videoDurationUnavailable: 'Could not read this video duration. Try an MP4 file.',
     noBalance: 'No videos remain in your balance. Add videos to continue.',
     balanceCheckFailed: 'Could not refresh your balance. Please try again.',
     noCreditsTitle: 'You are out of video credits',
@@ -248,6 +251,7 @@ const translations = {
     privacyFriends: 'Друзья',
     privacyPrivate: 'Только я',
     privacyDescription: 'Выберите, кто увидит публикацию',
+    privacyUnavailable: 'TikTok ограничил варианты видимости для этого аккаунта.',
     interactionsTitle: 'Взаимодействия',
     interactionsDescription: 'Разрешите зрителям взаимодействовать с видео',
     commentsLabel: 'Разрешить комментарии',
@@ -308,6 +312,8 @@ const translations = {
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
     processingTimedOut: 'Обработка длится больше 3 минут. Попробуйте короткое видео или другой режим устройства.',
+    videoTooLong: 'Выберите видео длительностью не более 1 минуты.',
+    videoDurationUnavailable: 'Не удалось определить длительность видео. Попробуйте файл MP4.',
     noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
     balanceCheckFailed: 'Не удалось проверить баланс. Попробуйте ещё раз.',
     noCreditsTitle: 'Лимиты закончились',
@@ -397,6 +403,7 @@ const translations = {
     privacyFriends: 'Достар',
     privacyPrivate: 'Тек мен',
     privacyDescription: 'Жазбаны кім көре алатынын таңдаңыз',
+    privacyUnavailable: 'TikTok бұл аккаунт үшін кейбір көріну параметрлерін шектеді.',
     interactionsTitle: 'Әрекеттесу',
     interactionsDescription: 'Көрермендерге бейнемен әрекеттесуге рұқсат беріңіз',
     commentsLabel: 'Пікірлерге рұқсат беру',
@@ -457,6 +464,8 @@ const translations = {
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
     processingTimedOut: 'Өңдеу 3 минуттан ұзақ жүріп жатыр. Қысқарақ бейнені немесе басқа құрылғы режимін таңдаңыз.',
+    videoTooLong: 'Ұзақтығы 1 минуттан аспайтын бейне таңдаңыз.',
+    videoDurationUnavailable: 'Бейне ұзақтығын анықтау мүмкін болмады. MP4 файлын қолданып көріңіз.',
     noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
     balanceCheckFailed: 'Балансты тексеру мүмкін болмады. Қайталап көріңіз.',
     noCreditsTitle: 'Видео лимиті таусылды',
@@ -566,7 +575,8 @@ function applyLanguage(lang) {
   setText('tiktokPrivacyPublic', pack.privacyPublic);
   setText('tiktokPrivacyFriends', pack.privacyFriends);
   setText('tiktokPrivacyPrivate', pack.privacyPrivate);
-  setText('tiktokPrivacyDescription', pack.privacyDescription);
+  const privacyOptionsRestricted = [...document.querySelectorAll('input[name="tiktokPrivacyChoice"]')].some((input) => input.disabled);
+  setText('tiktokPrivacyDescription', privacyOptionsRestricted ? pack.privacyUnavailable : pack.privacyDescription);
   setText('tiktokInteractionsTitle', pack.interactionsTitle);
   setText('tiktokInteractionsDescription', pack.interactionsDescription);
   setText('tiktokCommentsLabel', pack.commentsLabel);
@@ -891,12 +901,17 @@ let processController = null;
 
 function renderTikTokOptions() {
   if (!tiktokCreatorInfo || !tiktokPrivacy) return;
-  const allowedPrivacy = new Set((tiktokCreatorInfo.privacyLevels || []).map((level) => level.value));
+  const allowedPrivacy = new Set((Array.isArray(tiktokCreatorInfo.privacyLevels) ? tiktokCreatorInfo.privacyLevels : [])
+    .map((level) => typeof level === 'string' ? level : level?.value)
+    .filter(Boolean));
   const privacyInputs = [...document.querySelectorAll('input[name="tiktokPrivacyChoice"]')];
   privacyInputs.forEach((input) => {
     input.disabled = allowedPrivacy.size > 0 && !allowedPrivacy.has(input.value);
     input.closest('.privacy-choice')?.classList.toggle('unavailable', input.disabled);
   });
+  setText('tiktokPrivacyDescription', privacyInputs.some((input) => input.disabled)
+    ? t('privacyUnavailable')
+    : t('privacyDescription'));
   let selectedPrivacy = privacyInputs.find((input) => input.checked && !input.disabled);
   if (!selectedPrivacy) {
     selectedPrivacy = privacyInputs.find((input) => !input.disabled);
@@ -1190,41 +1205,41 @@ function updateProcessingProgress(value) {
   if (processingProgress) processingProgress.style.width = `${percent}%`;
 }
 
-function readVideoDimensions(signal) {
-  if (previewVideo?.videoWidth && previewVideo?.videoHeight) {
-    return Promise.resolve({ width: previewVideo.videoWidth, height: previewVideo.videoHeight });
-  }
+function readVideoDuration(file, signal) {
   return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const sourceUrl = URL.createObjectURL(file);
     let timeoutId;
+    let settled = false;
     const cleanup = () => {
       clearTimeout(timeoutId);
-      previewVideo?.removeEventListener('loadedmetadata', onLoaded);
-      previewVideo?.removeEventListener('error', onError);
+      video.removeEventListener('loadedmetadata', onLoaded);
+      video.removeEventListener('error', onError);
       signal.removeEventListener('abort', onAbort);
+      video.removeAttribute('src');
+      video.load();
+      URL.revokeObjectURL(sourceUrl);
+    };
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      callback(value);
     };
     const onLoaded = () => {
-      cleanup();
-      if (previewVideo.videoWidth && previewVideo.videoHeight) {
-        resolve({ width: previewVideo.videoWidth, height: previewVideo.videoHeight });
-      } else {
-        reject(new Error('Could not read video dimensions.'));
-      }
+      if (!Number.isFinite(video.duration)) return finish(reject, new Error('video_duration_unavailable'));
+      if (video.duration > 60) return finish(reject, new Error('video_over_60_seconds'));
+      finish(resolve, video.duration);
     };
-    const onError = () => {
-      cleanup();
-      reject(new Error('Could not read video dimensions.'));
-    };
-    const onAbort = () => {
-      cleanup();
-      reject(new Error('Processing cancelled.'));
-    };
-    previewVideo.addEventListener('loadedmetadata', onLoaded);
-    previewVideo.addEventListener('error', onError);
+    const onError = () => finish(reject, new Error('video_duration_unavailable'));
+    const onAbort = () => finish(reject, new Error('processing_cancelled'));
+    video.preload = 'metadata';
+    video.addEventListener('loadedmetadata', onLoaded, { once: true });
+    video.addEventListener('error', onError, { once: true });
     signal.addEventListener('abort', onAbort, { once: true });
-    timeoutId = setTimeout(() => {
-      cleanup();
-      reject(new Error('Video metadata loading timed out. Try another video.'));
-    }, 30000);
+    timeoutId = setTimeout(() => finish(reject, new Error('video_duration_unavailable')), 15000);
+    video.src = sourceUrl;
+    video.load();
     if (signal.aborted) onAbort();
   });
 }
@@ -1566,13 +1581,13 @@ if (processBtn) {
     updateProcessingProgress(0);
 
     try {
+      await readVideoDuration(sourceFile, controller.signal);
       let patchInput = sourceFile;
       const isMp4 = sourceFile.type === 'video/mp4' || /\.mp4$/i.test(sourceFile.name);
       const downscale = async (file, progressStart, progressRange) => {
         const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
         return downscaleVideo(file, {
           signal: controller.signal,
-          engine: 'compatibility',
           onStatus: () => {},
           onProgress: (fraction) => {
             const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
@@ -1635,8 +1650,8 @@ function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const knownErrors = [
     { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },
-    { test: /up to 8 GiB/i, ru: 'Выберите поддерживаемое видео размером до 8 GiB.', kk: 'Өлшемі 8 GiB-ке дейін қолдау көрсетілетін бейне таңдаңыз.', en: 'Choose a supported video up to 8 GiB.' },
-    { test: /above 1080p|pls downscale/i, ru: 'Видео выше 1080p и не прошло уменьшение разрешения. Попробуйте исходник меньшего размера. Баланс INEASY не списан.', kk: 'Бейне 1080p шегінен жоғары, ажыратымдылықты азайту орындалмады. Өлшемі кішірек бастапқы файлды қолданып көріңіз. INEASY балансы алынған жоқ.', en: 'This video is above 1080p and could not be downscaled. Try a smaller source file. Your INEASY credits were not used.' },
+    { test: /video_over_60_seconds/i, ru: t('videoTooLong'), kk: t('videoTooLong'), en: t('videoTooLong') },
+    { test: /video_duration_unavailable/i, ru: t('videoDurationUnavailable'), kk: t('videoDurationUnavailable'), en: t('videoDurationUnavailable') },
     { test: /(?:file|source|output).{0,40}(?:size|large|limit|MiB)|(?:size|large|limit|MiB).{0,40}(?:file|source|output)|4K|10 minutes/i, ru: 'Файл превышает ограничение CompressBase для этого устройства. Попробуйте более короткое видео или файл меньшего размера. Баланс INEASY не списан.', kk: 'Файл осы құрылғыдағы CompressBase шегінен асады. Қысқарақ немесе өлшемі кішірек бейнені таңдаңыз. INEASY балансы алынған жоқ.', en: 'This video exceeds a CompressBase limit for this device. Try a shorter or smaller video. Your INEASY credits were not used.' },
     { test: /supported MP4|non-fragmented|fast-start/i, ru: 'Этот MP4 не поддерживается. Экспортируйте видео как MP4 и попробуйте снова.', kk: 'Бұл MP4 қолдау көрсетпейді. Бейнені MP4 түрінде экспорттаңыз.', en: 'This MP4 is not supported. Export the video as MP4 and try again.' },
     { test: /429|too many requests|rate.?limit|daily.{0,24}limit|free.{0,24}limit/i, ru: 'Временно исчерпан бесплатный лимит CompressBase на этом устройстве. Это не лимит INEASY; ваши обработки не списаны. Попробуйте позже.', kk: 'Бұл құрылғыдағы CompressBase тегін шегі уақытша таусылды. Бұл INEASY лимиті емес, өңдеу балансыңыз алынған жоқ. Кейінірек қайталаңыз.', en: 'CompressBase’s free allowance for this device is temporarily exhausted. This is separate from your INEASY balance; no credits were used. Try again later.' },

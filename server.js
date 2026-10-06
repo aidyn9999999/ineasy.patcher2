@@ -1733,7 +1733,9 @@ app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
     const account = await getZernioTikTokAccount(apiKey, accountId);
     if (!account) return res.status(403).json({ error: 'tiktok_account_not_connected' });
     const creatorInfo = unwrapZernioData(await zernioRequest(apiKey, `/accounts/${encodeURIComponent(accountId)}/tiktok/creator-info`));
-    const allowedLevels = (creatorInfo.privacyLevels || []).map((level) => level.value);
+    const allowedLevels = (Array.isArray(creatorInfo.privacyLevels) ? creatorInfo.privacyLevels : [])
+      .map((level) => typeof level === 'string' ? level : level?.value)
+      .filter(Boolean);
     if (allowedLevels.length && !allowedLevels.includes(privacyLevel)) {
       return res.status(400).json({ error: 'privacy_level_not_available' });
     }
