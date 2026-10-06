@@ -1572,6 +1572,7 @@ if (processBtn) {
         const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
         return downscaleVideo(file, {
           signal: controller.signal,
+          engine: 'compatibility',
           onStatus: () => {},
           onProgress: (fraction) => {
             const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
