@@ -158,9 +158,6 @@ const translations = {
     errorInvalidFile: 'Choose a supported video up to 8 GiB.',
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
-    loadingText: 'Preparing MP4 metadata on your device…',
-    downscalingText: 'Preparing video on your device…',
-    patchingText: 'Patching video metadata…',
     noBalance: 'No videos remain in your balance. Add videos to continue.',
     balanceCheckFailed: 'Could not refresh your balance. Please try again.',
     noCreditsTitle: 'You are out of video credits',
@@ -309,9 +306,6 @@ const translations = {
     errorInvalidFile: 'Выберите поддерживаемое видео размером до 8 GiB.',
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
-    loadingText: 'Проверяем MP4 и подготавливаем метаданные на устройстве…',
-    downscalingText: 'Подготавливаем видео на устройстве…',
-    patchingText: 'Обрабатываем метаданные видео…',
     noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
     balanceCheckFailed: 'Не удалось проверить баланс. Попробуйте ещё раз.',
     noCreditsTitle: 'Лимиты закончились',
@@ -460,9 +454,6 @@ const translations = {
     errorInvalidFile: '8 GiB-ке дейін қолдау көрсетілетін бейне таңдаңыз.',
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
-    loadingText: 'MP4 метадеректерін құрылғыда дайындаймыз…',
-    downscalingText: 'Бейнені құрылғыда дайындаймыз…',
-    patchingText: 'Бейне метадеректерін өңдейміз…',
     noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
     balanceCheckFailed: 'Балансты тексеру мүмкін болмады. Қайталап көріңіз.',
     noCreditsTitle: 'Видео лимиті таусылды',
@@ -1563,7 +1554,7 @@ if (processBtn) {
       processingState.classList.remove('completed', 'failed');
     }
     if (processedResult) processedResult.classList.add('hidden');
-    if (processingText) processingText.textContent = t('loadingText');
+    if (processingText) processingText.textContent = '';
     updateProcessingProgress(0);
 
     try {
@@ -1571,14 +1562,10 @@ if (processBtn) {
       let patchInput = sourceFile;
       const isMp4 = sourceFile.type === 'video/mp4' || /\.mp4$/i.test(sourceFile.name);
       if (!isMp4 || Math.min(width, height) > 1080) {
-        if (processingText) processingText.textContent = t('downscalingText');
         const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
         patchInput = await downscaleVideo(sourceFile, {
           postingDevice,
           signal: controller.signal,
-          onStatus: (message) => {
-            if (processingText) processingText.textContent = localizeCompressBaseStatus(message);
-          },
           onProgress: (fraction) => {
             const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
             updateProcessingProgress(progress * 90);
@@ -1589,14 +1576,10 @@ if (processBtn) {
       }
       controller.signal.throwIfAborted();
       updateProcessingProgress(95);
-      if (processingText) processingText.textContent = t('patchingText');
       const { patchVideo } = await import('https://compressbase.com/method-api/client.mjs');
       const outputBlob = await patchVideo(patchInput, {
         signal: controller.signal,
         postingDevice,
-        onStatus: (message) => {
-          if (processingText) processingText.textContent = localizeCompressBaseStatus(message);
-        },
       });
 
       await consumeProcessedVideo();
@@ -1638,12 +1621,6 @@ function localizePatchError(message) {
   const match = knownErrors.find((entry) => entry.test.test(message || ''));
   if (match) return match[lang];
   return message || ({ ru: 'Не удалось обработать видео. Попробуйте ещё раз.', kk: 'Бейнені өңдеу мүмкін болмады. Қайталап көріңіз.', en: 'Unable to process the video. Please try again.' })[lang];
-}
-
-function localizeCompressBaseStatus(message) {
-  if (/preparing mp4/i.test(message || '')) return t('loadingText');
-  if (/patching metadata/i.test(message || '')) return t('patchingText');
-  return message || '';
 }
 
 const savedLanguage = getBrowserValue('ineasy-language') || 'en';

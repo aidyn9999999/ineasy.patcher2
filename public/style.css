@@ -1198,6 +1198,7 @@ button, .tg-btn, .news-link, .download-link, .balance-buy-site, .balance-buy-tel
 .community-callout .language-dock { justify-self: start; margin: 0 0 0 10px; padding: 2px; border: 0; background: transparent; }
 .community-callout .language-dock button { padding: 4px 6px; font-size: 9px; }
 .posting-device-field { display: grid; gap: 8px; margin-top: 16px; }
+.posting-device-field.hidden { display: none; }
 .posting-device-field .tiktok-field-label { margin: 0; }
 .posting-device-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .posting-device-options button { min-width: 0; min-height: 44px; border: 1px solid var(--card-border); border-radius: 14px; padding: 8px 6px; background: #141413; color: var(--muted); font-size: 12px; font-weight: 700; cursor: pointer; }
