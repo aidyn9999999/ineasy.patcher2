@@ -159,6 +159,8 @@ const translations = {
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
     loadingText: 'Preparing MP4 metadata on your device…',
+    downscalingText: 'Preparing video on your device…',
+    patchingText: 'Patching video metadata…',
     noBalance: 'No videos remain in your balance. Add videos to continue.',
     balanceCheckFailed: 'Could not refresh your balance. Please try again.',
     noCreditsTitle: 'You are out of video credits',
@@ -308,6 +310,8 @@ const translations = {
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
     loadingText: 'Проверяем MP4 и подготавливаем метаданные на устройстве…',
+    downscalingText: 'Подготавливаем видео на устройстве…',
+    patchingText: 'Обрабатываем метаданные видео…',
     noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
     balanceCheckFailed: 'Не удалось проверить баланс. Попробуйте ещё раз.',
     noCreditsTitle: 'Лимиты закончились',
@@ -457,6 +461,8 @@ const translations = {
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
     loadingText: 'MP4 метадеректерін құрылғыда дайындаймыз…',
+    downscalingText: 'Бейнені құрылғыда дайындаймыз…',
+    patchingText: 'Бейне метадеректерін өңдейміз…',
     noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
     balanceCheckFailed: 'Балансты тексеру мүмкін болмады. Қайталап көріңіз.',
     noCreditsTitle: 'Видео лимиті таусылды',
@@ -1195,7 +1201,9 @@ function readVideoDimensions(signal) {
     return Promise.resolve({ width: previewVideo.videoWidth, height: previewVideo.videoHeight });
   }
   return new Promise((resolve, reject) => {
+    let timeoutId;
     const cleanup = () => {
+      clearTimeout(timeoutId);
       previewVideo?.removeEventListener('loadedmetadata', onLoaded);
       previewVideo?.removeEventListener('error', onError);
       signal.removeEventListener('abort', onAbort);
@@ -1219,6 +1227,10 @@ function readVideoDimensions(signal) {
     previewVideo.addEventListener('loadedmetadata', onLoaded);
     previewVideo.addEventListener('error', onError);
     signal.addEventListener('abort', onAbort, { once: true });
+    timeoutId = setTimeout(() => {
+      cleanup();
+      reject(new Error('Video metadata loading timed out. Try another video.'));
+    }, 30000);
     if (signal.aborted) onAbort();
   });
 }
@@ -1551,7 +1563,7 @@ if (processBtn) {
       processingState.classList.remove('completed', 'failed');
     }
     if (processedResult) processedResult.classList.add('hidden');
-    if (processingText) processingText.textContent = '';
+    if (processingText) processingText.textContent = t('loadingText');
     updateProcessingProgress(0);
 
     try {
@@ -1559,10 +1571,14 @@ if (processBtn) {
       let patchInput = sourceFile;
       const isMp4 = sourceFile.type === 'video/mp4' || /\.mp4$/i.test(sourceFile.name);
       if (!isMp4 || Math.min(width, height) > 1080) {
+        if (processingText) processingText.textContent = t('downscalingText');
         const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
         patchInput = await downscaleVideo(sourceFile, {
           postingDevice,
           signal: controller.signal,
+          onStatus: (message) => {
+            if (processingText) processingText.textContent = localizeCompressBaseStatus(message);
+          },
           onProgress: (fraction) => {
             const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
             updateProcessingProgress(progress * 90);
@@ -1573,10 +1589,14 @@ if (processBtn) {
       }
       controller.signal.throwIfAborted();
       updateProcessingProgress(95);
+      if (processingText) processingText.textContent = t('patchingText');
       const { patchVideo } = await import('https://compressbase.com/method-api/client.mjs');
       const outputBlob = await patchVideo(patchInput, {
         signal: controller.signal,
         postingDevice,
+        onStatus: (message) => {
+          if (processingText) processingText.textContent = localizeCompressBaseStatus(message);
+        },
       });
 
       await consumeProcessedVideo();
@@ -1608,6 +1628,7 @@ if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processCo
 function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const knownErrors = [
+    { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },
     { test: /up to 8 GiB/i, ru: 'Выберите поддерживаемое видео размером до 8 GiB.', kk: 'Өлшемі 8 GiB-ке дейін қолдау көрсетілетін бейне таңдаңыз.', en: 'Choose a supported video up to 8 GiB.' },
     { test: /above 1080p|pls downscale/i, ru: 'Видео выше 1080p и не прошло уменьшение разрешения. Попробуйте исходник меньшего размера. Баланс INEASY не списан.', kk: 'Бейне 1080p шегінен жоғары, ажыратымдылықты азайту орындалмады. Өлшемі кішірек бастапқы файлды қолданып көріңіз. INEASY балансы алынған жоқ.', en: 'This video is above 1080p and could not be downscaled. Try a smaller source file. Your INEASY credits were not used.' },
     { test: /(?:file|source|output).{0,40}(?:size|large|limit|MiB)|(?:size|large|limit|MiB).{0,40}(?:file|source|output)|4K|10 minutes/i, ru: 'Файл превышает ограничение CompressBase для этого устройства. Попробуйте более короткое видео или файл меньшего размера. Баланс INEASY не списан.', kk: 'Файл осы құрылғыдағы CompressBase шегінен асады. Қысқарақ немесе өлшемі кішірек бейнені таңдаңыз. INEASY балансы алынған жоқ.', en: 'This video exceeds a CompressBase limit for this device. Try a shorter or smaller video. Your INEASY credits were not used.' },
@@ -1617,6 +1638,12 @@ function localizePatchError(message) {
   const match = knownErrors.find((entry) => entry.test.test(message || ''));
   if (match) return match[lang];
   return message || ({ ru: 'Не удалось обработать видео. Попробуйте ещё раз.', kk: 'Бейнені өңдеу мүмкін болмады. Қайталап көріңіз.', en: 'Unable to process the video. Please try again.' })[lang];
+}
+
+function localizeCompressBaseStatus(message) {
+  if (/preparing mp4/i.test(message || '')) return t('loadingText');
+  if (/patching metadata/i.test(message || '')) return t('patchingText');
+  return message || '';
 }
 
 const savedLanguage = getBrowserValue('ineasy-language') || 'en';
