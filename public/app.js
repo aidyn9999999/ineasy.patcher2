@@ -53,6 +53,14 @@ const translations = {
     chooseSub: 'Drag file here or click to browse',
     localNote: 'Your video stays on your device. 1440p (2K) and 4K videos are automatically prepared in 1080p to reduce processing load.',
     exportNote: 'For smoother playback, export in 1080p, 60 FPS, with a bitrate of 15–35 Mbps.',
+    postingDeviceLabel: 'Where will you post this video?',
+    postingDevicePlaceholder: 'Choose a posting mode',
+    postingDevicePc: 'PC',
+    postingDevicePhone: 'Phone',
+    postingDevicePhoneGhost: 'Phone (ghost)',
+    choosePostingDevice: 'Choose PC, Phone, or Phone (ghost) before processing.',
+    communityTitle: 'Stay in the loop with Ineasy',
+    communityBody: 'New tutorials, project updates, and exclusive giveaways on our Telegram channel',
     newsText: 'Tutorials, updates, and giveaways',
     newsButton: 'View',
     process: 'Process video',
@@ -185,6 +193,14 @@ const translations = {
     chooseSub: 'Перетащите файл сюда или нажмите, чтобы открыть устройство',
     localNote: 'Ваше видео остаётся на устройстве. Видео в 1440p (2K) и 4K автоматически подготавливается в 1080p, чтобы снизить нагрузку при обработке.',
     exportNote: 'Для более плавного воспроизведения экспортируйте видео в 1080p, 60 FPS и с битрейтом 15–35 Мбит/с.',
+    postingDeviceLabel: 'Где будете публиковать видео?',
+    postingDevicePlaceholder: 'Выберите режим публикации',
+    postingDevicePc: 'PC',
+    postingDevicePhone: 'Phone',
+    postingDevicePhoneGhost: 'Phone (ghost)',
+    choosePostingDevice: 'Перед обработкой выберите PC, Phone или Phone (ghost).',
+    communityTitle: 'Будь в курсе Ineasy',
+    communityBody: 'Новые туториалы, обновления проекта и эксклюзивные розыгрыши — в нашем Telegram-канале',
     newsText: 'Туториалы, обновления и розыгрыши',
     newsButton: 'Смотреть',
     process: 'Обработать видео',
@@ -317,6 +333,14 @@ const translations = {
     chooseSub: 'Файлды осы жерге сүйреп апарыңыз немесе құрылғыдан таңдаңыз',
     localNote: 'Бейнеңіз құрылғыңызда қалады. 1440p (2K) және 4K бейнелері өңдеу жүктемесін азайту үшін автоматты түрде 1080p форматына дайындалады.',
     exportNote: 'Бірқалыпты ойнату үшін бейнені 1080p, 60 FPS және 15–35 Мбит/с битрейтпен экспорттаңыз.',
+    postingDeviceLabel: 'Бейнені қайда жариялайсыз?',
+    postingDevicePlaceholder: 'Жариялау режимін таңдаңыз',
+    postingDevicePc: 'PC',
+    postingDevicePhone: 'Phone',
+    postingDevicePhoneGhost: 'Phone (ghost)',
+    choosePostingDevice: 'Өңдемес бұрын PC, Phone немесе Phone (ghost) таңдаңыз.',
+    communityTitle: 'Ineasy жаңалықтарынан хабардар болыңыз',
+    communityBody: 'Жаңа нұсқаулықтар, жоба жаңалықтары және арнайы ұтыстар Telegram арнамызда',
     newsText: 'Туториалдар, жаңартулар және ұтыс ойындары',
     newsButton: 'Көру',
     process: 'Бейнені өңдеу',
@@ -484,6 +508,13 @@ function applyLanguage(lang) {
   setText('buyInTelegram', pack.buyInTelegram);
   setText('localNote', pack.localNote);
   setText('exportNote', pack.exportNote);
+  setText('postingDeviceLabel', pack.postingDeviceLabel);
+  setText('postingDevicePlaceholder', pack.postingDevicePlaceholder);
+  setText('postingDevicePc', pack.postingDevicePc);
+  setText('postingDevicePhone', pack.postingDevicePhone);
+  setText('postingDevicePhoneGhost', pack.postingDevicePhoneGhost);
+  setText('communityTitle', pack.communityTitle);
+  setText('communityBody', pack.communityBody);
   setText('processBtn', pack.process);
   setText('cancelProcessBtn', pack.cancel);
   setText('resultTitle', pack.ready);
@@ -635,8 +666,9 @@ function updateProcessButton() {
   if (!processBtn) return;
   const hasVideo = Boolean(fileInput && fileInput.files && fileInput.files[0]);
   const hasCredits = currentBalance === null || (Number.isFinite(currentBalance) && currentBalance > 0);
+  const hasPostingDevice = Boolean(postingDeviceSelect && ['pc', 'phone', 'phone-ghost'].includes(postingDeviceSelect.value));
   const hasResult = Boolean(processedResult && !processedResult.classList.contains('hidden'));
-  processBtn.disabled = !hasVideo || !hasCredits || Boolean(processController) || hasResult;
+  processBtn.disabled = !hasVideo || !hasCredits || !hasPostingDevice || Boolean(processController) || hasResult;
 }
 
 async function loadBalance() {
@@ -787,6 +819,7 @@ const previewVideo = document.getElementById('previewVideo');
 const fileMeta = document.getElementById('fileMeta');
 const clearBtn = document.getElementById('clearBtn');
 const processBtn = document.getElementById('processBtn');
+const postingDeviceSelect = document.getElementById('postingDevice');
 const cancelProcessBtn = document.getElementById('cancelProcessBtn');
 const processingState = document.getElementById('processingState');
 const processingText = document.getElementById('processingText');
@@ -1063,6 +1096,39 @@ function updateProcessingProgress(value) {
   if (processingProgress) processingProgress.style.width = `${percent}%`;
 }
 
+function readVideoDimensions(signal) {
+  if (previewVideo?.videoWidth && previewVideo?.videoHeight) {
+    return Promise.resolve({ width: previewVideo.videoWidth, height: previewVideo.videoHeight });
+  }
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      previewVideo?.removeEventListener('loadedmetadata', onLoaded);
+      previewVideo?.removeEventListener('error', onError);
+      signal.removeEventListener('abort', onAbort);
+    };
+    const onLoaded = () => {
+      cleanup();
+      if (previewVideo.videoWidth && previewVideo.videoHeight) {
+        resolve({ width: previewVideo.videoWidth, height: previewVideo.videoHeight });
+      } else {
+        reject(new Error('Could not read video dimensions.'));
+      }
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error('Could not read video dimensions.'));
+    };
+    const onAbort = () => {
+      cleanup();
+      reject(new Error('Processing cancelled.'));
+    };
+    previewVideo.addEventListener('loadedmetadata', onLoaded);
+    previewVideo.addEventListener('error', onError);
+    signal.addEventListener('abort', onAbort, { once: true });
+    if (signal.aborted) onAbort();
+  });
+}
+
 function handleFile(file) {
   if (currentBalance === 0) {
     updateDropzoneAvailability();
@@ -1111,6 +1177,7 @@ if (fileInput) {
     if (file) handleFile(file);
   });
 }
+if (postingDeviceSelect) postingDeviceSelect.addEventListener('change', updateProcessButton);
 
 if (dropzone) {
   ['dragenter', 'dragover'].forEach(evt => {
@@ -1342,7 +1409,12 @@ if (processBtn) {
     }
 
     const sourceFile = fileInput.files[0];
-    const postingDevice = 'phone';
+    const postingDevice = postingDeviceSelect.value;
+    if (!['pc', 'phone', 'phone-ghost'].includes(postingDevice)) {
+      setProcessingState('error', t('choosePostingDevice'));
+      updateProcessButton();
+      return;
+    }
     const controller = new AbortController();
     processController = controller;
     processBtn.disabled = true;
@@ -1356,15 +1428,22 @@ if (processBtn) {
     updateProcessingProgress(0);
 
     try {
-      const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
-      const patchInput = await downscaleVideo(sourceFile, {
-        postingDevice,
-        signal: controller.signal,
-        onProgress: (fraction) => {
-          const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
-          updateProcessingProgress(progress * 90);
-        },
-      });
+      const { width, height } = await readVideoDimensions(controller.signal);
+      let patchInput = sourceFile;
+      const isMp4 = sourceFile.type === 'video/mp4' || /\.mp4$/i.test(sourceFile.name);
+      if (!isMp4 || Math.min(width, height) > 1080) {
+        const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
+        patchInput = await downscaleVideo(sourceFile, {
+          postingDevice,
+          signal: controller.signal,
+          onProgress: (fraction) => {
+            const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
+            updateProcessingProgress(progress * 90);
+          },
+        });
+      } else {
+        updateProcessingProgress(90);
+      }
       controller.signal.throwIfAborted();
       updateProcessingProgress(95);
       const { patchVideo } = await import('https://compressbase.com/method-api/client.mjs');
@@ -1403,8 +1482,10 @@ function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const knownErrors = [
     { test: /up to 8 GiB/i, ru: 'Выберите поддерживаемое видео размером до 8 GiB.', kk: 'Өлшемі 8 GiB-ке дейін қолдау көрсетілетін бейне таңдаңыз.', en: 'Choose a supported video up to 8 GiB.' },
+    { test: /above 1080p|pls downscale/i, ru: 'Видео выше 1080p и не прошло уменьшение разрешения. Попробуйте исходник меньшего размера. Баланс INEASY не списан.', kk: 'Бейне 1080p шегінен жоғары, ажыратымдылықты азайту орындалмады. Өлшемі кішірек бастапқы файлды қолданып көріңіз. INEASY балансы алынған жоқ.', en: 'This video is above 1080p and could not be downscaled. Try a smaller source file. Your INEASY credits were not used.' },
+    { test: /(?:file|source|output).{0,40}(?:size|large|limit|MiB)|(?:size|large|limit|MiB).{0,40}(?:file|source|output)|4K|10 minutes/i, ru: 'Файл превышает ограничение CompressBase для этого устройства. Попробуйте более короткое видео или файл меньшего размера. Баланс INEASY не списан.', kk: 'Файл осы құрылғыдағы CompressBase шегінен асады. Қысқарақ немесе өлшемі кішірек бейнені таңдаңыз. INEASY балансы алынған жоқ.', en: 'This video exceeds a CompressBase limit for this device. Try a shorter or smaller video. Your INEASY credits were not used.' },
     { test: /supported MP4|non-fragmented|fast-start/i, ru: 'Этот MP4 не поддерживается. Экспортируйте видео как MP4 и попробуйте снова.', kk: 'Бұл MP4 қолдау көрсетпейді. Бейнені MP4 түрінде экспорттаңыз.', en: 'This MP4 is not supported. Export the video as MP4 and try again.' },
-    { test: /429|limit/i, ru: 'Достигнут бесплатный лимит. Попробуйте позже.', kk: 'Тегін шектеуге жеттіңіз. Кейінірек қайталап көріңіз.', en: 'Free limit reached. Please try again later.' },
+    { test: /429|too many requests|rate.?limit|daily.{0,24}limit|free.{0,24}limit/i, ru: 'Временно исчерпан бесплатный лимит CompressBase на этом устройстве. Это не лимит INEASY; ваши обработки не списаны. Попробуйте позже.', kk: 'Бұл құрылғыдағы CompressBase тегін шегі уақытша таусылды. Бұл INEASY лимиті емес, өңдеу балансыңыз алынған жоқ. Кейінірек қайталаңыз.', en: 'CompressBase’s free allowance for this device is temporarily exhausted. This is separate from your INEASY balance; no credits were used. Try again later.' },
   ];
   const match = knownErrors.find((entry) => entry.test.test(message || ''));
   if (match) return match[lang];

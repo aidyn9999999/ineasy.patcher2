@@ -100,6 +100,7 @@ const TEXTS = {
       `Чек автоматически отправится администратору на проверку. После подтверждения баланс пополнится автоматически.`,
     purchasePending: '⏳ Ваш чек уже отправлен и ожидает проверки администратором.',
     receiptRequired: 'Сначала выберите пакет через кнопку «Купить лимиты», затем отправьте фото или PDF чека.',
+    receiptFormat: 'Отправьте чек изображением или PDF-файлом.',
     receiptReceived: '✅ Чек автоматически отправлен администратору на проверку. Проверка проводится ежедневно с 06:30 до 00:00. После подтверждения баланс пополнится автоматически.',
     purchaseApproved: (count) => `✅ Оплата подтверждена. На купленный баланс зачислено ${count} видео.`,
     purchaseRejected: '❌ Чек отклонён. Если считаете это ошибкой, ответьте сюда или свяжитесь с администратором.',
@@ -179,6 +180,7 @@ const TEXTS = {
       `Your receipt is sent to the administrator automatically. Your balance is credited automatically after approval.`,
     purchasePending: '⏳ Your receipt has already been sent and is awaiting administrator review.',
     receiptRequired: 'Choose a package with “Buy limits” first, then send a receipt photo or PDF.',
+    receiptFormat: 'Send the receipt as an image or PDF file.',
     receiptReceived: '✅ Your receipt was sent to the administrator automatically. Reviews take place daily from 06:30 to 00:00. Your balance is credited automatically after approval.',
     purchaseApproved: (count) => `✅ Payment confirmed. ${count} videos were added to your purchased balance.`,
     purchaseRejected: '❌ The receipt was declined. If you think this is an error, reply here or contact the administrator.',
@@ -258,6 +260,7 @@ const TEXTS = {
       `Чек әкімшіге автоматты түрде жіберіледі. Расталғаннан кейін баланс автоматты түрде толтырылады.`,
     purchasePending: '⏳ Чегіңіз әкімшіге жіберілді және тексеруді күтіп тұр.',
     receiptRequired: 'Алдымен «Лимит сатып алу» түймесімен пакет таңдаңыз, содан кейін чек фотосын немесе PDF жіберіңіз.',
+    receiptFormat: 'Чекті сурет немесе PDF файл түрінде жіберіңіз.',
     receiptReceived: '✅ Чек әкімшіге автоматты түрде жіберілді. Тексеру күн сайын 06:30-дан 00:00-ге дейін жүргізіледі. Расталғаннан кейін баланс автоматты түрде толтырылады.',
     purchaseApproved: (count) => `✅ Төлем расталды. Сатып алынған балансыңызға ${count} видео қосылды.`,
     purchaseRejected: '❌ Чек қабылданбады. Қате бар деп ойласаңыз, осы жерге жазыңыз немесе әкімшіге хабарласыңыз.',
@@ -750,7 +753,7 @@ async function createPurchaseOrder(ctx, count, price, lang) {
     createdAt: new Date().toISOString(),
   };
   await redis.set(`purchase:${order.id}`, order);
-  await redis.set(pendingKey, order.id, { ex: 24 * 60 * 60 });
+  await redis.set(pendingKey, order.id, { ex: 30 * 60 });
   await recordUserActivity(telegramId, 'Создан заказ на покупку', { details: `${count} видео, ${price} ₸` });
   await ctx.reply(TEXTS[lang].packageDetails(count, price, telegramId), mainKeyboard(lang));
 }
@@ -1025,6 +1028,15 @@ bot.on(['photo', 'document'], async (ctx) => {
   const pendingId = await redis.get(`pendingPurchase:${telegramId}`);
   const order = pendingId ? await readPurchaseOrder(pendingId) : null;
   if (!order || order.status === 'cancelled') {
+    if (pendingId) await redis.del(`pendingPurchase:${telegramId}`);
+    await ctx.reply(TEXTS[lang].receiptRequired, mainKeyboard(lang));
+    return;
+  }
+  const orderCreatedAt = Date.parse(order.createdAt);
+  if (order.status === 'awaiting_receipt' && (!Number.isFinite(orderCreatedAt) || Date.now() - orderCreatedAt > 30 * 60 * 1000)) {
+    order.status = 'cancelled';
+    await redis.set(`purchase:${order.id}`, order);
+    await redis.del(`pendingPurchase:${telegramId}`);
     await ctx.reply(TEXTS[lang].receiptRequired, mainKeyboard(lang));
     return;
   }
@@ -1039,7 +1051,7 @@ bot.on(['photo', 'document'], async (ctx) => {
 
   const document = ctx.message.document;
   if (document && !['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(document.mime_type)) {
-    await ctx.reply('Отправьте чек изображением или PDF-файлом.');
+    await ctx.reply(TEXTS[lang].receiptFormat, mainKeyboard(lang));
     return;
   }
 

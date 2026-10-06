@@ -47,8 +47,8 @@
     <aside class="community-callout" aria-label="Telegram">
       <div class="news-callout">
         <div class="news-copy">
-          <strong>Будь в курсе Ineasy</strong>
-          <p>Новые туториалы, обновления проекта и эксклюзивные розыгрыши — в нашем Telegram-канале <b>@ineasynews</b></p>
+          <strong id="communityTitle">Будь в курсе Ineasy</strong>
+          <p><span id="communityBody">Новые туториалы, обновления проекта и эксклюзивные розыгрыши — в нашем Telegram-канале</span> <b>@ineasynews</b></p>
         </div>
         <a class="news-link" id="newsButton" href="https://t.me/ineasynews" target="_blank" rel="noopener" aria-label="@ineasynews">↗</a>
       </div>
@@ -99,6 +99,15 @@
 
       <p class="local-note" id="localNote">Your video stays on your device. 1440p (2K) and 4K videos are automatically prepared in 1080p to reduce processing load.</p>
       <p class="export-note" id="exportNote">For smoother playback, export in 1080p, 60 FPS, with a bitrate of 15–35 Mbps.</p>
+      <div class="posting-device-field">
+        <label class="tiktok-field-label" for="postingDevice" id="postingDeviceLabel">Where will you post this video?</label>
+        <select id="postingDevice" required>
+          <option value="" id="postingDevicePlaceholder">Choose a posting mode</option>
+          <option value="pc" id="postingDevicePc">PC</option>
+          <option value="phone" id="postingDevicePhone">Phone</option>
+          <option value="phone-ghost" id="postingDevicePhoneGhost">Phone (ghost)</option>
+        </select>
+      </div>
       <button class="process-btn" id="processBtn" type="button" disabled>Process video</button>
       <div class="processing-state hidden" id="processingState">
         <span class="processing-spinner"></span>

@@ -66,6 +66,11 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
   box-shadow: none;
 }
 
+.login-language-dock { display: inline-flex; gap: 3px; margin: 0 auto 20px; padding: 3px; border: 1px solid var(--card-border); border-radius: 12px; background: rgba(27, 20, 15, .72); }
+.login-language-dock button { min-width: 42px; border: 0; border-radius: 10px; padding: 6px 9px; background: transparent; color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; }
+.login-language-dock button.active { background: var(--accent); color: #1a0d05; box-shadow: 0 0 14px var(--accent-glow); }
+.login-language-dock button:hover:not(.active) { color: var(--text); }
+
 .mark {
   width: 56px;
   height: 56px;
@@ -1178,6 +1183,10 @@ button, .tg-btn, .news-link, .download-link, .balance-buy-site, .balance-buy-tel
 .community-callout .news-link { min-width: 30px; min-height: 30px; padding: 0 8px; font-size: 15px; }
 .community-callout .language-dock { justify-self: start; margin: 0 0 0 10px; padding: 2px; border: 0; background: transparent; }
 .community-callout .language-dock button { padding: 4px 6px; font-size: 9px; }
+.posting-device-field { display: grid; gap: 6px; margin-top: 16px; }
+.posting-device-field .tiktok-field-label { margin: 0; }
+.posting-device-field select { width: 100%; min-height: 44px; border: 1px solid #41413c; border-radius: 14px; padding: 0 12px; background: #141413; color: var(--text); font: 500 13px 'Manrope', sans-serif; }
+.posting-device-field select:focus { outline: 2px solid rgba(200, 255, 0, .14); border-color: var(--accent); }
 .notice-banner { align-items: center; }
 .notice-banner > svg { width: 20px; height: 20px; flex: 0 0 20px; color: var(--accent); }
 .notice-banner span { display: none; }
