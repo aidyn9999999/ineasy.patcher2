@@ -99,15 +99,7 @@
 
       <p class="local-note" id="localNote">Your video stays on your device. 1440p (2K) and 4K videos are automatically prepared in 1080p to reduce processing load.</p>
       <p class="export-note" id="exportNote">For smoother playback, export in 1080p, 60 FPS, with a bitrate of 15–35 Mbps.</p>
-      <div class="posting-device-field hidden" id="postingDeviceField">
-        <label class="tiktok-field-label" for="postingDevice" id="postingDeviceLabel">Where will you post this video?</label>
-        <input id="postingDevice" type="hidden" value="">
-        <div class="posting-device-options" role="group" aria-labelledby="postingDeviceLabel">
-          <button type="button" data-posting-device="pc" aria-pressed="false" id="postingDevicePc">ПК</button>
-          <button type="button" data-posting-device="phone" aria-pressed="false" id="postingDeviceIphone">iPhone</button>
-          <button type="button" data-posting-device="pc" aria-pressed="false" id="postingDeviceAndroid">Android</button>
-        </div>
-      </div>
+      <input id="postingDevice" type="hidden" value="">
       <button class="process-btn" id="processBtn" type="button" disabled>Process video</button>
       <div class="processing-state hidden" id="processingState">
         <span class="processing-spinner"></span>

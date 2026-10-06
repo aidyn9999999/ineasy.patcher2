@@ -50,9 +50,9 @@ const redis = new Redis({
 });
 
 const BTN = {
-  ru: { website: '📘 Как использовать и ссылка сайта', buy: '🛒 Купить лимиты', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Чекер видео', invite: '👥 Пригласить друга' },
-  en: { website: '📘 How to use / Website', buy: '🛒 Buy limits', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video checker', invite: '👥 Invite a friend' },
-  kk: { website: '📘 Қолдану нұсқаулығы / Сайт', buy: '🛒 Лимит сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейне тексеру', invite: '👥 Дос шақыру' },
+  ru: { buy: '🛒 Купить видео', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Проверка видео', invite: '👥 Пригласить друга' },
+  en: { buy: '🛒 Buy videos', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video check', invite: '👥 Invite a friend' },
+  kk: { buy: '🛒 Видео сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейнені тексеру', invite: '👥 Дос шақыру' },
 };
 
 function langChoiceKeyboard() {
@@ -71,7 +71,7 @@ const TEXTS = {
       `1️⃣ Заходите на сайт https://ineasy.site. Если ссылка открылась внутри Telegram, удерживайте её и выберите «Открыть в браузере» — Chrome или Safari. Не используйте встроенный браузер Telegram.\n\n` +
       `2️⃣ Войдите через Telegram, выберите видео и нажмите «Обработать видео».\n` +
       `3️⃣ Загрузите файл на tiktok.com/upload или используйте «Пост в сайте (легкий)».\n\n` +
-      `📘 Откройте «${BTN.ru.website}» для короткой инструкции. Лимиты и баланс доступны в меню.`,
+      `🌐 Сайт: ${WEBSITE_URL}. Покупка видео и баланс доступны в меню.`,
     authSuccess: '✅ Успешно авторизовались!\n\nВернитесь на сайт — там уже можно работать.',
     subscribeRequired: '📣 Чтобы продолжить, подпишитесь на канал @ineasynews. После подписки нажмите «Я подписался» — мы проверим доступ.',
     subscribeFailed: 'Вы не подписаны на канал. Чтобы пользоваться патчером, сначала подпишитесь.',
@@ -89,19 +89,22 @@ const TEXTS = {
     referralRewarded: (id) => `🎉 Вашему приглашённому пользователю ${id} начислен 1 бонус за подписку и запуск бота.`,
     websiteButton: '🌐 Открыть ineasy.site',
     websiteGuide: (url) => `📘 Как пользоваться INEASY\n\n1. Откройте ${url} и войдите через Telegram.\n2. Выберите видео и нажмите «Обработать видео».\n3. Опубликуйте файл на tiktok.com/upload или нажмите «Пост в сайте (легкий)». Для публикации на сайте один раз добавьте API-ключ Zernio и используйте аккаунт TikTok, подключённый в Zernio.\n\nКак работает пост: INEASY передаёт обработанное видео в Zernio, а Zernio отправляет его в TikTok.\n\nЕсли ссылка открылась внутри Telegram, удерживайте её и выберите «Открыть в браузере» — Chrome или Safari. Не используйте встроенный браузер Telegram.`,
-    packagesTitle: '🛒 Выберите пакет лимитов:',
+    packagesTitle: '🛒 Выберите пакет видео:',
     packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
-    packageDetails: (count, price, telegramId) =>
-      `🛒 Пакет: ${count} видео за ${price.toLocaleString('ru-RU')} тенге\n\n` +
-      `💳 Оплата на карту:\n${CARD_INFO}\n\n` +
-      `✅ После перевода отправьте сюда фото или PDF чека.\n` +
-      `Ваш Telegram ID: ${telegramId} (бот определит его автоматически).\n` +
-      `Проверка чеков: ежедневно с 06:30 до 00:00.\n` +
-      `Чек автоматически отправится администратору на проверку. После подтверждения баланс пополнится автоматически.`,
-    purchasePending: '⏳ Ваш чек уже отправлен и ожидает проверки администратором.',
-    receiptRequired: 'Сначала выберите пакет через кнопку «Купить лимиты», затем отправьте фото или PDF чека.',
+    packageDetails: (count, price) =>
+      `🎬 <b>Пакет выбран!</b>\n\n` +
+      `Вы выбрали: <b>${count} видео</b> 🎥\n\n` +
+      `💰 Стоимость: <b>${price.toLocaleString('ru-RU')} ₸</b>\n\n` +
+      `💳 Для оплаты используйте реквизиты ниже.\n\n${CARD_INFO}\n\n` +
+      `После оплаты отправьте <b>фото или PDF чека</b> 📩\n\n` +
+      `🔎 Чек проверит реальный человек. Пожалуйста, ожидайте 1–2 часа. После подтверждения <b>${price.toLocaleString('ru-RU')} ₸ автоматически зачислятся на ваш баланс</b>.\n\n` +
+      `⚠️ Отправляйте только настоящий чек.\n\n` +
+      `🚫 <b>Фейковые или отредактированные чеки не принимаются.</b>\n\n` +
+      `Спасибо за покупку! 💚`,
+    purchasePending: '⏳ Чек уже отправлен на проверку реальным человеком. Пожалуйста, ожидайте 1–2 часа.',
+    receiptRequired: 'Сначала выберите пакет через кнопку «Купить видео», затем отправьте фото или PDF чека.',
     receiptFormat: 'Отправьте чек изображением или PDF-файлом.',
-    receiptReceived: '✅ Чек автоматически отправлен администратору на проверку. Проверка проводится ежедневно с 06:30 до 00:00. После подтверждения баланс пополнится автоматически.',
+    receiptReceived: '✅ Чек отправлен на проверку реальным человеком. Пожалуйста, ожидайте 1–2 часа. После подтверждения видео автоматически зачислятся на баланс.',
     purchaseApproved: (count) => `✅ Оплата подтверждена. На купленный баланс зачислено ${count} видео.`,
     purchaseRejected: '❌ Чек отклонён. Если считаете это ошибкой, ответьте сюда или свяжитесь с администратором.',
     accessBlocked: '⛔ Доступ к боту и сайту заблокирован администратором.',
@@ -140,7 +143,7 @@ const TEXTS = {
       `👋 Hi, ${name}!\n\n` +
       `Welcome to INEASY PATCHER 🚀🔥\n\n` +
       `🎬 How to process a video:\n\n` +
-      `1️⃣ Tap “${BTN.en.website}” in the bot menu. If the link opens inside Telegram, press and hold it, then choose “Open in Browser” and select Chrome or Safari. Do not use Telegram's built-in browser.\n\n` +
+      `1️⃣ Open ${WEBSITE_URL} in Chrome or Safari. Do not use Telegram's built-in browser.\n\n` +
       `2️⃣ 🔐 Sign in with Telegram on the website.\n\n` +
       `3️⃣ 🎥 Choose a video and tap Prepare video.\n\n` +
       `4️⃣ ✅ Download the finished video and upload it to TikTok.\n\n` +
@@ -169,19 +172,22 @@ const TEXTS = {
     referralRewarded: (id) => `🎉 Your invited user ${id} started the bot and verified their subscription. You received 1 video credit.`,
     websiteButton: '🌐 Open ineasy.site',
     websiteGuide: (url) => `📘 How to use INEASY\n\n1. Open ${url} and sign in with Telegram.\n2. Choose a video and process it.\n3. Upload it at tiktok.com/upload or use “Post on site (easy)”. For site publishing, add your Zernio API key once and use a TikTok account linked in Zernio.\n\nHow it works: INEASY sends the processed video to Zernio, and Zernio sends it to TikTok.\n\nIf Telegram opens the link internally, press and hold it, choose “Open in Browser”, then select Chrome or Safari. Do not use Telegram's built-in browser.`,
-    packagesTitle: '🛒 Choose a limits package:',
+    packagesTitle: '🛒 Choose a video package:',
     packageButton: (count, perUnit, price) => `${count} videos × ${perUnit} ₸ = ${price.toLocaleString('en-US')} ₸`,
-    packageDetails: (count, price, telegramId) =>
-      `🛒 Package: ${count} videos for ${price.toLocaleString('en-US')} tenge\n\n` +
-      `💳 Card payment:\n${CARD_INFO}\n\n` +
-      `✅ After payment, send a photo or PDF of the receipt here.\n` +
-      `Your Telegram ID is ${telegramId}; the bot adds it automatically.\n` +
-      `Receipts are reviewed daily from 06:30 to 00:00.\n` +
-      `Your receipt is sent to the administrator automatically. Your balance is credited automatically after approval.`,
-    purchasePending: '⏳ Your receipt has already been sent and is awaiting administrator review.',
-    receiptRequired: 'Choose a package with “Buy limits” first, then send a receipt photo or PDF.',
+    packageDetails: (count, price) =>
+      `🎬 <b>Package selected!</b>\n\n` +
+      `You selected: <b>${count} videos</b> 🎥\n\n` +
+      `💰 Cost: <b>${price.toLocaleString('en-US')} ₸</b>\n\n` +
+      `💳 Use the payment details below.\n\n${CARD_INFO}\n\n` +
+      `After payment, send a <b>photo or PDF of the receipt</b> 📩\n\n` +
+      `🔎 A real person will review the receipt. Please allow 1–2 hours. After approval, <b>${price.toLocaleString('en-US')} ₸ will be added to your balance automatically</b>.\n\n` +
+      `⚠️ Send only a genuine receipt.\n\n` +
+      `🚫 <b>Fake or edited receipts are not accepted.</b>\n\n` +
+      `Thank you for your purchase! 💚`,
+    purchasePending: '⏳ Your receipt is being reviewed by a real person. Please allow 1–2 hours.',
+    receiptRequired: 'Choose a package with “Buy videos” first, then send a receipt photo or PDF.',
     receiptFormat: 'Send the receipt as an image or PDF file.',
-    receiptReceived: '✅ Your receipt was sent to the administrator automatically. Reviews take place daily from 06:30 to 00:00. Your balance is credited automatically after approval.',
+    receiptReceived: '✅ Your receipt is being reviewed by a real person. Please allow 1–2 hours. Your videos will be added to your balance after approval.',
     purchaseApproved: (count) => `✅ Payment confirmed. ${count} videos were added to your purchased balance.`,
     purchaseRejected: '❌ The receipt was declined. If you think this is an error, reply here or contact the administrator.',
     accessBlocked: '⛔ Access to the bot and website has been blocked by an administrator.',
@@ -220,7 +226,7 @@ const TEXTS = {
       `👋 Сәлем, ${name}!\n\n` +
       `INEASY PATCHER-ге қош келдіңіз 🚀🔥\n\n` +
       `🎬 Бейнені өңдеу жолы:\n\n` +
-      `1️⃣ Бот мәзіріндегі «${BTN.kk.website}» түймесін басыңыз. Сілтеме Telegram ішінде ашылса, оны басып тұрып, «Браузерде ашу» тармағын таңдаңыз да, Chrome немесе Safari қолданыңыз. Telegram-ның ішкі браузерін пайдаланбаңыз.\n\n` +
+      `1️⃣ ${WEBSITE_URL} сайтын Chrome немесе Safari браузерінде ашыңыз. Telegram-ның ішкі браузерін пайдаланбаңыз.\n\n` +
       `2️⃣ 🔐 Сайтқа Telegram арқылы кіріңіз.\n\n` +
       `3️⃣ 🎥 Бейнені таңдап, «Бейнені дайындау» түймесін басыңыз.\n\n` +
       `4️⃣ ✅ Дайын файлды жүктеп алып, TikTok-қа салыңыз.\n\n` +
@@ -249,19 +255,22 @@ const TEXTS = {
     referralRewarded: (id) => `🎉 Сіз шақырған ${id} пайдаланушы ботты іске қосып, жазылымын растады. Сізге 1 видео берілді.`,
     websiteButton: '🌐 ineasy.site ашу',
     websiteGuide: (url) => `📘 INEASY пайдалану\n\n1. ${url} сайтына кіріп, Telegram арқылы авторизациядан өтіңіз.\n2. Бейнені таңдап, өңдеңіз.\n3. Файлды tiktok.com/upload сайтына жүктеңіз немесе «Сайтқа жариялау (жеңіл)» түймесін пайдаланыңыз. Ол үшін Zernio API кілтін бір рет енгізіп, TikTok аккаунтын Zernio-ға байланыстырыңыз.\n\nЖариялау жолы: INEASY өңделген бейнені Zernio-ға жібереді, ал Zernio оны TikTok-қа жүктейді.\n\nСілтеме Telegram ішінде ашылса, оны басып тұрып, «Браузерде ашу» тармағын таңдаңыз. Chrome немесе Safari қолданыңыз.`,
-    packagesTitle: '🛒 Лимит пакетін таңдаңыз:',
+    packagesTitle: '🛒 Видео пакетін таңдаңыз:',
     packageButton: (count, perUnit, price) => `${count} видео × ${perUnit} ₸ = ${price.toLocaleString('ru-RU')} ₸`,
-    packageDetails: (count, price, telegramId) =>
-      `🛒 Пакет: ${price.toLocaleString('ru-RU')} теңгеге ${count} видео\n\n` +
-      `💳 Картаға төлем:\n${CARD_INFO}\n\n` +
-      `✅ Төлемнен кейін чектің фотосын немесе PDF нұсқасын осында жіберіңіз.\n` +
-      `Telegram ID: ${telegramId} (бот оны автоматты түрде анықтайды).\n` +
-      `Чектер күн сайын 06:30-дан 00:00-ге дейін тексеріледі.\n` +
-      `Чек әкімшіге автоматты түрде жіберіледі. Расталғаннан кейін баланс автоматты түрде толтырылады.`,
-    purchasePending: '⏳ Чегіңіз әкімшіге жіберілді және тексеруді күтіп тұр.',
-    receiptRequired: 'Алдымен «Лимит сатып алу» түймесімен пакет таңдаңыз, содан кейін чек фотосын немесе PDF жіберіңіз.',
+    packageDetails: (count, price) =>
+      `🎬 <b>Пакет таңдалды!</b>\n\n` +
+      `Таңдағаныңыз: <b>${count} видео</b> 🎥\n\n` +
+      `💰 Бағасы: <b>${price.toLocaleString('ru-RU')} ₸</b>\n\n` +
+      `💳 Төлем үшін төмендегі деректемелерді пайдаланыңыз.\n\n${CARD_INFO}\n\n` +
+      `Төлемнен кейін чектің <b>фотосын немесе PDF нұсқасын</b> жіберіңіз 📩\n\n` +
+      `🔎 Чекті нақты адам тексереді. 1–2 сағат күте тұрыңыз. Расталғаннан кейін <b>${price.toLocaleString('ru-RU')} ₸ балансыңызға автоматты түрде қосылады</b>.\n\n` +
+      `⚠️ Тек шынайы чекті жіберіңіз.\n\n` +
+      `🚫 <b>Жалған немесе өңделген чектер қабылданбайды.</b>\n\n` +
+      `Сатып алғаныңызға рақмет! 💚`,
+    purchasePending: '⏳ Чекті нақты адам тексеріп жатыр. 1–2 сағат күте тұрыңыз.',
+    receiptRequired: 'Алдымен «Видео сатып алу» түймесімен пакет таңдап, содан кейін чек фотосын немесе PDF жіберіңіз.',
     receiptFormat: 'Чекті сурет немесе PDF файл түрінде жіберіңіз.',
-    receiptReceived: '✅ Чек әкімшіге автоматты түрде жіберілді. Тексеру күн сайын 06:30-дан 00:00-ге дейін жүргізіледі. Расталғаннан кейін баланс автоматты түрде толтырылады.',
+    receiptReceived: '✅ Чекті нақты адам тексеріп жатыр. 1–2 сағат күте тұрыңыз. Расталғаннан кейін видео балансыңызға қосылады.',
     purchaseApproved: (count) => `✅ Төлем расталды. Сатып алынған балансыңызға ${count} видео қосылды.`,
     purchaseRejected: '❌ Чек қабылданбады. Қате бар деп ойласаңыз, осы жерге жазыңыз немесе әкімшіге хабарласыңыз.',
     accessBlocked: '⛔ Әкімші бот пен сайтқа кіруді бұғаттады.',
@@ -696,7 +705,6 @@ function mainKeyboard(lang) {
     [b.check],
     [b.balance, b.profile],
     [b.lang],
-    [b.website],
     [b.invite],
   ]).resize();
 }
@@ -755,7 +763,11 @@ async function createPurchaseOrder(ctx, count, price, lang) {
   await redis.set(`purchase:${order.id}`, order);
   await redis.set(pendingKey, order.id, { ex: 30 * 60 });
   await recordUserActivity(telegramId, 'Создан заказ на покупку', { details: `${count} видео, ${price} ₸` });
-  await ctx.reply(TEXTS[lang].packageDetails(count, price, telegramId), mainKeyboard(lang));
+  const keyboard = mainKeyboard(lang);
+  await ctx.reply(TEXTS[lang].packageDetails(count, price), {
+    parse_mode: 'HTML',
+    reply_markup: keyboard.reply_markup,
+  });
 }
 
 async function sendWelcome(ctx, lang) {
@@ -964,7 +976,7 @@ bot.hears([BTN.ru.lang, BTN.en.lang, BTN.kk.lang], async (ctx) => {
   await ctx.reply('Choose language / Выберите язык / Тілді таңдаңыз:', langChoiceKeyboard());
 });
 
-bot.hears([BTN.ru.website, BTN.en.website, BTN.kk.website], async (ctx) => {
+bot.command('website', async (ctx) => {
   const lang = await getLang(ctx.from.id);
   await ctx.reply(TEXTS[lang].websiteGuide(WEBSITE_URL), Markup.inlineKeyboard([
     [Markup.button.url(TEXTS[lang].websiteButton, WEBSITE_URL)],

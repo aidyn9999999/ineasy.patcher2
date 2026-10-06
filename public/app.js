@@ -53,10 +53,6 @@ const translations = {
     chooseSub: 'Drag file here or click to browse',
     localNote: 'Your video stays on your device. 1440p (2K) and 4K videos are automatically prepared in 1080p to reduce processing load.',
     exportNote: 'For smoother playback, export in 1080p, 60 FPS, with a bitrate of 15–35 Mbps.',
-    postingDeviceLabel: 'Where will you post this video?',
-    postingDevicePc: 'PC',
-    postingDeviceIphone: 'iPhone',
-    postingDeviceAndroid: 'Android',
     choosePostingDevice: 'Choose your device before processing.',
     communityTitle: 'Stay in the loop with Ineasy',
     communityBody: 'New tutorials, project updates, and exclusive giveaways on our Telegram channel',
@@ -205,10 +201,6 @@ const translations = {
     chooseSub: 'Перетащите файл сюда или нажмите, чтобы открыть устройство',
     localNote: 'Ваше видео остаётся на устройстве. Видео в 1440p (2K) и 4K автоматически подготавливается в 1080p, чтобы снизить нагрузку при обработке.',
     exportNote: 'Для более плавного воспроизведения экспортируйте видео в 1080p, 60 FPS и с битрейтом 15–35 Мбит/с.',
-    postingDeviceLabel: 'Где будете публиковать видео?',
-    postingDevicePc: 'ПК',
-    postingDeviceIphone: 'iPhone',
-    postingDeviceAndroid: 'Android',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
     communityTitle: 'Будь в курсе Ineasy',
     communityBody: 'Новые туториалы, обновления проекта и эксклюзивные розыгрыши — в нашем Telegram-канале',
@@ -357,10 +349,6 @@ const translations = {
     chooseSub: 'Файлды осы жерге сүйреп апарыңыз немесе құрылғыдан таңдаңыз',
     localNote: 'Бейнеңіз құрылғыңызда қалады. 1440p (2K) және 4K бейнелері өңдеу жүктемесін азайту үшін автоматты түрде 1080p форматына дайындалады.',
     exportNote: 'Бірқалыпты ойнату үшін бейнені 1080p, 60 FPS және 15–35 Мбит/с битрейтпен экспорттаңыз.',
-    postingDeviceLabel: 'Бейнені қайда жариялайсыз?',
-    postingDevicePc: 'PC',
-    postingDeviceIphone: 'iPhone',
-    postingDeviceAndroid: 'Android',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
     communityTitle: 'Ineasy жаңалықтарынан хабардар болыңыз',
     communityBody: 'Жаңа нұсқаулықтар, жоба жаңалықтары және арнайы ұтыстар Telegram арнамызда',
@@ -544,10 +532,6 @@ function applyLanguage(lang) {
   setText('buyInTelegram', pack.buyInTelegram);
   setText('localNote', pack.localNote);
   setText('exportNote', pack.exportNote);
-  setText('postingDeviceLabel', pack.postingDeviceLabel);
-  setText('postingDevicePc', pack.postingDevicePc);
-  setText('postingDeviceIphone', pack.postingDeviceIphone);
-  setText('postingDeviceAndroid', pack.postingDeviceAndroid);
   setText('communityTitle', pack.communityTitle);
   setText('communityBody', pack.communityBody);
   setText('processBtn', pack.process);
@@ -866,7 +850,6 @@ const previewVideo = document.getElementById('previewVideo');
 const fileMeta = document.getElementById('fileMeta');
 const clearBtn = document.getElementById('clearBtn');
 const processBtn = document.getElementById('processBtn');
-const postingDeviceField = document.getElementById('postingDeviceField');
 const postingDeviceSelect = document.getElementById('postingDevice');
 const cancelProcessBtn = document.getElementById('cancelProcessBtn');
 const processingState = document.getElementById('processingState');
@@ -1244,6 +1227,12 @@ function readVideoDuration(file, signal) {
   });
 }
 
+function getPostingDeviceForPlatform() {
+  const isAppleMobile = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  return isAppleMobile ? 'phone' : 'pc';
+}
+
 function handleFile(file) {
   if (currentBalance === 0) {
     updateDropzoneAvailability();
@@ -1255,12 +1244,7 @@ function handleFile(file) {
     currentObjectUrl = null;
     if (previewVideo) previewVideo.src = '';
     if (previewWrap) previewWrap.classList.remove('show');
-    if (postingDeviceField) postingDeviceField.classList.add('hidden');
     if (postingDeviceSelect) postingDeviceSelect.value = '';
-    document.querySelectorAll('[data-posting-device]').forEach((button) => {
-      button.classList.remove('selected');
-      button.setAttribute('aria-pressed', 'false');
-    });
     if (fileInput) fileInput.value = '';
     setProcessingState('error', t('errorInvalidFile'));
     if (processBtn) processBtn.disabled = true;
@@ -1278,12 +1262,7 @@ function handleFile(file) {
   if (previewVideo) previewVideo.src = currentObjectUrl;
   if (fileMeta) fileMeta.textContent = `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
   if (previewWrap) previewWrap.classList.add('show');
-  if (postingDeviceField) postingDeviceField.classList.remove('hidden');
-  if (postingDeviceSelect) postingDeviceSelect.value = '';
-  document.querySelectorAll('[data-posting-device]').forEach((button) => {
-    button.classList.remove('selected');
-    button.setAttribute('aria-pressed', 'false');
-  });
+  if (postingDeviceSelect) postingDeviceSelect.value = getPostingDeviceForPlatform();
   updateProcessButton();
   if (processingState) processingState.classList.add('hidden');
   if (processedResult) processedResult.classList.add('hidden');
@@ -1309,18 +1288,6 @@ if (fileInput) {
     if (file) handleFile(file);
   });
 }
-document.querySelectorAll('[data-posting-device]').forEach((button) => {
-  button.addEventListener('click', () => {
-    if (postingDeviceSelect) postingDeviceSelect.value = button.dataset.postingDevice;
-    document.querySelectorAll('[data-posting-device]').forEach((option) => {
-      const selected = option === button;
-      option.classList.toggle('selected', selected);
-      option.setAttribute('aria-pressed', String(selected));
-    });
-    updateProcessButton();
-  });
-});
-
 if (dropzone) {
   ['dragenter', 'dragover'].forEach(evt => {
     dropzone.addEventListener(evt, (e) => {
@@ -1350,12 +1317,7 @@ if (clearBtn) {
     if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
     if (previewVideo) previewVideo.src = '';
     if (previewWrap) previewWrap.classList.remove('show');
-    if (postingDeviceField) postingDeviceField.classList.add('hidden');
     if (postingDeviceSelect) postingDeviceSelect.value = '';
-    document.querySelectorAll('[data-posting-device]').forEach((button) => {
-      button.classList.remove('selected');
-      button.setAttribute('aria-pressed', 'false');
-    });
     if (fileInput) fileInput.value = '';
     if (processBtn) processBtn.disabled = true;
     if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
