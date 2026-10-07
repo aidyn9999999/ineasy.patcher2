@@ -1668,17 +1668,81 @@ if (processBtn) {
       controller.signal.throwIfAborted();
 
       const requestId = `ineasy-${Date.now()}`;
-      const result = await globalThis.ADJNVideoProcessor.processVideoDirect({
-        requestId,
-        buffer,
-        fileName: sourceFile.name || 'video.mp4',
-        fileType: sourceFile.type || 'video/mp4',
-        fileSize: sourceFile.size || buffer.byteLength,
-        engine: '2.1.5'
-      }, (label, progress, detail, key) => {
-        if (controller.signal.aborted) throw new Error('processing_cancelled');
-        updateProcessingProgress(progress);
+
+      // Run heavy patching in a Web Worker (off main thread) to avoid UI lag.
+      // Mirrors the browser extension's iframe isolation approach.
+      const result = await new Promise((resolve, reject) => {
+        let workerDone = false;
+
+        // Abort support
+        const onAbort = () => {
+          if (!workerDone) {
+            workerDone = true;
+            worker.terminate();
+            reject(new Error('processing_cancelled'));
+          }
+        };
+        controller.signal.addEventListener('abort', onAbort, { once: true });
+
+        const worker = new Worker('adjn-worker.js');
+
+        worker.onmessage = (e) => {
+          const msg = e.data;
+          if (!msg) return;
+
+          if (msg.type === 'READY') {
+            // Worker is ready, send the job (transfer buffer ownership — zero copy)
+            worker.postMessage({
+              type: 'PROCESS',
+              requestId,
+              buffer,
+              fileName: sourceFile.name || 'video.mp4',
+              fileType: sourceFile.type || 'video/mp4',
+              fileSize: sourceFile.size || buffer.byteLength,
+              engine: '2.1.5'
+            }, [buffer]);
+            return;
+          }
+
+          if (msg.type === 'STAGE') {
+            if (controller.signal.aborted) return;
+            updateProcessingProgress(msg.progress);
+            return;
+          }
+
+          if (msg.type === 'DONE') {
+            workerDone = true;
+            controller.signal.removeEventListener('abort', onAbort);
+            worker.terminate();
+            resolve({
+              output: new Uint8Array(msg.output),
+              outputMime: msg.outputMime,
+              outputInfo: msg.outputInfo,
+              outputHdr: msg.outputHdr,
+              passthrough: msg.passthrough,
+              mode: msg.mode,
+              inputBytes: msg.inputBytes
+            });
+            return;
+          }
+
+          if (msg.type === 'ERROR') {
+            workerDone = true;
+            controller.signal.removeEventListener('abort', onAbort);
+            worker.terminate();
+            reject(new Error(msg.message || 'Worker processing failed'));
+          }
+        };
+
+        worker.onerror = (err) => {
+          if (!workerDone) {
+            workerDone = true;
+            controller.signal.removeEventListener('abort', onAbort);
+            reject(new Error(err?.message || 'Worker crashed'));
+          }
+        };
       });
+
 
       if (controller.signal.aborted) throw new Error('processing_cancelled');
 
