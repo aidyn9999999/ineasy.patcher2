@@ -586,13 +586,13 @@
     };
   }
 
-  function executePatch(bytes, parsed, { preserveDuration = false, omitEncoderTag = false } = {}) {
+  function executePatch(bytes, parsed) {
     const { top, moovBox, mdatBox, moov } = parsed;
     const mvhd = moov.find('mvhd');
     if (!mvhd || mvhd.payload.length < 4) throwError('Invalid MP4 — mvhd hilang.');
 
-    if (!preserveDuration) mvhd.payload = patchMvhdToV1Sentinel(mvhd.payload);
-    if (!omitEncoderTag) injectUdta(moov, ENCODER_TAG);
+    mvhd.payload = patchMvhdToV1Sentinel(mvhd.payload);
+    injectUdta(moov, ENCODER_TAG);
 
     const moovBeforeMdat = moovBox.start < mdatBox.start;
     const oldMoovSize = moovBox.end - moovBox.start;
@@ -602,7 +602,6 @@
       const origOffsets = traksWithOffsets.map(t => parseStcoOrCo64(getOffsetBox(t)));
       for (let iter = 0; iter < 4; iter++) {
         const delta = moov.serialize().length - oldMoovSize;
-        if (delta === 0) break;
         let changedType = false;
         traksWithOffsets.forEach((t, i) => {
           const box = getOffsetBox(t);
@@ -622,7 +621,7 @@
     return concatBytes(finalChunks);
   }
 
-  function validateFinalOutput(bytes, { requireLegacyMarkers = true } = {}) {
+  function validateFinalOutput(bytes) {
     const top = parseTopLevel(bytes);
     if (!top.length || top[top.length - 1].end !== bytes.length) throwError('Hasil patch bukan box run lengkap.');
     const moovList = top.filter(b => b.type === 'moov');
@@ -635,17 +634,10 @@
     const mdatEnd = mdatBox.end;
     const moov = new Mp4Box('moov', null, parseBoxes(bytes, moovBox.start + moovBox.header, moovBox.end));
 
+    if (!hasEncoderTag(moov, ENCODER_TAG)) throwError('Hasil patch tidak memiliki ADJN encoder tag.');
+
     const mvhd = moov.find('mvhd');
-    if (!mvhd || mvhd.payload.length < 4) throwError('Hasil patch tidak memiliki mvhd yang valid.');
-    if (requireLegacyMarkers && !hasEncoderTag(moov, ENCODER_TAG)) {
-      throwError('Hasil patch tidak memiliki ADJN encoder tag.');
-    }
-    if (requireLegacyMarkers && !isSentinelDuration(mvhd.payload)) {
-      throwError('Hasil patch mvhd.duration bukan sentinel Unknown Duration.');
-    }
-    if (!requireLegacyMarkers && isSentinelDuration(mvhd.payload)) {
-      throwError('HDR patch mengubah duration ke sentinel yang tidak didukung.');
-    }
+    if (!mvhd || !isSentinelDuration(mvhd.payload)) throwError('Hasil patch mvhd.duration bukan sentinel Unknown Duration.');
 
     for (const trak of moov.findAll('trak')) {
       const offsBox = getOffsetBox(trak);
@@ -664,43 +656,6 @@
     const patched = executePatch(bytes, parsed);
     validateFinalOutput(patched);
     return patched;
-  }
-
-  function patchHdrWithReport(input) {
-    const original = toU8Array(input);
-    const parsed = parseMp4Structure(original);
-    const patched = executePatch(original, parsed, { preserveDuration: true, omitEncoderTag: true });
-    validateFinalOutput(patched, { requireLegacyMarkers: false });
-
-    const outputParsed = parseMp4Structure(patched);
-    const sourceMdat = original.subarray(parsed.mdatBox.start, parsed.mdatBox.end);
-    const outputMdat = patched.subarray(outputParsed.mdatBox.start, outputParsed.mdatBox.end);
-    if (sourceMdat.length !== outputMdat.length) throwError('HDR patch изменил размер mdat.');
-    for (let index = 0; index < sourceMdat.length; index++) {
-      if (sourceMdat[index] !== outputMdat[index]) throwError('HDR patch изменил данные видеопотока.');
-    }
-    if (parsed.mvhd.payload.length !== outputParsed.mvhd.payload.length) {
-      throwError('HDR patch изменил длительность контейнера.');
-    }
-    for (let index = 0; index < parsed.mvhd.payload.length; index++) {
-      if (parsed.mvhd.payload[index] !== outputParsed.mvhd.payload[index]) {
-        throwError('HDR patch изменил длительность контейнера.');
-      }
-    }
-
-    const inspected = inspect(patched);
-    return {
-      bytes: patched,
-      report: {
-        engine: 'ADJN HDR Container Patch',
-        durationUnknown: false,
-        encoderTag: inspected.encoderTag,
-        codec: inspected.codec,
-        sampleCount: inspected.sampleCount,
-        audioSampleCount: inspected.audioSampleCount,
-        mdatByteIdentical: true
-      }
-    };
   }
 
   function checkCompatibility(input) {
@@ -867,7 +822,6 @@
   return {
     version: VERSION,
     quickPatch,
-    patchHdrWithReport,
     inspect,
     checkCompatibility,
     inspectMediaInfo,
