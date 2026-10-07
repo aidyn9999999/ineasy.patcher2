@@ -734,6 +734,50 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
   50% { box-shadow: 0 0 15px rgba(255, 107, 0, 0.38), 0 0 28px rgba(255, 107, 0, 0.16); }
 }
 
+.dropzone {
+  display: grid;
+  place-items: center;
+  min-height: clamp(240px, 38vh, 420px);
+  padding: clamp(24px, 5vw, 52px);
+}
+.dropzone > .dropzone-content,
+.dropzone > .balance-lock {
+  grid-area: 1 / 1;
+  width: 100%;
+}
+.dropzone.locked #dropzoneContent,
+#dropzoneContent.hidden,
+.dropzone:not(.locked) #balanceLock,
+#balanceLock.hidden {
+  display: none !important;
+}
+.dropzone.locked { min-height: clamp(320px, 48vh, 480px); }
+.dropzone .balance-lock { min-height: 280px; }
+
+@media (max-width: 600px) {
+  .app-main { width: 100%; padding: 20px 14px calc(104px + env(safe-area-inset-bottom)); gap: 20px; }
+  .patch-title { font-size: 30px; line-height: 1.12; }
+  .patch-sub { margin-bottom: 18px; font-size: 14px; }
+  .dropzone { min-height: 250px; padding: 24px 16px; }
+  .dropzone.locked { min-height: 360px; }
+  .dropzone .balance-lock { min-height: 320px; }
+  .balance-lock-actions { width: 100%; flex-direction: column; gap: 10px; }
+  .balance-buy-site, .balance-buy-telegram { width: min(100%, 280px); min-height: 48px; font-size: 13px; }
+  .process-btn, .processed-result a, .tiktok-publish-btn, .tiktok-submit-btn { min-height: 48px; }
+  .checker-panel { padding: 18px 14px; }
+  .checker-input-row { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .checker-input-row button { min-height: 46px; }
+  .result-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .result-grid > div { min-width: 0; padding: 10px; overflow-wrap: anywhere; }
+  .tiktok-composer .modal-body { padding: 12px 14px calc(16px + env(safe-area-inset-bottom)); }
+}
+
+@media (max-width: 360px) {
+  .app-main { padding-inline: 10px; }
+  .dropzone { padding-inline: 12px; }
+  .result-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 button:not(:disabled), .tg-btn {
   animation: orangeButtonGlow 2.8s ease-in-out infinite;
 }
