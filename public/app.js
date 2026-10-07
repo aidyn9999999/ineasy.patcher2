@@ -1739,6 +1739,7 @@ if (processBtn) {
               outputHdr: msg.outputHdr,
               passthrough: msg.passthrough,
               mode: msg.mode,
+              report: msg.report,
               inputBytes: msg.inputBytes
             });
             return;
@@ -1783,6 +1784,9 @@ if (processBtn) {
       console.info('[INEASY] Media processing complete', {
         mode: result.mode || 'unknown',
         passthrough: Boolean(result.passthrough),
+        patcherActive: !result.passthrough && result.mode === 'adjn-core-resolution-codec-safe',
+        durationUnknown: result.report?.durationUnknown ?? null,
+        encoderTag: result.report?.encoderTag || '',
         resolution: resText || 'unknown',
         codec: codecText || 'unknown',
         hdr: hdrInfo?.label || 'SDR / unknown',

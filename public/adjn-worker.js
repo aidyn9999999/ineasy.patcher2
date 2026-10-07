@@ -42,6 +42,7 @@ self.onmessage = async function (event) {
       outputHdr: result.outputHdr || result.hdr,
       passthrough: !!result.passthrough,
       mode: result.mode,
+      report: result.report || null,
       inputBytes: result.inputBytes
     }, [output]);
 

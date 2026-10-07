@@ -394,7 +394,6 @@
       ? `UHD/High-FPS • ${info.width}×${info.height} • ${limits.fps ? limits.fps.toFixed(2) : '?'} FPS`
       : `${info.width}×${info.height} • ${limits.fps ? limits.fps.toFixed(2) : '?'} FPS`;
     const hdrText = hdr?.label && hdr.label !== 'SDR / unknown' ? ` • ${hdr.label}` : '';
-    const isHdrSource = Boolean(hdr && (hdr.hdr10 || hdr.hdr10plus || hdr.hlg || hdr.dolbyVision || hdr.main10));
 
     // Preserve multi-track media, subtitles/timecode, alternate audio/video tracks,
     // and extra top-level metadata boxes exactly instead of letting the classic
@@ -438,11 +437,9 @@
 
     let result;
     try {
-      const patcher = isHdrSource ? core.patchHdrWithReport : core.patchWithReport;
-      if (typeof patcher !== 'function') throw new Error('HDR-compatible MP4 patch mode is unavailable.');
-      stage(requestId, 'patching', 'Applying ADJN patch…', 66, isHdrSource ? `HDR metadata-safe • ${hdr.label}` : engineProfile.source);
-      result = patcher(original);
-      if (result?.report) result.report.engine = isHdrSource ? 'ADJN HDR Container Patch' : engineProfile.source;
+      stage(requestId, 'patching', 'Applying ADJN patch…', 66, engineProfile.source);
+      result = core.patchWithReport(original);
+      if (result?.report) result.report.engine = engineProfile.source;
     } catch (patchError) {
       stage(requestId, 'patching', 'Fallback Universal Safe…', 72, 'Patch klasik tidak aman untuk file ini • pakai byte-identical passthrough');
       return passthroughResult(original, data, patchError?.message || 'full patch gagal', info, hdr, sniff);
@@ -498,7 +495,7 @@
         dolbyVisionPreserved: hdr?.dolbyVision ? outputHdr?.dolbyVision === true : null
       },
       verification,
-      mode: isHdrSource ? 'adjn-core-hdr-container-safe' : 'adjn-core-resolution-codec-safe',
+      mode: 'adjn-core-resolution-codec-safe',
       passthrough: false,
       outputName: '',
       outputMime: 'video/mp4',
