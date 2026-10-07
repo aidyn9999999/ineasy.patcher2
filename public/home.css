@@ -213,3 +213,170 @@
 @media (prefers-reduced-motion: reduce) {
   .home-cta { transition: none; }
 }
+
+/* FATI X-inspired optimizer layout, scoped to Home and Patcher only. */
+.home-hero {
+  min-height: 500px;
+  height: min(620px, calc(100svh - 190px));
+  border: 1px solid rgba(159, 171, 188, .16);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 100%, rgba(145, 160, 180, .09), transparent 42%),
+    linear-gradient(180deg, #050608 0%, #080b0f 54%, #050608 100%);
+}
+.home-hero-shade {
+  background:
+    radial-gradient(ellipse at 50% 82%, rgba(145, 160, 180, .10), transparent 46%),
+    linear-gradient(180deg, rgba(5, 6, 8, .08), rgba(5, 6, 8, .30));
+}
+.home-scene-canvas { opacity: .42; }
+.home-hero-copy {
+  width: min(900px, 100%);
+  margin: 0 auto;
+  padding: 72px 24px 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.home-hero .home-eyebrow {
+  min-height: 36px;
+  margin: 0 auto 28px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(161, 175, 194, .27);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(21, 27, 35, .82), rgba(10, 14, 20, .82));
+  color: #b4bdca;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 2px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+}
+.home-hero .home-eyebrow::before {
+  width: 7px;
+  height: 7px;
+  margin-right: 10px;
+  border-radius: 50%;
+  background: #c6d2e2;
+  box-shadow: 0 0 10px rgba(198, 210, 226, .8), 0 0 22px rgba(136, 153, 177, .5);
+  content: '';
+}
+.home-hero h1 {
+  max-width: 900px;
+  color: #f1f3f6;
+  font-family: 'Manrope', sans-serif;
+  font-size: 62px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: .98;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #fff 0%, #e5e9ef 46%, #8995a8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.home-intro {
+  max-width: 700px;
+  margin: 22px auto 0;
+  color: #aeb5c0;
+  font-size: 15px;
+  line-height: 1.65;
+}
+.home-cta {
+  min-width: 250px;
+  min-height: 54px;
+  justify-content: space-between;
+  margin-top: 27px;
+  border: 1px solid rgba(225, 231, 239, .55);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #d7dde6 0%, #aab5c4 48%, #7d899c 100%);
+  color: #0a0d12;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 11px 28px rgba(74, 87, 105, .18);
+}
+.home-cta:hover { background: linear-gradient(180deg, #edf1f5, #b7c2d0); }
+.home-hero-foot { color: #788496; }
+.home-section-heading .home-eyebrow { color: #8a96a7; letter-spacing: 2px; }
+.home-section-heading h2 { color: #e8ebf0; letter-spacing: 0; }
+.home-section-heading > p:last-child { color: #9ba5b3; }
+.quality-comparison { border-color: rgba(156, 170, 189, .22); border-radius: 18px; background: #070b11; }
+.comparison-label { border-radius: 999px; background: rgba(6, 10, 16, .78); }
+.comparison-divider span { border-color: rgba(225, 231, 239, .6); background: linear-gradient(145deg, #e3eaf2, #9ba8ba); color: #0a0d12; }
+.comparison-disclaimer { color: #7f8b9c; }
+.home-workflow { border-color: rgba(123, 138, 157, .18); }
+.workflow-step { border-color: rgba(156, 170, 189, .26); }
+.workflow-number { color: #9aa7b8; }
+.workflow-step h3 { color: #e1e5eb; }
+.workflow-step p, .home-local-note p { color: #98a4b4; }
+.home-local-note { border-color: rgba(150, 165, 185, .14); }
+.home-local-icon { border-color: rgba(177, 191, 210, .24); color: #c3cedc; }
+
+#patchSection .patch-panel {
+  max-width: none;
+  padding: 24px clamp(16px, 3vw, 30px) 28px;
+  border: 1px solid rgba(156, 170, 189, .22);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(99, 114, 135, .08), transparent 36%),
+    linear-gradient(180deg, rgba(15,20,27,.97), rgba(8,12,18,.99));
+  box-shadow: 0 26px 90px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.025);
+}
+.app-main:has(#patchSection.active) {
+  width: min(1320px, 100%);
+  max-width: 1320px;
+}
+#patchTitle {
+  margin: 0 0 9px;
+  color: #e8ebf0;
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: 0;
+  line-height: 1.08;
+  text-align: center;
+  text-transform: uppercase;
+}
+#patchSub {
+  max-width: 700px;
+  margin: 0 auto 23px;
+  color: #a1adbc;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: center;
+}
+#patchSection .dropzone {
+  min-height: 310px;
+  padding: 36px 22px;
+  border: 1px dashed rgba(130, 145, 165, .42);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(134,149,169,.07), transparent 40%),
+    linear-gradient(180deg, rgba(14,19,26,.9), rgba(8,12,18,.97));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+#patchSection .dropzone:hover,
+#patchSection .dropzone.drag {
+  border-color: rgba(210, 222, 238, .72);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(169,189,216,.12), transparent 44%),
+    linear-gradient(180deg, rgba(19,25,34,.97), rgba(9,13,19,.99));
+  box-shadow: 0 0 0 1px rgba(210,222,238,.07), 0 0 28px rgba(178,198,226,.12);
+}
+#patchSection .dropzone svg { margin-bottom: 17px; color: #c5cedb; opacity: 1; }
+#patchSection .dropzone .dz-title { color: #e9edf3; font-size: 21px; font-weight: 800; }
+#patchSection .dropzone .dz-sub { color: #8d97a6; font-size: 13px; }
+#patchSection .dropzone.locked { border-color: rgba(255, 107, 0, .28); background: #151514; }
+
+@media (max-width: 700px) {
+  .home-hero { min-height: 470px; height: calc(100svh - 190px); }
+  .home-hero-copy { padding: 58px 18px 92px; }
+  .home-hero .home-eyebrow { min-height: 32px; margin-bottom: 22px; padding: 0 13px; font-size: 8px; letter-spacing: 1.4px; }
+  .home-hero h1 { max-width: 480px; font-size: 42px; }
+  .home-intro { margin-top: 17px; font-size: 13px; }
+  #patchSection .patch-panel { padding: 20px 14px 22px; border-radius: 18px; }
+  #patchTitle { font-size: 29px; }
+  #patchSub { font-size: 12px; }
+  #patchSection .dropzone { min-height: 260px; padding: 28px 14px; border-radius: 15px; }
+  #patchSection .dropzone .dz-title { font-size: 18px; }
+  #patchSection .dropzone .dz-sub { font-size: 11px; }
+}
