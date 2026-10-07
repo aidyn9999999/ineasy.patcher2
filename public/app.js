@@ -1238,6 +1238,10 @@ if (tiktokPublishForm) {
       if (tiktokPublishStatus) {
         const platformResult = result.post?.platforms?.find((item) => item.platform === 'tiktok');
         const publishState = platformResult?.status || result.post?.status;
+        console.info('[INEASY] TikTok publish response', {
+          postStatus: result.post?.status || 'unknown',
+          platformStatus: publishState || 'unknown',
+        });
         tiktokPublishStatus.textContent = scheduledFor
           ? t('publishScheduled')
           : result.draft
@@ -1245,6 +1249,10 @@ if (tiktokPublishForm) {
             : publishState === 'published' ? t('publishSuccess') : t('publishPending');
       }
     } catch (error) {
+      console.warn('[INEASY] TikTok publish request failed', {
+        status: error.status || null,
+        reason: error.message || 'unknown_error',
+      });
       if (tiktokPublishStatus) {
         tiktokPublishStatus.textContent = error.status === 401
           ? t('authExpired')
@@ -1772,6 +1780,15 @@ if (processBtn) {
       const fpsText = metaInfo?.averageFps ? `${Math.round(metaInfo.averageFps)} FPS` : '';
       const codecText = metaInfo?.codec ? String(metaInfo.codec).toUpperCase() : '';
       const hdrText = hdrInfo?.label && hdrInfo.label !== 'SDR / unknown' ? hdrInfo.label : '';
+      console.info('[INEASY] Media processing complete', {
+        mode: result.mode || 'unknown',
+        passthrough: Boolean(result.passthrough),
+        resolution: resText || 'unknown',
+        codec: codecText || 'unknown',
+        hdr: hdrInfo?.label || 'SDR / unknown',
+        inputBytes: result.inputBytes || sourceFile.size,
+        outputBytes: outputBlob.size,
+      });
       const metaDetails = [resText, fpsText, codecText, hdrText].filter(Boolean).join(' • ');
 
       const resultSubNode = document.getElementById('resultSub');
