@@ -1261,43 +1261,64 @@ function updateProcessingProgress(value) {
   if (processingProgress) processingProgress.style.width = `${percent}%`;
 }
 
-function readVideoDuration(file, signal) {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement('video');
-    const sourceUrl = URL.createObjectURL(file);
-    let timeoutId;
-    let settled = false;
-    const cleanup = () => {
-      clearTimeout(timeoutId);
-      video.removeEventListener('loadedmetadata', onLoaded);
-      video.removeEventListener('error', onError);
-      signal.removeEventListener('abort', onAbort);
-      video.removeAttribute('src');
+async function readVideoDuration(file, signal) {
+  try {
+    const dur = await new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      const sourceUrl = URL.createObjectURL(file);
+      let timeoutId;
+      let settled = false;
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        video.removeEventListener('loadedmetadata', onLoaded);
+        video.removeEventListener('error', onError);
+        signal.removeEventListener('abort', onAbort);
+        video.removeAttribute('src');
+        video.load();
+        URL.revokeObjectURL(sourceUrl);
+      };
+      const finish = (callback, value) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        callback(value);
+      };
+      const onLoaded = () => {
+        if (!Number.isFinite(video.duration)) return finish(reject, new Error('video_duration_unavailable'));
+        finish(resolve, video.duration);
+      };
+      const onError = () => finish(reject, new Error('video_duration_unavailable'));
+      const onAbort = () => finish(reject, new Error('processing_cancelled'));
+      video.preload = 'metadata';
+      video.addEventListener('loadedmetadata', onLoaded, { once: true });
+      video.addEventListener('error', onError, { once: true });
+      signal.addEventListener('abort', onAbort, { once: true });
+      timeoutId = setTimeout(() => finish(reject, new Error('video_duration_unavailable')), 8000);
+      video.src = sourceUrl;
       video.load();
-      URL.revokeObjectURL(sourceUrl);
-    };
-    const finish = (callback, value) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      callback(value);
-    };
-    const onLoaded = () => {
-      if (!Number.isFinite(video.duration)) return finish(reject, new Error('video_duration_unavailable'));
-      if (video.duration > 60) return finish(reject, new Error('video_over_60_seconds'));
-      finish(resolve, video.duration);
-    };
-    const onError = () => finish(reject, new Error('video_duration_unavailable'));
-    const onAbort = () => finish(reject, new Error('processing_cancelled'));
-    video.preload = 'metadata';
-    video.addEventListener('loadedmetadata', onLoaded, { once: true });
-    video.addEventListener('error', onError, { once: true });
-    signal.addEventListener('abort', onAbort, { once: true });
-    timeoutId = setTimeout(() => finish(reject, new Error('video_duration_unavailable')), 15000);
-    video.src = sourceUrl;
-    video.load();
-    if (signal.aborted) onAbort();
-  });
+      if (signal.aborted) onAbort();
+    });
+    if (dur > 60) throw new Error('video_over_60_seconds');
+    return dur;
+  } catch (err) {
+    if (err.message === 'video_over_60_seconds' || err.message === 'processing_cancelled') throw err;
+    try {
+      const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+      if (core?.inspectMediaInfo) {
+        const slice = await file.slice(0, Math.min(file.size, 16 * 1024 * 1024)).arrayBuffer();
+        const info = core.inspectMediaInfo(new Uint8Array(slice));
+        const videoTrack = (info.tracks || []).find((t) => t.handler === 'vide');
+        if (videoTrack && videoTrack.duration && videoTrack.timescale) {
+          const sec = videoTrack.duration / videoTrack.timescale;
+          if (sec > 60) throw new Error('video_over_60_seconds');
+          return sec;
+        }
+      }
+    } catch (parseErr) {
+      if (parseErr.message === 'video_over_60_seconds') throw parseErr;
+    }
+    return 0;
+  }
 }
 
 function getPostingDeviceForPlatform() {
@@ -1633,47 +1654,53 @@ if (processBtn) {
 
     try {
       await readVideoDuration(sourceFile, controller.signal);
-      let patchInput = sourceFile;
-      const isMp4 = sourceFile.type === 'video/mp4' || /\.mp4$/i.test(sourceFile.name);
-      const downscale = async (file, progressStart, progressRange) => {
-        const { downscaleVideo } = await import('https://compressbase.com/method-api/downscale.mjs');
-        let lastProgressUpdateAt = 0;
-        let lastProgressPercent = -1;
-        return downscaleVideo(file, {
-          signal: controller.signal,
-          onStatus: () => {},
-          onProgress: (fraction) => {
-            const progress = Math.max(0, Math.min(1, Number(fraction) || 0));
-            const percent = Math.round(progressStart + progress * progressRange);
-            const now = performance.now();
-            if (percent === lastProgressPercent || now - lastProgressUpdateAt < 100) return;
-            lastProgressUpdateAt = now;
-            lastProgressPercent = percent;
-            updateProcessingProgress(percent);
-          },
-        });
+      controller.signal.throwIfAborted();
+
+      const stageLabels = {
+        reading: { ru: 'Чтение файла…', kk: 'Файлды оқу…', en: 'Reading video…' },
+        checking: { ru: 'Проверка кодека и метаданных…', kk: 'Кодек пен метадеректерді тексеру…', en: 'Checking codec & metadata…' },
+        preparing: { ru: 'Подготовка контейнера…', kk: 'Контейнерді дайындау…', en: 'Preparing container…' },
+        remuxing: { ru: 'Оптимизация MP4 структуры…', kk: 'MP4 құрылымын оңтайландыру…', en: 'Optimizing MP4 layout…' },
+        patching: { ru: 'Применение Ultra HD патча…', kk: 'Ultra HD патчін қолдану…', en: 'Applying Ultra HD patch…' },
+        finalizing: { ru: 'Верификация bitstream и параметров…', kk: 'Битстримді тексеру…', en: 'Verifying bitstream & parameters…' },
+        ready: { ru: 'Готово!', kk: 'Дайын!', en: 'Ready!' }
       };
 
-      if (!isMp4) {
-        patchInput = await downscale(sourceFile, 0, 85);
-      } else {
-        updateProcessingProgress(90);
+      if (!globalThis.ADJNVideoProcessor?.processVideoDirect) {
+        throw new Error('Video processor engine not loaded.');
       }
+
+      setProcessingState('processing', t('progressLabel'));
+      updateProcessingProgress(5);
+
+      const buffer = await sourceFile.arrayBuffer();
       controller.signal.throwIfAborted();
-      updateProcessingProgress(95);
-      const { patchVideo } = await import('https://compressbase.com/method-api/client.mjs');
-      const patchOptions = { signal: controller.signal, postingDevice, onStatus: () => {} };
-      let outputBlob;
-      try {
-        outputBlob = await patchVideo(patchInput, patchOptions);
-      } catch (error) {
-        if (!isMp4 || !/above 1080p|pls downscale/i.test(error.message || '')) throw error;
-        controller.signal.throwIfAborted();
-        patchInput = await downscale(sourceFile, 90, 5);
-        controller.signal.throwIfAborted();
-        outputBlob = await patchVideo(patchInput, patchOptions);
-      }
-      controller.signal.throwIfAborted();
+
+      const requestId = `ineasy-${Date.now()}`;
+      const result = await globalThis.ADJNVideoProcessor.processVideoDirect({
+        requestId,
+        buffer,
+        fileName: sourceFile.name || 'video.mp4',
+        fileType: sourceFile.type || 'video/mp4',
+        fileSize: sourceFile.size || buffer.byteLength,
+        engine: '2.1.5'
+      }, (label, progress, detail, key) => {
+        if (controller.signal.aborted) throw new Error('processing_cancelled');
+        updateProcessingProgress(progress);
+        const lang = STATE.lang || 'en';
+        const localized = (stageLabels[key] && stageLabels[key][lang]) || label;
+        if (processingText) {
+          processingText.textContent = detail ? `${localized} • ${detail}` : localized;
+        }
+      });
+
+      if (controller.signal.aborted) throw new Error('processing_cancelled');
+
+      const outputRaw = result.output;
+      const outputBuf = (outputRaw instanceof Uint8Array)
+        ? outputRaw.buffer.slice(outputRaw.byteOffset, outputRaw.byteOffset + outputRaw.byteLength)
+        : outputRaw;
+      const outputBlob = new Blob([outputBuf], { type: result.outputMime || 'video/mp4' });
 
       await consumeProcessedVideo();
       processedVideoBlob = outputBlob;
@@ -1681,6 +1708,19 @@ if (processBtn) {
       if (downloadBtn) {
         downloadBtn.href = patchedDownloadUrl;
         downloadBtn.download = `${sourceFile.name.replace(/\.[^.]+$/, '')}-ineasy.mp4`;
+      }
+
+      const metaInfo = result.outputInfo || result.info;
+      const hdrInfo = result.outputHdr || result.hdr;
+      const resText = metaInfo && metaInfo.width ? `${metaInfo.width}×${metaInfo.height}` : '';
+      const fpsText = metaInfo?.averageFps ? `${Math.round(metaInfo.averageFps)} FPS` : '';
+      const codecText = metaInfo?.codec ? String(metaInfo.codec).toUpperCase() : '';
+      const hdrText = hdrInfo?.label && hdrInfo.label !== 'SDR / unknown' ? hdrInfo.label : '';
+      const metaDetails = [resText, fpsText, codecText, hdrText].filter(Boolean).join(' • ');
+
+      const resultSubNode = document.getElementById('resultSub');
+      if (resultSubNode && metaDetails) {
+        resultSubNode.textContent = metaDetails;
       }
 
       if (processingText) processingText.textContent = '';
@@ -1710,9 +1750,11 @@ function localizePatchError(message) {
     { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },
     { test: /video_over_60_seconds/i, ru: t('videoTooLong'), kk: t('videoTooLong'), en: t('videoTooLong') },
     { test: /video_duration_unavailable/i, ru: t('videoDurationUnavailable'), kk: t('videoDurationUnavailable'), en: t('videoDurationUnavailable') },
-    { test: /(?:file|source|output).{0,40}(?:size|large|limit|MiB)|(?:size|large|limit|MiB).{0,40}(?:file|source|output)|4K|10 minutes/i, ru: 'Файл превышает ограничение CompressBase для этого устройства. Попробуйте более короткое видео или файл меньшего размера. Баланс INEASY не списан.', kk: 'Файл осы құрылғыдағы CompressBase шегінен асады. Қысқарақ немесе өлшемі кішірек бейнені таңдаңыз. INEASY балансы алынған жоқ.', en: 'This video exceeds a CompressBase limit for this device. Try a shorter or smaller video. Your INEASY credits were not used.' },
-    { test: /supported MP4|non-fragmented|fast-start/i, ru: 'Этот MP4 не поддерживается. Экспортируйте видео как MP4 и попробуйте снова.', kk: 'Бұл MP4 қолдау көрсетпейді. Бейнені MP4 түрінде экспорттаңыз.', en: 'This MP4 is not supported. Export the video as MP4 and try again.' },
-    { test: /429|too many requests|rate.?limit|daily.{0,24}limit|free.{0,24}limit/i, ru: 'Временно исчерпан бесплатный лимит CompressBase на этом устройстве. Это не лимит INEASY; ваши обработки не списаны. Попробуйте позже.', kk: 'Бұл құрылғыдағы CompressBase тегін шегі уақытша таусылды. Бұл INEASY лимиті емес, өңдеу балансыңыз алынған жоқ. Кейінірек қайталаңыз.', en: 'CompressBase’s free allowance for this device is temporarily exhausted. This is separate from your INEASY balance; no credits were used. Try again later.' },
+    { test: /unsupported_codec|codec/i, ru: 'Кодек видео не поддерживается. Рекомендуется H.264 (AVC) или H.265 (HEVC).', kk: 'Бейне кодегіне қолдау көрсетілмейді. H.264 (AVC) немесе H.265 (HEVC) ұсынылады.', en: 'Video codec is not supported. H.264 (AVC) or H.265 (HEVC) is recommended.' },
+    { test: /audio track/i, ru: 'Видео должно содержать звуковую дорожку (AAC).', kk: 'Бейнеде аудио жолы (AAC) болуы керек.', en: 'Video must include an audio track (AAC).' },
+    { test: /already_patched/i, ru: 'Это видео уже оптимизировано с помощью Ultra HD патчера.', kk: 'Бұл бейне оңтайландырылған.', en: 'This video has already been optimized.' },
+    { test: /File video kosong/i, ru: 'Файл видео пуст или повреждён.', kk: 'Бейне файлы бос немесе зақымдалған.', en: 'Video file is empty or corrupted.' },
+    { test: /supported MP4|non-fragmented|fast-start/i, ru: 'Формат контейнера не поддерживается. Экспортируйте видео как стандартный MP4/MOV.', kk: 'Бұл пішім қолдау көрсетпейді. Бейнені стандартты MP4/MOV түрінде экспорттаңыз.', en: 'Container format is not supported. Export video as standard MP4/MOV.' }
   ];
   const match = knownErrors.find((entry) => entry.test.test(message || ''));
   if (match) return match[lang];
