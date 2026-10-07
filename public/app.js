@@ -760,6 +760,18 @@ function renderBalance() {
 
 function updateDropzoneAvailability() {
   const locked = currentBalance === 0;
+  if (locked) {
+    if (processController) processController.abort();
+    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+    currentObjectUrl = null;
+    if (previewVideo) {
+      previewVideo.removeAttribute('src');
+      previewVideo.load();
+    }
+    if (previewWrap) previewWrap.classList.remove('show');
+    if (fileInput) fileInput.value = '';
+    if (postingDeviceSelect) postingDeviceSelect.value = '';
+  }
   if (dropzone) dropzone.classList.toggle('locked', locked);
   if (dropzoneContent) dropzoneContent.classList.toggle('hidden', locked);
   if (balanceLock) balanceLock.classList.toggle('hidden', !locked);
@@ -1329,6 +1341,7 @@ function getPostingDeviceForPlatform() {
 
 function handleFile(file) {
   if (currentBalance === 0) {
+    if (fileInput) fileInput.value = '';
     updateDropzoneAvailability();
     return;
   }
@@ -1746,11 +1759,7 @@ if (processBtn) {
 
       if (controller.signal.aborted) throw new Error('processing_cancelled');
 
-      const outputRaw = result.output;
-      const outputBuf = (outputRaw instanceof Uint8Array)
-        ? outputRaw.buffer.slice(outputRaw.byteOffset, outputRaw.byteOffset + outputRaw.byteLength)
-        : outputRaw;
-      const outputBlob = new Blob([outputBuf], { type: result.outputMime || 'video/mp4' });
+      const outputBlob = new Blob([result.output], { type: result.outputMime || 'video/mp4' });
 
       await consumeProcessedVideo();
       processedVideoBlob = outputBlob;
