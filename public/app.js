@@ -32,7 +32,6 @@ const STATE = {
 };
 let tiktokCreatorInfo = null;
 let tiktokAccountId = null;
-const TIKTOK_CAPTION_SUFFIX = '@ineasybot или ineasy.site(веб сайт)\n#ineasybot';
 
 const translations = {
   en: {
@@ -1014,9 +1013,7 @@ function renderTikTokOptions() {
 }
 
 function buildTikTokCaption(value) {
-  const caption = String(value || '').trim();
-  if (caption.endsWith(TIKTOK_CAPTION_SUFFIX)) return caption;
-  return `${caption}${caption ? '\n' : ''}${TIKTOK_CAPTION_SUFFIX}`;
+  return String(value || '').trim();
 }
 
 function updateTikTokPrivacyNote() {
@@ -1151,7 +1148,7 @@ document.querySelectorAll('input[name="tiktokScheduleMode"]').forEach((input) =>
 });
 updateTikTokScheduleField();
 if (tiktokCaption && tiktokCaptionCount) {
-  tiktokCaption.maxLength = 2200 - TIKTOK_CAPTION_SUFFIX.length - 1;
+  tiktokCaption.maxLength = 2200;
   tiktokCaption.addEventListener('input', () => {
     tiktokCaptionCount.textContent = `${tiktokCaption.value.length} / 2200`;
   });

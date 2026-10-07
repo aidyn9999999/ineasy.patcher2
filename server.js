@@ -18,7 +18,6 @@ const NEWS_CHANNEL_ID = process.env.NEWS_CHANNEL_ID || '@ineasynews';
 const PORT = process.env.PORT || 3000;
 const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : null;
 const ZERNIO_API_BASE = 'https://zernio.com/api/v1';
-const TIKTOK_CAPTION_SUFFIX = '@ineasybot или ineasy.site(веб сайт)\n#ineasybot';
 const WEEKLY_FREE_BALANCE = 2;
 const CARD_INFO = '4400 4300 4955 5771 или 705 542 37 05 (Freedom Bank, Halyk Bank, Kaspi.kz)\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasy.site/app.html';
@@ -1717,10 +1716,7 @@ app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
   const { accountId, uploadId, content, privacyLevel, allowComment, allowDuet, allowStitch, madeWithAi, commercialContentType, confirmedPreview, consentGiven, scheduledFor, timezone } = req.body || {};
   if (typeof content !== 'string' || content.length > 2200) return res.status(400).json({ error: 'invalid_caption' });
   const trimmedContent = content.trim();
-  const caption = trimmedContent.endsWith(TIKTOK_CAPTION_SUFFIX)
-    ? trimmedContent
-    : `${trimmedContent}${trimmedContent ? '\n' : ''}${TIKTOK_CAPTION_SUFFIX}`;
-  if (caption.length > 2200) return res.status(400).json({ error: 'invalid_caption' });
+  const caption = trimmedContent;
   if (!confirmedPreview || !consentGiven) return res.status(400).json({ error: 'publishing_consent_required' });
   if (typeof uploadId !== 'string' || typeof accountId !== 'string') return res.status(400).json({ error: 'upload_or_account_required' });
   const allowedPrivacyLevels = ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'SELF_ONLY'];
