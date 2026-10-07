@@ -1257,7 +1257,7 @@ function setProcessingState(type, text) {
 
 function updateProcessingProgress(value) {
   const percent = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
-  if (processingPercent) processingPercent.textContent = `${t('progressLabel')}: ${percent}%`;
+  if (processingPercent) processingPercent.textContent = t('progressLabel');
   if (processingProgress) processingProgress.style.width = `${percent}%`;
 }
 
@@ -1656,21 +1656,12 @@ if (processBtn) {
       await readVideoDuration(sourceFile, controller.signal);
       controller.signal.throwIfAborted();
 
-      const stageLabels = {
-        reading: { ru: 'Чтение файла…', kk: 'Файлды оқу…', en: 'Reading video…' },
-        checking: { ru: 'Проверка кодека и метаданных…', kk: 'Кодек пен метадеректерді тексеру…', en: 'Checking codec & metadata…' },
-        preparing: { ru: 'Подготовка контейнера…', kk: 'Контейнерді дайындау…', en: 'Preparing container…' },
-        remuxing: { ru: 'Оптимизация MP4 структуры…', kk: 'MP4 құрылымын оңтайландыру…', en: 'Optimizing MP4 layout…' },
-        patching: { ru: 'Применение Ultra HD патча…', kk: 'Ultra HD патчін қолдану…', en: 'Applying Ultra HD patch…' },
-        finalizing: { ru: 'Верификация bitstream и параметров…', kk: 'Битстримді тексеру…', en: 'Verifying bitstream & parameters…' },
-        ready: { ru: 'Готово!', kk: 'Дайын!', en: 'Ready!' }
-      };
 
       if (!globalThis.ADJNVideoProcessor?.processVideoDirect) {
         throw new Error('Video processor engine not loaded.');
       }
 
-      setProcessingState('processing', t('progressLabel'));
+      setProcessingState('processing', '');
       updateProcessingProgress(5);
 
       const buffer = await sourceFile.arrayBuffer();
@@ -1687,11 +1678,6 @@ if (processBtn) {
       }, (label, progress, detail, key) => {
         if (controller.signal.aborted) throw new Error('processing_cancelled');
         updateProcessingProgress(progress);
-        const lang = STATE.lang || 'en';
-        const localized = (stageLabels[key] && stageLabels[key][lang]) || label;
-        if (processingText) {
-          processingText.textContent = detail ? `${localized} • ${detail}` : localized;
-        }
       });
 
       if (controller.signal.aborted) throw new Error('processing_cancelled');
