@@ -56,10 +56,10 @@ const translations = {
     stepOneTitle: 'Upload your finished edit',
     stepOneBody: 'Add your video after editing. Prepare music, text, and effects first.',
     stepTwoTitle: 'Tap “Process video”',
-    stepTwoBody: 'HDR, videos above 15 Mbps, or above 1080p/60 are locally prepared as SDR/H.264 up to 1080p/60 before the ADJN patch. Other compatible videos keep the original fast patch path.',
+    stepTwoBody: 'Compatible MP4 files are patched without re-encoding. Processing runs in your browser; only metadata is sent to the API.',
     stepThreeTitle: 'Publish through Zernio',
     stepThreeBody: 'Tap “Auto-post”, connect your Zernio API key, review the caption, and publish to TikTok.',
-    localProcessingCopy: 'Video and audio stay on your device. HDR, high-bitrate, and above-1080p/60 videos are locally prepared for smoother playback; the original ADJN patcher runs afterward.',
+    localProcessingCopy: 'Video and audio stay on your device. Videos above 1080p or in unsupported formats may be prepared locally in your browser; compatible MP4 video is not re-encoded by the patcher.',
     homeBottomCta: 'Start processing',
     faqLabel: 'FAQ / FREQUENTLY ASKED QUESTIONS',
     analyzerEyebrow: 'VIDEO ANALYZER',
@@ -69,7 +69,7 @@ const translations = {
     patchSub: 'Publish in high quality.',
     choose: 'Drop your video here',
     chooseSub: 'Drag file here or click to browse',
-    localNote: 'Your video stays on your device. HDR, high-bitrate, or above-1080p/60 videos are locally prepared as SDR/H.264 up to 1080p/60 for smoother playback.',
+    localNote: 'Your video stays on your device. 1440p (2K) and 4K videos are automatically prepared in 1080p to reduce processing load.',
     exportNote: 'For smoother playback, export in 1080p, 60 FPS, with a bitrate of 6–10 Mbps.',
     choosePostingDevice: 'Choose your device before processing.',
     communityTitle: 'Stay in the loop with Ineasy',
@@ -170,11 +170,10 @@ const translations = {
     selectFile: 'Select video',
     fileName: 'Selected file',
     packageLabel: 'Video package',
-    errorInvalidFile: 'Choose a supported video up to 150 MB.',
-    videoTooLarge: 'This file exceeds the 150 MB limit.',
+    errorInvalidFile: 'Choose a supported video up to 8 GiB.',
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
-    processingTimedOut: 'Local preparation took longer than 10 minutes. Try a shorter video or a lower resolution.',
+    processingTimedOut: 'Processing took longer than 3 minutes. Try a shorter video or a different device option.',
     videoTooLong: 'Choose a video that is 1 minute or shorter.',
     videoDurationUnavailable: 'Could not read this video duration. Try an MP4 file.',
     noBalance: 'No videos remain in your balance. Add videos to continue.',
@@ -223,10 +222,10 @@ const translations = {
     stepOneTitle: 'Загрузите готовый монтаж',
     stepOneBody: 'Добавьте видео после монтажа: музыку, текст и эффекты подготовьте заранее.',
     stepTwoTitle: 'Нажмите «Обработать видео»',
-    stepTwoBody: 'HDR, видео выше 15 Мбит/с или выше 1080p/60 локально готовятся как SDR/H.264 до 1080p/60, затем запускается основной ADJN-патч. Остальные совместимые видео идут по быстрому пути.',
+    stepTwoBody: 'Совместимый MP4 патчится без повторного сжатия. Обработка проходит в браузере; API получает только метаданные.',
     stepThreeTitle: 'Опубликуйте через Zernio',
     stepThreeBody: 'Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и опубликуйте видео в TikTok.',
-    localProcessingCopy: 'Видео и звук остаются на устройстве. HDR, высокий битрейт и параметры выше 1080p/60 локально готовятся для плавного воспроизведения; затем запускается исходный ADJN-патчер.',
+    localProcessingCopy: 'Видео и звук остаются на устройстве. Видео выше 1080p или неподдерживаемого формата может локально подготавливаться в браузере; совместимый MP4 патчер повторно не перекодирует.',
     homeBottomCta: 'Начать обработку',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
@@ -236,7 +235,7 @@ const translations = {
     patchSub: 'Публикуйте в высоком качестве.',
     choose: 'Перетащите видео сюда',
     chooseSub: 'Перетащите файл сюда или нажмите, чтобы открыть устройство',
-    localNote: 'Ваше видео остаётся на устройстве. HDR, высокий битрейт и параметры выше 1080p/60 локально готовятся как SDR/H.264 до 1080p/60 для более плавного воспроизведения.',
+    localNote: 'Ваше видео остаётся на устройстве. Видео в 1440p (2K) и 4K автоматически подготавливается в 1080p, чтобы снизить нагрузку при обработке.',
     exportNote: 'Для более плавного воспроизведения экспортируйте видео в 1080p, 60 FPS и с битрейтом 6–10 Мбит/с.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
     communityTitle: 'Будь в курсе Ineasy',
@@ -337,11 +336,10 @@ const translations = {
     selectFile: 'Выберите видео',
     fileName: 'Выбранный файл',
     packageLabel: 'Пакет видео',
-    errorInvalidFile: 'Выберите поддерживаемое видео размером до 150 MB.',
-    videoTooLarge: 'Размер файла превышает лимит 150 MB.',
+    errorInvalidFile: 'Выберите поддерживаемое видео размером до 8 GiB.',
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
-    processingTimedOut: 'Локальная подготовка длится больше 10 минут. Попробуйте короткое видео или более низкое разрешение.',
+    processingTimedOut: 'Обработка длится больше 3 минут. Попробуйте короткое видео или другой режим устройства.',
     videoTooLong: 'Выберите видео длительностью не более 1 минуты.',
     videoDurationUnavailable: 'Не удалось определить длительность видео. Попробуйте файл MP4.',
     noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
@@ -390,10 +388,10 @@ const translations = {
     stepOneTitle: 'Дайын монтажды жүктеңіз',
     stepOneBody: 'Видеоны монтаждан кейін қосыңыз. Музыка, мәтін және әсерлерді алдын ала дайындаңыз.',
     stepTwoTitle: '«Бейнені өңдеу» түймесін басыңыз',
-    stepTwoBody: 'HDR, 15 Мбит/с-тен жоғары немесе 1080p/60-тан жоғары видео SDR/H.264 форматына жергілікті дайындалады, содан кейін негізгі ADJN патчы іске қосылады.',
+    stepTwoBody: 'Үйлесімді MP4 қайта қысылмай патчталады. Өңдеу браузерде орындалады; API тек метадеректер алады.',
     stepThreeTitle: 'Zernio арқылы жариялаңыз',
     stepThreeBody: '«Автожариялау» түймесін басып, Zernio API кілтін қосыңыз, сипаттаманы тексеріп, TikTok-қа жариялаңыз.',
-    localProcessingCopy: 'Видео мен аудио құрылғыңыздан шықпайды. HDR, жоғары битрейт немесе 1080p/60-тан жоғары видео бірқалыпты ойнату үшін жергілікті дайындалады; содан кейін бастапқы ADJN патчері іске қосылады.',
+    localProcessingCopy: 'Видео мен аудио құрылғыңызда қалады. 1080p-ден жоғары немесе қолдау көрсетілмейтін форматтағы видео браузерде жергілікті дайындалуы мүмкін; үйлесімді MP4 қайта кодталмайды.',
     homeBottomCta: 'Өңдеуді бастау',
     faqLabel: 'FAQ / ЖИІ ҚОЙЫЛАТЫН СҰРАҚТАР',
     analyzerEyebrow: 'БЕЙНЕ АНАЛИЗАТОРЫ',
@@ -403,7 +401,7 @@ const translations = {
     patchSub: 'Жоғары сапада жариялаңыз.',
     choose: 'Видеоны осында сүйреп әкеліңіз',
     chooseSub: 'Файлды осы жерге сүйреп апарыңыз немесе құрылғыдан таңдаңыз',
-    localNote: 'Бейнеңіз құрылғыңызда қалады. HDR, жоғары битрейт немесе 1080p/60-тан жоғары видео бірқалыпты ойнату үшін SDR/H.264 1080p/60 форматына жергілікті дайындалады.',
+    localNote: 'Бейнеңіз құрылғыңызда қалады. 1440p (2K) және 4K бейнелері өңдеу жүктемесін азайту үшін автоматты түрде 1080p форматына дайындалады.',
     exportNote: 'Бірқалыпты ойнату үшін бейнені 1080p, 60 FPS және 6–10 Мбит/с битрейтпен экспорттаңыз.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
     communityTitle: 'Ineasy жаңалықтарынан хабардар болыңыз',
@@ -504,11 +502,10 @@ const translations = {
     selectFile: 'Бейнені таңдаңыз',
     fileName: 'Таңдалған файл',
     packageLabel: 'Бейне пакеті',
-    errorInvalidFile: '150 MB-ке дейін қолдау көрсетілетін бейне таңдаңыз.',
-    videoTooLarge: 'Файл өлшемі 150 MB шегінен асады.',
+    errorInvalidFile: '8 GiB-ке дейін қолдау көрсетілетін бейне таңдаңыз.',
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
-    processingTimedOut: 'Жергілікті дайындау 10 минуттан ұзақ. Қысқарақ бейнені немесе төменірек ажыратымдылықты таңдаңыз.',
+    processingTimedOut: 'Өңдеу 3 минуттан ұзақ жүріп жатыр. Қысқарақ бейнені немесе басқа құрылғы режимін таңдаңыз.',
     videoTooLong: 'Ұзақтығы 1 минуттан аспайтын бейне таңдаңыз.',
     videoDurationUnavailable: 'Бейне ұзақтығын анықтау мүмкін болмады. MP4 файлын қолданып көріңіз.',
     noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
@@ -1350,8 +1347,6 @@ function getPostingDeviceForPlatform() {
   return isPhoneMode ? 'phone' : 'pc';
 }
 
-const MAX_SOURCE_FILE_BYTES = 150_000_000;
-
 function handleFile(file) {
   if (currentBalance === 0) {
     if (fileInput) fileInput.value = '';
@@ -1359,15 +1354,14 @@ function handleFile(file) {
     return;
   }
   const isVideo = file && (file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name));
-  const tooLarge = Boolean(file && file.size > MAX_SOURCE_FILE_BYTES);
-  if (!isVideo || file.size < 16 || tooLarge) {
+  if (!isVideo || file.size < 16 || file.size > 8 * 1024 ** 3) {
     if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
     currentObjectUrl = null;
     if (previewVideo) previewVideo.src = '';
     if (previewWrap) previewWrap.classList.remove('show');
     if (postingDeviceSelect) postingDeviceSelect.value = '';
     if (fileInput) fileInput.value = '';
-    setProcessingState('error', tooLarge ? t('videoTooLarge') : t('errorInvalidFile'));
+    setProcessingState('error', t('errorInvalidFile'));
     if (processBtn) processBtn.disabled = true;
     return;
   }
@@ -1667,7 +1661,7 @@ if (processBtn) {
     const processingTimeoutId = setTimeout(() => {
       processingTimedOut = true;
       controller.abort();
-    }, 600000);
+    }, 180000);
     processController = controller;
     processBtn.disabled = true;
     if (cancelProcessBtn) cancelProcessBtn.disabled = false;
@@ -1680,7 +1674,7 @@ if (processBtn) {
     updateProcessingProgress(0);
 
     try {
-      const videoDuration = await readVideoDuration(sourceFile, controller.signal);
+      await readVideoDuration(sourceFile, controller.signal);
       controller.signal.throwIfAborted();
 
 
@@ -1690,6 +1684,9 @@ if (processBtn) {
 
       setProcessingState('processing', '');
       updateProcessingProgress(5);
+
+      const buffer = await sourceFile.arrayBuffer();
+      controller.signal.throwIfAborted();
 
       const requestId = `ineasy-${Date.now()}`;
 
@@ -1715,17 +1712,16 @@ if (processBtn) {
           if (!msg) return;
 
           if (msg.type === 'READY') {
-            // Keep the file out of the main-thread heap; the worker reads it locally.
+            // Worker is ready, send the job (transfer buffer ownership — zero copy)
             worker.postMessage({
               type: 'PROCESS',
               requestId,
-              file: sourceFile,
-              duration: videoDuration,
+              buffer,
               fileName: sourceFile.name || 'video.mp4',
               fileType: sourceFile.type || 'video/mp4',
-              fileSize: sourceFile.size,
+              fileSize: sourceFile.size || buffer.byteLength,
               engine: '2.1.5'
-            });
+            }, [buffer]);
             return;
           }
 
@@ -1747,7 +1743,6 @@ if (processBtn) {
               passthrough: msg.passthrough,
               mode: msg.mode,
               report: msg.report,
-              transcodeReport: msg.transcodeReport,
               inputBytes: msg.inputBytes
             });
             return;
@@ -1792,7 +1787,6 @@ if (processBtn) {
       console.info('[INEASY] Media processing complete', {
         mode: result.mode || 'unknown',
         passthrough: Boolean(result.passthrough),
-        transcode: result.transcodeReport || null,
         patcherActive: !result.passthrough && result.mode === 'adjn-core-resolution-codec-safe',
         durationUnknown: result.report?.durationUnknown ?? null,
         encoderTag: result.report?.encoderTag || '',
@@ -1833,8 +1827,7 @@ if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processCo
 function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const knownErrors = [
-    { test: /LOCAL_SOURCE_FILE_REQUIRED/i, ru: 'Не удалось прочитать исходный файл в браузере. Выберите видео заново.', kk: 'Бастапқы файлды браузерде оқу мүмкін болмады. Бейнені қайта таңдаңыз.', en: 'Could not read the local source file. Select the video again.' },
-    { test: /LOCAL_TRANSCODE_FAILED/i, ru: 'Не удалось подготовить видео локально. Проверьте интернет-соединение и свободную память устройства; исходник не загружался на сервер.', kk: 'Бейнені құрылғыда дайындау мүмкін болмады. Интернет пен бос жадты тексеріңіз; бастапқы файл серверге жіберілген жоқ.', en: 'Could not prepare the video locally. Check your connection and free device memory; the source was not uploaded.' },
+    { test: /hdr_video_not_supported/i, ru: 'Сейчас принимаются только SDR-видео. HDR-обработка временно отключена.', kk: 'Қазір тек SDR бейнелер қабылданады. HDR өңдеуі уақытша өшірілген.', en: 'Only SDR videos are accepted right now. HDR processing is temporarily disabled.' },
     { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },
     { test: /video_over_60_seconds/i, ru: t('videoTooLong'), kk: t('videoTooLong'), en: t('videoTooLong') },
     { test: /video_duration_unavailable/i, ru: t('videoDurationUnavailable'), kk: t('videoDurationUnavailable'), en: t('videoDurationUnavailable') },

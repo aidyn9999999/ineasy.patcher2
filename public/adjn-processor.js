@@ -91,6 +91,10 @@
     return result;
   }
 
+  function isHdrProfile(hdr) {
+    return Boolean(hdr?.hdr10 || hdr?.hdr10plus || hdr?.hlg || hdr?.dolbyVision);
+  }
+
   function validateMediaInfo(info) {
     if (!info || !Number.isFinite(info.width) || !Number.isFinite(info.height)) {
       throw new Error('Resolusi video tidak terbaca.');
@@ -380,11 +384,15 @@
       }
       compat = core.inspectCompatibility(original);
     } catch (inspectError) {
+      hdr = detectHdrProfile(original, info || sniff);
+      if (isHdrProfile(hdr)) throw new Error('hdr_video_not_supported');
       // Fragmented MP4, WebM/MKV, unusual MOV atoms, and other structures are
       // deliberately preserved byte-for-byte instead of being rejected.
       stage(requestId, 'preparing', 'Universal Safe…', 35, 'Struktur kompleks • seluruh file dipertahankan byte-identical');
       return passthroughResult(original, data, inspectError?.message || 'container/codec tidak memakai jalur patch MP4 klasik', info, hdr, sniff);
     }
+
+    if (isHdrProfile(hdr)) throw new Error('hdr_video_not_supported');
 
     const limits = validateMediaInfo(info);
     const loadText = limits.uhdHighLoad
