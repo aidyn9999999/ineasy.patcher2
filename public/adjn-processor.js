@@ -395,6 +395,11 @@
       : `${info.width}×${info.height} • ${limits.fps ? limits.fps.toFixed(2) : '?'} FPS`;
     const hdrText = hdr?.label && hdr.label !== 'SDR / unknown' ? ` • ${hdr.label}` : '';
 
+    if (hdrText) {
+      stage(requestId, 'preparing', 'HDR source preserved…', 35, `${hdr.label} • source MP4 left byte-identical`);
+      return passthroughResult(original, data, `HDR source preserved without container patch (${hdr.label})`, info, hdr, sniff);
+    }
+
     // Preserve multi-track media, subtitles/timecode, alternate audio/video tracks,
     // and extra top-level metadata boxes exactly instead of letting the classic
     // patch discard or reorder them.
