@@ -49,9 +49,9 @@ const redis = new Redis({
 });
 
 const BTN = {
-  ru: { buy: '🛒 Купить видео', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Проверка видео', invite: '👥 Пригласить друга' },
-  en: { buy: '🛒 Buy videos', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video check', invite: '👥 Invite a friend' },
-  kk: { buy: '🛒 Видео сатып алу', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейнені тексеру', invite: '👥 Дос шақыру' },
+  ru: { buy: '🛒 Купить видео', website: '🌐 Зайти на сайт', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Язык', check: '🔍 Проверка видео', invite: '👥 Пригласить друга' },
+  en: { buy: '🛒 Buy videos', website: '🌐 Open website', balance: '💰 Balance', profile: '👤 Profile', lang: '🌐 Language', check: '🔍 Video check', invite: '👥 Invite a friend' },
+  kk: { buy: '🛒 Видео сатып алу', website: '🌐 Сайтқа кіру', balance: '💰 Баланс', profile: '👤 Профиль', lang: '🌐 Тіл', check: '🔍 Бейнені тексеру', invite: '👥 Дос шақыру' },
 };
 
 function langChoiceKeyboard() {
@@ -700,6 +700,7 @@ bot.use(async (ctx, next) => {
 function mainKeyboard(lang) {
   const b = BTN[lang];
   return Markup.keyboard([
+    [b.website],
     [b.buy],
     [b.check],
     [b.balance, b.profile],
@@ -976,6 +977,13 @@ bot.hears([BTN.ru.lang, BTN.en.lang, BTN.kk.lang], async (ctx) => {
 });
 
 bot.command('website', async (ctx) => {
+  const lang = await getLang(ctx.from.id);
+  await ctx.reply(TEXTS[lang].websiteGuide(WEBSITE_URL), Markup.inlineKeyboard([
+    [Markup.button.url(TEXTS[lang].websiteButton, WEBSITE_URL)],
+  ]));
+});
+
+bot.hears([BTN.ru.website, BTN.en.website, BTN.kk.website], async (ctx) => {
   const lang = await getLang(ctx.from.id);
   await ctx.reply(TEXTS[lang].websiteGuide(WEBSITE_URL), Markup.inlineKeyboard([
     [Markup.button.url(TEXTS[lang].websiteButton, WEBSITE_URL)],
