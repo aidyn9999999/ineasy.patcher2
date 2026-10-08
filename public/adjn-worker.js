@@ -27,8 +27,8 @@ function targetVideoRate(width, height, fps) {
   const pixels = Number(width || 0) * Number(height || 0);
   if (fps > 60.01) return pixels >= 3840 * 2160 ? 22_000_000 : 20_000_000;
   if (pixels >= 3840 * 2160) return 20_000_000;
-  if (pixels >= 1920 * 1080) return 16_000_000;
-  return 12_000_000;
+  if (pixels >= 1920 * 1080) return 10_000_000;
+  return 8_000_000;
 }
 
 async function transcodeSdrForPlayback(file, info, onProgress) {
@@ -157,7 +157,9 @@ self.onmessage = async function (event) {
         outputType = 'video/mp4';
         rateControlReport = {
           performed: true,
+          durationSeconds: duration,
           sourceBitrate: Math.round(averageBitrate),
+          outputAverageBitrate: duration > 0 ? Math.round((encoded.buffer.byteLength * 8) / duration) : null,
           sourceResolution: sourceInfo ? `${sourceInfo.width}x${sourceInfo.height}` : 'unknown',
           sourceFps: Math.round(sourceFps),
           outputBitrateCap: encoded.maxRate,
