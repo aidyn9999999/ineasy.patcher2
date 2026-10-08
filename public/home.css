@@ -326,6 +326,9 @@
   width: min(1320px, 100%);
   max-width: 1320px;
 }
+.app-main:not(:has(#patchSection.active)) > .community-callout .news-callout {
+  display: none;
+}
 #patchTitle {
   margin: 0 0 9px;
   color: #e8ebf0;

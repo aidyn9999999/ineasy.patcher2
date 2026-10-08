@@ -23,12 +23,8 @@ async function loadFfmpegWorkerURL() {
   return URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
 }
 
-function targetVideoRate(width, height, fps) {
-  const pixels = Number(width || 0) * Number(height || 0);
-  if (fps > 60.01) return pixels >= 3840 * 2160 ? 22_000_000 : 20_000_000;
-  if (pixels >= 3840 * 2160) return 20_000_000;
-  if (pixels >= 1920 * 1080) return 10_000_000;
-  return 8_000_000;
+function targetVideoRate() {
+  return 20_000_000;
 }
 
 async function transcodeSdrForPlayback(file, info, onProgress) {
@@ -44,7 +40,7 @@ async function transcodeSdrForPlayback(file, info, onProgress) {
   const inputName = String(file.name || 'input.mp4').replace(/[\\/]/g, '_');
   const inputPath = `/source/${inputName}`;
   const fps = Math.max(1, Math.min(120, Math.round(Number(info?.maxFps || info?.averageFps || 30))));
-  const maxRate = targetVideoRate(info?.width, info?.height, fps);
+  const maxRate = targetVideoRate();
 
   try {
     workerUrl = await loadFfmpegWorkerURL();

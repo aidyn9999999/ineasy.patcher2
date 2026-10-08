@@ -113,11 +113,12 @@ const TEXTS = {
       `🆓 Бесплатный (на этой неделе): ${free} видео\n` +
       `💎 Купленный: ${purchased} видео\n\n` +
       `📊 Всего доступно: ${free + purchased} видео`,
-    profile: (username, id, patched, free, purchased) =>
+    profile: (username, id, patched, free, purchased, purchasedTotal) =>
       `👤 Профиль\n\n` +
       `Ник: ${username}\n` +
       `Telegram ID: ${id}\n\n` +
       `🎬 Обработано видео: ${patched}\n` +
+      `🛒 Всего куплено: ${purchasedTotal} видео\n` +
       `🆓 Бесплатный баланс (неделя): ${free}\n` +
       `💎 Купленный баланс: ${purchased}\n` +
       `📊 Всего доступно: ${free + purchased}`,
@@ -196,11 +197,12 @@ const TEXTS = {
       `🆓 Free (this week): ${free} videos\n` +
       `💎 Purchased: ${purchased} videos\n\n` +
       `📊 Total available: ${free + purchased} videos`,
-    profile: (username, id, patched, free, purchased) =>
+    profile: (username, id, patched, free, purchased, purchasedTotal) =>
       `👤 Profile\n\n` +
       `Username: ${username}\n` +
       `Telegram ID: ${id}\n\n` +
       `🎬 Videos processed so far: ${patched}\n` +
+      `🛒 Videos purchased: ${purchasedTotal}\n` +
       `🆓 Free balance (this week): ${free}\n` +
       `💎 Purchased balance: ${purchased}\n` +
       `📊 Total available: ${free + purchased}`,
@@ -279,11 +281,12 @@ const TEXTS = {
       `🆓 Тегін (осы аптада): ${free} видео\n` +
       `💎 Сатып алынған: ${purchased} видео\n\n` +
       `📊 Барлығы қолжетімді: ${free + purchased} видео`,
-    profile: (username, id, patched, free, purchased) =>
+    profile: (username, id, patched, free, purchased, purchasedTotal) =>
       `👤 Профиль\n\n` +
       `Ник: ${username}\n` +
       `Telegram ID: ${id}\n\n` +
       `🎬 Өңделген видео саны: ${patched}\n` +
+      `🛒 Сатып алынған видео саны: ${purchasedTotal}\n` +
       `🆓 Тегін баланс (апта): ${free}\n` +
       `💎 Сатып алынған баланс: ${purchased}\n` +
       `📊 Барлығы қолжетімді: ${free + purchased}`,
@@ -420,6 +423,11 @@ async function getPurchasedBalance(telegramId) {
     return migrated;
   }
   return 0;
+}
+
+async function getPurchasedTotal(telegramId) {
+  const val = await redis.get(`purchasedTotal:${telegramId}`);
+  return val === null || val === undefined ? 0 : Number(val);
 }
 
 async function addPurchasedBalance(telegramId, amount) {
@@ -860,10 +868,10 @@ async function sendBalance(ctx, lang) {
 async function sendProfile(ctx, lang) {
   const id = ctx.from.id;
   const username = ctx.from.username ? `@${ctx.from.username}` : (ctx.from.first_name || '—');
-  const [free, purchased, patched] = await Promise.all([
-    getFreeBalance(id), getPurchasedBalance(id), getPatchedCount(id),
+  const [free, purchased, patched, purchasedTotal] = await Promise.all([
+    getFreeBalance(id), getPurchasedBalance(id), getPatchedCount(id), getPurchasedTotal(id),
   ]);
-  await ctx.reply(TEXTS[lang].profile(username, id, patched, free, purchased), mainKeyboard(lang));
+  await ctx.reply(TEXTS[lang].profile(username, id, patched, free, purchased, purchasedTotal), mainKeyboard(lang));
 }
 
 async function sendInvite(ctx, lang) {
@@ -1148,6 +1156,7 @@ bot.action(/^purchase_(approve|reject)_([\w-]+)$/, async (ctx) => {
     if (action === 'approve') {
       await getPurchasedBalance(order.telegramId);
       transaction.incrby(`purchased:${order.telegramId}`, order.count);
+      transaction.incrby(`purchasedTotal:${order.telegramId}`, order.count);
     }
     transaction.set(`purchase:${orderId}`, updatedOrder);
     transaction.del(`pendingPurchase:${order.telegramId}`);
