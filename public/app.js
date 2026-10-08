@@ -1678,10 +1678,6 @@ if (processBtn) {
       controller.signal.throwIfAborted();
 
 
-      if (!globalThis.ADJNVideoProcessor?.processVideoDirect) {
-        throw new Error('Video processor engine not loaded.');
-      }
-
       setProcessingState('processing', '');
       updateProcessingProgress(5);
 
@@ -1705,7 +1701,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js');
+        const worker = new Worker('adjn-worker.js?v=20261008-2');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1832,6 +1828,7 @@ function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const knownErrors = [
     { test: /hdr_video_not_supported/i, ru: 'Сейчас принимаются только SDR-видео. HDR-обработка временно отключена.', kk: 'Қазір тек SDR бейнелер қабылданады. HDR өңдеуі уақытша өшірілген.', en: 'Only SDR videos are accepted right now. HDR processing is temporarily disabled.' },
+    { test: /ADJN engine not loaded|Worker crashed|Script error/i, ru: 'Не удалось загрузить локальный ADJN-модуль. Обновите страницу и откройте сайт в Chrome или Safari.', kk: 'ADJN модулін жүктеу мүмкін болмады. Бетті жаңартып, сайтты Chrome немесе Safari арқылы ашыңыз.', en: 'Could not load the local ADJN module. Refresh the page and open the site in Chrome or Safari.' },
     { test: /LOCAL_RATE_CONTROL_FILE_REQUIRED/i, ru: 'Браузер не передал видео локальному оптимизатору. Откройте сайт в Safari или Chrome и выберите файл заново.', kk: 'Браузер видеоны жергілікті оңтайландыруға бере алмады. Сайтты Safari немесе Chrome арқылы ашып, файлды қайта таңдаңыз.', en: 'The browser could not pass the video to local optimization. Open the site in Safari or Chrome and select the file again.' },
     { test: /LOCAL_RATE_CONTROL_FAILED/i, ru: 'Не удалось локально оптимизировать видео. Проверьте интернет-соединение для загрузки FFmpeg и свободную память; видео не отправлялось на сервер.', kk: 'Видеоны құрылғыда оңтайландыру мүмкін болмады. FFmpeg жүктеу үшін интернетті және бос жадты тексеріңіз; видео серверге жіберілген жоқ.', en: 'Could not optimize the video locally. Check your connection for the FFmpeg download and free device memory; the video was not uploaded to a server.' },
     { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },
