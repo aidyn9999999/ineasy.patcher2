@@ -13,6 +13,7 @@ const FFMPEG_PACKAGE_BASE = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10
 const FFMPEG_UTIL_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
 const FFMPEG_CORE_BASE = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
 const TRANSCODE_BITRATE_THRESHOLD = 20_000_000;
+const MAX_VIDEO_FILE_SIZE = 150 * 1024 * 1024;
 
 async function loadFfmpegWorkerURL() {
   const response = await fetch(`${FFMPEG_PACKAGE_BASE}/dist/esm/worker.js`);
@@ -107,6 +108,10 @@ self.onmessage = async function (event) {
   let rateControlReport = { performed: false };
 
   try {
+    if (Number(fileSize || buffer?.byteLength || 0) > MAX_VIDEO_FILE_SIZE) {
+      throw new Error('video_file_over_150mb');
+    }
+
     if (!globalThis.ADJNVideoProcessor?.processVideoDirect) {
       throw new Error('ADJN engine not loaded in worker.');
     }
@@ -120,6 +125,9 @@ self.onmessage = async function (event) {
     } catch (error) {}
 
     if (sourceInfo) {
+      if (Math.max(sourceInfo.width, sourceInfo.height) > 1920 || Math.min(sourceInfo.width, sourceInfo.height) > 1080) {
+        throw new Error('video_resolution_over_1080p');
+      }
       globalThis.ADJNVideoProcessor.validateMediaInfo(sourceInfo);
       if (sourceHdr?.hdr10 || sourceHdr?.hdr10plus || sourceHdr?.hlg || sourceHdr?.dolbyVision) {
         throw new Error('hdr_video_not_supported');

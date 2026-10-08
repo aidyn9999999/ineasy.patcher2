@@ -56,7 +56,7 @@ const translations = {
     stepOneTitle: 'Upload your finished edit',
     stepOneBody: 'Add your video after editing. Prepare music, text, and effects first.',
     stepTwoTitle: 'Tap “Process video”',
-    stepTwoBody: 'SDR videos above 20 Mbps are locally rate-controlled while preserving resolution and frame rate, then passed to the original ADJN patcher. HDR is temporarily unavailable.',
+    stepTwoBody: 'Videos up to Full HD (1920×1080) are processed locally. 2K and 4K videos are not accepted.',
     stepThreeTitle: 'Publish through Zernio',
     stepThreeBody: 'Tap “Auto-post”, connect your Zernio API key, review the caption, and publish to TikTok.',
     localProcessingCopy: 'Video and audio stay on your device. High-bitrate SDR video is locally optimized to reduce playback load; the original ADJN patcher runs afterward.',
@@ -69,7 +69,7 @@ const translations = {
     patchSub: 'Publish in high quality.',
     choose: 'Drop your video here',
     chooseSub: 'Drag file here or click to browse',
-    localNote: 'Your SDR video stays on your device. High-bitrate files are locally rate-controlled while preserving source resolution/FPS up to 4K120. HDR is temporarily unavailable.',
+    localNote: 'Your video stays on your device. Maximum accepted resolution: Full HD (1920×1080).',
     exportNote: 'For smoother playback, export in 1080p, 60 FPS, with a bitrate of 6–10 Mbps.',
     choosePostingDevice: 'Choose your device before processing.',
     communityTitle: 'Stay in the loop with Ineasy',
@@ -170,7 +170,12 @@ const translations = {
     selectFile: 'Select video',
     fileName: 'Selected file',
     packageLabel: 'Video package',
-    errorInvalidFile: 'Choose a supported video up to 8 GiB.',
+    errorInvalidFile: 'Choose a supported video file.',
+    fileTooLarge: 'Video files must be 150 MB or smaller.',
+    readingVideoMetadata: 'Reading video details…',
+    loadingVideoData: 'Preparing video for local processing…',
+    videoResolutionTooHigh: 'This video is above Full HD. Export it at 1920×1080 or 1080×1920 and select it again.',
+    videoDimensionsUnavailable: 'Could not read the video resolution. Try exporting it as MP4.',
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
     processingTimedOut: 'Local optimization took longer than 10 minutes. Try a shorter video or lower the source bitrate.',
@@ -222,7 +227,7 @@ const translations = {
     stepOneTitle: 'Загрузите готовый монтаж',
     stepOneBody: 'Добавьте видео после монтажа: музыку, текст и эффекты подготовьте заранее.',
     stepTwoTitle: 'Нажмите «Обработать видео»',
-    stepTwoBody: 'SDR-видео выше 15 Мбит/с локально оптимизируется с сохранением разрешения и FPS (до 4K120), затем проходит через исходный ADJN-патчер. HDR временно отключён.',
+    stepTwoBody: 'Локально обрабатываются видео до Full HD (1920×1080). Видео 2K и 4K не принимаются.',
     stepThreeTitle: 'Опубликуйте через Zernio',
     stepThreeBody: 'Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и опубликуйте видео в TikTok.',
     localProcessingCopy: 'Видео и звук остаются на устройстве. Тяжёлое SDR-видео локально оптимизируется для плавного воспроизведения; затем запускается исходный ADJN-патчер.',
@@ -235,7 +240,7 @@ const translations = {
     patchSub: 'Публикуйте в высоком качестве.',
     choose: 'Перетащите видео сюда',
     chooseSub: 'Перетащите файл сюда или нажмите, чтобы открыть устройство',
-    localNote: 'SDR-видео остаётся на устройстве. Высокий битрейт локально ограничивается с сохранением исходных разрешения/FPS до 4K120. HDR временно недоступен.',
+    localNote: 'Видео остаётся на устройстве. Максимальное разрешение — Full HD (1920×1080).',
     exportNote: 'Для более плавного воспроизведения экспортируйте видео в 1080p, 60 FPS и с битрейтом 6–10 Мбит/с.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
     communityTitle: 'Будь в курсе Ineasy',
@@ -336,7 +341,12 @@ const translations = {
     selectFile: 'Выберите видео',
     fileName: 'Выбранный файл',
     packageLabel: 'Пакет видео',
-    errorInvalidFile: 'Выберите поддерживаемое видео размером до 8 GiB.',
+    errorInvalidFile: 'Выберите поддерживаемый видеофайл.',
+    fileTooLarge: 'Размер видео не должен превышать 150 МБ.',
+    readingVideoMetadata: 'Читаем параметры видео…',
+    loadingVideoData: 'Подготавливаем видео к локальной обработке…',
+    videoResolutionTooHigh: 'Разрешение видео выше Full HD. Экспортируйте его в 1920×1080 или 1080×1920 и выберите снова.',
+    videoDimensionsUnavailable: 'Не удалось прочитать разрешение видео. Попробуйте экспортировать его в MP4.',
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
     processingTimedOut: 'Локальная оптимизация длится больше 10 минут. Попробуйте короткое видео или снизить битрейт исходника.',
@@ -388,7 +398,7 @@ const translations = {
     stepOneTitle: 'Дайын монтажды жүктеңіз',
     stepOneBody: 'Видеоны монтаждан кейін қосыңыз. Музыка, мәтін және әсерлерді алдын ала дайындаңыз.',
     stepTwoTitle: '«Бейнені өңдеу» түймесін басыңыз',
-    stepTwoBody: '15 Мбит/с-тен жоғары SDR видео рұқсат пен FPS-ті сақтап (4K120-ға дейін) құрылғыда оңтайландырылады, содан кейін ADJN патчері іске қосылады. HDR уақытша өшірілген.',
+    stepTwoBody: 'Full HD (1920×1080) дейінгі бейнелер құрылғыда өңделеді. 2K және 4K бейнелері қабылданбайды.',
     stepThreeTitle: 'Zernio арқылы жариялаңыз',
     stepThreeBody: '«Автожариялау» түймесін басып, Zernio API кілтін қосыңыз, сипаттаманы тексеріп, TikTok-қа жариялаңыз.',
     localProcessingCopy: 'Видео мен аудио құрылғыңызда қалады. Жоғары битрейтті SDR видео бірқалыпты ойнату үшін жергілікті оңтайландырылады; содан кейін ADJN патчері іске қосылады.',
@@ -401,7 +411,7 @@ const translations = {
     patchSub: 'Жоғары сапада жариялаңыз.',
     choose: 'Видеоны осында сүйреп әкеліңіз',
     chooseSub: 'Файлды осы жерге сүйреп апарыңыз немесе құрылғыдан таңдаңыз',
-    localNote: 'SDR видео құрылғыңызда қалады. Жоғары битрейт бастапқы рұқсат/FPS-ті 4K120-ға дейін сақтап оңтайландырылады. HDR уақытша өшірілген.',
+    localNote: 'Бейне құрылғыңызда қалады. Ең жоғары ажыратымдылық — Full HD (1920×1080).',
     exportNote: 'Бірқалыпты ойнату үшін бейнені 1080p, 60 FPS және 6–10 Мбит/с битрейтпен экспорттаңыз.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
     communityTitle: 'Ineasy жаңалықтарынан хабардар болыңыз',
@@ -502,7 +512,12 @@ const translations = {
     selectFile: 'Бейнені таңдаңыз',
     fileName: 'Таңдалған файл',
     packageLabel: 'Бейне пакеті',
-    errorInvalidFile: '8 GiB-ке дейін қолдау көрсетілетін бейне таңдаңыз.',
+    errorInvalidFile: 'Қолдау көрсетілетін бейне файлын таңдаңыз.',
+    fileTooLarge: 'Бейне файлының өлшемі 150 МБ-тан аспауы керек.',
+    readingVideoMetadata: 'Бейне параметрлері оқылуда…',
+    loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
+    videoResolutionTooHigh: 'Бейне Full HD форматынан жоғары. 1920×1080 немесе 1080×1920 етіп экспорттап, қайта таңдаңыз.',
+    videoDimensionsUnavailable: 'Бейне ажыратымдылығын оқу мүмкін болмады. MP4 форматында экспорттап көріңіз.',
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
     processingTimedOut: 'Жергілікті оңтайландыру 10 минуттан ұзақ. Қысқарақ видео немесе төменірек битрейт қолданып көріңіз.',
@@ -741,6 +756,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 const balanceLabel = document.getElementById('balanceLabel');
 let currentBalance = null;
 let balanceRequestVersion = 0;
+let checkingFileDimensions = false;
 
 function balanceTotal(data) {
   const free = Number(data.free);
@@ -784,7 +800,7 @@ function updateProcessButton() {
   const hasCredits = currentBalance === null || (Number.isFinite(currentBalance) && currentBalance > 0);
   const hasPostingDevice = Boolean(postingDeviceSelect && ['pc', 'phone', 'phone-ghost'].includes(postingDeviceSelect.value));
   const hasResult = Boolean(processedResult && !processedResult.classList.contains('hidden'));
-  processBtn.disabled = !hasVideo || !hasCredits || !hasPostingDevice || Boolean(processController) || hasResult;
+  processBtn.disabled = !hasVideo || !hasCredits || !hasPostingDevice || checkingFileDimensions || Boolean(processController) || hasResult;
 }
 
 async function loadBalance() {
@@ -1341,33 +1357,107 @@ async function readVideoDuration(file, signal) {
   }
 }
 
+function readVideoDimensions(file) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const sourceUrl = URL.createObjectURL(file);
+    let timeoutId;
+    let settled = false;
+    const cleanup = () => {
+      clearTimeout(timeoutId);
+      video.removeEventListener('loadedmetadata', onLoaded);
+      video.removeEventListener('error', onError);
+      video.removeAttribute('src');
+      video.load();
+      URL.revokeObjectURL(sourceUrl);
+    };
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      callback(value);
+    };
+    const onLoaded = () => {
+      const width = video.videoWidth;
+      const height = video.videoHeight;
+      if (!width || !height) return finish(reject, new Error('video_dimensions_unavailable'));
+      finish(resolve, { width, height });
+    };
+    const onError = () => finish(reject, new Error('video_dimensions_unavailable'));
+    video.preload = 'metadata';
+    video.addEventListener('loadedmetadata', onLoaded, { once: true });
+    video.addEventListener('error', onError, { once: true });
+    timeoutId = setTimeout(() => finish(reject, new Error('video_dimensions_unavailable')), 10000);
+    video.src = sourceUrl;
+    video.load();
+  });
+}
+
 function getPostingDeviceForPlatform() {
   const isPhoneMode = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   return isPhoneMode ? 'phone' : 'pc';
 }
 
-function handleFile(file) {
+const MAX_VIDEO_FILE_SIZE = 150 * 1024 * 1024;
+let fileSelectionVersion = 0;
+
+function rejectFileSelection(message) {
+  if (fileInput) fileInput.value = '';
+  if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+  currentObjectUrl = null;
+  if (previewVideo) {
+    previewVideo.removeAttribute('src');
+    previewVideo.load();
+  }
+  if (previewWrap) previewWrap.classList.remove('show');
+  if (postingDeviceSelect) postingDeviceSelect.value = '';
+  if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
+  patchedDownloadUrl = null;
+  processedVideoBlob = null;
+  if (processedResult) processedResult.classList.add('hidden');
+  setProcessingState('error', message);
+  updateProcessButton();
+}
+
+async function handleFile(file) {
+  const selectionVersion = ++fileSelectionVersion;
+  checkingFileDimensions = false;
+  if (processController) processController.abort();
   if (currentBalance === 0) {
     if (fileInput) fileInput.value = '';
     updateDropzoneAvailability();
     return;
   }
   const isVideo = file && (file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name));
-  if (!isVideo || file.size < 16 || file.size > 8 * 1024 ** 3) {
-    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
-    currentObjectUrl = null;
-    if (previewVideo) previewVideo.src = '';
-    if (previewWrap) previewWrap.classList.remove('show');
-    if (postingDeviceSelect) postingDeviceSelect.value = '';
-    if (fileInput) fileInput.value = '';
-    setProcessingState('error', t('errorInvalidFile'));
-    if (processBtn) processBtn.disabled = true;
+  if (file && file.size > MAX_VIDEO_FILE_SIZE) {
+    rejectFileSelection(t('fileTooLarge'));
+    return;
+  }
+  if (!isVideo || file.size < 16) {
+    rejectFileSelection(t('errorInvalidFile'));
+    return;
+  }
+
+  checkingFileDimensions = true;
+  updateProcessButton();
+  let dimensions;
+  try {
+    dimensions = await readVideoDimensions(file);
+  } catch (error) {
+    if (selectionVersion !== fileSelectionVersion) return;
+    checkingFileDimensions = false;
+    rejectFileSelection(t('videoDimensionsUnavailable'));
+    return;
+  }
+  if (selectionVersion !== fileSelectionVersion) return;
+  checkingFileDimensions = false;
+  if (Math.max(dimensions.width, dimensions.height) > 1920 || Math.min(dimensions.width, dimensions.height) > 1080) {
+    rejectFileSelection(t('videoResolutionTooHigh'));
     return;
   }
 
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
-  if (processController) processController.abort();
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
   patchedDownloadUrl = null;
   processedVideoBlob = null;
@@ -1674,15 +1764,18 @@ if (processBtn) {
     updateProcessingProgress(0);
 
     try {
+      setProcessingState('processing', t('readingVideoMetadata'));
+      updateProcessingProgress(1);
       const sourceDuration = await readVideoDuration(sourceFile, controller.signal);
       controller.signal.throwIfAborted();
 
 
-      setProcessingState('processing', '');
-      updateProcessingProgress(5);
+      setProcessingState('processing', t('loadingVideoData'));
+      updateProcessingProgress(3);
 
       const buffer = await sourceFile.arrayBuffer();
       controller.signal.throwIfAborted();
+      updateProcessingProgress(5);
 
       const requestId = `ineasy-${Date.now()}`;
 
@@ -1701,7 +1794,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-3');
+        const worker = new Worker('adjn-worker.js?v=20261009-5');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1827,6 +1920,8 @@ if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processCo
 function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const knownErrors = [
+    { test: /video_file_over_150mb/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
+    { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /hdr_video_not_supported/i, ru: 'Сейчас принимаются только SDR-видео. HDR-обработка временно отключена.', kk: 'Қазір тек SDR бейнелер қабылданады. HDR өңдеуі уақытша өшірілген.', en: 'Only SDR videos are accepted right now. HDR processing is temporarily disabled.' },
     { test: /ADJN engine not loaded|Worker crashed|Script error/i, ru: 'Не удалось загрузить локальный ADJN-модуль. Обновите страницу и откройте сайт в Chrome или Safari.', kk: 'ADJN модулін жүктеу мүмкін болмады. Бетті жаңартып, сайтты Chrome немесе Safari арқылы ашыңыз.', en: 'Could not load the local ADJN module. Refresh the page and open the site in Chrome or Safari.' },
     { test: /LOCAL_RATE_CONTROL_FILE_REQUIRED/i, ru: 'Браузер не передал видео локальному оптимизатору. Откройте сайт в Safari или Chrome и выберите файл заново.', kk: 'Браузер видеоны жергілікті оңтайландыруға бере алмады. Сайтты Safari немесе Chrome арқылы ашып, файлды қайта таңдаңыз.', en: 'The browser could not pass the video to local optimization. Open the site in Safari or Chrome and select the file again.' },
