@@ -113,17 +113,20 @@
     const within4K = longSide <= 4096 && shortSide <= 2304;
     const within8K = longSide <= 8192 && shortSide <= 4320;
     if (!within8K) {
+    // TikTok-safe hard limits to avoid HDR ban + playback lag.
+    // We intentionally reject heavy HDR/UHD sources before patching them.
+    const shortSide = Math.min(width, height);
+    const longSide = Math.max(width, height);
+    const isTikTokHeavy = shortSide > 1080 || longSide > 1920;
+    if (isTikTokHeavy) {
       throw new Error(
-        `Resolusi ${width}×${height} di atas batas ADJN 8K60 (maks. 8192×4320 atau 4320×8192).`
+        `TikTok-safe policy: resolusi ${width}×${height} terlalu besar. Экспортируйте в SDR 1080p или ниже.`
       );
     }
 
     const fps = Number(info.maxFps || info.averageFps || 0);
-    const maxAllowedFps = within4K ? 120.01 : 60.01;
-    if (Number.isFinite(fps) && fps > maxAllowedFps) {
-      const mode = within4K ? '4K120' : '8K60';
-      const limit = within4K ? 120 : 60;
-      throw new Error(`FPS ${fps.toFixed(2)} di atas batas ${mode} (${limit} FPS).`);
+    if (Number.isFinite(fps) && fps > 60.01) {
+      throw new Error(`TikTok-safe policy: FPS ${fps.toFixed(2)} terlalu tinggi. Приведите видео к 30/60 FPS.`);
     }
 
     return {
@@ -132,9 +135,9 @@
       fps,
       shortSide,
       longSide,
-      within4K,
-      within8K,
-      uhdHighLoad: shortSide > 1080 || longSide > 1920 || fps > 60.01
+      within4K: true,
+      within8K: true,
+      uhdHighLoad: false
     };
   }
 
@@ -385,6 +388,9 @@
       info = core.inspectMediaInfo(original);
       validateMediaInfo(info);
       hdr = detectHdrProfile(original, info);
+      if (hdr && ['HDR10', 'HDR10+', 'HLG HDR', 'Dolby Vision', 'HEVC Main10'].includes(hdr.label)) {
+        throw new Error('TikTok-safe policy: HDR/BT.2020 detected. Convert video to SDR first, then patch again.');
+      }
       compat = core.inspectCompatibility(original);
     } catch (inspectError) {
       hdr = detectHdrProfile(original, info || sniff);

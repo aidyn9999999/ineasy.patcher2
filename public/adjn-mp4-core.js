@@ -594,12 +594,13 @@
     mvhd.payload = patchMvhdToV1Sentinel(mvhd.payload);
     injectUdta(moov, ENCODER_TAG);
 
+    // FastStart optimization: place moov before mdat so the video streams smoothly without buffering lags on social platforms
+    const traksWithOffsets = moov.findAll('trak').filter(t => getOffsetBox(t));
+    const origOffsets = traksWithOffsets.map(t => parseStcoOrCo64(getOffsetBox(t)));
     const moovBeforeMdat = moovBox.start < mdatBox.start;
-    const oldMoovSize = moovBox.end - moovBox.start;
 
     if (moovBeforeMdat) {
-      const traksWithOffsets = moov.findAll('trak').filter(t => getOffsetBox(t));
-      const origOffsets = traksWithOffsets.map(t => parseStcoOrCo64(getOffsetBox(t)));
+      const oldMoovSize = moovBox.end - moovBox.start;
       for (let iter = 0; iter < 4; iter++) {
         const delta = moov.serialize().length - oldMoovSize;
         let changedType = false;
@@ -611,14 +612,40 @@
         });
         if (!changedType) break;
       }
+      const newMoovBytes = moov.serialize();
+      const finalChunks = [];
+      for (const b of top) {
+        finalChunks.push(b.start === moovBox.start ? newMoovBytes : bytes.subarray(b.start, b.end));
+      }
+      return concatBytes(finalChunks);
+    } else {
+      // Reposition moov directly before mdat. Shift all chunk offsets by the serialized moov size.
+      let moovLen = moov.serialize().length;
+      for (let iter = 0; iter < 4; iter++) {
+        let changedType = false;
+        traksWithOffsets.forEach((t, i) => {
+          const box = getOffsetBox(t);
+          const prevType = box.type;
+          writeStcoOrCo64(box, origOffsets[i].map(o => o + moovLen));
+          if (box.type !== prevType) changedType = true;
+        });
+        const nextLen = moov.serialize().length;
+        if (nextLen === moovLen && !changedType) break;
+        moovLen = nextLen;
+      }
+      const newMoovBytes = moov.serialize();
+      const finalChunks = [];
+      for (const b of top) {
+        if (b.type === 'moov') continue;
+        if (b.type === 'mdat') {
+          finalChunks.push(newMoovBytes);
+          finalChunks.push(bytes.subarray(b.start, b.end));
+        } else {
+          finalChunks.push(bytes.subarray(b.start, b.end));
+        }
+      }
+      return concatBytes(finalChunks);
     }
-
-    const newMoovBytes = moov.serialize();
-    const finalChunks = [];
-    for (const b of top) {
-      finalChunks.push(b.start === moovBox.start ? newMoovBytes : bytes.subarray(b.start, b.end));
-    }
-    return concatBytes(finalChunks);
   }
 
   function validateFinalOutput(bytes) {
