@@ -113,20 +113,13 @@
     const within4K = longSide <= 4096 && shortSide <= 2304;
     const within8K = longSide <= 8192 && shortSide <= 4320;
     if (!within8K) {
-    // TikTok-safe hard limits to avoid HDR ban + playback lag.
-    // We intentionally reject heavy HDR/UHD sources before patching them.
-    const shortSide = Math.min(width, height);
-    const longSide = Math.max(width, height);
-    const isTikTokHeavy = shortSide > 1080 || longSide > 1920;
-    if (isTikTokHeavy) {
-      throw new Error(
-        `TikTok-safe policy: resolusi ${width}×${height} terlalu besar. Экспортируйте в SDR 1080p или ниже.`
-      );
+      throw new Error(`TikTok-safe policy: resolusi ${width}×${height} melebihi batas 8K.`);
     }
 
     const fps = Number(info.maxFps || info.averageFps || 0);
-    if (Number.isFinite(fps) && fps > 60.01) {
-      throw new Error(`TikTok-safe policy: FPS ${fps.toFixed(2)} terlalu tinggi. Приведите видео к 30/60 FPS.`);
+    const maxFps = within4K ? 120 : 60;
+    if (Number.isFinite(fps) && fps > maxFps + 0.01) {
+      throw new Error(`TikTok-safe policy: FPS ${fps.toFixed(2)} melebihi batas ${maxFps} FPS.`);
     }
 
     return {
@@ -135,9 +128,9 @@
       fps,
       shortSide,
       longSide,
-      within4K: true,
-      within8K: true,
-      uhdHighLoad: false
+      within4K,
+      within8K,
+      uhdHighLoad: !within4K || fps > 60.01
     };
   }
 
