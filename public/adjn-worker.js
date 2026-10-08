@@ -119,8 +119,7 @@ self.onmessage = async function (event) {
       : 0);
     const sourceBitrate = duration > 0 ? (fileSize * 8) / duration : 0;
     const sourceFps = Number(sourceInfo?.maxFps || sourceInfo?.averageFps || 0);
-    const needsPreparation = Boolean(sourceInfo && (
-      sourceBitrate >= TRANSCODE_BITRATE_THRESHOLD ||
+    const needsPreparation = sourceBitrate >= TRANSCODE_BITRATE_THRESHOLD || Boolean(sourceInfo && (
       Math.max(sourceInfo.width, sourceInfo.height) > 1920 ||
       sourceFps > 60.01
     ));
@@ -154,10 +153,12 @@ self.onmessage = async function (event) {
       }
     );
 
-    // Transfer the output buffer to avoid copying large ArrayBuffer
-    const output = result.output instanceof Uint8Array
-      ? result.output.buffer.slice(result.output.byteOffset, result.output.byteOffset + result.output.byteLength)
-      : result.output;
+    const outputView = result.output;
+    const output = outputView instanceof Uint8Array
+      ? outputView.byteOffset === 0 && outputView.byteLength === outputView.buffer.byteLength
+        ? outputView.buffer
+        : outputView.buffer.slice(outputView.byteOffset, outputView.byteOffset + outputView.byteLength)
+      : outputView;
 
     self.postMessage({
       type: 'DONE',
