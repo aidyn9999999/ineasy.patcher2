@@ -56,7 +56,7 @@ const translations = {
     stepOneTitle: 'Upload your finished edit',
     stepOneBody: 'Add your video after editing. Prepare music, text, and effects first.',
     stepTwoTitle: 'Tap “Process video”',
-    stepTwoBody: 'SDR videos above 15 Mbps are locally rate-controlled while preserving resolution and frame rate (up to 4K120), then passed to the original ADJN patcher. HDR is temporarily unavailable.',
+    stepTwoBody: 'SDR videos above 20 Mbps are locally rate-controlled while preserving resolution and frame rate, then passed to the original ADJN patcher. HDR is temporarily unavailable.',
     stepThreeTitle: 'Publish through Zernio',
     stepThreeBody: 'Tap “Auto-post”, connect your Zernio API key, review the caption, and publish to TikTok.',
     localProcessingCopy: 'Video and audio stay on your device. High-bitrate SDR video is locally optimized to reduce playback load; the original ADJN patcher runs afterward.',
@@ -1701,7 +1701,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-2');
+        const worker = new Worker('adjn-worker.js?v=20261009-3');
 
         worker.onmessage = (e) => {
           const msg = e.data;

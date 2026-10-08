@@ -12,7 +12,7 @@ importScripts('adjn-mp4-core.js?v=20261008-2', 'adjn-processor.js?v=20261009-1')
 const FFMPEG_PACKAGE_BASE = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10';
 const FFMPEG_UTIL_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
 const FFMPEG_CORE_BASE = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm';
-const TRANSCODE_BITRATE_THRESHOLD = 15_000_000;
+const TRANSCODE_BITRATE_THRESHOLD = 20_000_000;
 
 async function loadFfmpegWorkerURL() {
   const response = await fetch(`${FFMPEG_PACKAGE_BASE}/dist/esm/worker.js`);
@@ -132,9 +132,7 @@ self.onmessage = async function (event) {
       : 0);
     const averageBitrate = duration > 0 ? (fileSize * 8) / duration : 0;
     const sourceFps = Number(sourceInfo?.maxFps || sourceInfo?.averageFps || 30);
-    const needsRateControl = averageBitrate >= TRANSCODE_BITRATE_THRESHOLD || Boolean(sourceInfo && (
-      Math.max(sourceInfo.width, sourceInfo.height) > 1920 || sourceFps > 60.01
-    ));
+    const needsRateControl = averageBitrate > TRANSCODE_BITRATE_THRESHOLD;
 
     if (needsRateControl) {
       if (!data.file) throw new Error('LOCAL_RATE_CONTROL_FILE_REQUIRED');
