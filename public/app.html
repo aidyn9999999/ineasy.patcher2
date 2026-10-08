@@ -96,7 +96,7 @@
         </div>
         <div class="workflow-grid">
           <article class="workflow-step"><span class="workflow-number">01</span><h3 id="stepOneTitle">Загрузите готовый монтаж</h3><p id="stepOneBody">Добавьте видео после монтажа: музыку, текст и эффекты подготовьте заранее.</p></article>
-          <article class="workflow-step"><span class="workflow-number">02</span><h3 id="stepTwoTitle">Нажмите «Обработать видео»</h3><p id="stepTwoBody">Тяжёлое SDR-видео локально приводится к постоянным 24–30 FPS и H.264 Baseline до 1080p/8 Мбит/с, затем проходит через исходный ADJN-патчер. HDR временно отключён.</p></article>
+          <article class="workflow-step"><span class="workflow-number">02</span><h3 id="stepTwoTitle">Нажмите «Обработать видео»</h3><p id="stepTwoBody">Подходящий MP4 патчится без повторного сжатия. Подготовка проходит в браузере; на сервер отправляются только метаданные.</p></article>
           <article class="workflow-step"><span class="workflow-number">03</span><h3 id="stepThreeTitle">Опубликуйте через Zernio</h3><p id="stepThreeBody">Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и отправьте видео в TikTok.</p></article>
         </div>
         <div class="home-local-note"><span class="home-local-icon" aria-hidden="true">↗</span><p id="localProcessingCopy">Видео и звук остаются на устройстве. Видео выше 1080p или неподдерживаемого формата может локально подготавливаться в браузере; обычный MP4 не перекодируется патчером.</p></div>
@@ -106,13 +106,13 @@
 
     <!-- PATCHER SECTION -->
     <section class="view-section hidden" id="patchSection">
-    <div class="notice-banner">
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.9945 16H12.0035" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <p id="noticeBannerText">If video duration shows 0:00 after patching, this is normal. The file works fine.</p>
-    </div>
     <div class="patch-panel">
       <h1 class="patch-title" id="patchTitle">Prepare your video for TikTok.</h1>
       <p class="patch-sub" id="patchSub">Patcher adjusts video parameters to help reduce noticeable quality loss after TikTok processing.</p>
+      <div class="notice-banner">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.9945 16H12.0035" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <p id="noticeBannerText">If video duration shows 0:00 after patching, this is normal. The file works fine.</p>
+      </div>
 
       <div class="dropzone" id="dropzone">
         <input type="file" id="fileInput" accept="video/*">
@@ -165,7 +165,6 @@
         <button id="publishTiktokBtn" class="tiktok-publish-btn" type="button">Publish to TikTok</button>
         <small class="autopost-hint" id="autopostHint">Quick auto-post with Zernio</small>
       </div>
-      <p class="compressbase-credit">Powered by <span>Ultra HD Sentinel Engine</span></p>
     </div>
     </section>
 
