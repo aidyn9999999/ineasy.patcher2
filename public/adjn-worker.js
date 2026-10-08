@@ -50,8 +50,9 @@ async function transcodeSdrForPlayback(file, sourceFps, onProgress) {
     await ffmpeg.mount('WORKERFS', { files: [file] }, '/source');
     mounted = true;
 
+    const outputFps = Math.min(30, Math.max(24, Math.round(sourceFps || 30)));
     const filters = ["scale=w='min(1920,iw)':h='min(1920,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2"];
-    if (sourceFps > 60.01) filters.push('fps=60');
+    filters.push(`fps=${outputFps}`);
     filters.push('format=yuv420p');
 
     ffmpeg.on('progress', ({ progress }) => {
@@ -63,9 +64,9 @@ async function transcodeSdrForPlayback(file, sourceFps, onProgress) {
     const exitCode = await ffmpeg.exec([
       '-hide_banner', '-y', '-i', inputPath,
       '-map', '0:v:0', '-map', '0:a:0?', '-vf', filters.join(','),
-      '-c:v', 'libx264', '-preset', 'veryfast', '-tune', 'fastdecode',
-      '-crf', '20', '-maxrate', '10M', '-bufsize', '20M', '-pix_fmt', 'yuv420p',
-      '-fps_mode', 'vfr', '-c:a', 'aac', '-b:a', '192k', '-sn', '-dn',
+      '-c:v', 'libx264', '-preset', 'veryfast', '-tune', 'fastdecode', '-profile:v', 'baseline',
+      '-crf', '21', '-maxrate', '8M', '-bufsize', '16M', '-pix_fmt', 'yuv420p',
+      '-fps_mode', 'cfr', '-c:a', 'aac', '-b:a', '160k', '-sn', '-dn',
       '-map_metadata', '0', '-color_primaries', 'bt709', '-color_trc', 'bt709',
       '-colorspace', 'bt709', '-color_range', 'tv', '-movflags', '+faststart', outputPath,
     ], 9 * 60 * 1000);
@@ -138,9 +139,9 @@ self.onmessage = async function (event) {
         performed: true,
         sourceBitrate: Math.round(sourceBitrate),
         outputCodec: 'H.264',
-        outputMaxBitrate: 10_000_000,
+        outputMaxBitrate: 8_000_000,
         outputMaxDimension: 1920,
-        outputFps: Math.min(60, Math.round(sourceFps || 60)),
+        outputFps: Math.min(30, Math.max(24, Math.round(sourceFps || 30))),
       };
     }
 
