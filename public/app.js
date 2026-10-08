@@ -56,10 +56,10 @@ const translations = {
     stepOneTitle: 'Upload your finished edit',
     stepOneBody: 'Add your video after editing. Prepare music, text, and effects first.',
     stepTwoTitle: 'Tap “Process video”',
-    stepTwoBody: 'Compatible MP4 files are patched without re-encoding. Processing runs in your browser; only metadata is sent to the API.',
+    stepTwoBody: 'SDR videos above 15 Mbps, 1080p, or 60 FPS are locally prepared as H.264 for smoother playback, then passed to the original ADJN patcher. HDR is temporarily unavailable.',
     stepThreeTitle: 'Publish through Zernio',
     stepThreeBody: 'Tap “Auto-post”, connect your Zernio API key, review the caption, and publish to TikTok.',
-    localProcessingCopy: 'Video and audio stay on your device. Videos above 1080p or in unsupported formats may be prepared locally in your browser; compatible MP4 video is not re-encoded by the patcher.',
+    localProcessingCopy: 'Video and audio stay on your device. High-bitrate and high-resolution SDR videos are prepared locally; the original ADJN patcher runs afterward.',
     homeBottomCta: 'Start processing',
     faqLabel: 'FAQ / FREQUENTLY ASKED QUESTIONS',
     analyzerEyebrow: 'VIDEO ANALYZER',
@@ -69,7 +69,7 @@ const translations = {
     patchSub: 'Publish in high quality.',
     choose: 'Drop your video here',
     chooseSub: 'Drag file here or click to browse',
-    localNote: 'Your video stays on your device. 1440p (2K) and 4K videos are automatically prepared in 1080p to reduce processing load.',
+    localNote: 'Your SDR video stays on your device. High-bitrate or above-1080p/60 video is locally prepared as H.264 up to 1080p/60 for smoother playback. HDR is temporarily unavailable.',
     exportNote: 'For smoother playback, export in 1080p, 60 FPS, with a bitrate of 6–10 Mbps.',
     choosePostingDevice: 'Choose your device before processing.',
     communityTitle: 'Stay in the loop with Ineasy',
@@ -173,7 +173,7 @@ const translations = {
     errorInvalidFile: 'Choose a supported video up to 8 GiB.',
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
-    processingTimedOut: 'Processing took longer than 3 minutes. Try a shorter video or a different device option.',
+    processingTimedOut: 'Local preparation took longer than 10 minutes. Try a shorter video or a lower resolution.',
     videoTooLong: 'Choose a video that is 1 minute or shorter.',
     videoDurationUnavailable: 'Could not read this video duration. Try an MP4 file.',
     noBalance: 'No videos remain in your balance. Add videos to continue.',
@@ -222,10 +222,10 @@ const translations = {
     stepOneTitle: 'Загрузите готовый монтаж',
     stepOneBody: 'Добавьте видео после монтажа: музыку, текст и эффекты подготовьте заранее.',
     stepTwoTitle: 'Нажмите «Обработать видео»',
-    stepTwoBody: 'Совместимый MP4 патчится без повторного сжатия. Обработка проходит в браузере; API получает только метаданные.',
+    stepTwoBody: 'SDR-видео выше 15 Мбит/с, 1080p или 60 FPS локально готовятся как H.264 для плавного воспроизведения, затем проходят через исходный ADJN-патчер. HDR временно отключён.',
     stepThreeTitle: 'Опубликуйте через Zernio',
     stepThreeBody: 'Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и опубликуйте видео в TikTok.',
-    localProcessingCopy: 'Видео и звук остаются на устройстве. Видео выше 1080p или неподдерживаемого формата может локально подготавливаться в браузере; совместимый MP4 патчер повторно не перекодирует.',
+    localProcessingCopy: 'Видео и звук остаются на устройстве. SDR-видео с высоким битрейтом или разрешением локально подготавливаются; затем запускается исходный ADJN-патчер.',
     homeBottomCta: 'Начать обработку',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
@@ -235,7 +235,7 @@ const translations = {
     patchSub: 'Публикуйте в высоком качестве.',
     choose: 'Перетащите видео сюда',
     chooseSub: 'Перетащите файл сюда или нажмите, чтобы открыть устройство',
-    localNote: 'Ваше видео остаётся на устройстве. Видео в 1440p (2K) и 4K автоматически подготавливается в 1080p, чтобы снизить нагрузку при обработке.',
+    localNote: 'SDR-видео остаётся на устройстве. Высокий битрейт или разрешение выше 1080p/60 локально готовятся как H.264 до 1080p/60. HDR временно недоступен.',
     exportNote: 'Для более плавного воспроизведения экспортируйте видео в 1080p, 60 FPS и с битрейтом 6–10 Мбит/с.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
     communityTitle: 'Будь в курсе Ineasy',
@@ -339,7 +339,7 @@ const translations = {
     errorInvalidFile: 'Выберите поддерживаемое видео размером до 8 GiB.',
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
-    processingTimedOut: 'Обработка длится больше 3 минут. Попробуйте короткое видео или другой режим устройства.',
+    processingTimedOut: 'Локальная подготовка длится больше 10 минут. Попробуйте короткое видео или более низкое разрешение.',
     videoTooLong: 'Выберите видео длительностью не более 1 минуты.',
     videoDurationUnavailable: 'Не удалось определить длительность видео. Попробуйте файл MP4.',
     noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
@@ -388,10 +388,10 @@ const translations = {
     stepOneTitle: 'Дайын монтажды жүктеңіз',
     stepOneBody: 'Видеоны монтаждан кейін қосыңыз. Музыка, мәтін және әсерлерді алдын ала дайындаңыз.',
     stepTwoTitle: '«Бейнені өңдеу» түймесін басыңыз',
-    stepTwoBody: 'Үйлесімді MP4 қайта қысылмай патчталады. Өңдеу браузерде орындалады; API тек метадеректер алады.',
+    stepTwoBody: '15 Мбит/с-тен жоғары, 1080p немесе 60 FPS-тен жоғары SDR видео бірқалыпты ойнату үшін H.264 форматына жергілікті дайындалады; содан кейін бастапқы ADJN патчері іске қосылады. HDR уақытша өшірілген.',
     stepThreeTitle: 'Zernio арқылы жариялаңыз',
     stepThreeBody: '«Автожариялау» түймесін басып, Zernio API кілтін қосыңыз, сипаттаманы тексеріп, TikTok-қа жариялаңыз.',
-    localProcessingCopy: 'Видео мен аудио құрылғыңызда қалады. 1080p-ден жоғары немесе қолдау көрсетілмейтін форматтағы видео браузерде жергілікті дайындалуы мүмкін; үйлесімді MP4 қайта кодталмайды.',
+    localProcessingCopy: 'SDR бейненің видеосы мен аудиосы құрылғыңызда қалады. Жоғары битрейтті не ажыратымдылығы жоғары видео жергілікті дайындалып, содан кейін ADJN патчерімен өңделеді.',
     homeBottomCta: 'Өңдеуді бастау',
     faqLabel: 'FAQ / ЖИІ ҚОЙЫЛАТЫН СҰРАҚТАР',
     analyzerEyebrow: 'БЕЙНЕ АНАЛИЗАТОРЫ',
@@ -401,7 +401,7 @@ const translations = {
     patchSub: 'Жоғары сапада жариялаңыз.',
     choose: 'Видеоны осында сүйреп әкеліңіз',
     chooseSub: 'Файлды осы жерге сүйреп апарыңыз немесе құрылғыдан таңдаңыз',
-    localNote: 'Бейнеңіз құрылғыңызда қалады. 1440p (2K) және 4K бейнелері өңдеу жүктемесін азайту үшін автоматты түрде 1080p форматына дайындалады.',
+    localNote: 'SDR бейнесі құрылғыңызда қалады. Жоғары битрейт немесе 1080p/60-тан жоғары видео H.264 1080p/60 форматына жергілікті дайындалады. HDR уақытша өшірілген.',
     exportNote: 'Бірқалыпты ойнату үшін бейнені 1080p, 60 FPS және 6–10 Мбит/с битрейтпен экспорттаңыз.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
     communityTitle: 'Ineasy жаңалықтарынан хабардар болыңыз',
@@ -505,7 +505,7 @@ const translations = {
     errorInvalidFile: '8 GiB-ке дейін қолдау көрсетілетін бейне таңдаңыз.',
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
-    processingTimedOut: 'Өңдеу 3 минуттан ұзақ жүріп жатыр. Қысқарақ бейнені немесе басқа құрылғы режимін таңдаңыз.',
+    processingTimedOut: 'Жергілікті дайындау 10 минуттан ұзақ. Қысқарақ бейнені немесе төменірек ажыратымдылықты таңдаңыз.',
     videoTooLong: 'Ұзақтығы 1 минуттан аспайтын бейне таңдаңыз.',
     videoDurationUnavailable: 'Бейне ұзақтығын анықтау мүмкін болмады. MP4 файлын қолданып көріңіз.',
     noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
@@ -1661,7 +1661,7 @@ if (processBtn) {
     const processingTimeoutId = setTimeout(() => {
       processingTimedOut = true;
       controller.abort();
-    }, 180000);
+    }, 600000);
     processController = controller;
     processBtn.disabled = true;
     if (cancelProcessBtn) cancelProcessBtn.disabled = false;
@@ -1674,7 +1674,7 @@ if (processBtn) {
     updateProcessingProgress(0);
 
     try {
-      await readVideoDuration(sourceFile, controller.signal);
+      const sourceDuration = await readVideoDuration(sourceFile, controller.signal);
       controller.signal.throwIfAborted();
 
 
@@ -1717,6 +1717,8 @@ if (processBtn) {
               type: 'PROCESS',
               requestId,
               buffer,
+              file: sourceFile,
+              duration: sourceDuration,
               fileName: sourceFile.name || 'video.mp4',
               fileType: sourceFile.type || 'video/mp4',
               fileSize: sourceFile.size || buffer.byteLength,
@@ -1743,6 +1745,7 @@ if (processBtn) {
               passthrough: msg.passthrough,
               mode: msg.mode,
               report: msg.report,
+              transcodeReport: msg.transcodeReport,
               inputBytes: msg.inputBytes
             });
             return;
@@ -1787,6 +1790,7 @@ if (processBtn) {
       console.info('[INEASY] Media processing complete', {
         mode: result.mode || 'unknown',
         passthrough: Boolean(result.passthrough),
+        transcode: result.transcodeReport || null,
         patcherActive: !result.passthrough && result.mode === 'adjn-core-resolution-codec-safe',
         durationUnknown: result.report?.durationUnknown ?? null,
         encoderTag: result.report?.encoderTag || '',
@@ -1828,6 +1832,7 @@ function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const knownErrors = [
     { test: /hdr_video_not_supported/i, ru: 'Сейчас принимаются только SDR-видео. HDR-обработка временно отключена.', kk: 'Қазір тек SDR бейнелер қабылданады. HDR өңдеуі уақытша өшірілген.', en: 'Only SDR videos are accepted right now. HDR processing is temporarily disabled.' },
+    { test: /LOCAL_TRANSCODE_FAILED/i, ru: 'Не удалось подготовить SDR-видео локально. Проверьте подключение к CDN и свободную память устройства; видео не загружалось на сервер.', kk: 'SDR бейнені құрылғыда дайындау мүмкін болмады. CDN байланысын және бос жадты тексеріңіз; видео серверге жіберілген жоқ.', en: 'Could not prepare this SDR video locally. Check the CDN connection and free device memory; the video was not uploaded to a server.' },
     { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },
     { test: /video_over_60_seconds/i, ru: t('videoTooLong'), kk: t('videoTooLong'), en: t('videoTooLong') },
     { test: /video_duration_unavailable/i, ru: t('videoDurationUnavailable'), kk: t('videoDurationUnavailable'), en: t('videoDurationUnavailable') },
