@@ -104,6 +104,15 @@
     const height = Math.round(Number(info.height));
     if (width < 16 || height < 16) throw new Error(`Resolusi ${width}×${height} tidak valid.`);
 
+    // Universal-resolution path: never snap/resize to 1080p, 1440p, or any preset.
+    // Preserve native resolution/aspect ratio with two validated ceilings:
+    //   - up to 4K (4096×2304): max 120 FPS
+    //   - above 4K up to 8K/DCI 8K (8192×4320): max 60 FPS
+    const shortSide = Math.min(width, height);
+    const longSide = Math.max(width, height);
+    const within4K = longSide <= 4096 && shortSide <= 2304;
+    const within8K = longSide <= 8192 && shortSide <= 4320;
+    if (!within8K) {
     // TikTok-safe hard limits to avoid HDR ban + playback lag.
     // We intentionally reject heavy HDR/UHD sources before patching them.
     const shortSide = Math.min(width, height);
