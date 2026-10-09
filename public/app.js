@@ -1589,28 +1589,57 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     if (outputBlob.size > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
 
     const inspectOutput = async (blob) => {
-      const verificationInput = new Input({
-        source: new BlobSource(blob),
-        formats: ALL_FORMATS
-      });
+      let verificationInput = null;
       try {
+        verificationInput = new Input({
+          source: new BlobSource(blob),
+          formats: ALL_FORMATS
+        });
         const outputTrack = await verificationInput.getPrimaryVideoTrack();
         if (!outputTrack) throw new Error('The encoded MP4 has no readable video track.');
         const outputWidth = Math.round(await outputTrack.getDisplayWidth());
         const outputHeight = Math.round(await outputTrack.getDisplayHeight());
         const outputCodec = String(await outputTrack.getCodec() || '').toLowerCase();
-        const outputMetrics = await outputTrack.computeFrameRateMetrics({ targetPacketCount: 512 });
-        const outputFps = Number(outputMetrics.bestGuessFrameRate);
+        if (outputCodec !== targetCodec) {
+          throw new Error(`Expected HEVC output, received ${outputCodec || 'unknown codec'}.`);
+        }
+        let outputFps;
+        try {
+          const outputMetrics = await outputTrack.computeFrameRateMetrics({ targetPacketCount: 512 });
+          outputFps = Number(outputMetrics.bestGuessFrameRate);
+        } catch (error) {
+          console.warn('[INEASY] Browser could not inspect HEVC packet timing; using MP4 metadata.', error);
+        }
+        if (!Number.isFinite(outputFps) || outputFps <= 0) {
+          const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+          if (!core?.inspectMediaInfo) throw new Error('The encoded HEVC frame rate could not be verified.');
+          const probeBytes = new Uint8Array(await blob.slice(0, Math.min(blob.size, 32 * 1024 * 1024)).arrayBuffer());
+          const mediaInfo = core.inspectMediaInfo(probeBytes);
+          outputFps = Number(mediaInfo.averageFps);
+        }
         if (!Number.isFinite(outputWidth) || !Number.isFinite(outputHeight) ||
             !Number.isFinite(outputFps) || outputFps <= 0) {
           throw new Error('The encoded MP4 has invalid video metadata.');
         }
+        return { width: outputWidth, height: outputHeight, averageFps: outputFps, codec: outputCodec };
+      } catch (verificationError) {
+        if (/Expected HEVC output/.test(verificationError.message || '')) throw verificationError;
+        const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+        if (!core?.inspectMediaInfo) throw verificationError;
+        const probeBytes = new Uint8Array(await blob.slice(0, Math.min(blob.size, 32 * 1024 * 1024)).arrayBuffer());
+        const mediaInfo = core.inspectMediaInfo(probeBytes);
+        const outputCodec = String(mediaInfo.codecFamily || mediaInfo.codec || '').toLowerCase();
         if (outputCodec !== targetCodec) {
           throw new Error(`Expected HEVC output, received ${outputCodec || 'unknown codec'}.`);
         }
-        return { width: outputWidth, height: outputHeight, averageFps: outputFps, codec: outputCodec };
+        return {
+          width: Math.round(mediaInfo.width),
+          height: Math.round(mediaInfo.height),
+          averageFps: Number(mediaInfo.averageFps),
+          codec: outputCodec
+        };
       } finally {
-        verificationInput.dispose();
+        verificationInput?.dispose();
       }
     };
 
