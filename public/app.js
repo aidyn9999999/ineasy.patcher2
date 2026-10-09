@@ -2156,6 +2156,13 @@ function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const conversionFailure = String(message || '').match(/^AUTO_VIDEO_CONVERSION_FAILED:\s*(.*)$/i);
   if (conversionFailure) {
+    if (/cannot encode HEVC/i.test(conversionFailure[1])) {
+      return {
+        ru: 'Это устройство или браузер не поддерживает кодирование HEVC/H.265 при разрешении и FPS этого видео. Для HEVC-only экспорта используйте устройство с HEVC-энкодером.',
+        kk: 'Бұл құрылғы немесе браузер осы бейненің ажыратымдылығы мен FPS параметрлерінде HEVC/H.265 кодтауын қолдамайды. HEVC-only экспорт үшін HEVC кодтағышы бар құрылғыны пайдаланыңыз.',
+        en: 'This device or browser cannot encode HEVC/H.265 at this video resolution and frame rate. Use a device with an HEVC encoder for HEVC-only export.'
+      }[lang];
+    }
     const text = {
       ru: 'Не удалось подготовить видео для TikTok без потери пропорций. Причина',
       kk: 'TikTok үшін бейнені пропорцияларын сақтап дайындау мүмкін болмады. Себебі',
