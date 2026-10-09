@@ -94,7 +94,7 @@ const translations = {
     connectedAs: 'Online ·',
     uploadNotice: 'Your processed video will be uploaded to your TikTok account through Zernio.',
     uploadFailed: 'The video upload failed. Please try again.',
-    zernioMp4Required: 'Auto-post supports MP4 and MOV with H.264 or HEVC video.',
+    zernioMp4Required: 'Auto-post accepts MP4 or MOV with H.264 or HEVC video. The video is not re-encoded.',
     connectHint: 'No TikTok account is linked to this Zernio key. Link it in Zernio, then reopen this section.',
     connectFailed: 'Could not verify your Zernio connection.',
     zernioConnectCopy: 'Connect your Zernio API key to publish from your TikTok account.',
@@ -269,7 +269,7 @@ const translations = {
     connectedAs: 'В сети ·',
     uploadNotice: 'Обработанное видео будет загружено в ваш TikTok через Zernio.',
     uploadFailed: 'Не удалось загрузить видео. Попробуйте ещё раз.',
-    zernioMp4Required: 'Автопост поддерживает MP4 и MOV с видео H.264 или HEVC.',
+    zernioMp4Required: 'Автопост принимает MP4 и MOV с видео H.264 или HEVC. Видео не перекодируется.',
     connectHint: 'Аккаунт TikTok для этого ключа Zernio не найден. Подключите его в Zernio и откройте этот раздел снова.',
     connectFailed: 'Не удалось проверить подключение к Zernio.',
     zernioConnectCopy: 'Подключите API-ключ Zernio для публикации в своём аккаунте TikTok.',
@@ -444,7 +444,7 @@ const translations = {
     connectedAs: 'Желіде ·',
     uploadNotice: 'Өңделген бейне Zernio арқылы TikTok аккаунтыңызға жүктеледі.',
     uploadFailed: 'Бейне жүктелмеді. Қайталап көріңіз.',
-    zernioMp4Required: 'Автожариялау H.264 немесе HEVC бейнесі бар MP4 және MOV форматтарын қолдайды.',
+    zernioMp4Required: 'Автожариялау H.264 немесе HEVC бейнесі бар MP4 және MOV форматтарын қабылдайды. Бейне қайта кодталмайды.',
     connectHint: 'Бұл Zernio кілтіне TikTok аккаунты қосылмаған. Оны Zernio ішінде қосып, осы бөлімді қайта ашыңыз.',
     connectFailed: 'Zernio байланысын тексеру мүмкін болмады.',
     zernioConnectCopy: 'TikTok аккаунтыңыздан жариялау үшін Zernio API кілтін қосыңыз.',
@@ -1247,9 +1247,9 @@ if (tiktokPublishForm) {
       const filename = (downloadBtn && downloadBtn.download) || 'ineasy-video.mp4';
       const extension = filename.toLowerCase().match(/\.[^.]+$/)?.[0] || '';
       const contentType = processedVideoBlob.type || (extension === '.mov' ? 'video/quicktime' : extension === '.mp4' ? 'video/mp4' : '');
-      const supportedContentType = (extension === '.mp4' && contentType === 'video/mp4') ||
+      const supportedFormat = (extension === '.mp4' && contentType === 'video/mp4') ||
         (extension === '.mov' && contentType === 'video/quicktime');
-      if (!supportedContentType) {
+      if (!supportedFormat) {
         if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('zernioMp4Required');
         return;
       }
@@ -1848,7 +1848,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-25');
+        const worker = new Worker('adjn-worker.js?v=20261009-24');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1936,7 +1936,7 @@ if (processBtn) {
       const metaInfo = result.outputInfo || result.info;
       const hdrInfo = result.outputHdr || result.hdr;
       const resText = metaInfo && metaInfo.width ? `${metaInfo.width}×${metaInfo.height}` : '';
-      const fpsText = metaInfo?.averageFps ? `${metaInfo.averageFps.toFixed(2)} FPS` : '';
+      const fpsText = metaInfo?.averageFps ? `${Math.round(metaInfo.averageFps)} FPS` : '';
       const codecText = metaInfo?.codec ? String(metaInfo.codec).toUpperCase() : '';
       const hdrText = hdrInfo?.label && hdrInfo.label !== 'SDR / unknown' ? hdrInfo.label : '';
       console.info('[INEASY] Media processing complete', {

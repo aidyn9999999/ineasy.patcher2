@@ -21,8 +21,6 @@
   const ENCODER_TAG = 'ADJN Quality Method https://tiktok.com/@itsmefachry';
   const FOURCC_TOO = new Uint8Array([0xa9, 0x74, 0x6f, 0x6f]); // '©too'
   const SENTINEL_FF = new Uint8Array([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]); // 64-bit Unknown Duration Sentinel
-  const TARGET_FPS_TIMESCALE = 2997;
-  const TARGET_FRAME_DURATION = 50;
   const CONTAINER_BOXES = new Set(['moov', 'trak', 'mdia', 'minf', 'stbl', 'edts']);
   const MAX_TABLE_ENTRIES = 50000000;
   const EMPTY_U8 = new Uint8Array(0);
@@ -356,106 +354,6 @@
     return list;
   }
 
-  function retimeVideoTo5994(parsed) {
-    const { video, moov } = parsed;
-    const trak = video.trak;
-    const mdhd = trak.path('mdia', 'mdhd');
-    const stts = getSampleTableBox(trak, 'stts');
-    const ctts = getSampleTableBox(trak, 'ctts');
-    const mvhd = moov.find('mvhd');
-    const tkhd = trak.find('tkhd');
-    if (!mdhd || !stts || !mvhd || !tkhd || trak.find('edts')) {
-      throwError('59.94 FPS requires a constant-rate MP4 video track without edit lists.');
-    }
-
-    const mediaVersion = mdhd.payload[0];
-    const mediaTimescaleOffset = mediaVersion === 1 ? 20 : 12;
-    const mediaDurationOffset = mediaVersion === 1 ? 24 : 16;
-    const mediaDurationSize = mediaVersion === 1 ? 8 : 4;
-    if ((mediaVersion !== 0 && mediaVersion !== 1) ||
-        mdhd.payload.length < mediaDurationOffset + mediaDurationSize) {
-      throwError('Unsupported MP4 media header for 59.94 FPS retiming.');
-    }
-
-    const timescale = readU32(mdhd.payload, mediaTimescaleOffset);
-    const mediaDuration = mediaVersion === 1
-      ? readU64(mdhd.payload, mediaDurationOffset)
-      : readU32(mdhd.payload, mediaDurationOffset);
-    const timingEntries = parseStts(stts.payload);
-    const frameCount = timingEntries.reduce((sum, entry) => sum + entry[0], 0);
-    const totalTicks = timingEntries.reduce((sum, entry) => sum + entry[0] * entry[1], 0);
-    const frameDurations = new Set(timingEntries.map(entry => entry[1]));
-    const sourceFps = totalTicks > 0 ? frameCount * timescale / totalTicks : 0;
-    if (!frameCount || !timescale || frameDurations.size !== 1 ||
-        Math.abs(mediaDuration - totalTicks) > 1 ||
-        (Math.abs(sourceFps - 60) > 0.1 && Math.abs(sourceFps - 59.94) > 0.01)) {
-      throwError('59.94 FPS retiming is limited to constant 60 FPS or 59.94 FPS MP4 video.');
-    }
-
-    const movieVersion = mvhd.payload[0];
-    const movieTimescaleOffset = movieVersion === 1 ? 20 : 12;
-    if ((movieVersion !== 0 && movieVersion !== 1) || mvhd.payload.length < movieTimescaleOffset + 4) {
-      throwError('Unsupported MP4 movie header for 59.94 FPS retiming.');
-    }
-    const movieTimescale = readU32(mvhd.payload, movieTimescaleOffset);
-    const trackVersion = tkhd.payload[0];
-    const trackDurationOffset = trackVersion === 1 ? 28 : 20;
-    const trackDurationSize = trackVersion === 1 ? 8 : 4;
-    if ((trackVersion !== 0 && trackVersion !== 1) ||
-        tkhd.payload.length < trackDurationOffset + trackDurationSize) {
-      throwError('Unsupported MP4 track header for 59.94 FPS retiming.');
-    }
-
-    const outputDuration = frameCount * TARGET_FRAME_DURATION;
-    const outputTrackDuration = Math.round(outputDuration * movieTimescale / TARGET_FPS_TIMESCALE);
-    if (!Number.isSafeInteger(outputDuration) ||
-        (trackDurationSize === 4 && outputTrackDuration > 0xffffffff)) {
-      throwError('MP4 video duration exceeds the supported range for 59.94 FPS.');
-    }
-
-    mdhd.payload = cloneBytes(mdhd.payload);
-    mdhd.payload.set(u32ToBytes(TARGET_FPS_TIMESCALE), mediaTimescaleOffset);
-    if (mediaDurationSize === 8) mdhd.payload.set(u64ToBytes(outputDuration), mediaDurationOffset);
-    else mdhd.payload.set(u32ToBytes(outputDuration), mediaDurationOffset);
-
-    if (ctts) {
-      const compositionVersion = ctts.payload[0];
-      if (compositionVersion !== 0 && compositionVersion !== 1) {
-        throwError('Unsupported MP4 composition offset table for 59.94 FPS retiming.');
-      }
-      const compositionEntries = validateTableEntries(ctts.payload, 8, 8, 'ctts');
-      let compositionSampleCount = 0;
-      for (let index = 0; index < compositionEntries; index++) {
-        compositionSampleCount += readU32(ctts.payload, 8 + index * 8);
-      }
-      if (compositionSampleCount !== frameCount) {
-        throwError('MP4 composition offset table does not match the video sample count.');
-      }
-      ctts.payload = cloneBytes(ctts.payload);
-      for (let index = 0; index < compositionEntries; index++) {
-        const offsetPosition = 12 + index * 8;
-        const rawOffset = readU32(ctts.payload, offsetPosition);
-        const offset = compositionVersion === 1 ? rawOffset | 0 : rawOffset;
-        const scaledOffset = Math.round(offset * TARGET_FPS_TIMESCALE / timescale);
-        if (scaledOffset < -0x80000000 || scaledOffset > 0xffffffff) {
-          throwError('MP4 composition offset exceeds the supported range for 59.94 FPS.');
-        }
-        ctts.payload.set(u32ToBytes(scaledOffset >>> 0), offsetPosition);
-      }
-    }
-
-    const updatedStts = new Uint8Array(16);
-    updatedStts.set(stts.payload.subarray(0, 4), 0);
-    updatedStts.set(u32ToBytes(1), 4);
-    updatedStts.set(u32ToBytes(frameCount), 8);
-    updatedStts.set(u32ToBytes(TARGET_FRAME_DURATION), 12);
-    stts.payload = updatedStts;
-
-    tkhd.payload = cloneBytes(tkhd.payload);
-    if (trackDurationSize === 8) tkhd.payload.set(u64ToBytes(outputTrackDuration), trackDurationOffset);
-    else tkhd.payload.set(u32ToBytes(outputTrackDuration), trackDurationOffset);
-  }
-
   function parseStsz(bytes) {
     if (!bytes || bytes.length < 12) throwError('The stsz table is truncated.');
     const uniform = readU32(bytes, 4);
@@ -781,7 +679,6 @@
   function quickPatch(input) {
     const bytes = toU8Array(input);
     const parsed = parseMp4Structure(bytes);
-    retimeVideoTo5994(parsed);
     const patched = executePatch(bytes, parsed);
     validateFinalOutput(patched);
     return patched;
@@ -925,9 +822,7 @@
         encoderTag: inspected.encoderTag,
         codec: inspected.codec,
         sampleCount: inspected.sampleCount,
-        audioSampleCount: inspected.audioSampleCount,
-        frameRateRetimed: true,
-        targetFrameRate: TARGET_FPS_TIMESCALE / TARGET_FRAME_DURATION
+        audioSampleCount: inspected.audioSampleCount
       }
     };
   }

@@ -159,13 +159,8 @@
     return Math.abs(x - y) <= epsilon;
   }
 
-  function verifyMediaContract(inputInfo, outputInfo, inputHdr, outputHdr, targetFrameRate = 0) {
+  function verifyMediaContract(inputInfo, outputInfo, inputHdr, outputHdr) {
     const problems = [];
-    const fpsRetimed = Number(targetFrameRate) === 59.94 &&
-      nearlyEqual(outputInfo.averageFps, targetFrameRate, 0.001) &&
-      nearlyEqual(outputInfo.maxFps, targetFrameRate, 0.001) &&
-      ([60, targetFrameRate].some(rate => nearlyEqual(inputInfo.averageFps, rate, rate === 60 ? 0.1 : 0.02))) &&
-      ([60, targetFrameRate].some(rate => nearlyEqual(inputInfo.maxFps, rate, rate === 60 ? 0.1 : 0.02)));
 
     if (Math.round(inputInfo.width) !== Math.round(outputInfo.width) ||
         Math.round(inputInfo.height) !== Math.round(outputInfo.height)) {
@@ -192,8 +187,8 @@
       );
     }
 
-    if ((!fpsRetimed && !nearlyEqual(inputInfo.averageFps, outputInfo.averageFps, 0.02)) ||
-      (!fpsRetimed && !nearlyEqual(inputInfo.maxFps, outputInfo.maxFps, 0.05))) {
+    if (!nearlyEqual(inputInfo.averageFps, outputInfo.averageFps, 0.02) ||
+      !nearlyEqual(inputInfo.maxFps, outputInfo.maxFps, 0.05)) {
       problems.push(
         `timing/FPS berubah ${(inputInfo.averageFps || 0).toFixed?.(3) || inputInfo.averageFps} → ` +
         `${(outputInfo.averageFps || 0).toFixed?.(3) || outputInfo.averageFps}`
@@ -220,9 +215,7 @@
     return {
       resolutionByteSafe: true,
       exactResolutionPreserved: true,
-      exactVideoTimingPreserved: !fpsRetimed,
-      frameRateRetimed: fpsRetimed,
-      targetFrameRate: fpsRetimed ? targetFrameRate : null,
+      exactVideoTimingPreserved: true,
       codecFamilyPreserved: true,
       codecSampleEntryPreserved: true,
       sourceCodecFamily: inCodecFamily,
@@ -498,9 +491,7 @@
     const outputInfo = core.inspectMediaInfo(output);
     const outputHdr = detectHdrProfile(output, outputInfo);
     try {
-      const mediaContract = verifyMediaContract(
-        info, outputInfo, hdr, outputHdr, result.report?.targetFrameRate
-      );
+      const mediaContract = verifyMediaContract(info, outputInfo, hdr, outputHdr);
       Object.assign(verification, mediaContract);
     } catch (verifyError) {
       return passthroughResult(original, data, verifyError?.message || 'codec/HDR contract tidak lolos', info, hdr, sniff);
@@ -518,9 +509,7 @@
         sourceResolution: `${info.width}x${info.height}`,
         outputResolution: `${outputInfo.width}x${outputInfo.height}`,
         resolutionPreserved: true,
-        fpsPreserved: !mediaContract.frameRateRetimed,
-        frameRateRetimed: mediaContract.frameRateRetimed,
-        targetFrameRate: mediaContract.targetFrameRate,
+        fpsPreserved: true,
         sourceCodecFamily: String(info.codecFamily || '').toLowerCase(),
         outputCodecFamily: String(outputInfo.codecFamily || '').toLowerCase(),
         sourceCodecTag: String(info.codec || '').toLowerCase(),
