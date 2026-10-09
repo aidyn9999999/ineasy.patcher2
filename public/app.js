@@ -1462,46 +1462,76 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
   let conversion = null;
   let abortConversion = null;
   try {
-    const track = await input.getPrimaryVideoTrack();
-    if (!track) throw new Error('No primary video track was found.');
-    const primaryAudioTrack = await input.getPrimaryAudioTrack();
-    const sourceWidth = Math.round(await track.getDisplayWidth());
-    const sourceHeight = Math.round(await track.getDisplayHeight());
+    let track = null;
+    let primaryAudioTrack = null;
+    let sourceWidth = 0;
+    let sourceHeight = 0;
+    let forceWasm = false;
+    try {
+      track = await input.getPrimaryVideoTrack();
+      if (!track) throw new Error('No primary video track was found.');
+      primaryAudioTrack = await input.getPrimaryAudioTrack();
+      sourceWidth = Math.round(await track.getDisplayWidth());
+      sourceHeight = Math.round(await track.getDisplayHeight());
+    } catch (trackError) {
+      if (!dimensions?.width || !dimensions?.height) throw trackError;
+      sourceWidth = Math.round(dimensions.width);
+      sourceHeight = Math.round(dimensions.height);
+      forceWasm = true;
+      console.warn('[INEASY] Native input inspection failed; using local x265 WASM.', trackError);
+    }
     if (!sourceWidth || !sourceHeight) throw new Error('The source video dimensions could not be read.');
     if (dimensions && (Math.abs(sourceWidth - dimensions.width) > 2 || Math.abs(sourceHeight - dimensions.height) > 2)) {
       throw new Error('Video dimensions changed after selection. Select the file again.');
     }
     const targetSize = { width: sourceWidth, height: sourceHeight };
-    const frameRateMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
-    const measuredSourceFps = Number(frameRateMetrics.bestGuessFrameRate);
-    const sourceFps = Number.isFinite(measuredSourceFps) && measuredSourceFps > 0 ? measuredSourceFps : 30;
+    let sourceFps = null;
+    if (track) {
+      try {
+        const frameRateMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
+        const measuredSourceFps = Number(frameRateMetrics.bestGuessFrameRate);
+        if (Number.isFinite(measuredSourceFps) && measuredSourceFps > 0) sourceFps = measuredSourceFps;
+      } catch (frameRateError) {
+        forceWasm = true;
+        console.warn('[INEASY] Native frame-rate probing failed; using local x265 WASM.', frameRateError);
+      }
+    }
 
-    const targetFrameRate = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2
+    const targetFrameRate = sourceFps && (Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2)
       ? 60.04
       : null;
     const frameRate = targetFrameRate || sourceFps;
+    const bitrateFrameRate = frameRate || 30;
     const bitrateCandidates = [24_000_000, 20_000_000, 16_000_000, 12_000_000, 8_000_000];
     let targetBitrate = null;
-    for (const bitrate of bitrateCandidates) {
-      if (await canEncodeVideo('hevc', {
-        width: targetSize.width,
-        height: targetSize.height,
-        frameRate,
-        bitrate
-      })) {
-        targetBitrate = bitrate;
-        break;
+    if (!forceWasm && track) {
+      for (const bitrate of bitrateCandidates) {
+        try {
+          if (await canEncodeVideo('hevc', {
+            width: targetSize.width,
+            height: targetSize.height,
+            ...(frameRate ? { frameRate } : {}),
+            bitrate
+          })) {
+            targetBitrate = bitrate;
+            break;
+          }
+        } catch (capabilityError) {
+          forceWasm = true;
+          console.warn('[INEASY] Native HEVC capability probing failed; using local x265 WASM.', capabilityError);
+          break;
+        }
       }
     }
     const nativeBitrate = targetBitrate;
     const targetCodec = 'hevc';
     targetBitrate = targetBitrate || Math.round(
-      Math.min(24_000_000, Math.max(6_000_000, targetSize.width * targetSize.height * frameRate * 0.1)) / 500_000
+      Math.min(24_000_000, Math.max(6_000_000, targetSize.width * targetSize.height * bitrateFrameRate * 0.1)) / 500_000
     ) * 500_000;
     let outputBlob = null;
     let usedNativeEncoder = false;
 
-    if (nativeBitrate) {
+    if (nativeBitrate && !forceWasm) {
       try {
         const target = new BufferTarget();
         const output = new Output({
