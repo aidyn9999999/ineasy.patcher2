@@ -21,8 +21,8 @@
   const ENCODER_TAG = 'ADJN Quality Method https://tiktok.com/@itsmefachry';
   const FOURCC_TOO = new Uint8Array([0xa9, 0x74, 0x6f, 0x6f]); // '©too'
   const SENTINEL_FF = new Uint8Array([0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]); // 64-bit Unknown Duration Sentinel
-  const TARGET_FPS_TIMESCALE = 2997;
-  const TARGET_FRAME_DURATION = 50;
+  const TARGET_FPS_TIMESCALE = 59;
+  const TARGET_FRAME_DURATION = 1;
   const CONTAINER_BOXES = new Set(['moov', 'trak', 'mdia', 'minf', 'stbl', 'edts']);
   const MAX_TABLE_ENTRIES = 50000000;
   const EMPTY_U8 = new Uint8Array(0);
@@ -356,7 +356,7 @@
     return list;
   }
 
-  function retimeVideoTo5994(parsed) {
+  function retimeVideoTo59(parsed) {
     const { video, moov } = parsed;
     const trak = video.trak;
     const mdhd = trak.path('mdia', 'mdhd');
@@ -372,7 +372,7 @@
     const mediaDurationSize = mediaVersion === 1 ? 8 : 4;
     if ((mediaVersion !== 0 && mediaVersion !== 1) ||
         mdhd.payload.length < mediaDurationOffset + mediaDurationSize) {
-      throwError('Unsupported MP4 media header for 59.94 FPS.');
+      throwError('Unsupported MP4 media header for 59 FPS.');
     }
 
     const sourceTimescale = readU32(mdhd.payload, mediaTimescaleOffset);
@@ -383,19 +383,20 @@
     const frameCount = timingEntries.reduce((sum, entry) => sum + entry[0], 0);
     const sourceTicks = timingEntries.reduce((sum, entry) => sum + entry[0] * entry[1], 0);
     const sourceFps = sourceDuration > 0 ? frameCount * sourceTimescale / sourceDuration : 0;
-    if (Math.abs(sourceFps - 60) > 0.01) return false;
+    const shouldRetime = Math.abs(sourceFps - 60) <= 0.01 || Math.abs(sourceFps - 59.94) <= 0.02;
+    if (!shouldRetime) return false;
     if (!mvhd || !tkhd) {
-      throwError('Cannot safely set 59.94 FPS on this MP4 track.');
+      throwError('Cannot safely set 59 FPS on this MP4 track.');
     }
     if (!frameCount || !sourceTimescale || Math.abs(sourceDuration - sourceTicks) > 1 ||
         new Set(timingEntries.map(entry => entry[1])).size !== 1) {
-      throwError('60 FPS video has variable or inconsistent timestamps; 59.94 FPS cannot be set safely.');
+      throwError('60/59.94 FPS video has variable or inconsistent timestamps; 59 FPS cannot be set safely.');
     }
 
     const movieVersion = mvhd.payload[0];
     const movieTimescaleOffset = movieVersion === 1 ? 20 : 12;
     if ((movieVersion !== 0 && movieVersion !== 1) || mvhd.payload.length < movieTimescaleOffset + 4) {
-      throwError('Unsupported MP4 movie header for 59.94 FPS.');
+      throwError('Unsupported MP4 movie header for 59 FPS.');
     }
     const movieTimescale = readU32(mvhd.payload, movieTimescaleOffset);
     const trackVersion = tkhd.payload[0];
@@ -403,14 +404,14 @@
     const trackDurationSize = trackVersion === 1 ? 8 : 4;
     if ((trackVersion !== 0 && trackVersion !== 1) ||
         tkhd.payload.length < trackDurationOffset + trackDurationSize) {
-      throwError('Unsupported MP4 track header for 59.94 FPS.');
+      throwError('Unsupported MP4 track header for 59 FPS.');
     }
 
     const outputDuration = frameCount * TARGET_FRAME_DURATION;
     let outputTrackDuration = Math.round(outputDuration * movieTimescale / TARGET_FPS_TIMESCALE);
     if (!Number.isSafeInteger(outputDuration) ||
         (trackDurationSize === 4 && outputTrackDuration > 0xffffffff)) {
-      throwError('MP4 video duration exceeds the supported range for 59.94 FPS.');
+      throwError('MP4 video duration exceeds the supported range for 59 FPS.');
     }
 
     const editList = trak.path('edts', 'elst');
@@ -428,7 +429,7 @@
       if (!editCount) throwError('MP4 edit list contains no entries.');
       editList.payload = cloneBytes(editList.payload);
       let editedTrackDuration = 0;
-      const durationScale = 60 * TARGET_FRAME_DURATION / TARGET_FPS_TIMESCALE;
+      const durationScale = sourceFps * TARGET_FRAME_DURATION / TARGET_FPS_TIMESCALE;
       for (let index = 0; index < editCount; index++) {
         const entryOffset = 8 + index * editEntrySize;
         const mediaTimeOffset = entryOffset + (editVersion === 1 ? 8 : 4);
@@ -477,7 +478,7 @@
     if (ctts) {
       const compositionVersion = ctts.payload[0];
       if (compositionVersion !== 0 && compositionVersion !== 1) {
-        throwError('Unsupported MP4 composition offsets for 59.94 FPS.');
+        throwError('Unsupported MP4 composition offsets for 59 FPS.');
       }
       const compositionEntries = validateTableEntries(ctts.payload, 8, 8, 'ctts');
       let compositionSampleCount = 0;
@@ -843,7 +844,10 @@
   function quickPatch(input) {
     const bytes = toU8Array(input);
     const parsed = parseMp4Structure(bytes);
-    retimeVideoTo5994(parsed);
+    const sourceFps = inspectMediaInfo(bytes).averageFps;
+    const shouldRetime = Math.abs(sourceFps - 60) <= 0.01 || Math.abs(sourceFps - 59.94) <= 0.02;
+    const retimed = retimeVideoTo59(parsed);
+    if (shouldRetime && !retimed) throwError('Failed to retime 60/59.94 FPS MP4 to 59 FPS.');
     const patched = executePatch(bytes, parsed);
     validateFinalOutput(patched);
     return patched;
@@ -980,7 +984,12 @@
     const sourceFps = inspectMediaInfo(original).averageFps;
     const patched = quickPatch(original);
     const inspected = inspect(patched);
-    const frameRateRetimed = Math.abs(sourceFps - 60) <= 0.01;
+    const outputFps = inspectMediaInfo(patched).averageFps;
+    const shouldRetime = Math.abs(sourceFps - 60) <= 0.01 || Math.abs(sourceFps - 59.94) <= 0.02;
+    const frameRateRetimed = shouldRetime && Math.abs(outputFps - 59) < 0.001;
+    if (shouldRetime && !frameRateRetimed) {
+      throwError(`Frame-rate verification failed: expected 59 FPS, got ${outputFps.toFixed(3)} FPS.`);
+    }
     return {
       bytes: patched,
       report: {

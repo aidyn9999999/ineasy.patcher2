@@ -7,7 +7,7 @@
 
 // We need to import the core and processor scripts into the worker context.
 // importScripts is synchronous and available in dedicated workers.
-importScripts('adjn-mp4-core.js?v=20261009-9', 'adjn-processor.js?v=20261009-8');
+importScripts('adjn-mp4-core.js?v=20261009-10', 'adjn-processor.js?v=20261009-10');
 
 const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
 
@@ -61,6 +61,7 @@ self.onmessage = async function (event) {
       requestId,
       output,
       outputMime: result.outputMime,
+      inputInfo: result.info,
       outputInfo: result.outputInfo || result.info,
       outputHdr: result.outputHdr || result.hdr,
       passthrough: !!result.passthrough,

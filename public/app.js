@@ -1857,7 +1857,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-28');
+        const worker = new Worker('adjn-worker.js?v=20261009-30');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1899,6 +1899,7 @@ if (processBtn) {
             resolve({
               output: new Uint8Array(msg.output),
               outputMime: msg.outputMime,
+              inputInfo: msg.inputInfo,
               outputInfo: msg.outputInfo,
               outputHdr: msg.outputHdr,
               passthrough: msg.passthrough,
@@ -1953,7 +1954,7 @@ if (processBtn) {
         passthrough: Boolean(result.passthrough),
         rateControl: result.rateControlReport || null,
         patcherActive: !result.passthrough && result.mode === 'adjn-core-resolution-codec-safe',
-        inputFps: result.info?.averageFps ?? null,
+        inputFps: result.inputInfo?.averageFps ?? null,
         outputFps: metaInfo?.averageFps ?? null,
         frameRateRetimed: result.report?.frameRateRetimed ?? false,
         durationUnknown: result.report?.durationUnknown ?? null,
@@ -1994,12 +1995,12 @@ if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processCo
 
 function localizePatchError(message) {
   const lang = STATE.lang || 'en';
-  const fpsRetimingFailure = String(message || '').match(/^fps_60_retime_failed:\s*(.*)$/i);
+  const fpsRetimingFailure = String(message || '').match(/^fps_retime_failed:\s*(.*)$/i);
   if (fpsRetimingFailure) {
     const text = {
-      ru: 'Не удалось безопасно изменить тайминг этого MP4 на 59,94 FPS. Причина',
-      kk: 'Бұл MP4 таймингін 59,94 FPS-ке қауіпсіз өзгерту мүмкін болмады. Себебі',
-      en: 'Could not safely retime this MP4 to 59.94 FPS. Reason'
+      ru: 'Не удалось безопасно изменить тайминг этого MP4 на 59 FPS. Причина',
+      kk: 'Бұл MP4 таймингін 59 FPS-ке қауіпсіз өзгерту мүмкін болмады. Себебі',
+      en: 'Could not safely retime this MP4 to 59 FPS. Reason'
     }[lang];
     return `${text}: ${fpsRetimingFailure[1]}`;
   }

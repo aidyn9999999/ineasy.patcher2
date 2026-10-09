@@ -161,10 +161,11 @@
 
   function verifyMediaContract(inputInfo, outputInfo, inputHdr, outputHdr, frameRateRetimed = false) {
     const problems = [];
+    const inputFps = Number(inputInfo.averageFps);
     const validRetiming = frameRateRetimed === true &&
-      Math.abs(Number(inputInfo.averageFps) - 60) <= 0.01 &&
-      Math.abs(Number(outputInfo.averageFps) - 59.94) < 0.001 &&
-      Math.abs(Number(outputInfo.maxFps) - 59.94) < 0.001;
+      (Math.abs(inputFps - 60) <= 0.01 || Math.abs(inputFps - 59.94) <= 0.02) &&
+      Math.abs(Number(outputInfo.averageFps) - 59) < 0.001 &&
+      Math.abs(Number(outputInfo.maxFps) - 59) < 0.001;
 
     if (Math.round(inputInfo.width) !== Math.round(outputInfo.width) ||
         Math.round(inputInfo.height) !== Math.round(outputInfo.height)) {
@@ -221,7 +222,7 @@
       exactResolutionPreserved: true,
       exactVideoTimingPreserved: !validRetiming,
       frameRateRetimed: validRetiming,
-      targetFrameRate: validRetiming ? 59.94 : null,
+      targetFrameRate: validRetiming ? 59 : null,
       codecFamilyPreserved: true,
       codecSampleEntryPreserved: true,
       sourceCodecFamily: inCodecFamily,
@@ -321,8 +322,8 @@
       fragmented: !!sniff?.fragmented, tracks: []
     };
     const sourceFps = Number(sourceInfo.maxFps || sourceInfo.averageFps || 0);
-    if (Math.abs(sourceFps - 60) <= 0.01) {
-      throw new Error(`fps_60_retime_failed: ${reason || 'unsupported MP4 timing layout'}`);
+    if (Math.abs(sourceFps - 60) <= 0.01 || Math.abs(sourceFps - 59.94) <= 0.02) {
+      throw new Error(`fps_retime_failed: ${reason || 'unsupported MP4 timing layout'}`);
     }
     const sourceHdr = hdr || detectHdrProfile(original, sourceInfo);
     const output = original.slice();
