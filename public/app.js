@@ -180,6 +180,7 @@ const translations = {
     videoResolutionTooHigh: 'This video is above Full HD. Export it at 1920×1080 or 1080×1920 and select it again.',
     videoDimensionsUnavailable: 'Could not read the video resolution. Try exporting it as MP4.',
     formatConversionFailed: 'This video format or codec is not supported by this browser. Try MP4, MOV, or another H.264 video.',
+    compressionFailed: 'Browser video compression failed. Try MP4/H.264 or a lower-bitrate source.',
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
     processingTimedOut: 'Local optimization took longer than 10 minutes. Try a shorter video or lower the source bitrate.',
@@ -353,6 +354,7 @@ const translations = {
     videoResolutionTooHigh: 'Разрешение видео выше Full HD. Экспортируйте его в 1920×1080 или 1080×1920 и выберите снова.',
     videoDimensionsUnavailable: 'Не удалось прочитать разрешение видео. Попробуйте экспортировать его в MP4.',
     formatConversionFailed: 'Браузер не поддерживает этот формат или кодек. Попробуйте MP4, MOV или видео H.264.',
+    compressionFailed: 'Не удалось сжать видео браузером. Попробуйте MP4/H.264 или исходник с меньшим битрейтом.',
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
     processingTimedOut: 'Локальная оптимизация длится больше 10 минут. Попробуйте короткое видео или снизить битрейт исходника.',
@@ -526,6 +528,7 @@ const translations = {
     videoResolutionTooHigh: 'Бейне Full HD форматынан жоғары. 1920×1080 немесе 1080×1920 етіп экспорттап, қайта таңдаңыз.',
     videoDimensionsUnavailable: 'Бейне ажыратымдылығын оқу мүмкін болмады. MP4 форматында экспорттап көріңіз.',
     formatConversionFailed: 'Браузер бұл пішімге немесе кодекке қолдау көрсетпейді. MP4, MOV немесе H.264 бейнесін қолданып көріңіз.',
+    compressionFailed: 'Бейнені браузерде сығу мүмкін болмады. MP4/H.264 немесе битрейті төменірек файлды қолданып көріңіз.',
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
     processingTimedOut: 'Жергілікті оңтайландыру 10 минуттан ұзақ. Қысқарақ видео немесе төменірек битрейт қолданып көріңіз.',
@@ -1835,7 +1838,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-8');
+        const worker = new Worker('adjn-worker.js?v=20261009-9');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1967,6 +1970,7 @@ function localizePatchError(message) {
     { test: /video_file_over_limit/i, ru: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge'), kk: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge'), en: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
+    { test: /BROWSER_COMPRESSION_FAILED/i, ru: t('compressionFailed'), kk: t('compressionFailed'), en: t('compressionFailed') },
     { test: /hdr_video_not_supported/i, ru: 'Сейчас принимаются только SDR-видео. HDR-обработка временно отключена.', kk: 'Қазір тек SDR бейнелер қабылданады. HDR өңдеуі уақытша өшірілген.', en: 'Only SDR videos are accepted right now. HDR processing is temporarily disabled.' },
     { test: /ADJN engine not loaded|Worker crashed|Script error/i, ru: 'Не удалось загрузить локальный ADJN-модуль. Обновите страницу и откройте сайт в Chrome или Safari.', kk: 'ADJN модулін жүктеу мүмкін болмады. Бетті жаңартып, сайтты Chrome немесе Safari арқылы ашыңыз.', en: 'Could not load the local ADJN module. Refresh the page and open the site in Chrome or Safari.' },
     { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },
