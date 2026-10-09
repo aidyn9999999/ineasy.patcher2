@@ -179,6 +179,10 @@ const translations = {
     fileTooLarge: 'Video files must be 500 MB or smaller.',
     readingVideoMetadata: 'Reading video details…',
     loadingVideoData: 'Preparing video for local processing…',
+    loadingHevcEngine: 'Loading the local HEVC encoder…',
+    copyingVideo: 'Preparing the video in local memory…',
+    encodingHevc: 'Encoding locally as HEVC…',
+    checkingHevcOutput: 'Checking the HEVC output…',
     analyzingVideo: 'Analyzing video…',
     patchingVideo: 'Applying video patch…',
     videoResolutionTooHigh: 'This video is above 4K. Export it at 4096×2304 or smaller and select it again.',
@@ -356,6 +360,10 @@ const translations = {
     fileTooLarge: 'Размер видео не должен превышать 500 МБ.',
     readingVideoMetadata: 'Читаем параметры видео…',
     loadingVideoData: 'Подготавливаем видео к локальной обработке…',
+    loadingHevcEngine: 'Загружаем локальный HEVC-энкодер…',
+    copyingVideo: 'Подготавливаем видео в локальной памяти…',
+    encodingHevc: 'Кодируем видео локально в HEVC…',
+    checkingHevcOutput: 'Проверяем результат HEVC…',
     analyzingVideo: 'Анализируем видео…',
     patchingVideo: 'Применяем патчер…',
     videoResolutionTooHigh: 'Разрешение видео выше 4K. Экспортируйте его в 4096×2304 или меньше и выберите снова.',
@@ -533,6 +541,10 @@ const translations = {
     fileTooLarge: 'Бейне файлының өлшемі 500 МБ-тан аспауы керек.',
     readingVideoMetadata: 'Бейне параметрлері оқылуда…',
     loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
+    loadingHevcEngine: 'Жергілікті HEVC кодтағышы жүктелуде…',
+    copyingVideo: 'Бейне жергілікті жадта дайындалуда…',
+    encodingHevc: 'Бейне HEVC форматына құрылғыда кодталуда…',
+    checkingHevcOutput: 'HEVC нәтижесі тексерілуде…',
     analyzingVideo: 'Бейне талдануда…',
     patchingVideo: 'Патчер қолданылуда…',
     videoResolutionTooHigh: 'Бейне 4K форматынан жоғары. 4096×2304 немесе одан төмен етіп экспорттап, қайта таңдаңыз.',
@@ -1582,7 +1594,7 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     }
 
     const encodeWithWasm = async () => {
-      const { encodeHevcLocally } = await import('./hevc-wasm.js?v=20261010-4');
+      const { encodeHevcLocally } = await import('./hevc-wasm.js?v=20261010-5');
       return encodeHevcLocally(file, frameRate, targetBitrate, signal, onProgress);
     };
     if (!outputBlob) outputBlob = await encodeWithWasm();
@@ -2084,8 +2096,14 @@ if (processBtn) {
       setProcessingState('processing', t('loadingVideoData'));
       updateProcessingProgress(3);
 
-      const preparedInput = await prepareVideoForPatcher(sourceFile, selectedVideoDimensions, controller.signal, (progress) => {
-        if (processingText) processingText.textContent = t('loadingVideoData');
+      const preparedInput = await prepareVideoForPatcher(sourceFile, selectedVideoDimensions, controller.signal, (progress, phase) => {
+        const phaseText = {
+          loadingHevcEngine: 'loadingHevcEngine',
+          copyingVideo: 'copyingVideo',
+          encodingHevc: 'encodingHevc',
+          checkingHevcOutput: 'checkingHevcOutput'
+        }[phase];
+        if (processingText) processingText.textContent = t(phaseText || 'loadingVideoData');
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
       });
       originalInputFps = preparedInput.sourceFps;
