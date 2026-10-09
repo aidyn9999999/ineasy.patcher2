@@ -20,7 +20,7 @@ self.onmessage = async function (event) {
   let inputBuffer = buffer;
   let outputName = fileName;
   let outputType = fileType;
-  const rateControlReport = { performed: false, compressionDisabled: true };
+  const rateControlReport = data.preparationReport || { performed: false, compressionDisabled: true };
 
   try {
     if (Number(fileSize || buffer?.byteLength || 0) > MAX_VIDEO_FILE_SIZE) {

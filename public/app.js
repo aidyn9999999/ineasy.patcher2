@@ -61,7 +61,7 @@ const translations = {
     stepTwoBody: 'Videos up to 4K (4096×2304) are processed locally. Frame rates up to 120 FPS are supported at 4K.',
     stepThreeTitle: 'Publish through Zernio',
     stepThreeBody: 'Tap “Auto-post”, connect your Zernio API key, review the caption, and publish to TikTok.',
-    localProcessingCopy: 'Video and audio stay on your device. ADJN changes MP4 metadata without re-encoding the video stream.',
+    localProcessingCopy: 'Video stays on your device. 1080p and 4K target profiles are re-encoded to H.264 at very high quality, then patched.',
     homeBottomCta: 'Start processing',
     faqLabel: 'FAQ / FREQUENTLY ASKED QUESTIONS',
     analyzerEyebrow: 'VIDEO ANALYZER',
@@ -238,7 +238,7 @@ const translations = {
     stepTwoBody: 'Локально обрабатываются видео до 4K (4096×2304). Для 4K поддерживается частота до 120 FPS.',
     stepThreeTitle: 'Опубликуйте через Zernio',
     stepThreeBody: 'Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и опубликуйте видео в TikTok.',
-    localProcessingCopy: 'Видео и звук остаются на устройстве. ADJN меняет MP4-метаданные без перекодирования видеопотока.',
+    localProcessingCopy: 'Видео остаётся на устройстве. Профили 1080p и 4K перекодируются в H.264 с очень высоким качеством, затем патчатся.',
     homeBottomCta: 'Начать обработку',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
@@ -415,7 +415,7 @@ const translations = {
     stepTwoBody: 'Құрылғыда 4K (4096×2304) дейінгі бейнелер өңделеді. 4K үшін 120 FPS-ке дейін қолдау бар.',
     stepThreeTitle: 'Zernio арқылы жариялаңыз',
     stepThreeBody: '«Автожариялау» түймесін басып, Zernio API кілтін қосыңыз, сипаттаманы тексеріп, TikTok-қа жариялаңыз.',
-    localProcessingCopy: 'Бейне мен аудио құрылғыңызда қалады. ADJN MP4 метадеректерін бейне ағынын қайта кодтамай өзгертеді.',
+    localProcessingCopy: 'Бейне құрылғыңызда қалады. 1080p және 4K профильдері өте жоғары сапада H.264 форматына қайта кодталып, кейін патчталады.',
     homeBottomCta: 'Өңдеуді бастау',
     faqLabel: 'FAQ / ЖИІ ҚОЙЫЛАТЫН СҰРАҚТАР',
     analyzerEyebrow: 'БЕЙНЕ АНАЛИЗАТОРЫ',
@@ -808,6 +808,7 @@ function updateDropzoneAvailability() {
     }
     if (previewWrap) previewWrap.classList.remove('show');
     if (fileInput) fileInput.value = '';
+    selectedVideoDimensions = null;
     if (postingDeviceSelect) postingDeviceSelect.value = '';
   }
   if (dropzone) dropzone.classList.toggle('locked', locked);
@@ -1444,6 +1445,135 @@ async function readVideoDimensionsForSelection(file) {
   }
 }
 
+function getTargetEncodeSize(width, height) {
+  const longSide = Math.max(width, height);
+  const shortSide = Math.min(width, height);
+  const isUhd = longSide >= 3000;
+  const isFullHd = shortSide >= 1000 && shortSide <= 1200;
+  if (!isUhd && !isFullHd) return null;
+
+  const scale = isUhd ? 1 - 0.1615 : 1 + 0.0926;
+  const makeEven = (value) => Math.max(2, Math.round(value / 2) * 2);
+  return { width: makeEven(width * scale), height: makeEven(height * scale) };
+}
+
+async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
+  const targetSize = dimensions
+    ? getTargetEncodeSize(Math.round(dimensions.width), Math.round(dimensions.height))
+    : null;
+  if (!targetSize) return { blob: file, sourceFps: null, targetFrameRate: null, report: null };
+
+  let mediabunny;
+  try {
+    mediabunny = await import('https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm');
+  } catch (error) {
+    throw new Error(`AUTO_VIDEO_CONVERSION_FAILED:${error.message || 'Mediabunny could not be loaded'}`);
+  }
+  const {
+    Input, ALL_FORMATS, BlobSource, Output, Mp4OutputFormat, BufferTarget,
+    Conversion, Quality, canEncodeVideo
+  } = mediabunny;
+  signal.throwIfAborted();
+
+  const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
+  let conversion = null;
+  let abortConversion = null;
+  try {
+    const track = await input.getPrimaryVideoTrack();
+    if (!track) throw new Error('No primary video track was found.');
+    const sourceWidth = Math.round(await track.getDisplayWidth());
+    const sourceHeight = Math.round(await track.getDisplayHeight());
+    if (Math.abs(sourceWidth - dimensions.width) > 2 || Math.abs(sourceHeight - dimensions.height) > 2) {
+      throw new Error('Video dimensions changed after selection. Select the file again.');
+    }
+    const frameRateMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
+    const sourceFps = frameRateMetrics.bestGuessFrameRate;
+
+    const targetFrameRate = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2
+      ? 60.05
+      : null;
+    const quality = new Quality('very-high');
+    const encoderOptions = {
+      width: targetSize.width,
+      height: targetSize.height,
+      frameRate: targetFrameRate || sourceFps,
+      quality
+    };
+    if (!await canEncodeVideo('avc', encoderOptions)) {
+      throw new Error('This browser cannot encode H.264 at the requested resolution and frame rate.');
+    }
+
+    const target = new BufferTarget();
+    const output = new Output({
+      format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
+      target
+    });
+    conversion = await Conversion.init({
+      input,
+      output,
+      tracks: 'primary',
+      video: {
+        ...targetSize,
+        fit: 'contain',
+        codec: 'avc',
+        quality,
+        forceTranscode: true,
+        ...(targetFrameRate ? { frameRate: targetFrameRate } : {})
+      },
+      audio: { codec: 'aac', quality: new Quality('very-high') }
+    });
+    if (!conversion.isValid) {
+      throw new Error('This browser cannot convert the selected video and audio tracks to MP4.');
+    }
+
+    abortConversion = () => { void conversion.cancel(); };
+    signal.addEventListener('abort', abortConversion, { once: true });
+    conversion.onProgress = (progress) => onProgress?.(progress);
+    signal.throwIfAborted();
+    await conversion.execute();
+    signal.throwIfAborted();
+
+    if (!target.buffer) throw new Error('The MP4 encoder returned no output.');
+    if (target.buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
+
+    const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+    if (!core?.inspectMediaInfo) throw new Error('The video verifier is not available.');
+    const outputInfo = core.inspectMediaInfo(new Uint8Array(target.buffer));
+    if (Math.abs(outputInfo.width - targetSize.width) > 2 ||
+        Math.abs(outputInfo.height - targetSize.height) > 2) {
+      throw new Error(`The output resolution is ${outputInfo.width}×${outputInfo.height}, expected ${targetSize.width}×${targetSize.height}.`);
+    }
+    if (targetFrameRate && Math.abs(outputInfo.averageFps - targetFrameRate) > 0.02) {
+      throw new Error(`The output frame rate is ${outputInfo.averageFps.toFixed(3)} FPS, expected ${targetFrameRate} FPS.`);
+    }
+
+    return {
+      blob: new Blob([target.buffer], { type: 'video/mp4' }),
+      sourceFps,
+      targetFrameRate,
+      outputInfo,
+      report: {
+        performed: true,
+        compressionDisabled: false,
+        codec: 'avc',
+        quality: 'very-high',
+        inputWidth: sourceWidth,
+        inputHeight: sourceHeight,
+        outputWidth: outputInfo.width,
+        outputHeight: outputInfo.height,
+        frameRate: outputInfo.averageFps
+      }
+    };
+  } catch (error) {
+    if (signal.aborted) throw new Error('processing_cancelled');
+    if (error.message === 'video_file_over_limit') throw error;
+    throw new Error(`AUTO_VIDEO_CONVERSION_FAILED:${error.message || 'unsupported video'}`);
+  } finally {
+    if (abortConversion) signal.removeEventListener('abort', abortConversion);
+    input.dispose();
+  }
+}
+
 function getPostingDeviceForPlatform() {
   const isPhoneMode = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -1452,9 +1582,11 @@ function getPostingDeviceForPlatform() {
 
 const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
 let fileSelectionVersion = 0;
+let selectedVideoDimensions = null;
 
 function rejectFileSelection(message) {
   if (fileInput) fileInput.value = '';
+  selectedVideoDimensions = null;
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
   currentObjectUrl = null;
   if (previewVideo) {
@@ -1473,6 +1605,7 @@ function rejectFileSelection(message) {
 
 async function handleFile(file) {
   const selectionVersion = ++fileSelectionVersion;
+  selectedVideoDimensions = null;
   checkingFileDimensions = false;
   if (processController) processController.abort();
   if (currentBalance === 0) {
@@ -1507,6 +1640,7 @@ async function handleFile(file) {
     rejectFileSelection(t('videoResolutionTooHigh'));
     return;
   }
+  selectedVideoDimensions = dimensions;
 
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
@@ -1826,19 +1960,26 @@ if (processBtn) {
     if (processingText) processingText.textContent = '';
     updateProcessingProgress(0);
 
+    let originalInputFps = null;
     try {
       setProcessingState('processing', t('readingVideoMetadata'));
       updateProcessingProgress(1);
       const sourceDuration = await readVideoDuration(sourceFile, controller.signal);
       controller.signal.throwIfAborted();
 
-
       setProcessingState('processing', t('loadingVideoData'));
       updateProcessingProgress(3);
 
-      const buffer = await sourceFile.arrayBuffer();
+      const preparedInput = await prepareVideoForPatcher(sourceFile, selectedVideoDimensions, controller.signal, (progress) => {
+        if (processingText) processingText.textContent = t('loadingVideoData');
+        updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
+      });
+      originalInputFps = preparedInput.sourceFps;
+      const processingFile = preparedInput.blob;
+      const buffer = await processingFile.arrayBuffer();
       controller.signal.throwIfAborted();
-      updateProcessingProgress(5);
+      if (buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
+      updateProcessingProgress(15);
 
       const requestId = `ineasy-${Date.now()}`;
 
@@ -1857,7 +1998,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-31');
+        const worker = new Worker('adjn-worker.js?v=20261009-33');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1869,11 +2010,12 @@ if (processBtn) {
               type: 'PROCESS',
               requestId,
               buffer,
-              file: sourceFile,
+              file: processingFile,
               duration: sourceDuration,
-              fileName: sourceFile.name || 'video.mp4',
-              fileType: sourceFile.type || 'video/mp4',
-              fileSize: sourceFile.size || buffer.byteLength,
+              fileName: processingFile.name || sourceFile.name || 'video.mp4',
+              fileType: processingFile.type || sourceFile.type || 'video/mp4',
+              fileSize: processingFile.size || buffer.byteLength,
+              preparationReport: preparedInput.report || null,
               engine: '2.1.5'
             }, [buffer]);
             return;
@@ -1954,9 +2096,9 @@ if (processBtn) {
         passthrough: Boolean(result.passthrough),
         rateControl: result.rateControlReport || null,
         patcherActive: !result.passthrough && result.mode === 'adjn-core-resolution-codec-safe',
-        inputFps: result.inputInfo?.averageFps ?? null,
+        inputFps: originalInputFps ?? result.inputInfo?.averageFps ?? null,
         outputFps: metaInfo?.averageFps ?? null,
-        frameRateRetimed: result.report?.frameRateRetimed ?? false,
+        frameRateRetimed: Boolean(preparedInput.targetFrameRate) || Boolean(result.report?.frameRateRetimed),
         durationUnknown: result.report?.durationUnknown ?? null,
         encoderTag: result.report?.encoderTag || '',
         resolution: resText || 'unknown',
@@ -1995,6 +2137,15 @@ if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processCo
 
 function localizePatchError(message) {
   const lang = STATE.lang || 'en';
+  const conversionFailure = String(message || '').match(/^AUTO_VIDEO_CONVERSION_FAILED:\s*(.*)$/i);
+  if (conversionFailure) {
+    const text = {
+      ru: 'Не удалось подготовить видео для TikTok без потери пропорций. Причина',
+      kk: 'TikTok үшін бейнені пропорцияларын сақтап дайындау мүмкін болмады. Себебі',
+      en: 'Could not prepare the video for TikTok while preserving its aspect ratio. Reason'
+    }[lang];
+    return `${text}: ${conversionFailure[1]}`;
+  }
   const fpsRetimingFailure = String(message || '').match(/^fps_retime_failed:\s*(.*)$/i);
   if (fpsRetimingFailure) {
     const text = {
