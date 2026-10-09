@@ -1410,10 +1410,6 @@ bot.on('text', async (ctx, next) => {
 
 const app = express();
 app.use(express.json());
-const ffmpegPackages = path.join(__dirname, 'node_modules', '@ffmpeg');
-const ffmpegAssetOptions = { maxAge: '1y', immutable: true };
-app.use('/vendor/ffmpeg/esm', express.static(path.join(ffmpegPackages, 'ffmpeg', 'dist', 'esm'), ffmpegAssetOptions));
-app.use('/vendor/ffmpeg/core', express.static(path.join(ffmpegPackages, 'core', 'dist', 'esm'), ffmpegAssetOptions));
 app.use(express.static(path.join(__dirname, 'public')));
 
 function createUserToken(telegramId) {

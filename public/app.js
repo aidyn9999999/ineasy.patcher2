@@ -179,10 +179,6 @@ const translations = {
     fileTooLarge: 'Video files must be 500 MB or smaller.',
     readingVideoMetadata: 'Reading video details…',
     loadingVideoData: 'Preparing video for local processing…',
-    loadingHevcEngine: 'Loading the local HEVC encoder…',
-    copyingVideo: 'Preparing the video in local memory…',
-    encodingHevc: 'Encoding locally as HEVC…',
-    checkingHevcOutput: 'Checking the HEVC output…',
     analyzingVideo: 'Analyzing video…',
     patchingVideo: 'Applying video patch…',
     videoResolutionTooHigh: 'This video is above 4K. Export it at 4096×2304 or smaller and select it again.',
@@ -360,10 +356,6 @@ const translations = {
     fileTooLarge: 'Размер видео не должен превышать 500 МБ.',
     readingVideoMetadata: 'Читаем параметры видео…',
     loadingVideoData: 'Подготавливаем видео к локальной обработке…',
-    loadingHevcEngine: 'Загружаем локальный HEVC-энкодер…',
-    copyingVideo: 'Подготавливаем видео в локальной памяти…',
-    encodingHevc: 'Кодируем видео локально в HEVC…',
-    checkingHevcOutput: 'Проверяем результат HEVC…',
     analyzingVideo: 'Анализируем видео…',
     patchingVideo: 'Применяем патчер…',
     videoResolutionTooHigh: 'Разрешение видео выше 4K. Экспортируйте его в 4096×2304 или меньше и выберите снова.',
@@ -541,10 +533,6 @@ const translations = {
     fileTooLarge: 'Бейне файлының өлшемі 500 МБ-тан аспауы керек.',
     readingVideoMetadata: 'Бейне параметрлері оқылуда…',
     loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
-    loadingHevcEngine: 'Жергілікті HEVC кодтағышы жүктелуде…',
-    copyingVideo: 'Бейне жергілікті жадта дайындалуда…',
-    encodingHevc: 'Бейне HEVC форматына құрылғыда кодталуда…',
-    checkingHevcOutput: 'HEVC нәтижесі тексерілуде…',
     analyzingVideo: 'Бейне талдануда…',
     patchingVideo: 'Патчер қолданылуда…',
     videoResolutionTooHigh: 'Бейне 4K форматынан жоғары. 4096×2304 немесе одан төмен етіп экспорттап, қайта таңдаңыз.',
@@ -1457,6 +1445,17 @@ async function readVideoDimensionsForSelection(file) {
   }
 }
 
+function getTargetEncodeSize(width, height) {
+  const longSide = Math.max(width, height);
+  const shortSide = Math.min(width, height);
+  const targetSide = longSide >= 3000 ? 3220 : shortSide >= 1000 && shortSide <= 1200 ? 1180 : 0;
+  if (!targetSide) return null;
+
+  const scale = targetSide / (longSide >= 3000 ? longSide : shortSide);
+  const makeEven = (value) => Math.max(2, Math.round(value / 2) * 2);
+  return { width: makeEven(width * scale), height: makeEven(height * scale) };
+}
+
 async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
   let mediabunny;
   try {
@@ -1474,131 +1473,73 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
   let conversion = null;
   let abortConversion = null;
   try {
-    let track = null;
-    let primaryAudioTrack = null;
-    let sourceWidth = 0;
-    let sourceHeight = 0;
-    let forceWasm = false;
-    try {
-      track = await input.getPrimaryVideoTrack();
-      if (!track) throw new Error('No primary video track was found.');
-      primaryAudioTrack = await input.getPrimaryAudioTrack();
-      sourceWidth = Math.round(await track.getDisplayWidth());
-      sourceHeight = Math.round(await track.getDisplayHeight());
-    } catch (trackError) {
-      if (!dimensions?.width || !dimensions?.height) throw trackError;
-      sourceWidth = Math.round(dimensions.width);
-      sourceHeight = Math.round(dimensions.height);
-      forceWasm = true;
-      console.warn('[INEASY] Native input inspection failed; using local x265 WASM.', trackError);
-    }
+    const track = await input.getPrimaryVideoTrack();
+    if (!track) throw new Error('No primary video track was found.');
+    const primaryAudioTrack = await input.getPrimaryAudioTrack();
+    const sourceWidth = Math.round(await track.getDisplayWidth());
+    const sourceHeight = Math.round(await track.getDisplayHeight());
     if (!sourceWidth || !sourceHeight) throw new Error('The source video dimensions could not be read.');
     if (dimensions && (Math.abs(sourceWidth - dimensions.width) > 2 || Math.abs(sourceHeight - dimensions.height) > 2)) {
       throw new Error('Video dimensions changed after selection. Select the file again.');
     }
-    const targetSize = { width: sourceWidth, height: sourceHeight };
-    let sourceFps = null;
-    if (track) {
-      try {
-        const frameRateMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
-        const measuredSourceFps = Number(frameRateMetrics.bestGuessFrameRate);
-        if (Number.isFinite(measuredSourceFps) && measuredSourceFps > 0) sourceFps = measuredSourceFps;
-      } catch (frameRateError) {
-        forceWasm = true;
-        console.warn('[INEASY] Native frame-rate probing failed; using local x265 WASM.', frameRateError);
-      }
-    }
+    const targetSize = getTargetEncodeSize(sourceWidth, sourceHeight);
+    if (!targetSize) return { blob: file, sourceFps: null, targetFrameRate: null, report: null };
 
+    const frameRateMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
+    const sourceFps = frameRateMetrics.bestGuessFrameRate;
     const targetFrameRate = sourceFps && (Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2)
-      ? 60.04
+      ? 60.05
       : null;
-    const frameRate = targetFrameRate || sourceFps;
-    const bitrateFrameRate = frameRate || 30;
-    const bitrateCandidates = [24_000_000, 20_000_000, 16_000_000, 12_000_000, 8_000_000];
-    let targetBitrate = null;
-    if (!forceWasm && track) {
-      for (const bitrate of bitrateCandidates) {
-        try {
-          if (await canEncodeVideo('hevc', {
-            width: targetSize.width,
-            height: targetSize.height,
-            ...(frameRate ? { frameRate } : {}),
-            bitrate
-          })) {
-            targetBitrate = bitrate;
-            break;
-          }
-        } catch (capabilityError) {
-          forceWasm = true;
-          console.warn('[INEASY] Native HEVC capability probing failed; using local x265 WASM.', capabilityError);
-          break;
-        }
-      }
-    }
-    const nativeBitrate = targetBitrate;
-    const targetCodec = 'hevc';
-    targetBitrate = targetBitrate || Math.round(
-      Math.min(24_000_000, Math.max(6_000_000, targetSize.width * targetSize.height * bitrateFrameRate * 0.1)) / 500_000
-    ) * 500_000;
-    let outputBlob = null;
-    let usedNativeEncoder = false;
-
-    if (nativeBitrate && !forceWasm) {
-      try {
-        const target = new BufferTarget();
-        const output = new Output({
-          format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
-          target
-        });
-        const videoOptions = {
-          ...targetSize,
-          fit: 'contain',
-          codec: targetCodec,
-          bitrate: targetBitrate,
-          forceTranscode: true,
-          ...(targetFrameRate ? { frameRate: targetFrameRate } : {})
-        };
-        conversion = await Conversion.init({
-          input,
-          output,
-          tracks: 'all',
-          video: (candidate) => candidate.id === track.id ? videoOptions : { discard: true },
-          audio: (candidate) => candidate.id === primaryAudioTrack?.id
-            ? { codec: 'aac', quality: new Quality('very-high') }
-            : { discard: true }
-        });
-        if (!conversion.isValid || !conversion.utilizedTracks.some(
-          (candidate) => candidate.isVideoTrack() && candidate.id === track.id
-        )) {
-          throw new Error('Native HEVC conversion did not include the selected video track.');
-        }
-
-        abortConversion = () => { void conversion.cancel(); };
-        signal.addEventListener('abort', abortConversion, { once: true });
-        conversion.onProgress = (progress) => onProgress?.(progress);
-        signal.throwIfAborted();
-        await conversion.execute();
-        signal.throwIfAborted();
-        if (!target.buffer) throw new Error('The native HEVC encoder returned no output.');
-        outputBlob = new Blob([target.buffer], { type: 'video/mp4' });
-        usedNativeEncoder = true;
-      } catch (nativeError) {
-        if (signal.aborted) throw new Error('processing_cancelled');
-        if (nativeError.message === 'video_file_over_limit') throw nativeError;
-        console.warn('[INEASY] Native HEVC encoding failed; using local x265 WASM.', nativeError);
-        if (abortConversion) signal.removeEventListener('abort', abortConversion);
-        abortConversion = null;
-        if (conversion) await conversion.cancel().catch(() => {});
-        conversion = null;
-      }
-    }
-
-    const encodeWithWasm = async () => {
-      const { encodeHevcLocally } = await import('./hevc-wasm.js?v=20261010-6');
-      return encodeHevcLocally(file, frameRate, targetBitrate, signal, onProgress);
+    const quality = new Quality('very-high');
+    const encoderOptions = {
+      width: targetSize.width,
+      height: targetSize.height,
+      frameRate: targetFrameRate || sourceFps,
+      quality
     };
-    if (!outputBlob) outputBlob = await encodeWithWasm();
-    if (outputBlob.size > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
+    if (!await canEncodeVideo('avc', encoderOptions)) {
+      throw new Error('This browser cannot encode H.264 at the requested resolution and frame rate.');
+    }
+
+    const target = new BufferTarget();
+    const output = new Output({
+      format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
+      target
+    });
+    const targetCodec = 'avc';
+    const videoOptions = {
+      ...targetSize,
+      fit: 'contain',
+      codec: targetCodec,
+      quality,
+      forceTranscode: true,
+      ...(targetFrameRate ? { frameRate: targetFrameRate } : {})
+    };
+    conversion = await Conversion.init({
+      input,
+      output,
+      tracks: 'all',
+      video: (candidate) => candidate.id === track.id ? videoOptions : { discard: true },
+      audio: (candidate) => candidate.id === primaryAudioTrack?.id
+        ? { codec: 'aac', quality: new Quality('very-high') }
+        : { discard: true }
+    });
+    if (!conversion.isValid || !conversion.utilizedTracks.some(
+      (candidate) => candidate.isVideoTrack() && candidate.id === track.id
+    )) {
+      throw new Error('This browser cannot convert the selected video and audio tracks to MP4.');
+    }
+
+    abortConversion = () => { void conversion.cancel(); };
+    signal.addEventListener('abort', abortConversion, { once: true });
+    conversion.onProgress = (progress) => onProgress?.(progress);
+    signal.throwIfAborted();
+    await conversion.execute();
+    signal.throwIfAborted();
+
+    if (!target.buffer) throw new Error('The MP4 encoder returned no output.');
+    if (target.buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
+    const outputBlob = new Blob([target.buffer], { type: 'video/mp4' });
 
     const inspectOutput = async (blob) => {
       let verificationInput = null;
@@ -1613,18 +1554,18 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
         const outputHeight = Math.round(await outputTrack.getDisplayHeight());
         const outputCodec = String(await outputTrack.getCodec() || '').toLowerCase();
         if (outputCodec !== targetCodec) {
-          throw new Error(`Expected HEVC output, received ${outputCodec || 'unknown codec'}.`);
+          throw new Error(`Expected H.264 output, received ${outputCodec || 'unknown codec'}.`);
         }
         let outputFps;
         try {
           const outputMetrics = await outputTrack.computeFrameRateMetrics({ targetPacketCount: 512 });
           outputFps = Number(outputMetrics.bestGuessFrameRate);
         } catch (error) {
-          console.warn('[INEASY] Browser could not inspect HEVC packet timing; using MP4 metadata.', error);
+          console.warn('[INEASY] Browser could not inspect MP4 packet timing; using MP4 metadata.', error);
         }
         if (!Number.isFinite(outputFps) || outputFps <= 0) {
           const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
-          if (!core?.inspectMediaInfo) throw new Error('The encoded HEVC frame rate could not be verified.');
+          if (!core?.inspectMediaInfo) throw new Error('The encoded MP4 frame rate could not be verified.');
           const probeBytes = new Uint8Array(await blob.slice(0, Math.min(blob.size, 32 * 1024 * 1024)).arrayBuffer());
           const mediaInfo = core.inspectMediaInfo(probeBytes);
           outputFps = Number(mediaInfo.averageFps);
@@ -1635,14 +1576,14 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
         }
         return { width: outputWidth, height: outputHeight, averageFps: outputFps, codec: outputCodec };
       } catch (verificationError) {
-        if (/Expected HEVC output/.test(verificationError.message || '')) throw verificationError;
+        if (/Expected H\.264 output/.test(verificationError.message || '')) throw verificationError;
         const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
         if (!core?.inspectMediaInfo) throw verificationError;
         const probeBytes = new Uint8Array(await blob.slice(0, Math.min(blob.size, 32 * 1024 * 1024)).arrayBuffer());
         const mediaInfo = core.inspectMediaInfo(probeBytes);
         const outputCodec = String(mediaInfo.codecFamily || mediaInfo.codec || '').toLowerCase();
         if (outputCodec !== targetCodec) {
-          throw new Error(`Expected HEVC output, received ${outputCodec || 'unknown codec'}.`);
+          throw new Error(`Expected H.264 output, received ${outputCodec || 'unknown codec'}.`);
         }
         return {
           width: Math.round(mediaInfo.width),
@@ -1656,15 +1597,7 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     };
 
     let outputInfo;
-    try {
-      outputInfo = await inspectOutput(outputBlob);
-    } catch (nativeVerificationError) {
-      if (!usedNativeEncoder || signal.aborted) throw nativeVerificationError;
-      console.warn('[INEASY] Native HEVC output verification failed; retrying with local x265 WASM.', nativeVerificationError);
-      outputBlob = await encodeWithWasm();
-      if (outputBlob.size > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
-      outputInfo = await inspectOutput(outputBlob);
-    }
+    outputInfo = await inspectOutput(outputBlob);
     if (Math.abs(outputInfo.width - targetSize.width) > 2 ||
         Math.abs(outputInfo.height - targetSize.height) > 2) {
       throw new Error(`The output resolution is ${outputInfo.width}×${outputInfo.height}, expected ${targetSize.width}×${targetSize.height}.`);
@@ -1682,7 +1615,7 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
         performed: true,
         compressionDisabled: false,
         codec: targetCodec,
-        bitrate: targetBitrate,
+        quality: 'very-high',
         inputWidth: sourceWidth,
         inputHeight: sourceHeight,
         outputWidth: outputInfo.width,
@@ -1767,10 +1700,6 @@ async function handleFile(file) {
     return;
   }
   selectedVideoDimensions = dimensions;
-  void import('./hevc-wasm.js?v=20261010-6')
-    .then(({ preloadHevcEncoder }) => preloadHevcEncoder())
-    .catch((error) => console.warn('[INEASY] Background HEVC encoder preload failed.', error));
-
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
   patchedDownloadUrl = null;
@@ -2099,14 +2028,8 @@ if (processBtn) {
       setProcessingState('processing', t('loadingVideoData'));
       updateProcessingProgress(3);
 
-      const preparedInput = await prepareVideoForPatcher(sourceFile, selectedVideoDimensions, controller.signal, (progress, phase) => {
-        const phaseText = {
-          loadingHevcEngine: 'loadingHevcEngine',
-          copyingVideo: 'copyingVideo',
-          encodingHevc: 'encodingHevc',
-          checkingHevcOutput: 'checkingHevcOutput'
-        }[phase];
-        if (processingText) processingText.textContent = t(phaseText || 'loadingVideoData');
+      const preparedInput = await prepareVideoForPatcher(sourceFile, selectedVideoDimensions, controller.signal, (progress) => {
+        if (processingText) processingText.textContent = t('loadingVideoData');
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
       });
       originalInputFps = preparedInput.sourceFps;
@@ -2277,11 +2200,11 @@ function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const conversionFailure = String(message || '').match(/^AUTO_VIDEO_CONVERSION_FAILED:\s*(.*)$/i);
   if (conversionFailure) {
-    if (/cannot encode HEVC or H\.264/i.test(conversionFailure[1])) {
+    if (/cannot encode H\.264/i.test(conversionFailure[1])) {
       return {
-        ru: 'Это устройство или браузер не поддерживает кодирование H.265 или H.264 при разрешении и FPS этого видео. Попробуйте другое устройство или уменьшите параметры исходного видео.',
-        kk: 'Бұл құрылғы немесе браузер осы бейненің ажыратымдылығы мен FPS параметрлерінде H.265 немесе H.264 кодтауын қолдамайды. Басқа құрылғыны пайдаланыңыз немесе бастапқы бейненің параметрлерін азайтыңыз.',
-        en: 'This device or browser cannot encode H.265 or H.264 at this video resolution and frame rate. Try another device or lower the source video settings.'
+        ru: 'Браузер не поддерживает кодирование H.264 при разрешении этого видео.',
+        kk: 'Браузер осы бейненің ажыратымдылығында H.264 кодтауын қолдамайды.',
+        en: 'This browser cannot encode H.264 at this video resolution.'
       }[lang];
     }
     const text = {
