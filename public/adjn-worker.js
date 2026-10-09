@@ -93,10 +93,12 @@ self.onmessage = async function (event) {
       sourceFps: Math.round(sourceFps),
       compressionSkippedReason: needsCompression ? null : 'bitrate_at_or_below_threshold_and_fps_at_or_below_60',
     };
-    const targetVideoBitrate = Math.max(2_000_000, Math.min(
-      20_000_000,
-      Math.round((averageBitrate || 10_000_000) * (needsCompression ? 0.55 : 0.9))
-    ));
+    let targetVideoBitrate = Math.max(2_000_000, Math.round((averageBitrate || 10_000_000) * 0.9));
+    if (needsCompression) {
+      targetVideoBitrate = averageBitrate <= 35_000_000
+        ? Math.max(2_000_000, Math.round(averageBitrate * 0.85))
+        : Math.min(35_000_000, Math.round(30_000_000 + (Math.min(averageBitrate, 50_000_000) - 35_000_000) / 3));
+    }
     const sourceExtension = String(fileName || data.file?.name || '').toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] || '';
     const needsContainerConversion = !['mp4', 'm4v', 'mov'].includes(sourceExtension);
     const needsReencode = needsCompression || needsContainerConversion;
@@ -125,7 +127,6 @@ self.onmessage = async function (event) {
           outputFps,
           containerConverted: needsContainerConversion,
           sourceResolution: sourceInfo ? `${sourceInfo.width}x${sourceInfo.height}` : 'unknown',
-          sourceFps: Math.round(sourceFps),
         };
       } catch (error) {
         rateControlReport = { performed: false, error: error?.message || String(error) };
