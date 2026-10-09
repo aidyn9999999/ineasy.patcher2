@@ -20,10 +20,12 @@ function removeBrowserValue(key) {
   try { sessionStorage.removeItem(key); } catch (error) {}
 }
 
-const tgId = getBrowserValue('tg_id');
+const PATCHER_TEST_MODE = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname) &&
+  new URLSearchParams(window.location.search).get('patcher-test') === '1';
+const tgId = getBrowserValue('tg_id') || (PATCHER_TEST_MODE ? 'LOCAL-TEST' : '');
 const tgAuthToken = getBrowserValue('tg_auth_token');
 
-if (!tgId || !tgAuthToken) {
+if ((!tgId || !tgAuthToken) && !PATCHER_TEST_MODE) {
   window.location.href = '/';
 }
 
@@ -172,6 +174,7 @@ const translations = {
     packageLabel: 'Video package',
     errorInvalidFile: 'Choose a supported video file.',
     fileTooLarge: 'Video files must be 150 MB or smaller.',
+    fileTooLargeTest: 'Test mode accepts videos up to 500 MB.',
     readingVideoMetadata: 'Reading video details…',
     loadingVideoData: 'Preparing video for local processing…',
     videoResolutionTooHigh: 'This video is above Full HD. Export it at 1920×1080 or 1080×1920 and select it again.',
@@ -343,6 +346,7 @@ const translations = {
     packageLabel: 'Пакет видео',
     errorInvalidFile: 'Выберите поддерживаемый видеофайл.',
     fileTooLarge: 'Размер видео не должен превышать 150 МБ.',
+    fileTooLargeTest: 'В тестовом режиме можно выбрать видео размером до 500 МБ.',
     readingVideoMetadata: 'Читаем параметры видео…',
     loadingVideoData: 'Подготавливаем видео к локальной обработке…',
     videoResolutionTooHigh: 'Разрешение видео выше Full HD. Экспортируйте его в 1920×1080 или 1080×1920 и выберите снова.',
@@ -514,6 +518,7 @@ const translations = {
     packageLabel: 'Бейне пакеті',
     errorInvalidFile: 'Қолдау көрсетілетін бейне файлын таңдаңыз.',
     fileTooLarge: 'Бейне файлының өлшемі 150 МБ-тан аспауы керек.',
+    fileTooLargeTest: 'Сынақ режимінде 500 МБ-қа дейінгі бейнені таңдауға болады.',
     readingVideoMetadata: 'Бейне параметрлері оқылуда…',
     loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
     videoResolutionTooHigh: 'Бейне Full HD форматынан жоғары. 1920×1080 немесе 1080×1920 етіп экспорттап, қайта таңдаңыз.',
@@ -833,6 +838,7 @@ async function loadBalance() {
 }
 
 async function refreshBalanceForProcessing() {
+  if (PATCHER_TEST_MODE) return true;
   const requestVersion = ++balanceRequestVersion;
   const token = getBrowserValue('tg_auth_token');
   const response = await fetch(`/api/balance/${encodeURIComponent(tgId)}`, {
@@ -855,6 +861,7 @@ async function refreshBalanceForProcessing() {
 }
 
 async function consumeProcessedVideo() {
+  if (PATCHER_TEST_MODE) return { free: 1, purchased: 0, patched: 0 };
   const requestVersion = ++balanceRequestVersion;
   const token = getBrowserValue('tg_auth_token');
   const response = await fetch(`/api/consume/${encodeURIComponent(tgId)}`, {
@@ -880,13 +887,17 @@ async function consumeProcessedVideo() {
   return data;
 }
 
-loadBalance();
-window.addEventListener('focus', () => {
-  if (!processController) loadBalance();
-});
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && !processController) loadBalance();
-});
+if (PATCHER_TEST_MODE) {
+  currentBalance = 1;
+} else {
+  loadBalance();
+  window.addEventListener('focus', () => {
+    if (!processController) loadBalance();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !processController) loadBalance();
+  });
+}
 
 // --- Packages ---
 const BOT_USERNAME = 'ineasybot';
@@ -1399,7 +1410,7 @@ function getPostingDeviceForPlatform() {
   return isPhoneMode ? 'phone' : 'pc';
 }
 
-const MAX_VIDEO_FILE_SIZE = 150 * 1024 * 1024;
+const MAX_VIDEO_FILE_SIZE = (PATCHER_TEST_MODE ? 500 : 150) * 1024 * 1024;
 let fileSelectionVersion = 0;
 
 function rejectFileSelection(message) {
@@ -1431,7 +1442,7 @@ async function handleFile(file) {
   }
   const isVideo = file && (file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name));
   if (file && file.size > MAX_VIDEO_FILE_SIZE) {
-    rejectFileSelection(t('fileTooLarge'));
+    rejectFileSelection(t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge'));
     return;
   }
   if (!isVideo || file.size < 16) {
@@ -1715,6 +1726,17 @@ document.querySelectorAll('[data-open-view]').forEach((button) => {
   });
 });
 
+if (PATCHER_TEST_MODE) {
+  document.querySelectorAll('.nav-tab').forEach((tab) => {
+    tab.hidden = tab.dataset.view !== 'patchSection';
+  });
+  document.querySelector('.balance-pill')?.setAttribute('hidden', '');
+  document.querySelector('.community-callout')?.setAttribute('hidden', '');
+  document.querySelector('.site-footer')?.setAttribute('hidden', '');
+  publishTiktokBtn.hidden = true;
+  document.querySelector('.nav-tab[data-view="patchSection"]')?.click();
+}
+
 const comparisonRange = document.getElementById('comparisonRange');
 const qualityComparison = document.getElementById('qualityComparison');
 if (comparisonRange && qualityComparison) {
@@ -1794,7 +1816,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-5');
+        const worker = new Worker('adjn-worker.js?v=20261009-7');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1811,6 +1833,7 @@ if (processBtn) {
               fileName: sourceFile.name || 'video.mp4',
               fileType: sourceFile.type || 'video/mp4',
               fileSize: sourceFile.size || buffer.byteLength,
+              testCompression: PATCHER_TEST_MODE,
               engine: '2.1.5'
             }, [buffer]);
             return;
@@ -1920,12 +1943,10 @@ if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processCo
 function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const knownErrors = [
-    { test: /video_file_over_150mb/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
+    { test: /video_file_over_limit/i, ru: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge'), kk: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge'), en: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /hdr_video_not_supported/i, ru: 'Сейчас принимаются только SDR-видео. HDR-обработка временно отключена.', kk: 'Қазір тек SDR бейнелер қабылданады. HDR өңдеуі уақытша өшірілген.', en: 'Only SDR videos are accepted right now. HDR processing is temporarily disabled.' },
     { test: /ADJN engine not loaded|Worker crashed|Script error/i, ru: 'Не удалось загрузить локальный ADJN-модуль. Обновите страницу и откройте сайт в Chrome или Safari.', kk: 'ADJN модулін жүктеу мүмкін болмады. Бетті жаңартып, сайтты Chrome немесе Safari арқылы ашыңыз.', en: 'Could not load the local ADJN module. Refresh the page and open the site in Chrome or Safari.' },
-    { test: /LOCAL_RATE_CONTROL_FILE_REQUIRED/i, ru: 'Браузер не передал видео локальному оптимизатору. Откройте сайт в Safari или Chrome и выберите файл заново.', kk: 'Браузер видеоны жергілікті оңтайландыруға бере алмады. Сайтты Safari немесе Chrome арқылы ашып, файлды қайта таңдаңыз.', en: 'The browser could not pass the video to local optimization. Open the site in Safari or Chrome and select the file again.' },
-    { test: /LOCAL_RATE_CONTROL_FAILED/i, ru: 'Не удалось локально оптимизировать видео. Проверьте интернет-соединение для загрузки FFmpeg и свободную память; видео не отправлялось на сервер.', kk: 'Видеоны құрылғыда оңтайландыру мүмкін болмады. FFmpeg жүктеу үшін интернетті және бос жадты тексеріңіз; видео серверге жіберілген жоқ.', en: 'Could not optimize the video locally. Check your connection for the FFmpeg download and free device memory; the video was not uploaded to a server.' },
     { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },
     { test: /video_over_60_seconds/i, ru: t('videoTooLong'), kk: t('videoTooLong'), en: t('videoTooLong') },
     { test: /video_duration_unavailable/i, ru: t('videoDurationUnavailable'), kk: t('videoDurationUnavailable'), en: t('videoDurationUnavailable') },
