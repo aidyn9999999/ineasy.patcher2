@@ -164,8 +164,8 @@
     const inputFps = Number(inputInfo.averageFps);
     const validRetiming = frameRateRetimed === true &&
       (Math.abs(inputFps - 60) <= 0.01 || Math.abs(inputFps - 59.94) <= 0.02) &&
-      Math.abs(Number(outputInfo.averageFps) - 59) < 0.001 &&
-      Math.abs(Number(outputInfo.maxFps) - 59) < 0.001;
+      Math.abs(Number(outputInfo.averageFps) - 60.05) < 0.001 &&
+      Math.abs(Number(outputInfo.maxFps) - 60.05) < 0.001;
 
     if (Math.round(inputInfo.width) !== Math.round(outputInfo.width) ||
         Math.round(inputInfo.height) !== Math.round(outputInfo.height)) {
@@ -222,7 +222,7 @@
       exactResolutionPreserved: true,
       exactVideoTimingPreserved: !validRetiming,
       frameRateRetimed: validRetiming,
-      targetFrameRate: validRetiming ? 59 : null,
+      targetFrameRate: validRetiming ? 60.05 : null,
       codecFamilyPreserved: true,
       codecSampleEntryPreserved: true,
       sourceCodecFamily: inCodecFamily,

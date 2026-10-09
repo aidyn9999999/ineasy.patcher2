@@ -1857,7 +1857,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-30');
+        const worker = new Worker('adjn-worker.js?v=20261009-31');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1998,9 +1998,9 @@ function localizePatchError(message) {
   const fpsRetimingFailure = String(message || '').match(/^fps_retime_failed:\s*(.*)$/i);
   if (fpsRetimingFailure) {
     const text = {
-      ru: 'Не удалось безопасно изменить тайминг этого MP4 на 59 FPS. Причина',
-      kk: 'Бұл MP4 таймингін 59 FPS-ке қауіпсіз өзгерту мүмкін болмады. Себебі',
-      en: 'Could not safely retime this MP4 to 59 FPS. Reason'
+      ru: 'Не удалось безопасно изменить тайминг этого MP4 на 60,05 FPS. Причина',
+      kk: 'Бұл MP4 таймингін 60,05 FPS-ке қауіпсіз өзгерту мүмкін болмады. Себебі',
+      en: 'Could not safely retime this MP4 to 60.05 FPS. Reason'
     }[lang];
     return `${text}: ${fpsRetimingFailure[1]}`;
   }
