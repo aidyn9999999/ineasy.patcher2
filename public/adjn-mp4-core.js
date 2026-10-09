@@ -384,7 +384,7 @@
     const sourceTicks = timingEntries.reduce((sum, entry) => sum + entry[0] * entry[1], 0);
     const sourceFps = sourceDuration > 0 ? frameCount * sourceTimescale / sourceDuration : 0;
     if (Math.abs(sourceFps - 60) > 0.01) return false;
-    if (!mvhd || !tkhd || trak.find('edts')) {
+    if (!mvhd || !tkhd) {
       throwError('Cannot safely set 59.94 FPS on this MP4 track.');
     }
     if (!frameCount || !sourceTimescale || Math.abs(sourceDuration - sourceTicks) > 1 ||
@@ -411,6 +411,34 @@
     if (!Number.isSafeInteger(outputDuration) ||
         (trackDurationSize === 4 && outputTrackDuration > 0xffffffff)) {
       throwError('MP4 video duration exceeds the supported range for 59.94 FPS.');
+    }
+
+    const editList = trak.path('edts', 'elst');
+    if (trak.find('edts') && !editList) {
+      throwError('MP4 edit list is missing its elst table.');
+    }
+    if (editList) {
+      const editVersion = editList.payload[0];
+      const editEntrySize = editVersion === 1 ? 20 : 12;
+      const editDurationSize = editVersion === 1 ? 8 : 4;
+      const editMediaTimeOffset = editVersion === 1 ? 16 : 12;
+      const editRateOffset = editVersion === 1 ? 24 : 16;
+      if ((editVersion !== 0 && editVersion !== 1) ||
+          editList.payload.length < 8 + editEntrySize ||
+          readU32(editList.payload, 4) !== 1) {
+        throwError('Only a single-segment MP4 edit list can be retimed safely.');
+      }
+      const mediaTimeEnd = editMediaTimeOffset + (editVersion === 1 ? 8 : 4);
+      if (!editList.payload.subarray(editMediaTimeOffset, mediaTimeEnd).every(byte => byte === 0) ||
+          readU32(editList.payload, editRateOffset) !== 0x00010000) {
+        throwError('MP4 edit list has a non-zero start or non-standard playback rate.');
+      }
+      if (editDurationSize === 8 && trackDurationSize === 4 && outputTrackDuration > 0xffffffff) {
+        throwError('MP4 edit list duration exceeds the supported range.');
+      }
+      editList.payload = cloneBytes(editList.payload);
+      if (editDurationSize === 8) editList.payload.set(u64ToBytes(outputTrackDuration), 8);
+      else editList.payload.set(u32ToBytes(outputTrackDuration), 8);
     }
 
     if (ctts) {

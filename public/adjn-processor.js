@@ -322,7 +322,7 @@
     };
     const sourceFps = Number(sourceInfo.maxFps || sourceInfo.averageFps || 0);
     if (Math.abs(sourceFps - 60) <= 0.01) {
-      throw new Error('fps_60_retime_failed');
+      throw new Error(`fps_60_retime_failed: ${reason || 'unsupported MP4 timing layout'}`);
     }
     const sourceHdr = hdr || detectHdrProfile(original, sourceInfo);
     const output = original.slice();

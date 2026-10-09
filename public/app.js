@@ -1848,7 +1848,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-25');
+        const worker = new Worker('adjn-worker.js?v=20261009-27');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1982,8 +1982,16 @@ if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processCo
 
 function localizePatchError(message) {
   const lang = STATE.lang || 'en';
+  const fpsRetimingFailure = String(message || '').match(/^fps_60_retime_failed:\s*(.*)$/i);
+  if (fpsRetimingFailure) {
+    const text = {
+      ru: 'Не удалось безопасно изменить тайминг этого MP4 на 59,94 FPS. Причина',
+      kk: 'Бұл MP4 таймингін 59,94 FPS-ке қауіпсіз өзгерту мүмкін болмады. Себебі',
+      en: 'Could not safely retime this MP4 to 59.94 FPS. Reason'
+    }[lang];
+    return `${text}: ${fpsRetimingFailure[1]}`;
+  }
   const knownErrors = [
-    { test: /fps_60_retime_failed/i, ru: 'Не удалось установить 59,94 FPS без перекодирования. Попробуйте стандартный MP4 с постоянными 60 FPS.', kk: '59,94 FPS орнату мүмкін болмады. Тұрақты 60 FPS стандартты MP4 қолданып көріңіз.', en: 'Could not set 59.94 FPS without re-encoding. Try a standard constant-60-FPS MP4.' },
     { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
