@@ -71,8 +71,8 @@ const translations = {
     patchSub: 'Publish in high quality.',
     choose: 'Drop your video here',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP and other videos',
-    localNote: 'Your video stays on your device. Maximum accepted resolution: 4K (4096×2304), up to 120 FPS.',
-    exportNote: 'For smoother playback, export in 1080p, 60 FPS, with a bitrate of 6–10 Mbps.',
+    localNote: 'Optimize your video up to 4K at 120 FPS.',
+    exportNote: 'Recommended bitrate: 15–35 Mbps.',
     choosePostingDevice: 'Choose your device before processing.',
     communityTitle: 'Stay in the loop with Ineasy',
     communityBody: 'New tutorials, project updates, and exclusive giveaways on our Telegram channel',
@@ -248,8 +248,8 @@ const translations = {
     patchSub: 'Публикуйте в высоком качестве.',
     choose: 'Перетащите видео сюда',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP и другие видео',
-    localNote: 'Видео остаётся на устройстве. Максимум — 4K (4096×2304) и до 120 FPS.',
-    exportNote: 'Для более плавного воспроизведения экспортируйте видео в 1080p, 60 FPS и с битрейтом 6–10 Мбит/с.',
+    localNote: 'Оптимизируйте видео до 4K и 120 FPS.',
+    exportNote: 'Рекомендуемый битрейт: 15–35 Мбит/с.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
     communityTitle: 'Будь в курсе Ineasy',
     communityBody: 'Новые туториалы, обновления проекта и эксклюзивные розыгрыши — в нашем Telegram-канале',
@@ -425,8 +425,8 @@ const translations = {
     patchSub: 'Жоғары сапада жариялаңыз.',
     choose: 'Видеоны осында сүйреп әкеліңіз',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP және басқа бейнелер',
-    localNote: 'Бейне құрылғыңызда қалады. Ең жоғарысы — 4K (4096×2304), 120 FPS-ке дейін.',
-    exportNote: 'Бірқалыпты ойнату үшін бейнені 1080p, 60 FPS және 6–10 Мбит/с битрейтпен экспорттаңыз.',
+    localNote: 'Бейнені 4K және 120 FPS-ке дейін оңтайландырыңыз.',
+    exportNote: 'Ұсынылатын битрейт: 15–35 Мбит/с.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
     communityTitle: 'Ineasy жаңалықтарынан хабардар болыңыз',
     communityBody: 'Жаңа нұсқаулықтар, жоба жаңалықтары және арнайы ұтыстар Telegram арнамызда',
@@ -1330,7 +1330,7 @@ function setProcessingState(type, text) {
 
 function updateProcessingProgress(value) {
   const percent = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
-  if (processingPercent) processingPercent.textContent = `${t('progressLabel')}: ${percent}%`;
+  if (processingPercent) processingPercent.textContent = t('progressLabel');
   if (processingProgress) processingProgress.style.width = `${percent}%`;
 }
 
@@ -1481,6 +1481,34 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     if (!sourceWidth || !sourceHeight) throw new Error('The source video dimensions could not be read.');
     if (dimensions && (Math.abs(sourceWidth - dimensions.width) > 2 || Math.abs(sourceHeight - dimensions.height) > 2)) {
       throw new Error('Video dimensions changed after selection. Select the file again.');
+    }
+    const sourceExtension = String(file.name || '').match(/\.([^.]+)$/)?.[1]?.toLowerCase();
+    const sourceCodec = String(await track.getCodec() || '').toLowerCase();
+    const sourceAudioCodec = String(await primaryAudioTrack?.getCodec() || '').toLowerCase();
+    if (sourceExtension === 'mp4' && sourceCodec === 'avc' && sourceAudioCodec === 'aac') {
+      const [videoTracks, audioTracks] = await Promise.all([input.getVideoTracks(), input.getAudioTracks()]);
+      if (videoTracks.length === 1 && audioTracks.length === 1) {
+        const sourceMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
+        const sourceFps = sourceMetrics.bestGuessFrameRate;
+        const targetFrameRate = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2
+          ? 60.05
+          : null;
+        return {
+          blob: file,
+          sourceFps,
+          targetFrameRate,
+          report: {
+            performed: false,
+            compressionDisabled: true,
+            codec: 'avc',
+            inputWidth: sourceWidth,
+            inputHeight: sourceHeight,
+            outputWidth: sourceWidth,
+            outputHeight: sourceHeight,
+            frameRate: sourceFps
+          }
+        };
+      }
     }
     const targetSize = getTargetEncodeSize(sourceWidth, sourceHeight);
     if (!targetSize) return { blob: file, sourceFps: null, targetFrameRate: null, report: null };
@@ -2020,16 +2048,15 @@ if (processBtn) {
 
     let originalInputFps = null;
     try {
-      setProcessingState('processing', t('readingVideoMetadata'));
+      setProcessingState('processing', '');
       updateProcessingProgress(1);
       const sourceDuration = await readVideoDuration(sourceFile, controller.signal);
       controller.signal.throwIfAborted();
 
-      setProcessingState('processing', t('loadingVideoData'));
+      setProcessingState('processing', '');
       updateProcessingProgress(3);
 
       const preparedInput = await prepareVideoForPatcher(sourceFile, selectedVideoDimensions, controller.signal, (progress) => {
-        if (processingText) processingText.textContent = t('loadingVideoData');
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
       });
       originalInputFps = preparedInput.sourceFps;
@@ -2084,13 +2111,6 @@ if (processBtn) {
 
           if (msg.type === 'STAGE') {
             if (controller.signal.aborted) return;
-            if (processingText && msg.phase) {
-              const phaseText = {
-                analyzing: 'analyzingVideo',
-                patching: 'patchingVideo',
-              }[msg.phase];
-              if (phaseText) processingText.textContent = t(phaseText);
-            }
             updateProcessingProgress(msg.progress);
             return;
           }
