@@ -26,17 +26,35 @@
   }
 
   function findAscii(bytes, text, from = 0) {
-    const pat = [...text].map(ch => ch.charCodeAt(0));
-    outer: for (let i = from; i <= bytes.length - pat.length; i++) {
-      for (let j = 0; j < pat.length; j++) if (bytes[i + j] !== pat[j]) continue outer;
-      return i;
+    if (!text.length) return from;
+    const firstByte = text.charCodeAt(0) & 0xff;
+    let index = bytes.indexOf(firstByte, from);
+    while (index >= 0 && index + text.length <= bytes.length) {
+      let matches = true;
+      for (let offset = 1; offset < text.length; offset++) {
+        if (bytes[index + offset] !== (text.charCodeAt(offset) & 0xff)) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) return index;
+      index = bytes.indexOf(firstByte, index + 1);
     }
     return -1;
   }
   function hasBytePattern(bytes, pattern) {
-    outer: for (let i = 0; i <= bytes.length - pattern.length; i++) {
-      for (let j = 0; j < pattern.length; j++) if (bytes[i + j] !== pattern[j]) continue outer;
-      return true;
+    if (!pattern.length) return true;
+    let index = bytes.indexOf(pattern[0]);
+    while (index >= 0 && index + pattern.length <= bytes.length) {
+      let matches = true;
+      for (let offset = 1; offset < pattern.length; offset++) {
+        if (bytes[index + offset] !== pattern[offset]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) return true;
+      index = bytes.indexOf(pattern[0], index + 1);
     }
     return false;
   }

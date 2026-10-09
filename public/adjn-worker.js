@@ -7,7 +7,7 @@
 
 // We need to import the core and processor scripts into the worker context.
 // importScripts is synchronous and available in dedicated workers.
-importScripts('adjn-mp4-core.js?v=20261008-2', 'adjn-processor.js?v=20261009-1');
+importScripts('adjn-mp4-core.js?v=20261008-2', 'adjn-processor.js?v=20261009-2');
 
 const MEDIABUNNY_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm';
 const TRANSCODE_BITRATE_THRESHOLD = 15_000_000;
@@ -52,6 +52,7 @@ self.onmessage = async function (event) {
     if (Number(fileSize || buffer?.byteLength || 0) > maxFileSize) {
       throw new Error('video_file_over_limit');
     }
+    self.postMessage({ type: 'STAGE', requestId, phase: 'analyzing', progress: 3 });
 
     if (!globalThis.ADJNVideoProcessor?.processVideoDirect) {
       throw new Error('ADJN engine not loaded in worker.');
@@ -97,7 +98,7 @@ self.onmessage = async function (event) {
       data.buffer = null;
       try {
         const compressedBuffer = await compressWithWebCodecs(data.file, targetVideoBitrate, (progress) => {
-          self.postMessage({ type: 'STAGE', requestId, progress: 5 + Math.round(progress * 55) });
+          self.postMessage({ type: 'STAGE', requestId, phase: 'compression', progress: 5 + Math.round(progress * 55) });
         });
         if (needsCompression && compressedBuffer.byteLength >= fileSize) {
           throw new Error('compression output was not smaller than source');
@@ -132,14 +133,21 @@ self.onmessage = async function (event) {
       },
       (label, progress, detail, key) => {
         const adjustedProgress = needsReencode ? 60 + Math.round(progress * 0.4) : progress;
-        self.postMessage({ type: 'STAGE', requestId, label, progress: adjustedProgress, detail, key });
+        self.postMessage({ type: 'STAGE', requestId, phase: 'patching', label, progress: adjustedProgress, detail, key });
       }
     );
 
     // Transfer the output buffer to avoid copying large ArrayBuffer
-    const output = result.output instanceof Uint8Array
-      ? result.output.buffer.slice(result.output.byteOffset, result.output.byteOffset + result.output.byteLength)
-      : result.output;
+    let output = result.output;
+    if (output instanceof Uint8Array) {
+      output = output.byteOffset === 0 && output.byteLength === output.buffer.byteLength
+        ? output.buffer
+        : output.buffer.slice(output.byteOffset, output.byteOffset + output.byteLength);
+    }
+    sourceBytes = null;
+    inputBuffer = null;
+    buffer = null;
+    data.buffer = null;
 
     self.postMessage({
       type: 'DONE',

@@ -177,6 +177,9 @@ const translations = {
     fileTooLargeTest: 'Test mode accepts videos up to 500 MB.',
     readingVideoMetadata: 'Reading video details…',
     loadingVideoData: 'Preparing video for local processing…',
+    analyzingVideo: 'Analyzing video…',
+    compressingVideo: 'Compressing video locally…',
+    patchingVideo: 'Applying video patch…',
     videoResolutionTooHigh: 'This video is above Full HD. Export it at 1920×1080 or 1080×1920 and select it again.',
     videoDimensionsUnavailable: 'Could not read the video resolution. Try exporting it as MP4.',
     formatConversionFailed: 'This video format or codec is not supported by this browser. Try MP4, MOV, or another H.264 video.',
@@ -351,6 +354,9 @@ const translations = {
     fileTooLargeTest: 'В тестовом режиме можно выбрать видео размером до 500 МБ.',
     readingVideoMetadata: 'Читаем параметры видео…',
     loadingVideoData: 'Подготавливаем видео к локальной обработке…',
+    analyzingVideo: 'Анализируем видео…',
+    compressingVideo: 'Сжимаем видео локально…',
+    patchingVideo: 'Применяем патчер…',
     videoResolutionTooHigh: 'Разрешение видео выше Full HD. Экспортируйте его в 1920×1080 или 1080×1920 и выберите снова.',
     videoDimensionsUnavailable: 'Не удалось прочитать разрешение видео. Попробуйте экспортировать его в MP4.',
     formatConversionFailed: 'Браузер не поддерживает этот формат или кодек. Попробуйте MP4, MOV или видео H.264.',
@@ -525,6 +531,9 @@ const translations = {
     fileTooLargeTest: 'Сынақ режимінде 500 МБ-қа дейінгі бейнені таңдауға болады.',
     readingVideoMetadata: 'Бейне параметрлері оқылуда…',
     loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
+    analyzingVideo: 'Бейне талдануда…',
+    compressingVideo: 'Бейне құрылғыда сығылуда…',
+    patchingVideo: 'Патчер қолданылуда…',
     videoResolutionTooHigh: 'Бейне Full HD форматынан жоғары. 1920×1080 немесе 1080×1920 етіп экспорттап, қайта таңдаңыз.',
     videoDimensionsUnavailable: 'Бейне ажыратымдылығын оқу мүмкін болмады. MP4 форматында экспорттап көріңіз.',
     formatConversionFailed: 'Браузер бұл пішімге немесе кодекке қолдау көрсетпейді. MP4, MOV немесе H.264 бейнесін қолданып көріңіз.',
@@ -1310,7 +1319,7 @@ function setProcessingState(type, text) {
 
 function updateProcessingProgress(value) {
   const percent = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
-  if (processingPercent) processingPercent.textContent = t('progressLabel');
+  if (processingPercent) processingPercent.textContent = `${t('progressLabel')}: ${percent}%`;
   if (processingProgress) processingProgress.style.width = `${percent}%`;
 }
 
@@ -1838,7 +1847,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-10');
+        const worker = new Worker('adjn-worker.js?v=20261009-12');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1863,6 +1872,14 @@ if (processBtn) {
 
           if (msg.type === 'STAGE') {
             if (controller.signal.aborted) return;
+            if (processingText && msg.phase) {
+              const phaseText = {
+                analyzing: 'analyzingVideo',
+                compression: 'compressingVideo',
+                patching: 'patchingVideo',
+              }[msg.phase];
+              if (phaseText) processingText.textContent = t(phaseText);
+            }
             updateProcessingProgress(msg.progress);
             return;
           }
