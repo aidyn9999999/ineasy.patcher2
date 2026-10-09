@@ -70,7 +70,7 @@ const translations = {
     patchTitle: 'Patch your video now.',
     patchSub: 'Publish in high quality.',
     choose: 'Drop your video here',
-    chooseSub: 'Drag file here or click to browse',
+    chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP and other videos',
     localNote: 'Your video stays on your device. Maximum accepted resolution: Full HD (1920×1080).',
     exportNote: 'For smoother playback, export in 1080p, 60 FPS, with a bitrate of 6–10 Mbps.',
     choosePostingDevice: 'Choose your device before processing.',
@@ -179,6 +179,7 @@ const translations = {
     loadingVideoData: 'Preparing video for local processing…',
     videoResolutionTooHigh: 'This video is above Full HD. Export it at 1920×1080 or 1080×1920 and select it again.',
     videoDimensionsUnavailable: 'Could not read the video resolution. Try exporting it as MP4.',
+    formatConversionFailed: 'This video format or codec is not supported by this browser. Try MP4, MOV, or another H.264 video.',
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
     processingTimedOut: 'Local optimization took longer than 10 minutes. Try a shorter video or lower the source bitrate.',
@@ -242,7 +243,7 @@ const translations = {
     patchTitle: 'Патчите видео прямо сейчас.',
     patchSub: 'Публикуйте в высоком качестве.',
     choose: 'Перетащите видео сюда',
-    chooseSub: 'Перетащите файл сюда или нажмите, чтобы открыть устройство',
+    chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP и другие видео',
     localNote: 'Видео остаётся на устройстве. Максимальное разрешение — Full HD (1920×1080).',
     exportNote: 'Для более плавного воспроизведения экспортируйте видео в 1080p, 60 FPS и с битрейтом 6–10 Мбит/с.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
@@ -351,6 +352,7 @@ const translations = {
     loadingVideoData: 'Подготавливаем видео к локальной обработке…',
     videoResolutionTooHigh: 'Разрешение видео выше Full HD. Экспортируйте его в 1920×1080 или 1080×1920 и выберите снова.',
     videoDimensionsUnavailable: 'Не удалось прочитать разрешение видео. Попробуйте экспортировать его в MP4.',
+    formatConversionFailed: 'Браузер не поддерживает этот формат или кодек. Попробуйте MP4, MOV или видео H.264.',
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
     processingTimedOut: 'Локальная оптимизация длится больше 10 минут. Попробуйте короткое видео или снизить битрейт исходника.',
@@ -414,7 +416,7 @@ const translations = {
     patchTitle: 'Бейнеңізді қазір патчтаңыз.',
     patchSub: 'Жоғары сапада жариялаңыз.',
     choose: 'Видеоны осында сүйреп әкеліңіз',
-    chooseSub: 'Файлды осы жерге сүйреп апарыңыз немесе құрылғыдан таңдаңыз',
+    chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP және басқа бейнелер',
     localNote: 'Бейне құрылғыңызда қалады. Ең жоғары ажыратымдылық — Full HD (1920×1080).',
     exportNote: 'Бірқалыпты ойнату үшін бейнені 1080p, 60 FPS және 6–10 Мбит/с битрейтпен экспорттаңыз.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
@@ -523,6 +525,7 @@ const translations = {
     loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
     videoResolutionTooHigh: 'Бейне Full HD форматынан жоғары. 1920×1080 немесе 1080×1920 етіп экспорттап, қайта таңдаңыз.',
     videoDimensionsUnavailable: 'Бейне ажыратымдылығын оқу мүмкін болмады. MP4 форматында экспорттап көріңіз.',
+    formatConversionFailed: 'Браузер бұл пішімге немесе кодекке қолдау көрсетпейді. MP4, MOV немесе H.264 бейнесін қолданып көріңіз.',
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
     processingTimedOut: 'Жергілікті оңтайландыру 10 минуттан ұзақ. Қысқарақ видео немесе төменірек битрейт қолданып көріңіз.',
@@ -1404,6 +1407,22 @@ function readVideoDimensions(file) {
   });
 }
 
+async function readVideoDimensionsForSelection(file) {
+  try {
+    return await readVideoDimensions(file);
+  } catch (error) {
+    if (!PATCHER_TEST_MODE) throw error;
+    const { Input, ALL_FORMATS, BlobSource } = await import('https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm');
+    const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
+    const track = await input.getPrimaryVideoTrack();
+    if (!track) throw error;
+    const width = await track.getDisplayWidth();
+    const height = await track.getDisplayHeight();
+    if (!width || !height) throw error;
+    return { width, height };
+  }
+}
+
 function getPostingDeviceForPlatform() {
   const isPhoneMode = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -1440,7 +1459,7 @@ async function handleFile(file) {
     updateDropzoneAvailability();
     return;
   }
-  const isVideo = file && (file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi)$/i.test(file.name));
+  const isVideo = file && (file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi|3gp|3g2|ts|mts|m2ts|mpg|mpeg|wmv|flv|ogv)$/i.test(file.name));
   if (file && file.size > MAX_VIDEO_FILE_SIZE) {
     rejectFileSelection(t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge'));
     return;
@@ -1454,7 +1473,7 @@ async function handleFile(file) {
   updateProcessButton();
   let dimensions;
   try {
-    dimensions = await readVideoDimensions(file);
+    dimensions = await readVideoDimensionsForSelection(file);
   } catch (error) {
     if (selectionVersion !== fileSelectionVersion) return;
     checkingFileDimensions = false;
@@ -1816,7 +1835,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-7');
+        const worker = new Worker('adjn-worker.js?v=20261009-8');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1890,7 +1909,9 @@ if (processBtn) {
       patchedDownloadUrl = URL.createObjectURL(outputBlob);
       if (downloadBtn) {
         downloadBtn.href = patchedDownloadUrl;
-        downloadBtn.download = `${sourceFile.name.replace(/\.[^.]+$/, '')}-ineasy.mp4`;
+        const originalExtension = sourceFile.name.match(/\.([^.]+)$/)?.[1] || 'mp4';
+        const outputExtension = result.outputMime === 'video/mp4' ? 'mp4' : originalExtension;
+        downloadBtn.download = `${sourceFile.name.replace(/\.[^.]+$/, '')}-ineasy.${outputExtension}`;
       }
 
       const metaInfo = result.outputInfo || result.info;
@@ -1945,6 +1966,7 @@ function localizePatchError(message) {
   const knownErrors = [
     { test: /video_file_over_limit/i, ru: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge'), kk: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge'), en: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
+    { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
     { test: /hdr_video_not_supported/i, ru: 'Сейчас принимаются только SDR-видео. HDR-обработка временно отключена.', kk: 'Қазір тек SDR бейнелер қабылданады. HDR өңдеуі уақытша өшірілген.', en: 'Only SDR videos are accepted right now. HDR processing is temporarily disabled.' },
     { test: /ADJN engine not loaded|Worker crashed|Script error/i, ru: 'Не удалось загрузить локальный ADJN-модуль. Обновите страницу и откройте сайт в Chrome или Safari.', kk: 'ADJN модулін жүктеу мүмкін болмады. Бетті жаңартып, сайтты Chrome немесе Safari арқылы ашыңыз.', en: 'Could not load the local ADJN module. Refresh the page and open the site in Chrome or Safari.' },
     { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },

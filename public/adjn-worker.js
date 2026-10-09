@@ -82,6 +82,9 @@ self.onmessage = async function (event) {
     const averageBitrate = duration > 0 ? (fileSize * 8) / duration : 0;
     const sourceFps = Number(sourceInfo?.maxFps || sourceInfo?.averageFps || 30);
     const needsCompression = testCompression && averageBitrate > TRANSCODE_BITRATE_THRESHOLD;
+    const sourceExtension = String(fileName || data.file?.name || '').toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] || '';
+    const needsContainerConversion = testCompression && !['mp4', 'm4v', 'mov'].includes(sourceExtension);
+    const needsReencode = needsCompression || needsContainerConversion;
     let result = await globalThis.ADJNVideoProcessor.processVideoDirect(
       {
         requestId,
@@ -92,12 +95,12 @@ self.onmessage = async function (event) {
         engine,
       },
       (label, progress, detail, key) => {
-        const adjustedProgress = needsCompression ? Math.min(70, Math.round(progress * 0.7)) : progress;
+        const adjustedProgress = needsReencode ? Math.min(70, Math.round(progress * 0.7)) : progress;
         self.postMessage({ type: 'STAGE', requestId, label, progress: adjustedProgress, detail, key });
       }
     );
 
-    if (needsCompression && !result.passthrough && data.file) {
+    if (needsReencode && (needsContainerConversion || !result.passthrough) && data.file) {
       result = null;
       sourceBytes = null;
       inputBuffer = null;
@@ -107,7 +110,7 @@ self.onmessage = async function (event) {
         const compressedBuffer = await compressWithWebCodecs(data.file, (progress) => {
           self.postMessage({ type: 'STAGE', requestId, progress: 70 + Math.round(progress * 20) });
         });
-        if (compressedBuffer.byteLength < fileSize) {
+        if (needsContainerConversion || compressedBuffer.byteLength < fileSize) {
           const compressedResult = await globalThis.ADJNVideoProcessor.processVideoDirect(
             {
               requestId,
@@ -121,24 +124,27 @@ self.onmessage = async function (event) {
               self.postMessage({ type: 'STAGE', requestId, label, progress: 90 + Math.round(progress * 0.1), detail, key });
             }
           );
-          if (!compressedResult.passthrough) {
-            result = compressedResult;
-            outputName = `${String(fileName || 'video').replace(/\.[^.]+$/, '')}-optimized.mp4`;
-            outputType = 'video/mp4';
-            rateControlReport = {
-              performed: true,
-              sourceBitrate: Math.round(averageBitrate),
-              outputAverageBitrate: duration > 0 ? Math.round((compressedBuffer.byteLength * 8) / duration) : null,
-              outputBitrateTarget: TRANSCODE_BITRATE_THRESHOLD,
-              sourceResolution: sourceInfo ? `${sourceInfo.width}x${sourceInfo.height}` : 'unknown',
-              sourceFps: Math.round(sourceFps),
-            };
-          }
+          if (compressedResult.passthrough) throw new Error('BROWSER_FORMAT_CONVERSION_UNPATCHABLE');
+          result = compressedResult;
+          outputName = `${String(fileName || 'video').replace(/\.[^.]+$/, '')}-optimized.mp4`;
+          outputType = 'video/mp4';
+          rateControlReport = {
+            performed: true,
+            sourceBitrate: Math.round(averageBitrate),
+            outputAverageBitrate: duration > 0 ? Math.round((compressedBuffer.byteLength * 8) / duration) : null,
+            outputBitrateTarget: TRANSCODE_BITRATE_THRESHOLD,
+            containerConverted: needsContainerConversion,
+            sourceResolution: sourceInfo ? `${sourceInfo.width}x${sourceInfo.height}` : 'unknown',
+            sourceFps: Math.round(sourceFps),
+          };
         }
       } catch (error) {
         rateControlReport = { performed: false, error: error?.message || String(error) };
       }
 
+      if (!result && needsContainerConversion) {
+        throw new Error(`BROWSER_FORMAT_CONVERSION_FAILED:${rateControlReport.error || 'unsupported video codec'}`);
+      }
       if (!result) {
         const originalBuffer = await data.file.arrayBuffer();
         result = await globalThis.ADJNVideoProcessor.processVideoDirect(
