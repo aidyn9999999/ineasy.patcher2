@@ -173,12 +173,10 @@ const translations = {
     fileName: 'Selected file',
     packageLabel: 'Video package',
     errorInvalidFile: 'Choose a supported video file.',
-    fileTooLarge: 'Video files must be 150 MB or smaller.',
-    fileTooLargeTest: 'Test mode accepts videos up to 500 MB.',
+    fileTooLarge: 'Video files must be 500 MB or smaller.',
     readingVideoMetadata: 'Reading video details…',
     loadingVideoData: 'Preparing video for local processing…',
     analyzingVideo: 'Analyzing video…',
-    compressingVideo: 'Compressing video locally…',
     patchingVideo: 'Applying video patch…',
     videoResolutionTooHigh: 'This video is above Full HD. Export it at 1920×1080 or 1080×1920 and select it again.',
     videoDimensionsUnavailable: 'Could not read the video resolution. Try exporting it as MP4.',
@@ -350,12 +348,10 @@ const translations = {
     fileName: 'Выбранный файл',
     packageLabel: 'Пакет видео',
     errorInvalidFile: 'Выберите поддерживаемый видеофайл.',
-    fileTooLarge: 'Размер видео не должен превышать 150 МБ.',
-    fileTooLargeTest: 'В тестовом режиме можно выбрать видео размером до 500 МБ.',
+    fileTooLarge: 'Размер видео не должен превышать 500 МБ.',
     readingVideoMetadata: 'Читаем параметры видео…',
     loadingVideoData: 'Подготавливаем видео к локальной обработке…',
     analyzingVideo: 'Анализируем видео…',
-    compressingVideo: 'Сжимаем видео локально…',
     patchingVideo: 'Применяем патчер…',
     videoResolutionTooHigh: 'Разрешение видео выше Full HD. Экспортируйте его в 1920×1080 или 1080×1920 и выберите снова.',
     videoDimensionsUnavailable: 'Не удалось прочитать разрешение видео. Попробуйте экспортировать его в MP4.',
@@ -527,12 +523,10 @@ const translations = {
     fileName: 'Таңдалған файл',
     packageLabel: 'Бейне пакеті',
     errorInvalidFile: 'Қолдау көрсетілетін бейне файлын таңдаңыз.',
-    fileTooLarge: 'Бейне файлының өлшемі 150 МБ-тан аспауы керек.',
-    fileTooLargeTest: 'Сынақ режимінде 500 МБ-қа дейінгі бейнені таңдауға болады.',
+    fileTooLarge: 'Бейне файлының өлшемі 500 МБ-тан аспауы керек.',
     readingVideoMetadata: 'Бейне параметрлері оқылуда…',
     loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
     analyzingVideo: 'Бейне талдануда…',
-    compressingVideo: 'Бейне құрылғыда сығылуда…',
     patchingVideo: 'Патчер қолданылуда…',
     videoResolutionTooHigh: 'Бейне Full HD форматынан жоғары. 1920×1080 немесе 1080×1920 етіп экспорттап, қайта таңдаңыз.',
     videoDimensionsUnavailable: 'Бейне ажыратымдылығын оқу мүмкін болмады. MP4 форматында экспорттап көріңіз.',
@@ -1423,7 +1417,6 @@ async function readVideoDimensionsForSelection(file) {
   try {
     return await readVideoDimensions(file);
   } catch (error) {
-    if (!PATCHER_TEST_MODE) throw error;
     const { Input, ALL_FORMATS, BlobSource } = await import('https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm');
     const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
     const track = await input.getPrimaryVideoTrack();
@@ -1441,7 +1434,7 @@ function getPostingDeviceForPlatform() {
   return isPhoneMode ? 'phone' : 'pc';
 }
 
-const MAX_VIDEO_FILE_SIZE = (PATCHER_TEST_MODE ? 500 : 150) * 1024 * 1024;
+const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
 let fileSelectionVersion = 0;
 
 function rejectFileSelection(message) {
@@ -1473,7 +1466,7 @@ async function handleFile(file) {
   }
   const isVideo = file && (file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi|3gp|3g2|ts|mts|m2ts|mpg|mpeg|wmv|flv|ogv)$/i.test(file.name));
   if (file && file.size > MAX_VIDEO_FILE_SIZE) {
-    rejectFileSelection(t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge'));
+    rejectFileSelection(t('fileTooLarge'));
     return;
   }
   if (!isVideo || file.size < 16) {
@@ -1847,7 +1840,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-12');
+        const worker = new Worker('adjn-worker.js?v=20261009-15');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1864,7 +1857,6 @@ if (processBtn) {
               fileName: sourceFile.name || 'video.mp4',
               fileType: sourceFile.type || 'video/mp4',
               fileSize: sourceFile.size || buffer.byteLength,
-              testCompression: PATCHER_TEST_MODE,
               engine: '2.1.5'
             }, [buffer]);
             return;
@@ -1875,7 +1867,7 @@ if (processBtn) {
             if (processingText && msg.phase) {
               const phaseText = {
                 analyzing: 'analyzingVideo',
-                compression: 'compressingVideo',
+                compression: 'loadingVideoData',
                 patching: 'patchingVideo',
               }[msg.phase];
               if (phaseText) processingText.textContent = t(phaseText);
@@ -1984,7 +1976,7 @@ if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processCo
 function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const knownErrors = [
-    { test: /video_file_over_limit/i, ru: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge'), kk: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge'), en: t(PATCHER_TEST_MODE ? 'fileTooLargeTest' : 'fileTooLarge') },
+    { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
     { test: /BROWSER_COMPRESSION_FAILED/i, ru: t('compressionFailed'), kk: t('compressionFailed'), en: t('compressionFailed') },

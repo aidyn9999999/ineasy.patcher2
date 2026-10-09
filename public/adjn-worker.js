@@ -11,8 +11,7 @@ importScripts('adjn-mp4-core.js?v=20261008-2', 'adjn-processor.js?v=20261009-2')
 
 const MEDIABUNNY_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm';
 const TRANSCODE_BITRATE_THRESHOLD = 15_000_000;
-const MAX_VIDEO_FILE_SIZE = 150 * 1024 * 1024;
-const TEST_MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
+const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
 
 async function compressWithWebCodecs(file, targetBitrate, onProgress) {
   const { Input, Output, Conversion, ALL_FORMATS, BlobSource, Mp4OutputFormat, BufferTarget, Quality } = await import(MEDIABUNNY_URL);
@@ -22,7 +21,11 @@ async function compressWithWebCodecs(file, targetBitrate, onProgress) {
     input,
     output,
     tracks: 'primary',
-    video: { codec: 'avc', quality: new Quality({ bitrate: targetBitrate }) },
+    video: {
+      codec: 'avc',
+      quality: new Quality({ bitrate: targetBitrate }),
+      hardwareAcceleration: 'prefer-hardware',
+    },
     audio: { codec: 'aac', quality: new Quality({ bitrate: 192_000 }) },
   });
   if (!conversion.isValid) throw new Error('BROWSER_COMPRESSION_UNSUPPORTED');
@@ -40,7 +43,6 @@ self.onmessage = async function (event) {
   if (!data || data.type !== 'PROCESS') return;
 
   const { requestId, fileSize, engine } = data;
-  const testCompression = data.testCompression === true;
   let { buffer, fileName, fileType } = data;
   let inputBuffer = buffer;
   let outputName = fileName;
@@ -48,8 +50,7 @@ self.onmessage = async function (event) {
   let rateControlReport = { performed: false };
 
   try {
-    const maxFileSize = testCompression ? TEST_MAX_VIDEO_FILE_SIZE : MAX_VIDEO_FILE_SIZE;
-    if (Number(fileSize || buffer?.byteLength || 0) > maxFileSize) {
+    if (Number(fileSize || buffer?.byteLength || 0) > MAX_VIDEO_FILE_SIZE) {
       throw new Error('video_file_over_limit');
     }
     self.postMessage({ type: 'STAGE', requestId, phase: 'analyzing', progress: 3 });
@@ -82,13 +83,13 @@ self.onmessage = async function (event) {
       : 0);
     const averageBitrate = duration > 0 ? (fileSize * 8) / duration : 0;
     const sourceFps = Number(sourceInfo?.maxFps || sourceInfo?.averageFps || 30);
-    const needsCompression = testCompression && averageBitrate > TRANSCODE_BITRATE_THRESHOLD;
+    const needsCompression = averageBitrate > TRANSCODE_BITRATE_THRESHOLD;
     const targetVideoBitrate = Math.max(2_000_000, Math.min(
       20_000_000,
       Math.round((averageBitrate || 10_000_000) * (needsCompression ? 0.55 : 0.9))
     ));
     const sourceExtension = String(fileName || data.file?.name || '').toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] || '';
-    const needsContainerConversion = testCompression && !['mp4', 'm4v', 'mov'].includes(sourceExtension);
+    const needsContainerConversion = !['mp4', 'm4v', 'mov'].includes(sourceExtension);
     const needsReencode = needsCompression || needsContainerConversion;
     if (needsReencode) {
       if (!data.file) throw new Error('BROWSER_COMPRESSION_FILE_REQUIRED');
