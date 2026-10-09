@@ -500,8 +500,9 @@
 
     const outputInfo = core.inspectMediaInfo(output);
     const outputHdr = detectHdrProfile(output, outputInfo);
+    let mediaContract;
     try {
-      const mediaContract = verifyMediaContract(
+      mediaContract = verifyMediaContract(
         info, outputInfo, hdr, outputHdr, result.report?.frameRateRetimed
       );
       Object.assign(verification, mediaContract);
