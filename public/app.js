@@ -1481,6 +1481,7 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
   try {
     const track = await input.getPrimaryVideoTrack();
     if (!track) throw new Error('No primary video track was found.');
+    const primaryAudioTrack = await input.getPrimaryAudioTrack();
     const sourceWidth = Math.round(await track.getDisplayWidth());
     const sourceHeight = Math.round(await track.getDisplayHeight());
     if (Math.abs(sourceWidth - dimensions.width) > 2 || Math.abs(sourceHeight - dimensions.height) > 2) {
@@ -1508,22 +1509,28 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
       format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
       target
     });
+    const videoOptions = {
+      ...targetSize,
+      fit: 'contain',
+      codec: 'avc',
+      quality,
+      forceTranscode: true,
+      ...(targetFrameRate ? { frameRate: targetFrameRate } : {})
+    };
     conversion = await Conversion.init({
       input,
       output,
-      tracks: 'primary',
-      video: {
-        ...targetSize,
-        fit: 'contain',
-        codec: 'avc',
-        quality,
-        forceTranscode: true,
-        ...(targetFrameRate ? { frameRate: targetFrameRate } : {})
-      },
-      audio: { codec: 'aac', quality: new Quality('very-high') }
+      tracks: 'all',
+      video: (candidate) => candidate.id === track.id ? videoOptions : { discard: true },
+      audio: (candidate) => candidate.id === primaryAudioTrack?.id
+        ? { codec: 'aac', quality: new Quality('very-high') }
+        : { discard: true }
     });
     if (!conversion.isValid) {
       throw new Error('This browser cannot convert the selected video and audio tracks to MP4.');
+    }
+    if (!conversion.utilizedTracks.some((candidate) => candidate.isVideoTrack() && candidate.id === track.id)) {
+      throw new Error('The selected source video track was not included in the MP4 conversion.');
     }
 
     abortConversion = () => { void conversion.cancel(); };
