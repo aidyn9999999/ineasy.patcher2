@@ -58,7 +58,7 @@ const translations = {
     stepOneTitle: 'Upload your finished edit',
     stepOneBody: 'Add your video after editing. Prepare music, text, and effects first.',
     stepTwoTitle: 'Tap “Process video”',
-    stepTwoBody: 'Videos up to Full HD (1920×1080) are processed locally. 2K and 4K videos are not accepted.',
+    stepTwoBody: 'Videos up to 4K (4096×2304) are processed locally. Frame rates up to 120 FPS are supported at 4K.',
     stepThreeTitle: 'Publish through Zernio',
     stepThreeBody: 'Tap “Auto-post”, connect your Zernio API key, review the caption, and publish to TikTok.',
     localProcessingCopy: 'Video and audio stay on your device. ADJN changes MP4 metadata without re-encoding the video stream.',
@@ -71,7 +71,7 @@ const translations = {
     patchSub: 'Publish in high quality.',
     choose: 'Drop your video here',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP and other videos',
-    localNote: 'Your video stays on your device. Maximum accepted resolution: Full HD (1920×1080).',
+    localNote: 'Your video stays on your device. Maximum accepted resolution: 4K (4096×2304), up to 120 FPS.',
     exportNote: 'For smoother playback, export in 1080p, 60 FPS, with a bitrate of 6–10 Mbps.',
     choosePostingDevice: 'Choose your device before processing.',
     communityTitle: 'Stay in the loop with Ineasy',
@@ -179,7 +179,7 @@ const translations = {
     loadingVideoData: 'Preparing video for local processing…',
     analyzingVideo: 'Analyzing video…',
     patchingVideo: 'Applying video patch…',
-    videoResolutionTooHigh: 'This video is above Full HD. Export it at 1920×1080 or 1080×1920 and select it again.',
+    videoResolutionTooHigh: 'This video is above 4K. Export it at 4096×2304 or smaller and select it again.',
     videoDimensionsUnavailable: 'Could not read the video resolution. Try exporting it as MP4.',
     formatConversionFailed: 'This video format or codec is not supported by this browser. Try MP4, MOV, or another H.264 video.',
     cancel: 'Cancel',
@@ -233,7 +233,7 @@ const translations = {
     stepOneTitle: 'Загрузите готовый монтаж',
     stepOneBody: 'Добавьте видео после монтажа: музыку, текст и эффекты подготовьте заранее.',
     stepTwoTitle: 'Нажмите «Обработать видео»',
-    stepTwoBody: 'Локально обрабатываются видео до Full HD (1920×1080). Видео 2K и 4K не принимаются.',
+    stepTwoBody: 'Локально обрабатываются видео до 4K (4096×2304). Для 4K поддерживается частота до 120 FPS.',
     stepThreeTitle: 'Опубликуйте через Zernio',
     stepThreeBody: 'Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и опубликуйте видео в TikTok.',
     localProcessingCopy: 'Видео и звук остаются на устройстве. ADJN меняет MP4-метаданные без перекодирования видеопотока.',
@@ -246,7 +246,7 @@ const translations = {
     patchSub: 'Публикуйте в высоком качестве.',
     choose: 'Перетащите видео сюда',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP и другие видео',
-    localNote: 'Видео остаётся на устройстве. Максимальное разрешение — Full HD (1920×1080).',
+    localNote: 'Видео остаётся на устройстве. Максимум — 4K (4096×2304) и до 120 FPS.',
     exportNote: 'Для более плавного воспроизведения экспортируйте видео в 1080p, 60 FPS и с битрейтом 6–10 Мбит/с.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
     communityTitle: 'Будь в курсе Ineasy',
@@ -354,7 +354,7 @@ const translations = {
     loadingVideoData: 'Подготавливаем видео к локальной обработке…',
     analyzingVideo: 'Анализируем видео…',
     patchingVideo: 'Применяем патчер…',
-    videoResolutionTooHigh: 'Разрешение видео выше Full HD. Экспортируйте его в 1920×1080 или 1080×1920 и выберите снова.',
+    videoResolutionTooHigh: 'Разрешение видео выше 4K. Экспортируйте его в 4096×2304 или меньше и выберите снова.',
     videoDimensionsUnavailable: 'Не удалось прочитать разрешение видео. Попробуйте экспортировать его в MP4.',
     formatConversionFailed: 'Браузер не поддерживает этот формат или кодек. Попробуйте MP4, MOV или видео H.264.',
     cancel: 'Отмена',
@@ -408,7 +408,7 @@ const translations = {
     stepOneTitle: 'Дайын монтажды жүктеңіз',
     stepOneBody: 'Видеоны монтаждан кейін қосыңыз. Музыка, мәтін және әсерлерді алдын ала дайындаңыз.',
     stepTwoTitle: '«Бейнені өңдеу» түймесін басыңыз',
-    stepTwoBody: 'Full HD (1920×1080) дейінгі бейнелер құрылғыда өңделеді. 2K және 4K бейнелері қабылданбайды.',
+    stepTwoBody: 'Құрылғыда 4K (4096×2304) дейінгі бейнелер өңделеді. 4K үшін 120 FPS-ке дейін қолдау бар.',
     stepThreeTitle: 'Zernio арқылы жариялаңыз',
     stepThreeBody: '«Автожариялау» түймесін басып, Zernio API кілтін қосыңыз, сипаттаманы тексеріп, TikTok-қа жариялаңыз.',
     localProcessingCopy: 'Бейне мен аудио құрылғыңызда қалады. ADJN MP4 метадеректерін бейне ағынын қайта кодтамай өзгертеді.',
@@ -421,7 +421,7 @@ const translations = {
     patchSub: 'Жоғары сапада жариялаңыз.',
     choose: 'Видеоны осында сүйреп әкеліңіз',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP және басқа бейнелер',
-    localNote: 'Бейне құрылғыңызда қалады. Ең жоғары ажыратымдылық — Full HD (1920×1080).',
+    localNote: 'Бейне құрылғыңызда қалады. Ең жоғарысы — 4K (4096×2304), 120 FPS-ке дейін.',
     exportNote: 'Бірқалыпты ойнату үшін бейнені 1080p, 60 FPS және 6–10 Мбит/с битрейтпен экспорттаңыз.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
     communityTitle: 'Ineasy жаңалықтарынан хабардар болыңыз',
@@ -529,7 +529,7 @@ const translations = {
     loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
     analyzingVideo: 'Бейне талдануда…',
     patchingVideo: 'Патчер қолданылуда…',
-    videoResolutionTooHigh: 'Бейне Full HD форматынан жоғары. 1920×1080 немесе 1080×1920 етіп экспорттап, қайта таңдаңыз.',
+    videoResolutionTooHigh: 'Бейне 4K форматынан жоғары. 4096×2304 немесе одан төмен етіп экспорттап, қайта таңдаңыз.',
     videoDimensionsUnavailable: 'Бейне ажыратымдылығын оқу мүмкін болмады. MP4 форматында экспорттап көріңіз.',
     formatConversionFailed: 'Браузер бұл пішімге немесе кодекке қолдау көрсетпейді. MP4, MOV немесе H.264 бейнесін қолданып көріңіз.',
     cancel: 'Бас тарту',
@@ -1495,7 +1495,7 @@ async function handleFile(file) {
   }
   if (selectionVersion !== fileSelectionVersion) return;
   checkingFileDimensions = false;
-  if (Math.max(dimensions.width, dimensions.height) > 1920 || Math.min(dimensions.width, dimensions.height) > 1080) {
+  if (Math.max(dimensions.width, dimensions.height) > 4096 || Math.min(dimensions.width, dimensions.height) > 2304) {
     rejectFileSelection(t('videoResolutionTooHigh'));
     return;
   }
