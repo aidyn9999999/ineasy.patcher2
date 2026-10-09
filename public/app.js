@@ -2000,6 +2000,9 @@ if (processBtn) {
       });
       originalInputFps = preparedInput.sourceFps;
       const processingFile = preparedInput.blob;
+      const processingFileName = preparedInput.report?.performed
+        ? `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`
+        : sourceFile.name || 'video.mp4';
       const buffer = await processingFile.arrayBuffer();
       controller.signal.throwIfAborted();
       if (buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
@@ -2036,7 +2039,7 @@ if (processBtn) {
               buffer,
               file: processingFile,
               duration: sourceDuration,
-              fileName: processingFile.name || sourceFile.name || 'video.mp4',
+              fileName: processingFileName,
               fileType: processingFile.type || sourceFile.type || 'video/mp4',
               fileSize: processingFile.size || buffer.byteLength,
               preparationReport: preparedInput.report || null,
