@@ -1536,9 +1536,30 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     if (!target.buffer) throw new Error('The MP4 encoder returned no output.');
     if (target.buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
 
-    const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
-    if (!core?.inspectMediaInfo) throw new Error('The video verifier is not available.');
-    const outputInfo = core.inspectMediaInfo(new Uint8Array(target.buffer));
+    const verificationInput = new Input({
+      source: new BlobSource(new Blob([target.buffer], { type: 'video/mp4' })),
+      formats: ALL_FORMATS
+    });
+    let outputInfo;
+    try {
+      const outputTrack = await verificationInput.getPrimaryVideoTrack();
+      if (!outputTrack) throw new Error('The encoded MP4 has no readable video track.');
+      const outputWidth = Math.round(await outputTrack.getDisplayWidth());
+      const outputHeight = Math.round(await outputTrack.getDisplayHeight());
+      const outputMetrics = await outputTrack.computeFrameRateMetrics({ targetPacketCount: 512 });
+      const outputFps = Number(outputMetrics.bestGuessFrameRate);
+      if (!Number.isFinite(outputWidth) || !Number.isFinite(outputHeight) ||
+          !Number.isFinite(outputFps) || outputFps <= 0) {
+        throw new Error('The encoded MP4 has invalid video dimensions or frame-rate metadata.');
+      }
+      outputInfo = {
+        width: outputWidth,
+        height: outputHeight,
+        averageFps: outputFps
+      };
+    } finally {
+      verificationInput.dispose();
+    }
     if (Math.abs(outputInfo.width - targetSize.width) > 2 ||
         Math.abs(outputInfo.height - targetSize.height) > 2) {
       throw new Error(`The output resolution is ${outputInfo.width}×${outputInfo.height}, expected ${targetSize.width}×${targetSize.height}.`);
