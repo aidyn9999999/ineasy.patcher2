@@ -407,7 +407,7 @@
     }
 
     const outputDuration = frameCount * TARGET_FRAME_DURATION;
-    const outputTrackDuration = Math.round(outputDuration * movieTimescale / TARGET_FPS_TIMESCALE);
+    let outputTrackDuration = Math.round(outputDuration * movieTimescale / TARGET_FPS_TIMESCALE);
     if (!Number.isSafeInteger(outputDuration) ||
         (trackDurationSize === 4 && outputTrackDuration > 0xffffffff)) {
       throwError('MP4 video duration exceeds the supported range for 59.94 FPS.');
@@ -421,24 +421,57 @@
       const editVersion = editList.payload[0];
       const editEntrySize = editVersion === 1 ? 20 : 12;
       const editDurationSize = editVersion === 1 ? 8 : 4;
-      const editMediaTimeOffset = editVersion === 1 ? 16 : 12;
-      const editRateOffset = editVersion === 1 ? 24 : 16;
-      if ((editVersion !== 0 && editVersion !== 1) ||
-          editList.payload.length < 8 + editEntrySize ||
-          readU32(editList.payload, 4) !== 1) {
-        throwError('Only a single-segment MP4 edit list can be retimed safely.');
+      if (editVersion !== 0 && editVersion !== 1) {
+        throwError('Unsupported MP4 edit-list version.');
       }
-      const mediaTimeEnd = editMediaTimeOffset + (editVersion === 1 ? 8 : 4);
-      if (!editList.payload.subarray(editMediaTimeOffset, mediaTimeEnd).every(byte => byte === 0) ||
-          readU32(editList.payload, editRateOffset) !== 0x00010000) {
-        throwError('MP4 edit list has a non-zero start or non-standard playback rate.');
+      const editCount = validateTableEntries(editList.payload, 8, editEntrySize, 'elst');
+      if (!editCount) throwError('MP4 edit list contains no entries.');
+      editList.payload = cloneBytes(editList.payload);
+      let editedTrackDuration = 0;
+      const durationScale = 60 * TARGET_FRAME_DURATION / TARGET_FPS_TIMESCALE;
+      for (let index = 0; index < editCount; index++) {
+        const entryOffset = 8 + index * editEntrySize;
+        const mediaTimeOffset = entryOffset + (editVersion === 1 ? 8 : 4);
+        const rateOffset = entryOffset + (editVersion === 1 ? 16 : 8);
+        const segmentDuration = editDurationSize === 8
+          ? readU64(editList.payload, entryOffset)
+          : readU32(editList.payload, entryOffset);
+        const rawMediaTime = editVersion === 1
+          ? Number(BigInt.asIntN(64, (BigInt(readU32(editList.payload, mediaTimeOffset)) << 32n) |
+            BigInt(readU32(editList.payload, mediaTimeOffset + 4))))
+          : (readU32(editList.payload, mediaTimeOffset) | 0);
+        if (readU32(editList.payload, rateOffset) !== 0x00010000 ||
+            !Number.isSafeInteger(rawMediaTime)) {
+          throwError('MP4 edit list uses a non-standard playback rate or unsupported media offset.');
+        }
+        if (rawMediaTime < 0 && rawMediaTime !== -1) {
+          throwError('MP4 edit list has an unsupported negative media offset.');
+        }
+
+        const isEmptyEdit = rawMediaTime === -1;
+        const outputSegmentDuration = isEmptyEdit
+          ? segmentDuration
+          : Math.round(segmentDuration * durationScale);
+        if (editDurationSize === 4 && outputSegmentDuration > 0xffffffff) {
+          throwError('MP4 edit-list segment exceeds the supported duration range.');
+        }
+        if (editDurationSize === 8) editList.payload.set(u64ToBytes(outputSegmentDuration), entryOffset);
+        else editList.payload.set(u32ToBytes(outputSegmentDuration), entryOffset);
+
+        if (!isEmptyEdit) {
+          const outputMediaTime = Math.round(rawMediaTime * TARGET_FPS_TIMESCALE / sourceTimescale);
+          if (!Number.isSafeInteger(outputMediaTime)) {
+            throwError('MP4 edit-list media offset exceeds the supported range.');
+          }
+          if (editVersion === 1) editList.payload.set(u64ToBytes(outputMediaTime), mediaTimeOffset);
+          else editList.payload.set(u32ToBytes(outputMediaTime >>> 0), mediaTimeOffset);
+        }
+        editedTrackDuration += outputSegmentDuration;
       }
-      if (editDurationSize === 8 && trackDurationSize === 4 && outputTrackDuration > 0xffffffff) {
+      outputTrackDuration = editedTrackDuration;
+      if (trackDurationSize === 4 && outputTrackDuration > 0xffffffff) {
         throwError('MP4 edit list duration exceeds the supported range.');
       }
-      editList.payload = cloneBytes(editList.payload);
-      if (editDurationSize === 8) editList.payload.set(u64ToBytes(outputTrackDuration), 8);
-      else editList.payload.set(u32ToBytes(outputTrackDuration), 8);
     }
 
     if (ctts) {
