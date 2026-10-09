@@ -144,7 +144,7 @@ const translations = {
     publishFailed: 'TikTok could not publish this video. Check the options and try again.',
     authExpired: 'Your session expired. Sign in again to publish.',
     close: 'Close',
-    notice: 'If the video duration shows 0:00 after patching, this is normal. The file works correctly.',
+    notice: 'The processed video keeps its original duration and playback metadata.',
     analyzerTitle: 'Video Analyzer',
     analyzerDesc: 'Check the parameters of your published video and compare them with the original file.',
     analyzerButton: 'Analyze video',
@@ -319,7 +319,7 @@ const translations = {
     publishFailed: 'Не удалось опубликовать видео в TikTok. Проверьте настройки и попробуйте снова.',
     authExpired: 'Сессия истекла. Войдите снова, чтобы опубликовать видео.',
     close: 'Закрыть',
-    notice: 'Если после патчинга длительность видео показывает 0:00, это нормально. Файл работает корректно.',
+    notice: 'После обработки исходная длительность и данные воспроизведения сохраняются.',
     analyzerTitle: 'Анализатор видео',
     analyzerDesc: 'Проверьте параметры опубликованного видео и сравните их с исходным файлом.',
     analyzerButton: 'Проверить видео',
@@ -494,7 +494,7 @@ const translations = {
     publishFailed: 'Бейне TikTok-та жарияланбады. Параметрлерді тексеріп, қайталап көріңіз.',
     authExpired: 'Сеанс аяқталды. Жариялау үшін қайта кіріңіз.',
     close: 'Жабу',
-    notice: 'Егер өңдеуден кейін ұзақтығы 0:00 болса, бұл қалыпты. Файл дұрыс жұмыс істейді.',
+    notice: 'Өңделген бейненің бастапқы ұзақтығы мен ойнату деректері сақталады.',
     analyzerTitle: 'Бейне анализаторы',
     analyzerDesc: 'Жарияланған бейненің параметрлерін тексеріп, бастапқы файлмен салыстырыңыз.',
     analyzerButton: 'Бейнені тексеру',
@@ -1840,7 +1840,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-16');
+        const worker = new Worker('adjn-worker.js?v=20261009-18');
 
         worker.onmessage = (e) => {
           const msg = e.data;

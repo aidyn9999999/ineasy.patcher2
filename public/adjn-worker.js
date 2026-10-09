@@ -7,7 +7,7 @@
 
 // We need to import the core and processor scripts into the worker context.
 // importScripts is synchronous and available in dedicated workers.
-importScripts('adjn-mp4-core.js?v=20261008-2', 'adjn-processor.js?v=20261009-2');
+importScripts('adjn-mp4-core.js?v=20261009-3', 'adjn-processor.js?v=20261009-3');
 
 const MEDIABUNNY_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm';
 const TRANSCODE_BITRATE_THRESHOLD = 15_000_000;
@@ -86,6 +86,13 @@ self.onmessage = async function (event) {
     const sourceFps = Number(sourceInfo?.maxFps || sourceInfo?.averageFps || 30);
     const needsCompression = averageBitrate > TRANSCODE_BITRATE_THRESHOLD || sourceFps > 60.01;
     const outputFps = Math.min(60, Math.max(1, Math.round(sourceFps || 30)));
+    rateControlReport = {
+      performed: false,
+      estimatedSourceBitrate: Math.round(averageBitrate),
+      bitrateThreshold: TRANSCODE_BITRATE_THRESHOLD,
+      sourceFps: Math.round(sourceFps),
+      compressionSkippedReason: needsCompression ? null : 'bitrate_at_or_below_threshold_and_fps_at_or_below_60',
+    };
     const targetVideoBitrate = Math.max(2_000_000, Math.min(
       20_000_000,
       Math.round((averageBitrate || 10_000_000) * (needsCompression ? 0.55 : 0.9))
