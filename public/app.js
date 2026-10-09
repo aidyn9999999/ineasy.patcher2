@@ -1473,95 +1473,126 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     }
     const targetSize = { width: sourceWidth, height: sourceHeight };
     const frameRateMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
-    const sourceFps = frameRateMetrics.bestGuessFrameRate;
+    const measuredSourceFps = Number(frameRateMetrics.bestGuessFrameRate);
+    const sourceFps = Number.isFinite(measuredSourceFps) && measuredSourceFps > 0 ? measuredSourceFps : 30;
 
     const targetFrameRate = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2
       ? 60.04
       : null;
     const frameRate = targetFrameRate || sourceFps;
     const bitrateCandidates = [24_000_000, 20_000_000, 16_000_000, 12_000_000, 8_000_000];
-    let targetCodec = null;
     let targetBitrate = null;
-    for (const codec of ['hevc', 'avc']) {
-      for (const bitrate of bitrateCandidates) {
-        if (await canEncodeVideo(codec, {
-          width: targetSize.width,
-          height: targetSize.height,
-          frameRate,
-          bitrate
-        })) {
-          targetCodec = codec;
-          targetBitrate = bitrate;
-          break;
-        }
+    for (const bitrate of bitrateCandidates) {
+      if (await canEncodeVideo('hevc', {
+        width: targetSize.width,
+        height: targetSize.height,
+        frameRate,
+        bitrate
+      })) {
+        targetBitrate = bitrate;
+        break;
       }
-      if (targetCodec) break;
     }
-    if (!targetCodec) throw new Error('This browser cannot encode HEVC or H.264 at the source resolution and frame rate.');
+    const nativeBitrate = targetBitrate;
+    const targetCodec = 'hevc';
+    targetBitrate = targetBitrate || Math.round(
+      Math.min(24_000_000, Math.max(6_000_000, targetSize.width * targetSize.height * frameRate * 0.1)) / 500_000
+    ) * 500_000;
+    let outputBlob = null;
+    let usedNativeEncoder = false;
 
-    const target = new BufferTarget();
-    const output = new Output({
-      format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
-      target
-    });
-    const videoOptions = {
-      ...targetSize,
-      fit: 'contain',
-      codec: targetCodec,
-      bitrate: targetBitrate,
-      forceTranscode: true,
-      ...(targetFrameRate ? { frameRate: targetFrameRate } : {})
+    if (nativeBitrate) {
+      try {
+        const target = new BufferTarget();
+        const output = new Output({
+          format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
+          target
+        });
+        const videoOptions = {
+          ...targetSize,
+          fit: 'contain',
+          codec: targetCodec,
+          bitrate: targetBitrate,
+          forceTranscode: true,
+          ...(targetFrameRate ? { frameRate: targetFrameRate } : {})
+        };
+        conversion = await Conversion.init({
+          input,
+          output,
+          tracks: 'all',
+          video: (candidate) => candidate.id === track.id ? videoOptions : { discard: true },
+          audio: (candidate) => candidate.id === primaryAudioTrack?.id
+            ? { codec: 'aac', quality: new Quality('very-high') }
+            : { discard: true }
+        });
+        if (!conversion.isValid || !conversion.utilizedTracks.some(
+          (candidate) => candidate.isVideoTrack() && candidate.id === track.id
+        )) {
+          throw new Error('Native HEVC conversion did not include the selected video track.');
+        }
+
+        abortConversion = () => { void conversion.cancel(); };
+        signal.addEventListener('abort', abortConversion, { once: true });
+        conversion.onProgress = (progress) => onProgress?.(progress);
+        signal.throwIfAborted();
+        await conversion.execute();
+        signal.throwIfAborted();
+        if (!target.buffer) throw new Error('The native HEVC encoder returned no output.');
+        outputBlob = new Blob([target.buffer], { type: 'video/mp4' });
+        usedNativeEncoder = true;
+      } catch (nativeError) {
+        if (signal.aborted) throw new Error('processing_cancelled');
+        if (nativeError.message === 'video_file_over_limit') throw nativeError;
+        console.warn('[INEASY] Native HEVC encoding failed; using local x265 WASM.', nativeError);
+        if (abortConversion) signal.removeEventListener('abort', abortConversion);
+        abortConversion = null;
+        if (conversion) await conversion.cancel().catch(() => {});
+        conversion = null;
+      }
+    }
+
+    const encodeWithWasm = async () => {
+      const { encodeHevcLocally } = await import('./hevc-wasm.js?v=20261010-1');
+      return encodeHevcLocally(file, frameRate, targetBitrate, signal, onProgress);
     };
-    conversion = await Conversion.init({
-      input,
-      output,
-      tracks: 'all',
-      video: (candidate) => candidate.id === track.id ? videoOptions : { discard: true },
-      audio: (candidate) => candidate.id === primaryAudioTrack?.id
-        ? { codec: 'aac', quality: new Quality('very-high') }
-        : { discard: true }
-    });
-    if (!conversion.isValid) {
-      throw new Error('This browser cannot convert the selected video and audio tracks to MP4.');
-    }
-    if (!conversion.utilizedTracks.some((candidate) => candidate.isVideoTrack() && candidate.id === track.id)) {
-      throw new Error('The selected source video track was not included in the MP4 conversion.');
-    }
+    if (!outputBlob) outputBlob = await encodeWithWasm();
+    if (outputBlob.size > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
 
-    abortConversion = () => { void conversion.cancel(); };
-    signal.addEventListener('abort', abortConversion, { once: true });
-    conversion.onProgress = (progress) => onProgress?.(progress);
-    signal.throwIfAborted();
-    await conversion.execute();
-    signal.throwIfAborted();
+    const inspectOutput = async (blob) => {
+      const verificationInput = new Input({
+        source: new BlobSource(blob),
+        formats: ALL_FORMATS
+      });
+      try {
+        const outputTrack = await verificationInput.getPrimaryVideoTrack();
+        if (!outputTrack) throw new Error('The encoded MP4 has no readable video track.');
+        const outputWidth = Math.round(await outputTrack.getDisplayWidth());
+        const outputHeight = Math.round(await outputTrack.getDisplayHeight());
+        const outputCodec = String(await outputTrack.getCodec() || '').toLowerCase();
+        const outputMetrics = await outputTrack.computeFrameRateMetrics({ targetPacketCount: 512 });
+        const outputFps = Number(outputMetrics.bestGuessFrameRate);
+        if (!Number.isFinite(outputWidth) || !Number.isFinite(outputHeight) ||
+            !Number.isFinite(outputFps) || outputFps <= 0) {
+          throw new Error('The encoded MP4 has invalid video metadata.');
+        }
+        if (outputCodec !== targetCodec) {
+          throw new Error(`Expected HEVC output, received ${outputCodec || 'unknown codec'}.`);
+        }
+        return { width: outputWidth, height: outputHeight, averageFps: outputFps, codec: outputCodec };
+      } finally {
+        verificationInput.dispose();
+      }
+    };
 
-    if (!target.buffer) throw new Error('The MP4 encoder returned no output.');
-    if (target.buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
-
-    const outputBlob = new Blob([target.buffer], { type: 'video/mp4' });
-    const verificationInput = new Input({
-      source: new BlobSource(outputBlob),
-      formats: ALL_FORMATS
-    });
     let outputInfo;
     try {
-      const outputTrack = await verificationInput.getPrimaryVideoTrack();
-      if (!outputTrack) throw new Error('The encoded MP4 has no readable video track.');
-      const outputWidth = Math.round(await outputTrack.getDisplayWidth());
-      const outputHeight = Math.round(await outputTrack.getDisplayHeight());
-      const outputCodec = String(await outputTrack.getCodec() || '').toLowerCase();
-      const outputMetrics = await outputTrack.computeFrameRateMetrics({ targetPacketCount: 512 });
-      const outputFps = Number(outputMetrics.bestGuessFrameRate);
-      if (!Number.isFinite(outputWidth) || !Number.isFinite(outputHeight) ||
-          !Number.isFinite(outputFps) || outputFps <= 0) {
-        throw new Error('The encoded MP4 has invalid video metadata.');
-      }
-      if (outputCodec !== targetCodec) {
-        throw new Error(`Expected ${targetCodec.toUpperCase()} output, received ${outputCodec || 'unknown codec'}.`);
-      }
-      outputInfo = { width: outputWidth, height: outputHeight, averageFps: outputFps, codec: outputCodec };
-    } finally {
-      verificationInput.dispose();
+      outputInfo = await inspectOutput(outputBlob);
+    } catch (nativeVerificationError) {
+      if (!usedNativeEncoder || signal.aborted) throw nativeVerificationError;
+      console.warn('[INEASY] Native HEVC output verification failed; retrying with local x265 WASM.', nativeVerificationError);
+      outputBlob = await encodeWithWasm();
+      if (outputBlob.size > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
+      outputInfo = await inspectOutput(outputBlob);
     }
     if (Math.abs(outputInfo.width - targetSize.width) > 2 ||
         Math.abs(outputInfo.height - targetSize.height) > 2) {
