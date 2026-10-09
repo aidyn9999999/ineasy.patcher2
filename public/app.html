@@ -163,7 +163,9 @@
         </div>
         <a id="downloadBtn" href="#" download class="download-link">Download</a>
         <button id="publishTiktokBtn" class="tiktok-publish-btn" type="button">Publish to TikTok</button>
+        <a id="tiktokStudioBtn" class="tiktok-publish-btn tiktok-studio-btn" href="https://www.tiktok.com/upload" target="_blank" rel="noopener noreferrer">Open TikTok Studio</a>
         <small class="autopost-hint" id="autopostHint">Quick auto-post with Zernio</small>
+        <small class="autopost-hint tiktok-studio-hint" id="tiktokStudioHint">Official TikTok upload. Posting on site is usually faster.</small>
       </div>
     </div>
     </section>
@@ -337,7 +339,7 @@
 <script src="adjn-mp4-core.js?v=20261009-9"></script>
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="adjn-processor.js?v=20261009-8"></script>
-<script src="app.js?v=20261009-30"></script>
+<script src="app.js?v=20261009-33"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';

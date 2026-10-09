@@ -84,7 +84,9 @@ const translations = {
     readySub: 'Download your patched file',
     download: 'Download',
     publishTikTok: 'Post on site (easy)',
+    publishTikTokStudio: 'Open TikTok Studio',
     autopostHint: 'Quick auto-post with Zernio',
+    tiktokStudioHint: 'Official TikTok upload. Posting on site is usually faster.',
     autopostScrollHint: 'The publishing section is below. Scroll down to continue.',
     publishNow: 'Publish now',
     scheduleSubmit: 'Schedule post',
@@ -259,7 +261,9 @@ const translations = {
     readySub: 'Можно скачать обработанный файл',
     download: 'Скачать',
     publishTikTok: 'Пост в сайте (легкий)',
+    publishTikTokStudio: 'Открыть TikTok Studio',
     autopostHint: 'Быстрая публикация через Zernio',
+    tiktokStudioHint: 'Официальная загрузка TikTok. Публикация на сайте обычно быстрее.',
     autopostScrollHint: 'Раздел публикации ниже. Прокрутите страницу вниз.',
     publishNow: 'Опубликовать сейчас',
     scheduleSubmit: 'Запланировать публикацию',
@@ -434,7 +438,9 @@ const translations = {
     readySub: 'Өңделген файлын жүктеп алыңыз',
     download: 'Жүктеу',
     publishTikTok: 'Сайтқа жариялау (жеңіл)',
+    publishTikTokStudio: 'TikTok Studio ашу',
     autopostHint: 'Zernio арқылы жылдам жариялау',
+    tiktokStudioHint: 'TikTok-тың ресми жүктеу беті. Сайт арқылы жариялау әдетте жылдамырақ.',
     autopostScrollHint: 'Жариялау бөлімі төменде. Жалғастыру үшін төмен қарай айналдырыңыз.',
     publishNow: 'Қазір жариялау',
     scheduleSubmit: 'Жариялауды жоспарлау',
@@ -642,7 +648,9 @@ function applyLanguage(lang) {
   setText('resultSub', pack.readySub);
   setText('downloadBtn', pack.download);
   setText('publishTiktokBtn', pack.publishTikTok);
+  setText('tiktokStudioBtn', pack.publishTikTokStudio);
   setText('autopostHint', pack.autopostHint);
+  setText('tiktokStudioHint', pack.tiktokStudioHint);
   setText('publishModalTitle', pack.publishTitle);
   setText('zernioConnectCopy', pack.zernioConnectCopy);
   setText('zernioKeyLabel', pack.zernioKeyLabel);
@@ -1519,6 +1527,7 @@ async function handleFile(file) {
 
 if (dropzone) {
   dropzone.addEventListener('click', (event) => {
+    if (event.target === fileInput) return;
     if (currentBalance === 0 || event.target.closest('.balance-lock-actions')) return;
     if (fileInput) fileInput.click();
   });
@@ -1944,6 +1953,9 @@ if (processBtn) {
         passthrough: Boolean(result.passthrough),
         rateControl: result.rateControlReport || null,
         patcherActive: !result.passthrough && result.mode === 'adjn-core-resolution-codec-safe',
+        inputFps: result.info?.averageFps ?? null,
+        outputFps: metaInfo?.averageFps ?? null,
+        frameRateRetimed: result.report?.frameRateRetimed ?? false,
         durationUnknown: result.report?.durationUnknown ?? null,
         encoderTag: result.report?.encoderTag || '',
         resolution: resText || 'unknown',
