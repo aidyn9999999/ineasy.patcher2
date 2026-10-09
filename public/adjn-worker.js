@@ -82,11 +82,46 @@ self.onmessage = async function (event) {
     const averageBitrate = duration > 0 ? (fileSize * 8) / duration : 0;
     const sourceFps = Number(sourceInfo?.maxFps || sourceInfo?.averageFps || 30);
     const needsCompression = testCompression && averageBitrate > TRANSCODE_BITRATE_THRESHOLD;
-    const targetVideoBitrate = Math.max(2_000_000, Math.min(20_000_000, Math.round(averageBitrate * 0.55)));
+    const targetVideoBitrate = Math.max(2_000_000, Math.min(
+      20_000_000,
+      Math.round((averageBitrate || 10_000_000) * (needsCompression ? 0.55 : 0.9))
+    ));
     const sourceExtension = String(fileName || data.file?.name || '').toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] || '';
     const needsContainerConversion = testCompression && !['mp4', 'm4v', 'mov'].includes(sourceExtension);
     const needsReencode = needsCompression || needsContainerConversion;
-    let result = await globalThis.ADJNVideoProcessor.processVideoDirect(
+    if (needsReencode) {
+      if (!data.file) throw new Error('BROWSER_COMPRESSION_FILE_REQUIRED');
+      sourceBytes = null;
+      inputBuffer = null;
+      buffer = null;
+      data.buffer = null;
+      try {
+        const compressedBuffer = await compressWithWebCodecs(data.file, targetVideoBitrate, (progress) => {
+          self.postMessage({ type: 'STAGE', requestId, progress: 5 + Math.round(progress * 55) });
+        });
+        if (needsCompression && compressedBuffer.byteLength >= fileSize) {
+          throw new Error('compression output was not smaller than source');
+        }
+        inputBuffer = compressedBuffer;
+        outputName = `${String(fileName || 'video').replace(/\.[^.]+$/, '')}-optimized.mp4`;
+        outputType = 'video/mp4';
+        rateControlReport = {
+          performed: true,
+          sourceBitrate: Math.round(averageBitrate),
+          outputAverageBitrate: duration > 0 ? Math.round((compressedBuffer.byteLength * 8) / duration) : null,
+          outputBitrateTarget: targetVideoBitrate,
+          containerConverted: needsContainerConversion,
+          sourceResolution: sourceInfo ? `${sourceInfo.width}x${sourceInfo.height}` : 'unknown',
+          sourceFps: Math.round(sourceFps),
+        };
+      } catch (error) {
+        rateControlReport = { performed: false, error: error?.message || String(error) };
+        const failureCode = needsContainerConversion ? 'BROWSER_FORMAT_CONVERSION_FAILED' : 'BROWSER_COMPRESSION_FAILED';
+        throw new Error(`${failureCode}:${rateControlReport.error}`);
+      }
+    }
+
+    const result = await globalThis.ADJNVideoProcessor.processVideoDirect(
       {
         requestId,
         buffer: inputBuffer,
@@ -96,69 +131,10 @@ self.onmessage = async function (event) {
         engine,
       },
       (label, progress, detail, key) => {
-        const adjustedProgress = needsReencode ? Math.min(70, Math.round(progress * 0.7)) : progress;
+        const adjustedProgress = needsReencode ? 60 + Math.round(progress * 0.4) : progress;
         self.postMessage({ type: 'STAGE', requestId, label, progress: adjustedProgress, detail, key });
       }
     );
-
-    if (needsReencode && (needsContainerConversion || !result.passthrough) && data.file) {
-      result = null;
-      sourceBytes = null;
-      inputBuffer = null;
-      buffer = null;
-      data.buffer = null;
-      try {
-        const compressedBuffer = await compressWithWebCodecs(data.file, targetVideoBitrate, (progress) => {
-          self.postMessage({ type: 'STAGE', requestId, progress: 70 + Math.round(progress * 20) });
-        });
-        if (needsContainerConversion || compressedBuffer.byteLength < fileSize) {
-          const compressedResult = await globalThis.ADJNVideoProcessor.processVideoDirect(
-            {
-              requestId,
-              buffer: compressedBuffer,
-              fileName: `${String(fileName || 'video').replace(/\.[^.]+$/, '')}-optimized.mp4`,
-              fileType: 'video/mp4',
-              fileSize: compressedBuffer.byteLength,
-              engine,
-            },
-            (label, progress, detail, key) => {
-              self.postMessage({ type: 'STAGE', requestId, label, progress: 90 + Math.round(progress * 0.1), detail, key });
-            }
-          );
-          if (compressedResult.passthrough) throw new Error('BROWSER_FORMAT_CONVERSION_UNPATCHABLE');
-          result = compressedResult;
-          outputName = `${String(fileName || 'video').replace(/\.[^.]+$/, '')}-optimized.mp4`;
-          outputType = 'video/mp4';
-          rateControlReport = {
-            performed: true,
-            sourceBitrate: Math.round(averageBitrate),
-            outputAverageBitrate: duration > 0 ? Math.round((compressedBuffer.byteLength * 8) / duration) : null,
-            outputBitrateTarget: targetVideoBitrate,
-            containerConverted: needsContainerConversion,
-            sourceResolution: sourceInfo ? `${sourceInfo.width}x${sourceInfo.height}` : 'unknown',
-            sourceFps: Math.round(sourceFps),
-          };
-        }
-      } catch (error) {
-        rateControlReport = { performed: false, error: error?.message || String(error) };
-      }
-
-      if (!result && needsCompression) {
-        throw new Error(`BROWSER_COMPRESSION_FAILED:${rateControlReport.error || 'output was not smaller'}`);
-      }
-      if (!result && needsContainerConversion) {
-        throw new Error(`BROWSER_FORMAT_CONVERSION_FAILED:${rateControlReport.error || 'unsupported video codec'}`);
-      }
-      if (!result) {
-        const originalBuffer = await data.file.arrayBuffer();
-        result = await globalThis.ADJNVideoProcessor.processVideoDirect(
-          { requestId, buffer: originalBuffer, fileName, fileType, fileSize, engine },
-          (label, progress, detail, key) => {
-            self.postMessage({ type: 'STAGE', requestId, label, progress: 90 + Math.round(progress * 0.1), detail, key });
-          }
-        );
-      }
-    }
 
     // Transfer the output buffer to avoid copying large ArrayBuffer
     const output = result.output instanceof Uint8Array
