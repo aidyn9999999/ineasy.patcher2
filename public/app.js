@@ -1594,7 +1594,7 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     }
 
     const encodeWithWasm = async () => {
-      const { encodeHevcLocally } = await import('./hevc-wasm.js?v=20261010-5');
+      const { encodeHevcLocally } = await import('./hevc-wasm.js?v=20261010-6');
       return encodeHevcLocally(file, frameRate, targetBitrate, signal, onProgress);
     };
     if (!outputBlob) outputBlob = await encodeWithWasm();
@@ -1767,6 +1767,9 @@ async function handleFile(file) {
     return;
   }
   selectedVideoDimensions = dimensions;
+  void import('./hevc-wasm.js?v=20261010-6')
+    .then(({ preloadHevcEncoder }) => preloadHevcEncoder())
+    .catch((error) => console.warn('[INEASY] Background HEVC encoder preload failed.', error));
 
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);

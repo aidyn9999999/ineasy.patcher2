@@ -29,6 +29,11 @@ async function loadFFmpeg(signal, onProgress) {
   return ffmpeg;
 }
 
+export async function preloadHevcEncoder() {
+  const controller = new AbortController();
+  await loadFFmpeg(controller.signal);
+}
+
 export async function encodeHevcLocally(file, frameRate, bitrate, signal, onProgress) {
   const extension = String(file.name || '').match(/\.([a-z0-9]{1,8})$/i)?.[1]?.toLowerCase() || 'mp4';
   const inputFile = new File([file], `source.${extension}`, { type: file.type });
@@ -77,6 +82,7 @@ export async function encodeHevcLocally(file, frameRate, bitrate, signal, onProg
       '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
       '-c:v', 'libx265',
       '-preset', 'ultrafast',
+      '-tune', 'zerolatency',
       '-b:v', `${Math.round(bitrate / 1000)}k`,
       '-maxrate', '24M',
       '-bufsize', '48M',
