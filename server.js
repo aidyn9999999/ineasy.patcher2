@@ -1412,7 +1412,7 @@ const app = express();
 app.use(express.json());
 const ffmpegPackages = path.join(__dirname, 'node_modules', '@ffmpeg');
 app.use('/vendor/ffmpeg/esm', express.static(path.join(ffmpegPackages, 'ffmpeg', 'dist', 'esm')));
-app.use('/vendor/ffmpeg/core', express.static(path.join(ffmpegPackages, 'core', 'dist', 'umd')));
+app.use('/vendor/ffmpeg/core', express.static(path.join(ffmpegPackages, 'core', 'dist', 'esm')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 function createUserToken(telegramId) {

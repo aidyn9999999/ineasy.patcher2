@@ -1582,7 +1582,7 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     }
 
     const encodeWithWasm = async () => {
-      const { encodeHevcLocally } = await import('./hevc-wasm.js?v=20261010-3');
+      const { encodeHevcLocally } = await import('./hevc-wasm.js?v=20261010-4');
       return encodeHevcLocally(file, frameRate, targetBitrate, signal, onProgress);
     };
     if (!outputBlob) outputBlob = await encodeWithWasm();
