@@ -364,8 +364,8 @@
     const ctts = getSampleTableBox(trak, 'ctts');
     const mvhd = moov.find('mvhd');
     const tkhd = trak.find('tkhd');
-    if (!mdhd || !stts || !mvhd || !tkhd || ctts || trak.find('edts')) {
-      throwError('59.94 FPS requires a constant-rate MP4 video track without composition offsets or edit lists.');
+    if (!mdhd || !stts || !mvhd || !tkhd || trak.find('edts')) {
+      throwError('59.94 FPS requires a constant-rate MP4 video track without edit lists.');
     }
 
     const mediaVersion = mdhd.payload[0];
@@ -424,9 +424,10 @@
         throwError('Unsupported MP4 composition offset table for 59.94 FPS retiming.');
       }
       const compositionEntries = validateTableEntries(ctts.payload, 8, 8, 'ctts');
-      const compositionSampleCount = Array.from({ length: compositionEntries }, (_, index) =>
-        readU32(ctts.payload, 8 + index * 8)
-      ).reduce((sum, count) => sum + count, 0);
+      let compositionSampleCount = 0;
+      for (let index = 0; index < compositionEntries; index++) {
+        compositionSampleCount += readU32(ctts.payload, 8 + index * 8);
+      }
       if (compositionSampleCount !== frameCount) {
         throwError('MP4 composition offset table does not match the video sample count.');
       }

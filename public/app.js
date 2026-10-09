@@ -94,7 +94,7 @@ const translations = {
     connectedAs: 'Online ·',
     uploadNotice: 'Your processed video will be uploaded to your TikTok account through Zernio.',
     uploadFailed: 'The video upload failed. Please try again.',
-    zernioMp4Required: 'Zernio upload requires MP4/H.264. The ADJN-patched original is preserved unchanged; export a compatible MP4 to publish.',
+    zernioMp4Required: 'Auto-post supports MP4 and MOV with H.264 or HEVC video.',
     connectHint: 'No TikTok account is linked to this Zernio key. Link it in Zernio, then reopen this section.',
     connectFailed: 'Could not verify your Zernio connection.',
     zernioConnectCopy: 'Connect your Zernio API key to publish from your TikTok account.',
@@ -269,7 +269,7 @@ const translations = {
     connectedAs: 'В сети ·',
     uploadNotice: 'Обработанное видео будет загружено в ваш TikTok через Zernio.',
     uploadFailed: 'Не удалось загрузить видео. Попробуйте ещё раз.',
-    zernioMp4Required: 'Для Zernio нужен MP4/H.264. Исходник после ADJN не перекодируется; экспортируйте совместимый MP4 для публикации.',
+    zernioMp4Required: 'Автопост поддерживает MP4 и MOV с видео H.264 или HEVC.',
     connectHint: 'Аккаунт TikTok для этого ключа Zernio не найден. Подключите его в Zernio и откройте этот раздел снова.',
     connectFailed: 'Не удалось проверить подключение к Zernio.',
     zernioConnectCopy: 'Подключите API-ключ Zernio для публикации в своём аккаунте TikTok.',
@@ -444,7 +444,7 @@ const translations = {
     connectedAs: 'Желіде ·',
     uploadNotice: 'Өңделген бейне Zernio арқылы TikTok аккаунтыңызға жүктеледі.',
     uploadFailed: 'Бейне жүктелмеді. Қайталап көріңіз.',
-    zernioMp4Required: 'Zernio үшін MP4/H.264 қажет. ADJN түпнұсқаны қайта кодтамайды; жариялау үшін үйлесімді MP4 экспорттаңыз.',
+    zernioMp4Required: 'Автожариялау H.264 немесе HEVC бейнесі бар MP4 және MOV форматтарын қолдайды.',
     connectHint: 'Бұл Zernio кілтіне TikTok аккаунты қосылмаған. Оны Zernio ішінде қосып, осы бөлімді қайта ашыңыз.',
     connectFailed: 'Zernio байланысын тексеру мүмкін болмады.',
     zernioConnectCopy: 'TikTok аккаунтыңыздан жариялау үшін Zernio API кілтін қосыңыз.',
@@ -1245,8 +1245,11 @@ if (tiktokPublishForm) {
     try {
       if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('uploading');
       const filename = (downloadBtn && downloadBtn.download) || 'ineasy-video.mp4';
-      const contentType = processedVideoBlob.type || (filename.toLowerCase().endsWith('.mp4') ? 'video/mp4' : '');
-      if (contentType !== 'video/mp4' || !filename.toLowerCase().endsWith('.mp4')) {
+      const extension = filename.toLowerCase().match(/\.[^.]+$/)?.[0] || '';
+      const contentType = processedVideoBlob.type || (extension === '.mov' ? 'video/quicktime' : extension === '.mp4' ? 'video/mp4' : '');
+      const supportedContentType = (extension === '.mp4' && contentType === 'video/mp4') ||
+        (extension === '.mov' && contentType === 'video/quicktime');
+      if (!supportedContentType) {
         if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('zernioMp4Required');
         return;
       }
@@ -1845,7 +1848,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-24');
+        const worker = new Worker('adjn-worker.js?v=20261009-25');
 
         worker.onmessage = (e) => {
           const msg = e.data;

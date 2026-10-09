@@ -159,8 +159,13 @@
     return Math.abs(x - y) <= epsilon;
   }
 
-  function verifyMediaContract(inputInfo, outputInfo, inputHdr, outputHdr) {
+  function verifyMediaContract(inputInfo, outputInfo, inputHdr, outputHdr, targetFrameRate = 0) {
     const problems = [];
+    const fpsRetimed = Number(targetFrameRate) === 59.94 &&
+      nearlyEqual(outputInfo.averageFps, targetFrameRate, 0.001) &&
+      nearlyEqual(outputInfo.maxFps, targetFrameRate, 0.001) &&
+      ([60, targetFrameRate].some(rate => nearlyEqual(inputInfo.averageFps, rate, rate === 60 ? 0.1 : 0.02))) &&
+      ([60, targetFrameRate].some(rate => nearlyEqual(inputInfo.maxFps, rate, rate === 60 ? 0.1 : 0.02)));
 
     if (Math.round(inputInfo.width) !== Math.round(outputInfo.width) ||
         Math.round(inputInfo.height) !== Math.round(outputInfo.height)) {
@@ -187,8 +192,8 @@
       );
     }
 
-    if (!nearlyEqual(inputInfo.averageFps, outputInfo.averageFps, 0.02) ||
-        !nearlyEqual(inputInfo.maxFps, outputInfo.maxFps, 0.05)) {
+    if ((!fpsRetimed && !nearlyEqual(inputInfo.averageFps, outputInfo.averageFps, 0.02)) ||
+      (!fpsRetimed && !nearlyEqual(inputInfo.maxFps, outputInfo.maxFps, 0.05))) {
       problems.push(
         `timing/FPS berubah ${(inputInfo.averageFps || 0).toFixed?.(3) || inputInfo.averageFps} → ` +
         `${(outputInfo.averageFps || 0).toFixed?.(3) || outputInfo.averageFps}`
@@ -215,7 +220,9 @@
     return {
       resolutionByteSafe: true,
       exactResolutionPreserved: true,
-      exactVideoTimingPreserved: true,
+      exactVideoTimingPreserved: !fpsRetimed,
+      frameRateRetimed: fpsRetimed,
+      targetFrameRate: fpsRetimed ? targetFrameRate : null,
       codecFamilyPreserved: true,
       codecSampleEntryPreserved: true,
       sourceCodecFamily: inCodecFamily,
@@ -399,7 +406,7 @@
       info = core.inspectMediaInfo(original);
       validateMediaInfo(info);
       hdr = detectHdrProfile(original, info);
-      if (hdr && ['HDR10', 'HDR10+', 'HLG HDR', 'Dolby Vision', 'HEVC Main10'].includes(hdr.label)) {
+      if (hdr && ['HDR10', 'HDR10+', 'HLG HDR', 'Dolby Vision'].includes(hdr.label)) {
         throw new Error('TikTok-safe policy: HDR/BT.2020 detected. Convert video to SDR first, then patch again.');
       }
       compat = core.inspectCompatibility(original);
@@ -491,7 +498,9 @@
     const outputInfo = core.inspectMediaInfo(output);
     const outputHdr = detectHdrProfile(output, outputInfo);
     try {
-      const mediaContract = verifyMediaContract(info, outputInfo, hdr, outputHdr);
+      const mediaContract = verifyMediaContract(
+        info, outputInfo, hdr, outputHdr, result.report?.targetFrameRate
+      );
       Object.assign(verification, mediaContract);
     } catch (verifyError) {
       return passthroughResult(original, data, verifyError?.message || 'codec/HDR contract tidak lolos', info, hdr, sniff);
@@ -509,7 +518,9 @@
         sourceResolution: `${info.width}x${info.height}`,
         outputResolution: `${outputInfo.width}x${outputInfo.height}`,
         resolutionPreserved: true,
-        fpsPreserved: true,
+        fpsPreserved: !mediaContract.frameRateRetimed,
+        frameRateRetimed: mediaContract.frameRateRetimed,
+        targetFrameRate: mediaContract.targetFrameRate,
         sourceCodecFamily: String(info.codecFamily || '').toLowerCase(),
         outputCodecFamily: String(outputInfo.codecFamily || '').toLowerCase(),
         sourceCodecTag: String(info.codec || '').toLowerCase(),

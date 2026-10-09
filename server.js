@@ -1646,7 +1646,10 @@ app.get('/api/tiktok/connect', requireUserToken, async (req, res) => {
 
 app.post('/api/tiktok/media/presign', requireUserToken, async (req, res) => {
   const { filename, contentType, size } = req.body || {};
-  if (typeof filename !== 'string' || !filename.toLowerCase().endsWith('.mp4') || contentType !== 'video/mp4') {
+  const extension = typeof filename === 'string' ? path.extname(filename).toLowerCase() : '';
+  const supportedFormat = (extension === '.mp4' && contentType === 'video/mp4') ||
+    (extension === '.mov' && contentType === 'video/quicktime');
+  if (!supportedFormat) {
     return res.status(400).json({ error: 'unsupported_video_format' });
   }
   if (!Number.isSafeInteger(size) || size < 1 || size > 2 * 1024 * 1024 * 1024) {
