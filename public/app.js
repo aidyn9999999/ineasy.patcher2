@@ -1454,7 +1454,7 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
   }
   const {
     Input, ALL_FORMATS, BlobSource, Output, Mp4OutputFormat, BufferTarget,
-    Conversion, canEncodeVideo
+    Conversion, Quality, canEncodeVideo
   } = mediabunny;
   signal.throwIfAborted();
 
@@ -1480,19 +1480,24 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
       : null;
     const frameRate = targetFrameRate || sourceFps;
     const bitrateCandidates = [24_000_000, 20_000_000, 16_000_000, 12_000_000, 8_000_000];
+    let targetCodec = null;
     let targetBitrate = null;
-    for (const bitrate of bitrateCandidates) {
-      if (await canEncodeVideo('hevc', {
-        width: targetSize.width,
-        height: targetSize.height,
-        frameRate,
-        bitrate
-      })) {
-        targetBitrate = bitrate;
-        break;
+    for (const codec of ['hevc', 'avc']) {
+      for (const bitrate of bitrateCandidates) {
+        if (await canEncodeVideo(codec, {
+          width: targetSize.width,
+          height: targetSize.height,
+          frameRate,
+          bitrate
+        })) {
+          targetCodec = codec;
+          targetBitrate = bitrate;
+          break;
+        }
       }
+      if (targetCodec) break;
     }
-    if (!targetBitrate) throw new Error('This browser cannot encode HEVC at the source resolution and frame rate.');
+    if (!targetCodec) throw new Error('This browser cannot encode HEVC or H.264 at the source resolution and frame rate.');
 
     const target = new BufferTarget();
     const output = new Output({
@@ -1502,7 +1507,7 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     const videoOptions = {
       ...targetSize,
       fit: 'contain',
-      codec: 'hevc',
+      codec: targetCodec,
       bitrate: targetBitrate,
       forceTranscode: true,
       ...(targetFrameRate ? { frameRate: targetFrameRate } : {})
@@ -1551,7 +1556,9 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
           !Number.isFinite(outputFps) || outputFps <= 0) {
         throw new Error('The encoded MP4 has invalid video metadata.');
       }
-      if (outputCodec !== 'hevc') throw new Error(`Expected HEVC output, received ${outputCodec || 'unknown codec'}.`);
+      if (outputCodec !== targetCodec) {
+        throw new Error(`Expected ${targetCodec.toUpperCase()} output, received ${outputCodec || 'unknown codec'}.`);
+      }
       outputInfo = { width: outputWidth, height: outputHeight, averageFps: outputFps, codec: outputCodec };
     } finally {
       verificationInput.dispose();
@@ -1572,7 +1579,7 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
       report: {
         performed: true,
         compressionDisabled: false,
-        codec: 'hevc',
+        codec: targetCodec,
         bitrate: targetBitrate,
         inputWidth: sourceWidth,
         inputHeight: sourceHeight,
@@ -2156,11 +2163,11 @@ function localizePatchError(message) {
   const lang = STATE.lang || 'en';
   const conversionFailure = String(message || '').match(/^AUTO_VIDEO_CONVERSION_FAILED:\s*(.*)$/i);
   if (conversionFailure) {
-    if (/cannot encode HEVC/i.test(conversionFailure[1])) {
+    if (/cannot encode HEVC or H\.264/i.test(conversionFailure[1])) {
       return {
-        ru: 'Это устройство или браузер не поддерживает кодирование HEVC/H.265 при разрешении и FPS этого видео. Для HEVC-only экспорта используйте устройство с HEVC-энкодером.',
-        kk: 'Бұл құрылғы немесе браузер осы бейненің ажыратымдылығы мен FPS параметрлерінде HEVC/H.265 кодтауын қолдамайды. HEVC-only экспорт үшін HEVC кодтағышы бар құрылғыны пайдаланыңыз.',
-        en: 'This device or browser cannot encode HEVC/H.265 at this video resolution and frame rate. Use a device with an HEVC encoder for HEVC-only export.'
+        ru: 'Это устройство или браузер не поддерживает кодирование H.265 или H.264 при разрешении и FPS этого видео. Попробуйте другое устройство или уменьшите параметры исходного видео.',
+        kk: 'Бұл құрылғы немесе браузер осы бейненің ажыратымдылығы мен FPS параметрлерінде H.265 немесе H.264 кодтауын қолдамайды. Басқа құрылғыны пайдаланыңыз немесе бастапқы бейненің параметрлерін азайтыңыз.',
+        en: 'This device or browser cannot encode H.265 or H.264 at this video resolution and frame rate. Try another device or lower the source video settings.'
       }[lang];
     }
     const text = {
