@@ -314,12 +314,27 @@
     return true;
   }
 
-  function preserveMvhdDuration(payload) {
+  function patchMvhdToV1Sentinel(payload) {
     if (!payload || payload.length < 4) throwError('Malformed mvhd box (too short for version byte).');
-    if (payload[0] === 0 && payload.length < 100) throwError('Malformed version-0 mvhd box (too short).');
-    if (payload[0] === 1 && payload.length < 112) throwError('Malformed version-1 mvhd box (too short).');
-    if (payload[0] !== 0 && payload[0] !== 1) throwError('Unsupported mvhd version: ' + payload[0] + '.');
-    return cloneBytes(payload);
+    const version = payload[0];
+    if (version === 1) {
+      if (payload.length < 112) throwError('Malformed version-1 mvhd box (too short — needs 112 bytes).');
+      const output = cloneBytes(payload);
+      output.set(SENTINEL_FF, 24);
+      return output;
+    }
+    if (version !== 0) throwError('Unsupported mvhd version: ' + version + '.');
+    if (payload.length < 100) throwError('Malformed version-0 mvhd box (too short).');
+    return concatBytes([
+      new Uint8Array([1, payload[1], payload[2], payload[3]]),
+      u32ToBytes(0),
+      cloneBytes(payload.subarray(4, 8)),
+      u32ToBytes(0),
+      cloneBytes(payload.subarray(8, 12)),
+      cloneBytes(payload.subarray(12, 16)),
+      cloneBytes(SENTINEL_FF),
+      cloneBytes(payload.subarray(20, 100))
+    ]);
   }
 
   function validateTableEntries(bytes, headerSize, entrySize, label) {
@@ -512,8 +527,8 @@
 
     const mvhd = moov.find('mvhd');
     if (!mvhd || mvhd.payload.length < 4) throwError('Invalid MP4 — mvhd hilang.');
-    if (hasEncoderTag(moov, ENCODER_TAG)) {
-      throwError('File ini sudah ter-patch sebelumnya (ADJN encoder tag aktif).');
+    if (isSentinelDuration(mvhd.payload)) {
+      throwError('File ini sudah ter-patch sebelumnya (duration sentinel aktif).');
     }
     if (mvhd.payload[0] !== 0 && mvhd.payload[0] !== 1) {
       throwError('Unsupported mvhd version: ' + mvhd.payload[0]);
@@ -575,7 +590,7 @@
     const mvhd = moov.find('mvhd');
     if (!mvhd || mvhd.payload.length < 4) throwError('Invalid MP4 — mvhd hilang.');
 
-    mvhd.payload = preserveMvhdDuration(mvhd.payload);
+    mvhd.payload = patchMvhdToV1Sentinel(mvhd.payload);
     injectUdta(moov, ENCODER_TAG);
 
     // FastStart optimization: place moov before mdat so the video streams smoothly without buffering lags on social platforms
@@ -648,7 +663,7 @@
     if (!hasEncoderTag(moov, ENCODER_TAG)) throwError('Hasil patch tidak memiliki ADJN encoder tag.');
 
     const mvhd = moov.find('mvhd');
-    if (!mvhd || (mvhd.payload[0] !== 0 && mvhd.payload[0] !== 1)) throwError('Hasil patch mvhd.version tidak valid.');
+    if (!mvhd || !isSentinelDuration(mvhd.payload)) throwError('Hasil patch mvhd.duration bukan sentinel Unknown Duration.');
 
     for (const trak of moov.findAll('trak')) {
       const offsBox = getOffsetBox(trak);
@@ -802,7 +817,7 @@
     return {
       bytes: patched,
       report: {
-        engine: 'ADJN Duration-Preserving Metadata Patch v5.1',
+        engine: 'ADJN 64-bit Duration Sentinel v5.0',
         durationUnknown: inspected.durationUnknown,
         encoderTag: inspected.encoderTag,
         codec: inspected.codec,

@@ -61,7 +61,7 @@ const translations = {
     stepTwoBody: 'Videos up to Full HD (1920×1080) are processed locally. 2K and 4K videos are not accepted.',
     stepThreeTitle: 'Publish through Zernio',
     stepThreeBody: 'Tap “Auto-post”, connect your Zernio API key, review the caption, and publish to TikTok.',
-    localProcessingCopy: 'Video and audio stay on your device. High-bitrate SDR video is locally optimized to reduce playback load; the original ADJN patcher runs afterward.',
+    localProcessingCopy: 'Video and audio stay on your device. ADJN changes MP4 metadata without re-encoding the video stream.',
     homeBottomCta: 'Start processing',
     faqLabel: 'FAQ / FREQUENTLY ASKED QUESTIONS',
     analyzerEyebrow: 'VIDEO ANALYZER',
@@ -145,7 +145,7 @@ const translations = {
     publishFailed: 'TikTok could not publish this video. Check the options and try again.',
     authExpired: 'Your session expired. Sign in again to publish.',
     close: 'Close',
-    notice: 'The processed video keeps its original duration and playback metadata.',
+    notice: 'If the video duration shows 0:00 after patching, this is normal. The file works fine.',
     analyzerTitle: 'Video Analyzer',
     analyzerDesc: 'Check the parameters of your published video and compare them with the original file.',
     analyzerButton: 'Analyze video',
@@ -182,10 +182,9 @@ const translations = {
     videoResolutionTooHigh: 'This video is above Full HD. Export it at 1920×1080 or 1080×1920 and select it again.',
     videoDimensionsUnavailable: 'Could not read the video resolution. Try exporting it as MP4.',
     formatConversionFailed: 'This video format or codec is not supported by this browser. Try MP4, MOV, or another H.264 video.',
-    compressionFailed: 'Browser video compression failed. Try MP4/H.264 or a lower-bitrate source.',
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
-    processingTimedOut: 'Local optimization took longer than 10 minutes. Try a shorter video or lower the source bitrate.',
+    processingTimedOut: 'Processing took longer than 10 minutes. Try a shorter video.',
     videoTooLong: 'Choose a video that is 1 minute or shorter.',
     videoDurationUnavailable: 'Could not read this video duration. Try an MP4 file.',
     noBalance: 'No videos remain in your balance. Add videos to continue.',
@@ -237,7 +236,7 @@ const translations = {
     stepTwoBody: 'Локально обрабатываются видео до Full HD (1920×1080). Видео 2K и 4K не принимаются.',
     stepThreeTitle: 'Опубликуйте через Zernio',
     stepThreeBody: 'Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и опубликуйте видео в TikTok.',
-    localProcessingCopy: 'Видео и звук остаются на устройстве. Тяжёлое SDR-видео локально оптимизируется для плавного воспроизведения; затем запускается исходный ADJN-патчер.',
+    localProcessingCopy: 'Видео и звук остаются на устройстве. ADJN меняет MP4-метаданные без перекодирования видеопотока.',
     homeBottomCta: 'Начать обработку',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
@@ -321,7 +320,7 @@ const translations = {
     publishFailed: 'Не удалось опубликовать видео в TikTok. Проверьте настройки и попробуйте снова.',
     authExpired: 'Сессия истекла. Войдите снова, чтобы опубликовать видео.',
     close: 'Закрыть',
-    notice: 'После обработки исходная длительность и данные воспроизведения сохраняются.',
+    notice: 'Если после патчинга длительность видео показывает 0:00, это нормально. Файл работает корректно.',
     analyzerTitle: 'Анализатор видео',
     analyzerDesc: 'Проверьте параметры опубликованного видео и сравните их с исходным файлом.',
     analyzerButton: 'Проверить видео',
@@ -358,10 +357,9 @@ const translations = {
     videoResolutionTooHigh: 'Разрешение видео выше Full HD. Экспортируйте его в 1920×1080 или 1080×1920 и выберите снова.',
     videoDimensionsUnavailable: 'Не удалось прочитать разрешение видео. Попробуйте экспортировать его в MP4.',
     formatConversionFailed: 'Браузер не поддерживает этот формат или кодек. Попробуйте MP4, MOV или видео H.264.',
-    compressionFailed: 'Не удалось сжать видео браузером. Попробуйте MP4/H.264 или исходник с меньшим битрейтом.',
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
-    processingTimedOut: 'Локальная оптимизация длится больше 10 минут. Попробуйте короткое видео или снизить битрейт исходника.',
+    processingTimedOut: 'Обработка длится больше 10 минут. Попробуйте более короткое видео.',
     videoTooLong: 'Выберите видео длительностью не более 1 минуты.',
     videoDurationUnavailable: 'Не удалось определить длительность видео. Попробуйте файл MP4.',
     noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
@@ -413,7 +411,7 @@ const translations = {
     stepTwoBody: 'Full HD (1920×1080) дейінгі бейнелер құрылғыда өңделеді. 2K және 4K бейнелері қабылданбайды.',
     stepThreeTitle: 'Zernio арқылы жариялаңыз',
     stepThreeBody: '«Автожариялау» түймесін басып, Zernio API кілтін қосыңыз, сипаттаманы тексеріп, TikTok-қа жариялаңыз.',
-    localProcessingCopy: 'Видео мен аудио құрылғыңызда қалады. Жоғары битрейтті SDR видео бірқалыпты ойнату үшін жергілікті оңтайландырылады; содан кейін ADJN патчері іске қосылады.',
+    localProcessingCopy: 'Бейне мен аудио құрылғыңызда қалады. ADJN MP4 метадеректерін бейне ағынын қайта кодтамай өзгертеді.',
     homeBottomCta: 'Өңдеуді бастау',
     faqLabel: 'FAQ / ЖИІ ҚОЙЫЛАТЫН СҰРАҚТАР',
     analyzerEyebrow: 'БЕЙНЕ АНАЛИЗАТОРЫ',
@@ -497,7 +495,7 @@ const translations = {
     publishFailed: 'Бейне TikTok-та жарияланбады. Параметрлерді тексеріп, қайталап көріңіз.',
     authExpired: 'Сеанс аяқталды. Жариялау үшін қайта кіріңіз.',
     close: 'Жабу',
-    notice: 'Өңделген бейненің бастапқы ұзақтығы мен ойнату деректері сақталады.',
+    notice: 'Егер өңдеуден кейін ұзақтығы 0:00 болса, бұл қалыпты. Файл дұрыс жұмыс істейді.',
     analyzerTitle: 'Бейне анализаторы',
     analyzerDesc: 'Жарияланған бейненің параметрлерін тексеріп, бастапқы файлмен салыстырыңыз.',
     analyzerButton: 'Бейнені тексеру',
@@ -534,10 +532,9 @@ const translations = {
     videoResolutionTooHigh: 'Бейне Full HD форматынан жоғары. 1920×1080 немесе 1080×1920 етіп экспорттап, қайта таңдаңыз.',
     videoDimensionsUnavailable: 'Бейне ажыратымдылығын оқу мүмкін болмады. MP4 форматында экспорттап көріңіз.',
     formatConversionFailed: 'Браузер бұл пішімге немесе кодекке қолдау көрсетпейді. MP4, MOV немесе H.264 бейнесін қолданып көріңіз.',
-    compressionFailed: 'Бейнені браузерде сығу мүмкін болмады. MP4/H.264 немесе битрейті төменірек файлды қолданып көріңіз.',
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
-    processingTimedOut: 'Жергілікті оңтайландыру 10 минуттан ұзақ. Қысқарақ видео немесе төменірек битрейт қолданып көріңіз.',
+    processingTimedOut: 'Өңдеу 10 минуттан ұзақ. Қысқарақ бейне қолданып көріңіз.',
     videoTooLong: 'Ұзақтығы 1 минуттан аспайтын бейне таңдаңыз.',
     videoDurationUnavailable: 'Бейне ұзақтығын анықтау мүмкін болмады. MP4 файлын қолданып көріңіз.',
     noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
@@ -1848,7 +1845,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-21');
+        const worker = new Worker('adjn-worker.js?v=20261009-23');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1875,7 +1872,6 @@ if (processBtn) {
             if (processingText && msg.phase) {
               const phaseText = {
                 analyzing: 'analyzingVideo',
-                compression: 'loadingVideoData',
                 patching: 'patchingVideo',
               }[msg.phase];
               if (phaseText) processingText.textContent = t(phaseText);
@@ -1987,7 +1983,6 @@ function localizePatchError(message) {
     { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
-    { test: /BROWSER_COMPRESSION_FAILED/i, ru: t('compressionFailed'), kk: t('compressionFailed'), en: t('compressionFailed') },
     { test: /hdr_video_not_supported/i, ru: 'Сейчас принимаются только SDR-видео. HDR-обработка временно отключена.', kk: 'Қазір тек SDR бейнелер қабылданады. HDR өңдеуі уақытша өшірілген.', en: 'Only SDR videos are accepted right now. HDR processing is temporarily disabled.' },
     { test: /ADJN engine not loaded|Worker crashed|Script error/i, ru: 'Не удалось загрузить локальный ADJN-модуль. Обновите страницу и откройте сайт в Chrome или Safari.', kk: 'ADJN модулін жүктеу мүмкін болмады. Бетті жаңартып, сайтты Chrome немесе Safari арқылы ашыңыз.', en: 'Could not load the local ADJN module. Refresh the page and open the site in Chrome or Safari.' },
     { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },

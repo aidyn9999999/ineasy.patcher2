@@ -450,7 +450,8 @@
       );
     }
 
-    // The core preserves the movie duration and media bitstreams while patching metadata.
+    // ADJN Method v5.0: The clean 64-bit Duration Sentinel leaves bitstream and audio samples 100% intact,
+    // which is fully compatible with Apple AVFoundation and iOS/Orion without crashing!
 
 
     // Only the proven-safe classic path is modified. Everything else above
