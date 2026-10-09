@@ -1536,29 +1536,40 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     if (!target.buffer) throw new Error('The MP4 encoder returned no output.');
     if (target.buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
 
-    const verificationInput = new Input({
-      source: new BlobSource(new Blob([target.buffer], { type: 'video/mp4' })),
-      formats: ALL_FORMATS
-    });
-    let outputInfo;
+    const outputBlob = new Blob([target.buffer], { type: 'video/mp4' });
+    let outputInfo = null;
+    let verificationInput = null;
     try {
+      verificationInput = new Input({
+        source: new BlobSource(outputBlob),
+        formats: ALL_FORMATS
+      });
       const outputTrack = await verificationInput.getPrimaryVideoTrack();
-      if (!outputTrack) throw new Error('The encoded MP4 has no readable video track.');
-      const outputWidth = Math.round(await outputTrack.getDisplayWidth());
-      const outputHeight = Math.round(await outputTrack.getDisplayHeight());
-      const outputMetrics = await outputTrack.computeFrameRateMetrics({ targetPacketCount: 512 });
-      const outputFps = Number(outputMetrics.bestGuessFrameRate);
-      if (!Number.isFinite(outputWidth) || !Number.isFinite(outputHeight) ||
-          !Number.isFinite(outputFps) || outputFps <= 0) {
-        throw new Error('The encoded MP4 has invalid video dimensions or frame-rate metadata.');
+      if (outputTrack) {
+        const outputWidth = Math.round(await outputTrack.getDisplayWidth());
+        const outputHeight = Math.round(await outputTrack.getDisplayHeight());
+        const outputMetrics = await outputTrack.computeFrameRateMetrics({ targetPacketCount: 512 });
+        const outputFps = Number(outputMetrics.bestGuessFrameRate);
+        if (Number.isFinite(outputWidth) && Number.isFinite(outputHeight) &&
+            Number.isFinite(outputFps) && outputFps > 0) {
+          outputInfo = { width: outputWidth, height: outputHeight, averageFps: outputFps };
+        }
       }
-      outputInfo = {
-        width: outputWidth,
-        height: outputHeight,
-        averageFps: outputFps
-      };
+    } catch (verificationError) {
+      console.warn('[INEASY] Mediabunny could not inspect encoded MP4; falling back to browser metadata.', verificationError);
     } finally {
-      verificationInput.dispose();
+      verificationInput?.dispose();
+    }
+    if (!outputInfo) {
+      const outputDimensions = await readVideoDimensions(outputBlob);
+      outputInfo = {
+        width: Math.round(outputDimensions.width),
+        height: Math.round(outputDimensions.height),
+        averageFps: targetFrameRate || sourceFps
+      };
+    }
+    if (!Number.isFinite(outputInfo.averageFps) || outputInfo.averageFps <= 0) {
+      throw new Error('The encoded MP4 has invalid frame-rate metadata.');
     }
     if (Math.abs(outputInfo.width - targetSize.width) > 2 ||
         Math.abs(outputInfo.height - targetSize.height) > 2) {
@@ -1569,7 +1580,7 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     }
 
     return {
-      blob: new Blob([target.buffer], { type: 'video/mp4' }),
+      blob: outputBlob,
       sourceFps,
       targetFrameRate,
       outputInfo,
