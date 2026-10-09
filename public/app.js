@@ -1845,7 +1845,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-23');
+        const worker = new Worker('adjn-worker.js?v=20261009-24');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1933,7 +1933,7 @@ if (processBtn) {
       const metaInfo = result.outputInfo || result.info;
       const hdrInfo = result.outputHdr || result.hdr;
       const resText = metaInfo && metaInfo.width ? `${metaInfo.width}×${metaInfo.height}` : '';
-      const fpsText = metaInfo?.averageFps ? `${Math.round(metaInfo.averageFps)} FPS` : '';
+      const fpsText = metaInfo?.averageFps ? `${metaInfo.averageFps.toFixed(2)} FPS` : '';
       const codecText = metaInfo?.codec ? String(metaInfo.codec).toUpperCase() : '';
       const hdrText = hdrInfo?.label && hdrInfo.label !== 'SDR / unknown' ? hdrInfo.label : '';
       console.info('[INEASY] Media processing complete', {
