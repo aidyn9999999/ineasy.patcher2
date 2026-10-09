@@ -13,7 +13,7 @@ const MEDIABUNNY_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm';
 const TRANSCODE_BITRATE_THRESHOLD = 15_000_000;
 const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
 
-async function compressWithWebCodecs(file, targetBitrate, onProgress) {
+async function compressWithWebCodecs(file, targetBitrate, outputFps, onProgress) {
   const { Input, Output, Conversion, ALL_FORMATS, BlobSource, Mp4OutputFormat, BufferTarget, Quality } = await import(MEDIABUNNY_URL);
   const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
   const output = new Output({ format: new Mp4OutputFormat(), target: new BufferTarget() });
@@ -24,6 +24,7 @@ async function compressWithWebCodecs(file, targetBitrate, onProgress) {
     video: {
       codec: 'avc',
       quality: new Quality({ bitrate: targetBitrate }),
+      frameRate: outputFps,
       hardwareAcceleration: 'prefer-hardware',
     },
     audio: { codec: 'aac', quality: new Quality({ bitrate: 192_000 }) },
@@ -83,7 +84,8 @@ self.onmessage = async function (event) {
       : 0);
     const averageBitrate = duration > 0 ? (fileSize * 8) / duration : 0;
     const sourceFps = Number(sourceInfo?.maxFps || sourceInfo?.averageFps || 30);
-    const needsCompression = averageBitrate > TRANSCODE_BITRATE_THRESHOLD;
+    const needsCompression = averageBitrate > TRANSCODE_BITRATE_THRESHOLD || sourceFps > 60.01;
+    const outputFps = Math.min(60, Math.max(1, Math.round(sourceFps || 30)));
     const targetVideoBitrate = Math.max(2_000_000, Math.min(
       20_000_000,
       Math.round((averageBitrate || 10_000_000) * (needsCompression ? 0.55 : 0.9))
@@ -98,7 +100,7 @@ self.onmessage = async function (event) {
       buffer = null;
       data.buffer = null;
       try {
-        const compressedBuffer = await compressWithWebCodecs(data.file, targetVideoBitrate, (progress) => {
+        const compressedBuffer = await compressWithWebCodecs(data.file, targetVideoBitrate, outputFps, (progress) => {
           self.postMessage({ type: 'STAGE', requestId, phase: 'compression', progress: 5 + Math.round(progress * 55) });
         });
         if (needsCompression && compressedBuffer.byteLength >= fileSize) {
@@ -112,6 +114,8 @@ self.onmessage = async function (event) {
           sourceBitrate: Math.round(averageBitrate),
           outputAverageBitrate: duration > 0 ? Math.round((compressedBuffer.byteLength * 8) / duration) : null,
           outputBitrateTarget: targetVideoBitrate,
+          sourceFps: Math.round(sourceFps),
+          outputFps,
           containerConverted: needsContainerConversion,
           sourceResolution: sourceInfo ? `${sourceInfo.width}x${sourceInfo.height}` : 'unknown',
           sourceFps: Math.round(sourceFps),
