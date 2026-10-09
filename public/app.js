@@ -1445,24 +1445,7 @@ async function readVideoDimensionsForSelection(file) {
   }
 }
 
-function getTargetEncodeSize(width, height) {
-  const longSide = Math.max(width, height);
-  const shortSide = Math.min(width, height);
-  const isUhd = longSide >= 3000;
-  const isFullHd = shortSide >= 1000 && shortSide <= 1200;
-  if (!isUhd && !isFullHd) return null;
-
-  const scale = isUhd ? 1 - 0.1615 : 1 + 0.0926;
-  const makeEven = (value) => Math.max(2, Math.round(value / 2) * 2);
-  return { width: makeEven(width * scale), height: makeEven(height * scale) };
-}
-
 async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
-  const targetSize = dimensions
-    ? getTargetEncodeSize(Math.round(dimensions.width), Math.round(dimensions.height))
-    : null;
-  if (!targetSize) return { blob: file, sourceFps: null, targetFrameRate: null, report: null };
-
   let mediabunny;
   try {
     mediabunny = await import('https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm');
@@ -1471,7 +1454,7 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
   }
   const {
     Input, ALL_FORMATS, BlobSource, Output, Mp4OutputFormat, BufferTarget,
-    Conversion, Quality, canEncodeVideo
+    Conversion, canEncodeVideo
   } = mediabunny;
   signal.throwIfAborted();
 
@@ -1484,25 +1467,32 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     const primaryAudioTrack = await input.getPrimaryAudioTrack();
     const sourceWidth = Math.round(await track.getDisplayWidth());
     const sourceHeight = Math.round(await track.getDisplayHeight());
-    if (Math.abs(sourceWidth - dimensions.width) > 2 || Math.abs(sourceHeight - dimensions.height) > 2) {
+    if (!sourceWidth || !sourceHeight) throw new Error('The source video dimensions could not be read.');
+    if (dimensions && (Math.abs(sourceWidth - dimensions.width) > 2 || Math.abs(sourceHeight - dimensions.height) > 2)) {
       throw new Error('Video dimensions changed after selection. Select the file again.');
     }
+    const targetSize = { width: sourceWidth, height: sourceHeight };
     const frameRateMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
     const sourceFps = frameRateMetrics.bestGuessFrameRate;
 
     const targetFrameRate = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2
-      ? 60.05
+      ? 60.04
       : null;
-    const quality = new Quality('very-high');
-    const encoderOptions = {
-      width: targetSize.width,
-      height: targetSize.height,
-      frameRate: targetFrameRate || sourceFps,
-      quality
-    };
-    if (!await canEncodeVideo('avc', encoderOptions)) {
-      throw new Error('This browser cannot encode H.264 at the requested resolution and frame rate.');
+    const frameRate = targetFrameRate || sourceFps;
+    const bitrateCandidates = [24_000_000, 20_000_000, 16_000_000, 12_000_000, 8_000_000];
+    let targetBitrate = null;
+    for (const bitrate of bitrateCandidates) {
+      if (await canEncodeVideo('hevc', {
+        width: targetSize.width,
+        height: targetSize.height,
+        frameRate,
+        bitrate
+      })) {
+        targetBitrate = bitrate;
+        break;
+      }
     }
+    if (!targetBitrate) throw new Error('This browser cannot encode HEVC at the source resolution and frame rate.');
 
     const target = new BufferTarget();
     const output = new Output({
@@ -1512,8 +1502,8 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     const videoOptions = {
       ...targetSize,
       fit: 'contain',
-      codec: 'avc',
-      quality,
+      codec: 'hevc',
+      bitrate: targetBitrate,
       forceTranscode: true,
       ...(targetFrameRate ? { frameRate: targetFrameRate } : {})
     };
@@ -1544,39 +1534,27 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     if (target.buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
 
     const outputBlob = new Blob([target.buffer], { type: 'video/mp4' });
-    let outputInfo = null;
-    let verificationInput = null;
+    const verificationInput = new Input({
+      source: new BlobSource(outputBlob),
+      formats: ALL_FORMATS
+    });
+    let outputInfo;
     try {
-      verificationInput = new Input({
-        source: new BlobSource(outputBlob),
-        formats: ALL_FORMATS
-      });
       const outputTrack = await verificationInput.getPrimaryVideoTrack();
-      if (outputTrack) {
-        const outputWidth = Math.round(await outputTrack.getDisplayWidth());
-        const outputHeight = Math.round(await outputTrack.getDisplayHeight());
-        const outputMetrics = await outputTrack.computeFrameRateMetrics({ targetPacketCount: 512 });
-        const outputFps = Number(outputMetrics.bestGuessFrameRate);
-        if (Number.isFinite(outputWidth) && Number.isFinite(outputHeight) &&
-            Number.isFinite(outputFps) && outputFps > 0) {
-          outputInfo = { width: outputWidth, height: outputHeight, averageFps: outputFps };
-        }
+      if (!outputTrack) throw new Error('The encoded MP4 has no readable video track.');
+      const outputWidth = Math.round(await outputTrack.getDisplayWidth());
+      const outputHeight = Math.round(await outputTrack.getDisplayHeight());
+      const outputCodec = String(await outputTrack.getCodec() || '').toLowerCase();
+      const outputMetrics = await outputTrack.computeFrameRateMetrics({ targetPacketCount: 512 });
+      const outputFps = Number(outputMetrics.bestGuessFrameRate);
+      if (!Number.isFinite(outputWidth) || !Number.isFinite(outputHeight) ||
+          !Number.isFinite(outputFps) || outputFps <= 0) {
+        throw new Error('The encoded MP4 has invalid video metadata.');
       }
-    } catch (verificationError) {
-      console.warn('[INEASY] Mediabunny could not inspect encoded MP4; falling back to browser metadata.', verificationError);
+      if (outputCodec !== 'hevc') throw new Error(`Expected HEVC output, received ${outputCodec || 'unknown codec'}.`);
+      outputInfo = { width: outputWidth, height: outputHeight, averageFps: outputFps, codec: outputCodec };
     } finally {
-      verificationInput?.dispose();
-    }
-    if (!outputInfo) {
-      const outputDimensions = await readVideoDimensions(outputBlob);
-      outputInfo = {
-        width: Math.round(outputDimensions.width),
-        height: Math.round(outputDimensions.height),
-        averageFps: targetFrameRate || sourceFps
-      };
-    }
-    if (!Number.isFinite(outputInfo.averageFps) || outputInfo.averageFps <= 0) {
-      throw new Error('The encoded MP4 has invalid frame-rate metadata.');
+      verificationInput.dispose();
     }
     if (Math.abs(outputInfo.width - targetSize.width) > 2 ||
         Math.abs(outputInfo.height - targetSize.height) > 2) {
@@ -1594,8 +1572,8 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
       report: {
         performed: true,
         compressionDisabled: false,
-        codec: 'avc',
-        quality: 'very-high',
+        codec: 'hevc',
+        bitrate: targetBitrate,
         inputWidth: sourceWidth,
         inputHeight: sourceHeight,
         outputWidth: outputInfo.width,
@@ -2188,9 +2166,9 @@ function localizePatchError(message) {
   const fpsRetimingFailure = String(message || '').match(/^fps_retime_failed:\s*(.*)$/i);
   if (fpsRetimingFailure) {
     const text = {
-      ru: 'Не удалось безопасно изменить тайминг этого MP4 на 60,05 FPS. Причина',
-      kk: 'Бұл MP4 таймингін 60,05 FPS-ке қауіпсіз өзгерту мүмкін болмады. Себебі',
-      en: 'Could not safely retime this MP4 to 60.05 FPS. Reason'
+      ru: 'Не удалось безопасно изменить тайминг этого MP4 на 60,04 FPS. Причина',
+      kk: 'Бұл MP4 таймингін 60,04 FPS-ке қауіпсіз өзгерту мүмкін болмады. Себебі',
+      en: 'Could not safely retime this MP4 to 60.04 FPS. Reason'
     }[lang];
     return `${text}: ${fpsRetimingFailure[1]}`;
   }
