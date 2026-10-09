@@ -10,7 +10,8 @@
 importScripts('adjn-mp4-core.js?v=20261009-3', 'adjn-processor.js?v=20261009-3');
 
 const MEDIABUNNY_URL = 'https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm';
-const TRANSCODE_BITRATE_THRESHOLD = 15_000_000;
+const TARGET_BITRATE_REDUCTION = 0.05;
+const OUTPUT_AUDIO_BITRATE = 192_000;
 const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
 
 async function compressWithWebCodecs(file, targetBitrate, outputFps, onProgress) {
@@ -84,21 +85,19 @@ self.onmessage = async function (event) {
       : 0);
     const averageBitrate = duration > 0 ? (fileSize * 8) / duration : 0;
     const sourceFps = Number(sourceInfo?.maxFps || sourceInfo?.averageFps || 30);
-    const needsCompression = averageBitrate > TRANSCODE_BITRATE_THRESHOLD || sourceFps > 60.01;
+    const needsCompression = averageBitrate > 500_000 || sourceFps > 60.01;
     const outputFps = Math.min(60, Math.max(1, Math.round(sourceFps || 30)));
     rateControlReport = {
       performed: false,
       estimatedSourceBitrate: Math.round(averageBitrate),
-      bitrateThreshold: TRANSCODE_BITRATE_THRESHOLD,
+      targetBitrateReductionPercent: TARGET_BITRATE_REDUCTION * 100,
       sourceFps: Math.round(sourceFps),
-      compressionSkippedReason: needsCompression ? null : 'bitrate_at_or_below_threshold_and_fps_at_or_below_60',
+      compressionSkippedReason: needsCompression ? null : 'source_bitrate_unavailable_or_too_low',
     };
-    let targetVideoBitrate = Math.max(2_000_000, Math.round((averageBitrate || 10_000_000) * 0.9));
-    if (needsCompression) {
-      targetVideoBitrate = averageBitrate <= 35_000_000
-        ? Math.max(2_000_000, Math.round(averageBitrate * 0.85))
-        : Math.min(35_000_000, Math.round(30_000_000 + (Math.min(averageBitrate, 50_000_000) - 35_000_000) / 3));
-    }
+    const targetTotalBitrate = averageBitrate > 0
+      ? Math.round(averageBitrate * (1 - TARGET_BITRATE_REDUCTION))
+      : 10_000_000;
+    const targetVideoBitrate = Math.max(300_000, targetTotalBitrate - OUTPUT_AUDIO_BITRATE);
     const sourceExtension = String(fileName || data.file?.name || '').toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] || '';
     const needsContainerConversion = !['mp4', 'm4v', 'mov'].includes(sourceExtension);
     const needsReencode = needsCompression || needsContainerConversion;
