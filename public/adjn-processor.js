@@ -159,8 +159,12 @@
     return Math.abs(x - y) <= epsilon;
   }
 
-  function verifyMediaContract(inputInfo, outputInfo, inputHdr, outputHdr) {
+  function verifyMediaContract(inputInfo, outputInfo, inputHdr, outputHdr, frameRateRetimed = false) {
     const problems = [];
+    const validRetiming = frameRateRetimed === true &&
+      Math.abs(Number(inputInfo.averageFps) - 60) <= 0.01 &&
+      Math.abs(Number(outputInfo.averageFps) - 59.94) < 0.001 &&
+      Math.abs(Number(outputInfo.maxFps) - 59.94) < 0.001;
 
     if (Math.round(inputInfo.width) !== Math.round(outputInfo.width) ||
         Math.round(inputInfo.height) !== Math.round(outputInfo.height)) {
@@ -187,8 +191,8 @@
       );
     }
 
-    if (!nearlyEqual(inputInfo.averageFps, outputInfo.averageFps, 0.02) ||
-      !nearlyEqual(inputInfo.maxFps, outputInfo.maxFps, 0.05)) {
+    if ((!validRetiming && !nearlyEqual(inputInfo.averageFps, outputInfo.averageFps, 0.02)) ||
+      (!validRetiming && !nearlyEqual(inputInfo.maxFps, outputInfo.maxFps, 0.05))) {
       problems.push(
         `timing/FPS berubah ${(inputInfo.averageFps || 0).toFixed?.(3) || inputInfo.averageFps} → ` +
         `${(outputInfo.averageFps || 0).toFixed?.(3) || outputInfo.averageFps}`
@@ -215,7 +219,9 @@
     return {
       resolutionByteSafe: true,
       exactResolutionPreserved: true,
-      exactVideoTimingPreserved: true,
+      exactVideoTimingPreserved: !validRetiming,
+      frameRateRetimed: validRetiming,
+      targetFrameRate: validRetiming ? 59.94 : null,
       codecFamilyPreserved: true,
       codecSampleEntryPreserved: true,
       sourceCodecFamily: inCodecFamily,
@@ -314,6 +320,10 @@
       audioCodec: sniff?.audioCodec || '', audioSamples: 0,
       fragmented: !!sniff?.fragmented, tracks: []
     };
+    const sourceFps = Number(sourceInfo.maxFps || sourceInfo.averageFps || 0);
+    if (Math.abs(sourceFps - 60) <= 0.01) {
+      throw new Error('fps_60_retime_failed');
+    }
     const sourceHdr = hdr || detectHdrProfile(original, sourceInfo);
     const output = original.slice();
     if (!exactBytesEqual(original, output)) throw new Error('Universal Safe: byte passthrough verification gagal.');
@@ -491,7 +501,9 @@
     const outputInfo = core.inspectMediaInfo(output);
     const outputHdr = detectHdrProfile(output, outputInfo);
     try {
-      const mediaContract = verifyMediaContract(info, outputInfo, hdr, outputHdr);
+      const mediaContract = verifyMediaContract(
+        info, outputInfo, hdr, outputHdr, result.report?.frameRateRetimed
+      );
       Object.assign(verification, mediaContract);
     } catch (verifyError) {
       return passthroughResult(original, data, verifyError?.message || 'codec/HDR contract tidak lolos', info, hdr, sniff);
@@ -509,7 +521,9 @@
         sourceResolution: `${info.width}x${info.height}`,
         outputResolution: `${outputInfo.width}x${outputInfo.height}`,
         resolutionPreserved: true,
-        fpsPreserved: true,
+        fpsPreserved: !mediaContract.frameRateRetimed,
+        frameRateRetimed: mediaContract.frameRateRetimed,
+        targetFrameRate: mediaContract.targetFrameRate,
         sourceCodecFamily: String(info.codecFamily || '').toLowerCase(),
         outputCodecFamily: String(outputInfo.codecFamily || '').toLowerCase(),
         sourceCodecTag: String(info.codec || '').toLowerCase(),
