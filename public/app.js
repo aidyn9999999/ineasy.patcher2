@@ -978,6 +978,23 @@ const previewWrap = document.getElementById('previewWrap');
 const previewVideo = document.getElementById('previewVideo');
 const fileMeta = document.getElementById('fileMeta');
 const clearBtn = document.getElementById('clearBtn');
+const selectedPatcherVersion = (() => {
+  const inputs = document.querySelectorAll('input[name="patcherVersion"]');
+  const note = document.getElementById('patcherVersionNote');
+  const update = () => {
+    const selected = document.querySelector('input[name="patcherVersion"]:checked')?.value || 'v1';
+    if (note) note.textContent = selected === 'v2'
+      ? 'V2 Beta экспериментальная. Движок Rein ещё не подключён к веб-воркеру, поэтому пока используйте V1.'
+      : 'Если V1 не работает или опубликованное видео дёргается, попробуйте V2 Beta.';
+  };
+  inputs.forEach((input) => input.addEventListener('change', update));
+  update();
+  return document.querySelector('input[name="patcherVersion"]:checked')?.value || 'v1';
+})();
+function getSelectedPatcherVersion() {
+  return document.querySelector('input[name="patcherVersion"]:checked')?.value || 'v1';
+}
+
 const processBtn = document.getElementById('processBtn');
 const postingDeviceSelect = document.getElementById('postingDevice');
 const cancelProcessBtn = document.getElementById('cancelProcessBtn');
@@ -1898,7 +1915,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261010-40');
+        const worker = new Worker('adjn-worker.js?v=20261010-41');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1916,7 +1933,7 @@ if (processBtn) {
               fileType: processingFile.type || sourceFile.type || 'video/mp4',
               fileSize: processingFile.size || buffer.byteLength,
               preparationReport: preparedInput.report || null,
-              engine: '2.1.5'
+              engine: getSelectedPatcherVersion() === 'v2' ? 'rein-beta' : '2.1.5'
             }, [buffer]);
             return;
           }
