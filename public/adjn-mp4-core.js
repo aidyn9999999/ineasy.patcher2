@@ -383,7 +383,7 @@
     const frameCount = timingEntries.reduce((sum, entry) => sum + entry[0], 0);
     const sourceTicks = timingEntries.reduce((sum, entry) => sum + entry[0] * entry[1], 0);
     const sourceFps = sourceDuration > 0 ? frameCount * sourceTimescale / sourceDuration : 0;
-    const shouldRetime = Math.abs(sourceFps - 60) <= 0.01 || Math.abs(sourceFps - 59.94) <= 0.02;
+    const shouldRetime = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2;
     if (!shouldRetime) return false;
     if (!mvhd || !tkhd) {
       throwError('Cannot safely set 60.05 FPS on this MP4 track.');
@@ -845,7 +845,7 @@
     const bytes = toU8Array(input);
     const parsed = parseMp4Structure(bytes);
     const sourceFps = inspectMediaInfo(bytes).averageFps;
-    const shouldRetime = Math.abs(sourceFps - 60) <= 0.01 || Math.abs(sourceFps - 59.94) <= 0.02;
+    const shouldRetime = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2;
     const retimed = retimeVideoToTarget(parsed);
     if (shouldRetime && !retimed) throwError('Failed to retime 60/59.94 FPS MP4 to 60.05 FPS.');
     const patched = executePatch(bytes, parsed);
@@ -985,7 +985,7 @@
     const patched = quickPatch(original);
     const inspected = inspect(patched);
     const outputFps = inspectMediaInfo(patched).averageFps;
-    const shouldRetime = Math.abs(sourceFps - 60) <= 0.01 || Math.abs(sourceFps - 59.94) <= 0.02;
+    const shouldRetime = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2;
     const frameRateRetimed = shouldRetime && Math.abs(outputFps - 60.05) < 0.001;
     if (shouldRetime && !frameRateRetimed) {
       throwError(`Frame-rate verification failed: expected 60.05 FPS, got ${outputFps.toFixed(3)} FPS.`);

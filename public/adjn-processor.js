@@ -163,7 +163,7 @@
     const problems = [];
     const inputFps = Number(inputInfo.averageFps);
     const validRetiming = frameRateRetimed === true &&
-      (Math.abs(inputFps - 60) <= 0.01 || Math.abs(inputFps - 59.94) <= 0.02) &&
+      (Math.abs(inputFps - 60) <= 0.2 || Math.abs(inputFps - 59.94) <= 0.2) &&
       Math.abs(Number(outputInfo.averageFps) - 60.05) < 0.001 &&
       Math.abs(Number(outputInfo.maxFps) - 60.05) < 0.001;
 
@@ -322,7 +322,8 @@
       fragmented: !!sniff?.fragmented, tracks: []
     };
     const sourceFps = Number(sourceInfo.maxFps || sourceInfo.averageFps || 0);
-    if (sniff?.container !== 'mov' &&
+    const sourceCodecFamily = String(sourceInfo.codecFamily || sniff?.codecFamily || '').toLowerCase();
+    if (sniff?.container !== 'mov' && sourceCodecFamily !== 'hevc' &&
         (Math.abs(sourceFps - 60) <= 0.01 || Math.abs(sourceFps - 59.94) <= 0.02)) {
       throw new Error(`fps_retime_failed: ${reason || 'unsupported MP4 timing layout'}`);
     }

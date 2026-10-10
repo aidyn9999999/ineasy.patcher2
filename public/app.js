@@ -1500,7 +1500,32 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
     }
     const sourceExtension = String(file.name || '').match(/\.([^.]+)$/)?.[1]?.toLowerCase();
     const sourceCodec = String(await track.getCodec() || '').toLowerCase();
+    const sourceCodecTag = String(await track.getInternalCodecId() || '').toLowerCase();
     const sourceAudioCodec = String(await primaryAudioTrack?.getCodec() || '').toLowerCase();
+    const isHevcSource = sourceCodec.includes('hevc') ||
+      /^(hvc1|hev1|hvc2|hev2|dvh1|dvhe)$/.test(sourceCodecTag);
+    if (isHevcSource) {
+      const sourceMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
+      const sourceFps = sourceMetrics.bestGuessFrameRate;
+      const targetFrameRate = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2
+        ? 60.05
+        : null;
+      return {
+        blob: file,
+        sourceFps,
+        targetFrameRate,
+        report: {
+          performed: false,
+          compressionDisabled: true,
+          codec: 'hevc',
+          inputWidth: sourceWidth,
+          inputHeight: sourceHeight,
+          outputWidth: sourceWidth,
+          outputHeight: sourceHeight,
+          frameRate: sourceFps
+        }
+      };
+    }
     if (sourceExtension === 'mp4' && sourceCodec === 'avc' && sourceAudioCodec === 'aac') {
       const [videoTracks, audioTracks] = await Promise.all([input.getVideoTracks(), input.getAudioTracks()]);
       if (videoTracks.length === 1 && audioTracks.length === 1) {
@@ -2102,7 +2127,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261009-33');
+        const worker = new Worker('adjn-worker.js?v=20261010-34');
 
         worker.onmessage = (e) => {
           const msg = e.data;
