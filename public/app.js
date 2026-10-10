@@ -978,7 +978,7 @@ const previewWrap = document.getElementById('previewWrap');
 const previewVideo = document.getElementById('previewVideo');
 const fileMeta = document.getElementById('fileMeta');
 const clearBtn = document.getElementById('clearBtn');
-const selectedPatcherVersion = (() => {
+(() => {
   const inputs = document.querySelectorAll('input[name="patcherVersion"]');
   const note = document.getElementById('patcherVersionNote');
   const update = () => {
@@ -2076,6 +2076,7 @@ function localizePatchError(message) {
     return `${text}: ${fpsRetimingFailure[1]}`;
   }
   const knownErrors = [
+    { test: /V2_BETA_ENGINE_NOT_INSTALLED/i, ru: 'V2 Beta пока не подключена к движку Rein. Выберите V1 (ADJN), пока идёт интеграция.', kk: 'V2 Beta әзірге Rein қозғалтқышына қосылмаған. Интеграция аяқталғанша V1 (ADJN) таңдаңыз.', en: 'V2 Beta is not connected to the Rein engine yet. Choose V1 (ADJN) until integration is complete.' },
     { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
