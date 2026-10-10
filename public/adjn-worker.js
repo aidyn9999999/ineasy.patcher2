@@ -7,7 +7,7 @@
 
 // We need to import the core and processor scripts into the worker context.
 // importScripts is synchronous and available in dedicated workers.
-importScripts('adjn-mp4-core.js?v=20261010-13', 'adjn-processor.js?v=20261010-13');
+importScripts('adjn-mp4-core.js?v=20261010-14', 'adjn-processor.js?v=20261010-14');
 
 const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
 

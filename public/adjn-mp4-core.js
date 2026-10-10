@@ -356,6 +356,12 @@
     return list;
   }
 
+  function getTargetFrameRate(sourceFps) {
+    if (Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2) return 60.05;
+    if (Math.abs(sourceFps - 30) <= 0.2) return 30.05;
+    return null;
+  }
+
   function retimeVideoToTarget(parsed) {
     const { video, moov } = parsed;
     const trak = video.trak;
@@ -383,8 +389,10 @@
     const frameCount = timingEntries.reduce((sum, entry) => sum + entry[0], 0);
     const sourceTicks = timingEntries.reduce((sum, entry) => sum + entry[0] * entry[1], 0);
     const sourceFps = sourceDuration > 0 ? frameCount * sourceTimescale / sourceDuration : 0;
-    const shouldRetime = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2;
-    if (!shouldRetime) return false;
+    const targetFrameRate = getTargetFrameRate(sourceFps);
+    if (!targetFrameRate) return false;
+    const targetTimescale = targetFrameRate === 60.05 ? 1201 : 601;
+    const targetFrameDuration = 20;
     if (!mvhd || !tkhd) {
       throwError('Cannot safely set 60.05 FPS on this MP4 track.');
     }
@@ -407,8 +415,8 @@
       throwError('Unsupported MP4 track header for 60.05 FPS.');
     }
 
-    const outputDuration = frameCount * TARGET_FRAME_DURATION;
-    let outputTrackDuration = Math.round(outputDuration * movieTimescale / TARGET_FPS_TIMESCALE);
+    const outputDuration = frameCount * targetFrameDuration;
+    let outputTrackDuration = Math.round(outputDuration * movieTimescale / targetTimescale);
     if (!Number.isSafeInteger(outputDuration) ||
         (trackDurationSize === 4 && outputTrackDuration > 0xffffffff)) {
       throwError('MP4 video duration exceeds the supported range for 60.05 FPS.');
@@ -429,7 +437,7 @@
       if (!editCount) throwError('MP4 edit list contains no entries.');
       editList.payload = cloneBytes(editList.payload);
       let editedTrackDuration = 0;
-      const durationScale = sourceFps * TARGET_FRAME_DURATION / TARGET_FPS_TIMESCALE;
+      const durationScale = sourceFps * targetFrameDuration / targetTimescale;
       for (let index = 0; index < editCount; index++) {
         const entryOffset = 8 + index * editEntrySize;
         const mediaTimeOffset = entryOffset + (editVersion === 1 ? 8 : 4);
@@ -460,7 +468,7 @@
         else editList.payload.set(u32ToBytes(outputSegmentDuration), entryOffset);
 
         if (!isEmptyEdit) {
-          const outputMediaTime = Math.round(rawMediaTime * TARGET_FPS_TIMESCALE / sourceTimescale);
+          const outputMediaTime = Math.round(rawMediaTime * targetTimescale / sourceTimescale);
           if (!Number.isSafeInteger(outputMediaTime)) {
             throwError('MP4 edit-list media offset exceeds the supported range.');
           }
@@ -493,7 +501,7 @@
         const offsetPosition = 12 + index * 8;
         const rawOffset = readU32(ctts.payload, offsetPosition);
         const offset = compositionVersion === 1 ? rawOffset | 0 : rawOffset;
-        const scaledOffset = Math.round(offset * TARGET_FPS_TIMESCALE / sourceTimescale);
+        const scaledOffset = Math.round(offset * targetTimescale / sourceTimescale);
         if (scaledOffset < -0x80000000 || scaledOffset > 0xffffffff) {
           throwError('MP4 composition offset exceeds the supported range.');
         }
@@ -502,7 +510,7 @@
     }
 
     mdhd.payload = cloneBytes(mdhd.payload);
-    mdhd.payload.set(u32ToBytes(TARGET_FPS_TIMESCALE), mediaTimescaleOffset);
+    mdhd.payload.set(u32ToBytes(targetTimescale), mediaTimescaleOffset);
     if (mediaDurationSize === 8) mdhd.payload.set(u64ToBytes(outputDuration), mediaDurationOffset);
     else mdhd.payload.set(u32ToBytes(outputDuration), mediaDurationOffset);
 
@@ -510,7 +518,7 @@
     updatedStts.set(stts.payload.subarray(0, 4), 0);
     updatedStts.set(u32ToBytes(1), 4);
     updatedStts.set(u32ToBytes(frameCount), 8);
-    updatedStts.set(u32ToBytes(TARGET_FRAME_DURATION), 12);
+    updatedStts.set(u32ToBytes(targetFrameDuration), 12);
     stts.payload = updatedStts;
 
     tkhd.payload = cloneBytes(tkhd.payload);
@@ -845,7 +853,7 @@
     const bytes = toU8Array(input);
     const parsed = parseMp4Structure(bytes);
     const sourceFps = inspectMediaInfo(bytes).averageFps;
-    const shouldRetime = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2;
+    const shouldRetime = getTargetFrameRate(sourceFps) !== null;
     const retimed = retimeVideoToTarget(parsed);
     if (shouldRetime && !retimed) throwError('Failed to retime 60/59.94 FPS MP4 to 60.05 FPS.');
     const patched = executePatch(bytes, parsed);
@@ -985,10 +993,10 @@
     const patched = quickPatch(original);
     const inspected = inspect(patched);
     const outputFps = inspectMediaInfo(patched).averageFps;
-    const shouldRetime = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2;
-    const frameRateRetimed = shouldRetime && Math.abs(outputFps - 60.05) < 0.001;
-    if (shouldRetime && !frameRateRetimed) {
-      throwError(`Frame-rate verification failed: expected 60.05 FPS, got ${outputFps.toFixed(3)} FPS.`);
+    const targetFrameRate = getTargetFrameRate(sourceFps);
+    const frameRateRetimed = targetFrameRate !== null && Math.abs(outputFps - targetFrameRate) < 0.001;
+    if (targetFrameRate !== null && !frameRateRetimed) {
+      throwError(`Frame-rate verification failed: expected ${targetFrameRate} FPS, got ${outputFps.toFixed(3)} FPS.`);
     }
     return {
       bytes: patched,
@@ -1000,7 +1008,7 @@
         sampleCount: inspected.sampleCount,
         audioSampleCount: inspected.audioSampleCount,
         frameRateRetimed,
-        targetFrameRate: frameRateRetimed ? TARGET_FPS_TIMESCALE / TARGET_FRAME_DURATION : null
+        targetFrameRate: frameRateRetimed ? targetFrameRate : null
       }
     };
   }

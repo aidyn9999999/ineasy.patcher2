@@ -3,11 +3,6 @@
   let busy = false;
 
   let stageCallback = null;
-
-  function send(type, payload = {}, transfer = []) {
-    if (typeof parent !== 'undefined' && parent && parent !== window) {
-      parent.postMessage({ source: 'FRY_PROCESSOR', type, ...payload }, '*', transfer);
-    }
   }
   function stage(requestId, key, label, progress, detail = '') {
     if (typeof stageCallback === 'function') {
@@ -162,10 +157,13 @@
   function verifyMediaContract(inputInfo, outputInfo, inputHdr, outputHdr, frameRateRetimed = false) {
     const problems = [];
     const inputFps = Number(inputInfo.averageFps);
+    const targetFrameRate = Math.abs(inputFps - 30) <= 0.2
+      ? 30.05
+      : Math.abs(inputFps - 60) <= 0.2 || Math.abs(inputFps - 59.94) <= 0.2 ? 60.05 : null;
     const validRetiming = frameRateRetimed === true &&
-      (Math.abs(inputFps - 60) <= 0.2 || Math.abs(inputFps - 59.94) <= 0.2) &&
-      Math.abs(Number(outputInfo.averageFps) - 60.05) < 0.001 &&
-      Math.abs(Number(outputInfo.maxFps) - 60.05) < 0.001;
+      targetFrameRate !== null &&
+      Math.abs(Number(outputInfo.averageFps) - targetFrameRate) < 0.001 &&
+      Math.abs(Number(outputInfo.maxFps) - targetFrameRate) < 0.001;
 
     if (Math.round(inputInfo.width) !== Math.round(outputInfo.width) ||
         Math.round(inputInfo.height) !== Math.round(outputInfo.height)) {
@@ -222,7 +220,7 @@
       exactResolutionPreserved: true,
       exactVideoTimingPreserved: !validRetiming,
       frameRateRetimed: validRetiming,
-      targetFrameRate: validRetiming ? 60.05 : null,
+      targetFrameRate: validRetiming ? targetFrameRate : null,
       codecFamilyPreserved: true,
       codecSampleEntryPreserved: true,
       sourceCodecFamily: inCodecFamily,

@@ -578,7 +578,6 @@ function t(key) {
 
 async function tiktokApi(url, options = {}) {
   const headers = new Headers(options.headers || {});
-  headers.set('Authorization', `Bearer ${getBrowserValue('tg_auth_token') || ''}`);
   if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   const response = await fetch(url, { ...options, headers });
   const data = await response.json().catch(() => ({}));
@@ -1445,7 +1444,7 @@ async function readVideoDimensionsForSelection(file) {
   }
 }
 
-async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
+async function prepareVideoForPatcher(file, dimensions, signal) {
   signal.throwIfAborted();
   return {
     blob: file,
@@ -1460,6 +1459,18 @@ async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
       outputHeight: dimensions?.height || null
     }
   };
+}
+
+function appendMp4Padding(bytes) {
+  const paddingSize = 1024 * 1024;
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength + paddingSize > MAX_VIDEO_FILE_SIZE) return bytes;
+  const padding = new Uint8Array(paddingSize);
+  new DataView(padding.buffer).setUint32(0, paddingSize);
+  padding.set([0x66, 0x72, 0x65, 0x65], 4);
+  const padded = new Uint8Array(bytes.byteLength + paddingSize);
+  padded.set(bytes);
+  padded.set(padding, bytes.byteLength);
+  return padded;
 }
 
 function getPostingDeviceForPlatform() {
@@ -1887,7 +1898,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261010-35');
+        const worker = new Worker('adjn-worker.js?v=20261010-36');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -1955,7 +1966,10 @@ if (processBtn) {
 
       if (controller.signal.aborted) throw new Error('processing_cancelled');
 
-      const outputBlob = new Blob([result.output], { type: result.outputMime || 'video/mp4' });
+      const outputBytes = result.outputMime === 'video/mp4'
+        ? appendMp4Padding(result.output)
+        : result.output;
+      const outputBlob = new Blob([outputBytes], { type: result.outputMime || 'video/mp4' });
 
       await consumeProcessedVideo();
       processedVideoBlob = outputBlob;
