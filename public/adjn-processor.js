@@ -236,63 +236,6 @@
     };
   }
 
-  // --- Smart Resolution (модуль Smart Auto) ---------------------------------
-  // Автоматический подбор совместимых параметров разрешения/формата кадра.
-  // Работает поверх сохранённых функций патчера: анализирует источник до
-  // патчинга, прикладывает решение только если проблема реально связана с
-  // размером кадра, и формирует отчёт о выбранных параметрах.
-  function getSmartResolution() {
-    return globalThis.SmartResolution || null;
-  }
-
-  function enrichSourceInfo(core, original, info) {
-    // Дополнительные параметры кодирования для анализа (без перекодирования):
-    // битрейт из размера файла и длительности, CFR-флаг из stts-таблицы.
-    const enriched = { ...info };
-    try {
-      const videoTrack = (info.tracks || []).find(t => t.handler === 'vide');
-      if (videoTrack && videoTrack.timescale > 0 && videoTrack.duration > 0) {
-        const seconds = videoTrack.duration / videoTrack.timescale;
-        if (seconds > 0.05) {
-          enriched.bitrateMbps = +(original.byteLength * 8 / seconds / 1e6).toFixed(2);
-        }
-        // CFR: все интервалы stts одинаковы — core раскрывает это через timingUniform,
-        // если таблица доступна; иначе оставляем undefined (консервативно CFR).
-        if (typeof core.isConstantFrameRate === 'function') {
-          enriched.cfr = Boolean(core.isConstantFrameRate(original));
-        } else {
-          enriched.cfr = true;
-        }
-      }
-    } catch (_) { /* обогащение не критично */ }
-    return enriched;
-  }
-
-  function runSmartResolution(core, original, info, context) {
-    const smart = getSmartResolution();
-    if (!smart) {
-      return { module: 'Smart Resolution (не загружен)', action: 'keep', notes: ['Модуль недоступен — применён стандартный путь патчера без изменения разрешения.'] };
-    }
-    let decision;
-    try {
-      decision = smart.decideResolution(enrichSourceInfo(core, original, info), context);
-    } catch (error) {
-      decision = {
-        module: `Smart Resolution v${smart.version}`,
-        action: 'keep',
-        error: error?.message || String(error),
-        notes: ['Ошибка анализа — разрешение оставлено без изменений (безопасный fallback).']
-      };
-    }
-    // Анти-имитация: заявленные размеры должны равняться фактическим кадрам.
-    const expectedDims = decision.selected && (decision.action === 'apply' || decision.action === 'reencode')
-      ? decision.selected
-      : { width: info.width, height: info.height };
-    decision.frameSizeVerification = smart.verifyActualFrameSizes(info, expectedDims);
-    return decision;
-  }
-  // ---------------------------------------------------------------------------
-
   function extensionOf(name) {
     const m = String(name || '').toLowerCase().match(/\.([a-z0-9]{1,8})$/);
     return m ? m[1] : '';
@@ -371,7 +314,7 @@
     return true;
   }
 
-  function passthroughResult(original, data, reason, info = null, hdr = null, sniff = null, smartResolution = null) {
+  function passthroughResult(original, data, reason, info = null, hdr = null, sniff = null) {
     const ext = extensionOf(data.fileName);
     const sourceInfo = info || {
       width: 0, height: 0,
@@ -393,7 +336,6 @@
       report: {
         engine: 'ADJN Core • Universal Safe Passthrough 2.0',
         passthrough: true,
-        smartResolution: smartResolution || null,
         reason,
         container: sniff?.container || ext || 'unknown',
         sourceMime: data.fileType || '',
@@ -484,22 +426,6 @@
 
     const limits = validateMediaInfo(info);
 
-    // Smart Resolution: анализ разрешения/формата кадра до патчинга.
-    // Модуль подбирает наиболее совместимые параметры; при отсутствии
-    // реальной проблемы с размером кадра он ничего не меняет (требование 8).
-    stage(requestId, 'analyzing', 'Smart Resolution…', 24, 'Анализ разрешения, аспекта, FPS и кодека');
-    const smartResolutionReport = runSmartResolution(core, original, info, {
-      retimeRequested: true,
-      assumeCfr: true,
-      engine: data.smartResolutionEngine || 'none',
-      pipeline: {
-        acceptsFrame: (w, h) => w >= 16 && h >= 16 && w % 2 === 0 && h % 2 === 0
-      }
-    });
-    if (smartResolutionReport.action !== 'keep') {
-      stage(requestId, 'analyzing', 'Smart Resolution…', 26,
-        `${smartResolutionReport.action}: ${smartResolutionReport.selected?.resolution || ''} • ${(smartResolutionReport.notes[0] || '').slice(0, 90)}`);
-    }
     const loadText = limits.uhdHighLoad
       ? `UHD/High-FPS • ${info.width}×${info.height} • ${limits.fps ? limits.fps.toFixed(2) : '?'} FPS`
       : `${info.width}×${info.height} • ${limits.fps ? limits.fps.toFixed(2) : '?'} FPS`;
@@ -522,7 +448,7 @@
         extraTopLevel.length ? `extra-boxes:${[...new Set(extraTopLevel)].join('/')}` : ''
       ].filter(Boolean).join(', ');
       stage(requestId, 'preparing', 'Universal Safe…', 35, `${loadText}${hdrText} • metadata/track kompleks dipertahankan`);
-      return passthroughResult(original, data, why || 'metadata/track kompleks', info, hdr, sniff, smartResolutionReport);
+      return passthroughResult(original, data, why || 'metadata/track kompleks', info, hdr, sniff);
     }
 
     if (compat?.needsRefinery) {
@@ -552,26 +478,12 @@
       if (result?.report) result.report.engine = engineProfile.source;
     } catch (patchError) {
       stage(requestId, 'patching', 'Fallback Universal Safe…', 72, 'Patch klasik tidak aman untuk file ini • pakai byte-identical passthrough');
-      return passthroughResult(original, data, patchError?.message || 'full patch gagal', info, hdr, sniff, smartResolutionReport);
+      return passthroughResult(original, data, patchError?.message || 'full patch gagal', info, hdr, sniff);
     }
 
     const output = asU8(result?.bytes);
     if (output.byteLength < 64) throw new Error('ADJN Core menghasilkan file kosong.');
 
-    // Smart Resolution post-check: фактические размеры кадров выхода должны
-    // совпадать с заявленными (анти-имитация метаданных, требование 5).
-    try {
-      const smartResolutionOutputInfo = core.inspectMediaInfo(output);
-      const smart = globalThis.SmartResolution;
-      if (smart?.verifyActualFrameSizes) {
-        const expectedDims = smartResolutionReport.selected &&
-          (smartResolutionReport.action === 'apply' || smartResolutionReport.action === 'reencode')
-          ? smartResolutionReport.selected
-          : { width: info.width, height: info.height };
-        smartResolutionReport.outputFrameSizeVerification =
-          smart.verifyActualFrameSizes(smartResolutionOutputInfo, expectedDims);
-      }
-    } catch (_) { /* пост-проверка не должна ломать сохранённый путь патчера */ }
     if (output.byteLength < original.byteLength) {
       throw new Error(`SIZE GUARD: hasil ${output.byteLength} byte lebih kecil dari source ${original.byteLength} byte.`);
     }
@@ -579,13 +491,13 @@
     stage(requestId, 'finalizing', 'Lagi nyelesaiin…', 90, 'Verifikasi resolusi + FPS + codec + HDR/Dolby Vision + bitstream');
     const verification = core.verifyOutput(original, output);
     if (verification.videoBitstreamByteIdentical !== true) {
-      return passthroughResult(original, data, 'verifikasi video patch tidak identik', info, hdr, sniff, smartResolutionReport);
+      return passthroughResult(original, data, 'verifikasi video patch tidak identik', info, hdr, sniff);
     }
     if (result.report?.mdatByteIdentical === false) {
-      return passthroughResult(original, data, 'verifikasi mdat patch tidak identik', info, hdr, sniff, smartResolutionReport);
+      return passthroughResult(original, data, 'verifikasi mdat patch tidak identik', info, hdr, sniff);
     }
     if (verification.originalAudioTrackPreserved !== true) {
-      return passthroughResult(original, data, 'verifikasi audio patch tidak identik', info, hdr, sniff, smartResolutionReport);
+      return passthroughResult(original, data, 'verifikasi audio patch tidak identik', info, hdr, sniff);
     }
 
     const outputInfo = core.inspectMediaInfo(output);
@@ -597,7 +509,7 @@
       );
       Object.assign(verification, mediaContract);
     } catch (verifyError) {
-      return passthroughResult(original, data, verifyError?.message || 'codec/HDR contract tidak lolos', info, hdr, sniff, smartResolutionReport);
+      return passthroughResult(original, data, verifyError?.message || 'codec/HDR contract tidak lolos', info, hdr, sniff);
     }
 
     return {
@@ -609,7 +521,6 @@
       report: {
         ...(result.report || {}),
         passthrough: false,
-        smartResolution: smartResolutionReport,
         sourceResolution: `${info.width}x${info.height}`,
         outputResolution: `${outputInfo.width}x${outputInfo.height}`,
         resolutionPreserved: true,
@@ -649,8 +560,7 @@
     processVideo,
     detectHdrProfile,
     validateMediaInfo,
-    verifyMediaContract,
-    runSmartResolution
+    verifyMediaContract
   };
 
   if (typeof window !== 'undefined') {
