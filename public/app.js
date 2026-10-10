@@ -1991,7 +1991,6 @@ if (processBtn) {
         mode: result.mode || 'unknown',
         passthrough: Boolean(result.passthrough),
         rateControl: result.rateControlReport || null,
-        smartResolution: result.report?.smartResolution || null,
         patcherActive: !result.passthrough && result.mode === 'adjn-core-resolution-codec-safe',
         inputFps: originalInputFps ?? result.inputInfo?.averageFps ?? null,
         outputFps: metaInfo?.averageFps ?? null,
