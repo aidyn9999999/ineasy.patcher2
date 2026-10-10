@@ -608,6 +608,13 @@ function localizeTikTokPublishError(message) {
       en: 'The TikTok session expired or could not be verified. Reconnect your TikTok account in the publishing section and try again.'
     })[STATE.lang] || 'Reconnect your TikTok account and try again.';
   }
+  if (/tiktok_request_failed|tiktok_publish_failed/i.test(error)) {
+    return ({
+      ru: 'TikTok не вернул причину отказа. Проверьте подключение аккаунта в Zernio и разрешение на публикацию видео; затем попробуйте ещё раз. Если ошибка повторится, переподключите TikTok в разделе публикации.',
+      kk: 'TikTok бас тарту себебін қайтармады. Zernio ішіндегі аккаунт байланысын және видео жариялау рұқсатын тексеріп, қайталап көріңіз. Қате қайталанса, TikTok аккаунтын қайта қосыңыз.',
+      en: 'TikTok did not provide a specific failure reason. Check the account connection and video-posting permission in Zernio, then try again. If it repeats, reconnect TikTok in the publishing section.'
+    })[STATE.lang] || t('publishFailed');
+  }
   if (/authentication_required|authentication_expired/i.test(error)) return t('authExpired');
   if (/tiktok_account_not_connected|account.*not.*connected/i.test(error)) return t('connectHint');
   if (/upload_not_found_or_expired|upload_expired/i.test(error)) {
@@ -1012,11 +1019,18 @@ const clearBtn = document.getElementById('clearBtn');
 (() => {
   const inputs = document.querySelectorAll('input[name="patcherVersion"]');
   const note = document.getElementById('patcherVersionNote');
+  const picker = document.querySelector('.patcher-version-picker');
+  const fpsAdvice = document.getElementById('fpsAdvice');
   const update = () => {
     const selected = document.querySelector('input[name="patcherVersion"]:checked')?.value || 'v1';
-    if (note) note.textContent = selected === 'v2'
-      ? 'Используйте V2, если в V1 видео лагает или обработка не работает.'
-      : 'Обычный режим. Если V1 лагает или не работает, выберите V2.';
+    if (note) {
+      note.textContent = selected === 'v2'
+        ? 'V2 Beta: используйте, если в V1 видео лагает или обработка не работает.'
+        : 'V1 — обычный режим. Если после публикации видео стало 30 FPS, попробуйте FFmpeg: экспорт H.264/AAC с исходной частотой кадров может помочь.';
+      note.classList.toggle('v1-highlight', selected === 'v1');
+    }
+    if (fpsAdvice) fpsAdvice.classList.toggle('hidden', selected !== 'v1');
+    if (picker) picker.classList.toggle('has-v1-selected', selected === 'v1');
   };
   inputs.forEach((input) => input.addEventListener('change', update));
   update();
@@ -1471,7 +1485,8 @@ function readVideoDimensions(file) {
     video.preload = 'metadata';
     video.addEventListener('loadedmetadata', onLoaded, { once: true });
     video.addEventListener('error', onError, { once: true });
-    timeoutId = setTimeout(() => finish(reject, new Error('video_dimensions_unavailable')), 10000);
+    const isSafari = /^((?!chrome|chromium|android).)*safari/i.test(navigator.userAgent);
+    timeoutId = setTimeout(() => finish(reject, new Error('video_dimensions_unavailable')), isSafari ? 3500 : 10000);
     video.src = sourceUrl;
     video.load();
   });
@@ -1480,14 +1495,26 @@ function readVideoDimensions(file) {
 async function readVideoDimensionsForSelection(file) {
   try {
     return await readVideoDimensions(file);
-  } catch (error) {
+  } catch (nativeError) {
+    // Prefer the already-loaded local parser before downloading a second parser from a CDN.
+    try {
+      const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+      if (core?.inspectMediaInfo) {
+        const bytes = new Uint8Array(await file.slice(0, Math.min(file.size, 16 * 1024 * 1024)).arrayBuffer());
+        const info = core.inspectMediaInfo(bytes);
+        const track = (info?.tracks || []).find((item) => item.handler === 'vide');
+        const width = Number(track?.width || track?.displayWidth || info?.width);
+        const height = Number(track?.height || track?.displayHeight || info?.height);
+        if (width > 0 && height > 0) return { width, height };
+      }
+    } catch (_) {}
     const { Input, ALL_FORMATS, BlobSource } = await import('https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm');
     const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
     const track = await input.getPrimaryVideoTrack();
-    if (!track) throw error;
+    if (!track) throw nativeError;
     const width = await track.getDisplayWidth();
     const height = await track.getDisplayHeight();
-    if (!width || !height) throw error;
+    if (!width || !height) throw nativeError;
     return { width, height };
   }
 }
@@ -1532,6 +1559,9 @@ let fileSelectionVersion = 0;
 let selectedVideoDimensions = null;
 
 function rejectFileSelection(message) {
+  document.querySelector('.patcher-version-picker')?.classList.add('hidden');
+  document.getElementById('patcherVersionNote')?.classList.add('hidden');
+  document.getElementById('fpsAdvice')?.classList.add('hidden');
   if (fileInput) fileInput.value = '';
   selectedVideoDimensions = null;
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
@@ -1570,6 +1600,9 @@ async function handleFile(file) {
     return;
   }
 
+  document.querySelector('.patcher-version-picker')?.classList.remove('hidden');
+  document.getElementById('patcherVersionNote')?.classList.remove('hidden');
+  document.getElementById('fpsAdvice')?.classList.toggle('hidden', getSelectedPatcherVersion() !== 'v1');
   checkingFileDimensions = true;
   updateProcessButton();
   let dimensions;
@@ -1650,6 +1683,9 @@ if (dropzone) {
 
 if (clearBtn) {
   clearBtn.addEventListener('click', () => {
+    document.querySelector('.patcher-version-picker')?.classList.add('hidden');
+    document.getElementById('patcherVersionNote')?.classList.add('hidden');
+    document.getElementById('fpsAdvice')?.classList.add('hidden');
     if (processController) processController.abort();
     if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
     if (previewVideo) previewVideo.src = '';
