@@ -322,7 +322,8 @@
       fragmented: !!sniff?.fragmented, tracks: []
     };
     const sourceFps = Number(sourceInfo.maxFps || sourceInfo.averageFps || 0);
-    if (Math.abs(sourceFps - 60) <= 0.01 || Math.abs(sourceFps - 59.94) <= 0.02) {
+    if (sniff?.container !== 'mov' &&
+        (Math.abs(sourceFps - 60) <= 0.01 || Math.abs(sourceFps - 59.94) <= 0.02)) {
       throw new Error(`fps_retime_failed: ${reason || 'unsupported MP4 timing layout'}`);
     }
     const sourceHdr = hdr || detectHdrProfile(original, sourceInfo);

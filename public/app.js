@@ -1457,6 +1457,22 @@ function getTargetEncodeSize(width, height) {
 }
 
 async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
+  const sourceExtension = String(file.name || '').match(/\.([^.]+)$/)?.[1]?.toLowerCase();
+  if (sourceExtension === 'mov' || String(file.type || '').toLowerCase() === 'video/quicktime') {
+    signal.throwIfAborted();
+    return {
+      blob: file,
+      sourceFps: null,
+      targetFrameRate: null,
+      report: {
+        performed: false,
+        compressionDisabled: true,
+        sourceExtension: 'mov',
+        outputExtension: 'mov'
+      }
+    };
+  }
+
   let mediabunny;
   try {
     mediabunny = await import('https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm');
