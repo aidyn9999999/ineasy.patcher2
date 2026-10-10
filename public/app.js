@@ -1445,261 +1445,21 @@ async function readVideoDimensionsForSelection(file) {
   }
 }
 
-function getTargetEncodeSize(width, height) {
-  const longSide = Math.max(width, height);
-  const shortSide = Math.min(width, height);
-  const targetSide = longSide >= 3000 ? 3220 : shortSide >= 1000 && shortSide <= 1200 ? 1180 : 0;
-  if (!targetSide) return null;
-
-  const scale = targetSide / (longSide >= 3000 ? longSide : shortSide);
-  const makeEven = (value) => Math.max(2, Math.round(value / 2) * 2);
-  return { width: makeEven(width * scale), height: makeEven(height * scale) };
-}
-
 async function prepareVideoForPatcher(file, dimensions, signal, onProgress) {
-  const sourceExtension = String(file.name || '').match(/\.([^.]+)$/)?.[1]?.toLowerCase();
-  if (sourceExtension === 'mov' || String(file.type || '').toLowerCase() === 'video/quicktime') {
-    signal.throwIfAborted();
-    return {
-      blob: file,
-      sourceFps: null,
-      targetFrameRate: null,
-      report: {
-        performed: false,
-        compressionDisabled: true,
-        sourceExtension: 'mov',
-        outputExtension: 'mov'
-      }
-    };
-  }
-
-  let mediabunny;
-  try {
-    mediabunny = await import('https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm');
-  } catch (error) {
-    throw new Error(`AUTO_VIDEO_CONVERSION_FAILED:${error.message || 'Mediabunny could not be loaded'}`);
-  }
-  const {
-    Input, ALL_FORMATS, BlobSource, Output, Mp4OutputFormat, BufferTarget,
-    Conversion, Quality, canEncodeVideo
-  } = mediabunny;
   signal.throwIfAborted();
-
-  const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
-  let conversion = null;
-  let abortConversion = null;
-  try {
-    const track = await input.getPrimaryVideoTrack();
-    if (!track) throw new Error('No primary video track was found.');
-    const primaryAudioTrack = await input.getPrimaryAudioTrack();
-    const sourceWidth = Math.round(await track.getDisplayWidth());
-    const sourceHeight = Math.round(await track.getDisplayHeight());
-    if (!sourceWidth || !sourceHeight) throw new Error('The source video dimensions could not be read.');
-    if (dimensions && (Math.abs(sourceWidth - dimensions.width) > 2 || Math.abs(sourceHeight - dimensions.height) > 2)) {
-      throw new Error('Video dimensions changed after selection. Select the file again.');
+  return {
+    blob: file,
+    sourceFps: null,
+    targetFrameRate: null,
+    report: {
+      performed: false,
+      compressionDisabled: true,
+      inputWidth: dimensions?.width || null,
+      inputHeight: dimensions?.height || null,
+      outputWidth: dimensions?.width || null,
+      outputHeight: dimensions?.height || null
     }
-    const sourceExtension = String(file.name || '').match(/\.([^.]+)$/)?.[1]?.toLowerCase();
-    const sourceCodec = String(await track.getCodec() || '').toLowerCase();
-    const sourceCodecTag = String(await track.getInternalCodecId() || '').toLowerCase();
-    const sourceAudioCodec = String(await primaryAudioTrack?.getCodec() || '').toLowerCase();
-    const isHevcSource = sourceCodec.includes('hevc') ||
-      /^(hvc1|hev1|hvc2|hev2|dvh1|dvhe)$/.test(sourceCodecTag);
-    if (isHevcSource) {
-      const sourceMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
-      const sourceFps = sourceMetrics.bestGuessFrameRate;
-      const targetFrameRate = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2
-        ? 60.05
-        : null;
-      return {
-        blob: file,
-        sourceFps,
-        targetFrameRate,
-        report: {
-          performed: false,
-          compressionDisabled: true,
-          codec: 'hevc',
-          inputWidth: sourceWidth,
-          inputHeight: sourceHeight,
-          outputWidth: sourceWidth,
-          outputHeight: sourceHeight,
-          frameRate: sourceFps
-        }
-      };
-    }
-    if (sourceExtension === 'mp4' && sourceCodec === 'avc' && sourceAudioCodec === 'aac') {
-      const [videoTracks, audioTracks] = await Promise.all([input.getVideoTracks(), input.getAudioTracks()]);
-      if (videoTracks.length === 1 && audioTracks.length === 1) {
-        const sourceMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
-        const sourceFps = sourceMetrics.bestGuessFrameRate;
-        const targetFrameRate = Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2
-          ? 60.05
-          : null;
-        return {
-          blob: file,
-          sourceFps,
-          targetFrameRate,
-          report: {
-            performed: false,
-            compressionDisabled: true,
-            codec: 'avc',
-            inputWidth: sourceWidth,
-            inputHeight: sourceHeight,
-            outputWidth: sourceWidth,
-            outputHeight: sourceHeight,
-            frameRate: sourceFps
-          }
-        };
-      }
-    }
-    const targetSize = getTargetEncodeSize(sourceWidth, sourceHeight);
-    if (!targetSize) return { blob: file, sourceFps: null, targetFrameRate: null, report: null };
-
-    const frameRateMetrics = await track.computeFrameRateMetrics({ targetPacketCount: 512 });
-    const sourceFps = frameRateMetrics.bestGuessFrameRate;
-    const targetFrameRate = sourceFps && (Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2)
-      ? 60.05
-      : null;
-    const quality = new Quality('very-high');
-    const encoderOptions = {
-      width: targetSize.width,
-      height: targetSize.height,
-      frameRate: targetFrameRate || sourceFps,
-      quality
-    };
-    if (!await canEncodeVideo('avc', encoderOptions)) {
-      throw new Error('This browser cannot encode H.264 at the requested resolution and frame rate.');
-    }
-
-    const target = new BufferTarget();
-    const output = new Output({
-      format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
-      target
-    });
-    const targetCodec = 'avc';
-    const videoOptions = {
-      ...targetSize,
-      fit: 'contain',
-      codec: targetCodec,
-      quality,
-      forceTranscode: true,
-      ...(targetFrameRate ? { frameRate: targetFrameRate } : {})
-    };
-    conversion = await Conversion.init({
-      input,
-      output,
-      tracks: 'all',
-      video: (candidate) => candidate.id === track.id ? videoOptions : { discard: true },
-      audio: (candidate) => candidate.id === primaryAudioTrack?.id
-        ? { codec: 'aac', quality: new Quality('very-high') }
-        : { discard: true }
-    });
-    if (!conversion.isValid || !conversion.utilizedTracks.some(
-      (candidate) => candidate.isVideoTrack() && candidate.id === track.id
-    )) {
-      throw new Error('This browser cannot convert the selected video and audio tracks to MP4.');
-    }
-
-    abortConversion = () => { void conversion.cancel(); };
-    signal.addEventListener('abort', abortConversion, { once: true });
-    conversion.onProgress = (progress) => onProgress?.(progress);
-    signal.throwIfAborted();
-    await conversion.execute();
-    signal.throwIfAborted();
-
-    if (!target.buffer) throw new Error('The MP4 encoder returned no output.');
-    if (target.buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
-    const outputBlob = new Blob([target.buffer], { type: 'video/mp4' });
-
-    const inspectOutput = async (blob) => {
-      let verificationInput = null;
-      try {
-        verificationInput = new Input({
-          source: new BlobSource(blob),
-          formats: ALL_FORMATS
-        });
-        const outputTrack = await verificationInput.getPrimaryVideoTrack();
-        if (!outputTrack) throw new Error('The encoded MP4 has no readable video track.');
-        const outputWidth = Math.round(await outputTrack.getDisplayWidth());
-        const outputHeight = Math.round(await outputTrack.getDisplayHeight());
-        const outputCodec = String(await outputTrack.getCodec() || '').toLowerCase();
-        if (outputCodec !== targetCodec) {
-          throw new Error(`Expected H.264 output, received ${outputCodec || 'unknown codec'}.`);
-        }
-        let outputFps;
-        try {
-          const outputMetrics = await outputTrack.computeFrameRateMetrics({ targetPacketCount: 512 });
-          outputFps = Number(outputMetrics.bestGuessFrameRate);
-        } catch (error) {
-          console.warn('[INEASY] Browser could not inspect MP4 packet timing; using MP4 metadata.', error);
-        }
-        if (!Number.isFinite(outputFps) || outputFps <= 0) {
-          const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
-          if (!core?.inspectMediaInfo) throw new Error('The encoded MP4 frame rate could not be verified.');
-          const probeBytes = new Uint8Array(await blob.slice(0, Math.min(blob.size, 32 * 1024 * 1024)).arrayBuffer());
-          const mediaInfo = core.inspectMediaInfo(probeBytes);
-          outputFps = Number(mediaInfo.averageFps);
-        }
-        if (!Number.isFinite(outputWidth) || !Number.isFinite(outputHeight) ||
-            !Number.isFinite(outputFps) || outputFps <= 0) {
-          throw new Error('The encoded MP4 has invalid video metadata.');
-        }
-        return { width: outputWidth, height: outputHeight, averageFps: outputFps, codec: outputCodec };
-      } catch (verificationError) {
-        if (/Expected H\.264 output/.test(verificationError.message || '')) throw verificationError;
-        const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
-        if (!core?.inspectMediaInfo) throw verificationError;
-        const probeBytes = new Uint8Array(await blob.slice(0, Math.min(blob.size, 32 * 1024 * 1024)).arrayBuffer());
-        const mediaInfo = core.inspectMediaInfo(probeBytes);
-        const outputCodec = String(mediaInfo.codecFamily || mediaInfo.codec || '').toLowerCase();
-        if (outputCodec !== targetCodec) {
-          throw new Error(`Expected H.264 output, received ${outputCodec || 'unknown codec'}.`);
-        }
-        return {
-          width: Math.round(mediaInfo.width),
-          height: Math.round(mediaInfo.height),
-          averageFps: Number(mediaInfo.averageFps),
-          codec: outputCodec
-        };
-      } finally {
-        verificationInput?.dispose();
-      }
-    };
-
-    let outputInfo;
-    outputInfo = await inspectOutput(outputBlob);
-    if (Math.abs(outputInfo.width - targetSize.width) > 2 ||
-        Math.abs(outputInfo.height - targetSize.height) > 2) {
-      throw new Error(`The output resolution is ${outputInfo.width}×${outputInfo.height}, expected ${targetSize.width}×${targetSize.height}.`);
-    }
-    if (targetFrameRate && Math.abs(outputInfo.averageFps - targetFrameRate) > 0.02) {
-      throw new Error(`The output frame rate is ${outputInfo.averageFps.toFixed(3)} FPS, expected ${targetFrameRate} FPS.`);
-    }
-
-    return {
-      blob: outputBlob,
-      sourceFps,
-      targetFrameRate,
-      outputInfo,
-      report: {
-        performed: true,
-        compressionDisabled: false,
-        codec: targetCodec,
-        quality: 'very-high',
-        inputWidth: sourceWidth,
-        inputHeight: sourceHeight,
-        outputWidth: outputInfo.width,
-        outputHeight: outputInfo.height,
-        frameRate: outputInfo.averageFps
-      }
-    };
-  } catch (error) {
-    if (signal.aborted) throw new Error('processing_cancelled');
-    if (error.message === 'video_file_over_limit') throw error;
-    throw new Error(`AUTO_VIDEO_CONVERSION_FAILED:${error.message || 'unsupported video'}`);
-  } finally {
-    if (abortConversion) signal.removeEventListener('abort', abortConversion);
-    input.dispose();
-  }
+  };
 }
 
 function getPostingDeviceForPlatform() {
@@ -2127,7 +1887,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261010-34');
+        const worker = new Worker('adjn-worker.js?v=20261010-35');
 
         worker.onmessage = (e) => {
           const msg = e.data;

@@ -322,11 +322,6 @@
       fragmented: !!sniff?.fragmented, tracks: []
     };
     const sourceFps = Number(sourceInfo.maxFps || sourceInfo.averageFps || 0);
-    const sourceCodecFamily = String(sourceInfo.codecFamily || sniff?.codecFamily || '').toLowerCase();
-    if (sniff?.container !== 'mov' && sourceCodecFamily !== 'hevc' &&
-        (Math.abs(sourceFps - 60) <= 0.01 || Math.abs(sourceFps - 59.94) <= 0.02)) {
-      throw new Error(`fps_retime_failed: ${reason || 'unsupported MP4 timing layout'}`);
-    }
     const sourceHdr = hdr || detectHdrProfile(original, sourceInfo);
     const output = original.slice();
     if (!exactBytesEqual(original, output)) throw new Error('Universal Safe: byte passthrough verification gagal.');
