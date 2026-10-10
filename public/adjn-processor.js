@@ -3,6 +3,11 @@
   let busy = false;
 
   let stageCallback = null;
+  function send(type, payload = {}) {
+    if (typeof parent !== 'undefined' && typeof window !== 'undefined' && parent && parent !== window) {
+      parent.postMessage({ source: 'FRY_PROCESSOR', type, ...payload }, '*');
+    }
+  }
   function stage(requestId, key, label, progress, detail = '') {
     if (typeof stageCallback === 'function') {
       try { stageCallback(label, progress, detail, key); } catch (_) {}
