@@ -1808,8 +1808,15 @@ app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
     if (!post) throw new Error('Zernio did not return a post result.');
     const platformResult = (post.platforms || []).find((item) => item.platform === 'tiktok');
     if (post.status === 'failed' || platformResult?.status === 'failed') {
+      const platformError = platformResult?.errorMessage || post.errorMessage || 'tiktok_publish_failed';
+      console.error('[TikTok publish] platform returned failed status', {
+        postId: post._id || post.id || null,
+        postStatus: post.status || null,
+        platformStatus: platformResult?.status || null,
+        error: platformError,
+      });
       await redis.del(idempotencyKeyName);
-      return res.status(502).json({ error: platformResult?.errorMessage || post.errorMessage || 'tiktok_publish_failed' });
+      return res.status(502).json({ error: platformError });
     }
     await redis.del(readyUploadKey, idempotencyKeyName);
     res.status(201).json({ post, draft: false });
