@@ -985,8 +985,8 @@ const clearBtn = document.getElementById('clearBtn');
   const update = () => {
     const selected = document.querySelector('input[name="patcherVersion"]:checked')?.value || 'v1';
     if (note) note.textContent = selected === 'v2'
-      ? 'V2 Beta экспериментальная. Движок Rein ещё не подключён к веб-воркеру, поэтому пока используйте V1.'
-      : 'Если V1 не работает или опубликованное видео дёргается, попробуйте V2 Beta.';
+      ? 'V2 Beta — попробуйте её, если V1 лагает или не работает.'
+      : 'Обычный режим. Используйте V2 Beta, если V1 лагает или не работает.';
   };
   inputs.forEach((input) => input.addEventListener('change', update));
   update();
