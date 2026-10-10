@@ -1668,6 +1668,7 @@ app.post('/api/tiktok/media/presign', requireUserToken, async (req, res) => {
     const uploadRecord = JSON.stringify({
       uploadUrl: result.uploadUrl,
       publicUrl: result.publicUrl,
+      requiredHeaders: result.requiredHeaders && typeof result.requiredHeaders === 'object' ? result.requiredHeaders : {},
       contentType,
       size,
     });
