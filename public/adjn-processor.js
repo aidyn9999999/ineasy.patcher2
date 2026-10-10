@@ -404,6 +404,7 @@
     let info = null;
     let hdr = null;
     let compat = null;
+    let smartResolutionReport = null;
 
     try {
       info = core.inspectMediaInfo(original);
@@ -413,6 +414,11 @@
         throw new Error('TikTok-safe policy: HDR/BT.2020 detected. Convert video to SDR first, then patch again.');
       }
       compat = core.inspectCompatibility(original);
+      try {
+        smartResolutionReport = globalThis.SmartResolution?.decideResolution(info, { engine: 'none', retimeRequested: false }) || null;
+      } catch (_) {
+        smartResolutionReport = null;
+      }
     } catch (inspectError) {
       hdr = detectHdrProfile(original, info || sniff);
       if (isHdrProfile(hdr)) throw new Error('hdr_video_not_supported');
@@ -522,6 +528,7 @@
         ...(result.report || {}),
         passthrough: false,
         sourceResolution: `${info.width}x${info.height}`,
+        smartResolution: smartResolutionReport,
         outputResolution: `${outputInfo.width}x${outputInfo.height}`,
         resolutionPreserved: true,
         fpsPreserved: !mediaContract.frameRateRetimed,
