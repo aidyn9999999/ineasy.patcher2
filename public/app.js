@@ -2014,9 +2014,11 @@ if (processBtn) {
 
       if (controller.signal.aborted) throw new Error('processing_cancelled');
 
-      const outputBytes = result.outputMime === 'video/mp4'
-        ? appendMp4Padding(result.output)
-        : result.output;
+      // V2 is a byte-preservation path: do not append even a harmless MP4 free box.
+      // This keeps the downloaded file byte-for-byte identical to the selected source.
+      const outputBytes = result.passthrough || getSelectedPatcherVersion() === 'v2'
+        ? result.output
+        : (result.outputMime === 'video/mp4' ? appendMp4Padding(result.output) : result.output);
       const outputBlob = new Blob([outputBytes], { type: result.outputMime || 'video/mp4' });
 
       await consumeProcessedVideo();
