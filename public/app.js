@@ -583,6 +583,13 @@ async function tiktokApi(url, options = {}) {
   const response = await fetch(url, { ...options, headers });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (response.status === 401 && ['authentication_expired', 'authentication_required'].includes(data.error)) {
+      removeBrowserValue('tg_id');
+      removeBrowserValue('tg_auth_token');
+      const error = new Error('authentication_expired');
+      error.status = 401;
+      throw error;
+    }
     const error = new Error(data.error || 'tiktok_request_failed');
     error.status = response.status;
     throw error;
@@ -1006,8 +1013,8 @@ const clearBtn = document.getElementById('clearBtn');
   const update = () => {
     const selected = document.querySelector('input[name="patcherVersion"]:checked')?.value || 'v1';
     if (note) note.textContent = selected === 'v2'
-      ? 'V2 Beta — попробуйте её, если V1 лагает или не работает.'
-      : 'Обычный режим. Используйте V2 Beta, если V1 лагает или не работает.';
+      ? 'Используйте V2, если в V1 видео лагает или обработка не работает.'
+      : 'Обычный режим. Если V1 лагает или не работает, выберите V2.';
   };
   inputs.forEach((input) => input.addEventListener('change', update));
   update();
@@ -2098,12 +2105,12 @@ function localizePatchError(message) {
     return `${text}: ${fpsRetimingFailure[1]}`;
   }
   const knownErrors = [
-    { test: /V2_BETA_ENGINE_NOT_INSTALLED/i, ru: 'V2 Beta пока недоступна. Пока выберите V1 и попробуйте позже.', kk: 'V2 Beta әзірге қолжетімсіз. Әзірге V1 таңдап, кейінірек қайталап көріңіз.', en: 'V2 Beta is not available yet. Please use V1 for now and try again later.' },
+    { test: /V2_BETA_ENGINE_NOT_INSTALLED/i, ru: 'Вариант V2 пока не подключён. Выберите V1, пока мы завершаем подключение.', kk: 'V2 нұсқасы әлі қосылмаған. Қосылуы аяқталғанша V1 таңдаңыз.', en: 'V2 is not connected yet. Please use V1 while integration is being completed.' },
     { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
     { test: /hdr_video_not_supported/i, ru: 'Сейчас принимаются только SDR-видео. HDR-обработка временно отключена.', kk: 'Қазір тек SDR бейнелер қабылданады. HDR өңдеуі уақытша өшірілген.', en: 'Only SDR videos are accepted right now. HDR processing is temporarily disabled.' },
-    { test: /ADJN engine not loaded|Worker crashed|Script error/i, ru: 'Не удалось загрузить модуль обработки. Обновите страницу и откройте сайт в Chrome или Safari.', kk: 'Өңдеу модулін жүктеу мүмкін болмады. Бетті жаңартып, сайтты Chrome немесе Safari арқылы ашыңыз.', en: 'Could not load the processing module. Refresh the page and open the site in Chrome or Safari.' },
+    { test: /engine not loaded|Worker crashed|Script error/i, ru: 'Не удалось загрузить модуль обработки. Обновите страницу и откройте сайт в Chrome или Safari.', kk: 'Өңдеу модулін жүктеу мүмкін болмады. Бетті жаңартып, сайтты Chrome немесе Safari арқылы ашыңыз.', en: 'Could not load the processing module. Refresh the page and open the site in Chrome or Safari.' },
     { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },
     { test: /video_over_60_seconds/i, ru: t('videoTooLong'), kk: t('videoTooLong'), en: t('videoTooLong') },
     { test: /video_duration_unavailable/i, ru: t('videoDurationUnavailable'), kk: t('videoDurationUnavailable'), en: t('videoDurationUnavailable') },
