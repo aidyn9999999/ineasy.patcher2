@@ -1029,7 +1029,7 @@ const clearBtn = document.getElementById('clearBtn');
         : 'V1 — обычный режим. Если после публикации видео стало 30 FPS, попробуйте FFmpeg: экспорт H.264/AAC с исходной частотой кадров может помочь.';
       note.classList.toggle('v1-highlight', selected === 'v1');
     }
-    if (fpsAdvice) fpsAdvice.classList.toggle('hidden', selected !== 'v1');
+    if (fpsAdvice) fpsAdvice.classList.toggle('hidden', selected !== 'v1' || Boolean(picker?.classList.contains('hidden')));
     if (picker) picker.classList.toggle('has-v1-selected', selected === 'v1');
   };
   inputs.forEach((input) => input.addEventListener('change', update));
