@@ -1600,6 +1600,17 @@ async function handleFile(file) {
     return;
   }
 
+  // Show the selected file immediately; metadata validation can be slow on Safari for large MOV/MP4 files.
+  if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+  currentObjectUrl = URL.createObjectURL(file);
+  if (previewVideo) {
+    previewVideo.src = currentObjectUrl;
+    previewVideo.preload = 'metadata';
+    previewVideo.playsInline = true;
+  }
+  if (fileMeta) fileMeta.textContent = `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+  if (previewWrap) previewWrap.classList.add('show');
+
   document.querySelector('.patcher-version-picker')?.classList.remove('hidden');
   document.getElementById('patcherVersionNote')?.classList.remove('hidden');
   document.getElementById('fpsAdvice')?.classList.toggle('hidden', getSelectedPatcherVersion() !== 'v1');
@@ -1621,16 +1632,10 @@ async function handleFile(file) {
     return;
   }
   selectedVideoDimensions = dimensions;
-  if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
   patchedDownloadUrl = null;
   processedVideoBlob = null;
-    if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
-  currentObjectUrl = URL.createObjectURL(file);
-
-  if (previewVideo) previewVideo.src = currentObjectUrl;
-  if (fileMeta) fileMeta.textContent = `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
-  if (previewWrap) previewWrap.classList.add('show');
+  if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
   if (postingDeviceSelect) postingDeviceSelect.value = getPostingDeviceForPlatform();
   updateProcessButton();
   if (processingState) processingState.classList.add('hidden');
