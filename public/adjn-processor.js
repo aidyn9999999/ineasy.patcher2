@@ -3,7 +3,6 @@
   let busy = false;
 
   let stageCallback = null;
-  }
   function stage(requestId, key, label, progress, detail = '') {
     if (typeof stageCallback === 'function') {
       try { stageCallback(label, progress, detail, key); } catch (_) {}
