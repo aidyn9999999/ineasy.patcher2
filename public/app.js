@@ -578,6 +578,7 @@ function t(key) {
 
 async function tiktokApi(url, options = {}) {
   const headers = new Headers(options.headers || {});
+  if (tgAuthToken && !headers.has('Authorization')) headers.set('Authorization', `Bearer ${tgAuthToken}`);
   if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   const response = await fetch(url, { ...options, headers });
   const data = await response.json().catch(() => ({}));
@@ -2076,12 +2077,12 @@ function localizePatchError(message) {
     return `${text}: ${fpsRetimingFailure[1]}`;
   }
   const knownErrors = [
-    { test: /V2_BETA_ENGINE_NOT_INSTALLED/i, ru: 'V2 Beta пока не подключена к движку Rein. Выберите V1 (ADJN), пока идёт интеграция.', kk: 'V2 Beta әзірге Rein қозғалтқышына қосылмаған. Интеграция аяқталғанша V1 (ADJN) таңдаңыз.', en: 'V2 Beta is not connected to the Rein engine yet. Choose V1 (ADJN) until integration is complete.' },
+    { test: /V2_BETA_ENGINE_NOT_INSTALLED/i, ru: 'V2 Beta пока недоступна. Пока выберите V1 и попробуйте позже.', kk: 'V2 Beta әзірге қолжетімсіз. Әзірге V1 таңдап, кейінірек қайталап көріңіз.', en: 'V2 Beta is not available yet. Please use V1 for now and try again later.' },
     { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
     { test: /hdr_video_not_supported/i, ru: 'Сейчас принимаются только SDR-видео. HDR-обработка временно отключена.', kk: 'Қазір тек SDR бейнелер қабылданады. HDR өңдеуі уақытша өшірілген.', en: 'Only SDR videos are accepted right now. HDR processing is temporarily disabled.' },
-    { test: /ADJN engine not loaded|Worker crashed|Script error/i, ru: 'Не удалось загрузить локальный ADJN-модуль. Обновите страницу и откройте сайт в Chrome или Safari.', kk: 'ADJN модулін жүктеу мүмкін болмады. Бетті жаңартып, сайтты Chrome немесе Safari арқылы ашыңыз.', en: 'Could not load the local ADJN module. Refresh the page and open the site in Chrome or Safari.' },
+    { test: /ADJN engine not loaded|Worker crashed|Script error/i, ru: 'Не удалось загрузить модуль обработки. Обновите страницу и откройте сайт в Chrome или Safari.', kk: 'Өңдеу модулін жүктеу мүмкін болмады. Бетті жаңартып, сайтты Chrome немесе Safari арқылы ашыңыз.', en: 'Could not load the processing module. Refresh the page and open the site in Chrome or Safari.' },
     { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },
     { test: /video_over_60_seconds/i, ru: t('videoTooLong'), kk: t('videoTooLong'), en: t('videoTooLong') },
     { test: /video_duration_unavailable/i, ru: t('videoDurationUnavailable'), kk: t('videoDurationUnavailable'), en: t('videoDurationUnavailable') },
