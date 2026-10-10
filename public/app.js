@@ -590,6 +590,27 @@ async function tiktokApi(url, options = {}) {
   return data;
 }
 
+function localizeTikTokPublishError(message) {
+  const error = String(message || '').trim();
+  if (/session[ _-]*(failed|expired)|tiktok.*session|session.*tiktok/i.test(error)) {
+    return ({
+      ru: 'Сессия TikTok истекла или не прошла проверку. Подключите аккаунт TikTok заново в разделе публикации и повторите попытку.',
+      kk: 'TikTok сеансы аяқталған немесе тексеруден өтпеді. Жариялау бөлімінде TikTok аккаунтын қайта қосып, қайталап көріңіз.',
+      en: 'The TikTok session expired or could not be verified. Reconnect your TikTok account in the publishing section and try again.'
+    })[STATE.lang] || 'Reconnect your TikTok account and try again.';
+  }
+  if (/authentication_required|authentication_expired/i.test(error)) return t('authExpired');
+  if (/tiktok_account_not_connected|account.*not.*connected/i.test(error)) return t('connectHint');
+  if (/upload_not_found_or_expired|upload_expired/i.test(error)) {
+    return ({
+      ru: 'Время загрузки файла истекло. Повторите публикацию, чтобы загрузить видео заново.',
+      kk: 'Файлды жүктеу уақыты аяқталды. Бейнені қайта жүктеу үшін жариялауды қайталаңыз.',
+      en: 'The upload expired. Try publishing again to upload the video again.'
+    })[STATE.lang] || t('publishFailed');
+  }
+  return error || t('publishFailed');
+}
+
 function setText(id, value) {
   const node = document.getElementById(id);
   if (node) node.textContent = value;
@@ -1329,7 +1350,7 @@ if (tiktokPublishForm) {
       if (tiktokPublishStatus) {
         tiktokPublishStatus.textContent = error.status === 401
           ? t('authExpired')
-          : error.message === 'invalid_zernio_api_key' ? t('invalidZernioKey') : (error.message || t('publishFailed'));
+          : error.message === 'invalid_zernio_api_key' ? t('invalidZernioKey') : localizeTikTokPublishError(error.message);
       }
     } finally {
       tiktokSubmitBtn.disabled = false;
