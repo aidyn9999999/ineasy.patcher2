@@ -1946,7 +1946,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261010-41');
+        const worker = new Worker('adjn-worker.js?v=20261010-42');
 
         worker.onmessage = (e) => {
           const msg = e.data;
@@ -2107,7 +2107,7 @@ function localizePatchError(message) {
     return `${text}: ${fpsRetimingFailure[1]}`;
   }
   const knownErrors = [
-    { test: /V2_BETA_ENGINE_NOT_INSTALLED/i, ru: 'Вариант V2 пока не подключён. Выберите V1, пока мы завершаем подключение.', kk: 'V2 нұсқасы әлі қосылмаған. Қосылуы аяқталғанша V1 таңдаңыз.', en: 'V2 is not connected yet. Please use V1 while integration is being completed.' },
+    { test: /V2_BETA_ENGINE_NOT_LOADED/i, ru: 'Не удалось загрузить модуль V2. Обновите страницу и попробуйте ещё раз.', kk: 'V2 модулін жүктеу мүмкін болмады. Бетті жаңартып, қайталап көріңіз.', en: 'Could not load the V2 module. Refresh the page and try again.' },
     { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
