@@ -586,6 +586,8 @@ async function tiktokApi(url, options = {}) {
     if (response.status === 401 && ['authentication_expired', 'authentication_required'].includes(data.error)) {
       removeBrowserValue('tg_id');
       removeBrowserValue('tg_auth_token');
+      // Return to the sign-in page so a stale site session can be renewed.
+      window.location.replace('/');
       const error = new Error('authentication_expired');
       error.status = 401;
       throw error;
