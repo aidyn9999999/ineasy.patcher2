@@ -356,9 +356,11 @@
     return list;
   }
 
-  function getTargetFrameRate(sourceFps) {
-    if (Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2) return 60.05;
-    if (Math.abs(sourceFps - 30) <= 0.2) return 30.05;
+  // Preserve the source timeline exactly. Do not rewrite 59.94/60 FPS to
+  // 60.05 FPS or 30 FPS to 30.05 FPS: non-standard retiming can introduce
+  // uneven playback and trigger another platform transcode. The patcher only
+  // edits container metadata, so it must not alter the source frame cadence.
+  function getTargetFrameRate(_sourceFps) {
     return null;
   }
 
