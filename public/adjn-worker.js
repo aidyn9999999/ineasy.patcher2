@@ -7,7 +7,7 @@
 
 // We need to import the core and processor scripts into the worker context.
 // importScripts is synchronous and available in dedicated workers.
-importScripts('adjn-mp4-core.js?v=20261010-16', 'adjn-processor.js?v=20261010-18');
+importScripts('adjn-mp4-core.js?v=20261010-16', 'adjn-processor.js?v=20261010-20');
 
 const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
 
@@ -28,12 +28,19 @@ self.onmessage = async function (event) {
     }
     self.postMessage({ type: 'STAGE', requestId, phase: 'analyzing', progress: 3 });
 
-    if (!globalThis.ADJNVideoProcessor?.processVideoDirect) {
+    if (engine === 'rein-beta') {
+      if (!globalThis.ReinVideoProcessor?.processVideoDirect) {
+        throw new Error('V2_BETA_ENGINE_NOT_INSTALLED');
+      }
+    } else if (!globalThis.ADJNVideoProcessor?.processVideoDirect) {
       throw new Error('ADJN engine not loaded in worker.');
     }
 
     self.postMessage({ type: 'STAGE', requestId, phase: 'patching', progress: 10 });
-    const result = await globalThis.ADJNVideoProcessor.processVideoDirect(
+    const processor = engine === 'rein-beta'
+      ? globalThis.ReinVideoProcessor
+      : globalThis.ADJNVideoProcessor;
+    const result = await processor.processVideoDirect(
       {
         requestId,
         buffer: inputBuffer,
