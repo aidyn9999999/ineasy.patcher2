@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261010-59">
 <link rel="stylesheet" href="home.css?v=20261009-1">
 </head>
 <body>
@@ -96,7 +96,7 @@
         </div>
         <div class="workflow-grid">
           <article class="workflow-step"><span class="workflow-number">01</span><h3 id="stepOneTitle">Загрузите готовый монтаж</h3><p id="stepOneBody">Добавьте видео после монтажа: музыку, текст и эффекты подготовьте заранее.</p></article>
-          <article class="workflow-step"><span class="workflow-number">02</span><h3 id="stepTwoTitle">Нажмите «Обработать видео»</h3><p id="stepTwoBody">Тяжёлое SDR локально оптимизируется с сохранением разрешения и FPS, затем проходит через исходный ADJN-патчер. HDR временно отключён.</p></article>
+          <article class="workflow-step"><span class="workflow-number">02</span><h3 id="stepTwoTitle">Нажмите «Обработать видео»</h3><p id="stepTwoBody">Видео локально подготавливается с сохранением разрешения и FPS. HDR временно отключён.</p></article>
           <article class="workflow-step"><span class="workflow-number">03</span><h3 id="stepThreeTitle">Опубликуйте через Zernio</h3><p id="stepThreeBody">Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и отправьте видео в TikTok.</p></article>
         </div>
         <div class="home-local-note"><span class="home-local-icon" aria-hidden="true">↗</span><p id="localProcessingCopy">Видео и звук остаются на устройстве. Видео выше 1080p или неподдерживаемого формата может локально подготавливаться в браузере; обычный MP4 не перекодируется патчером.</p></div>
@@ -148,14 +148,14 @@
       <div class="patcher-version-picker" role="group" aria-label="Patcher version">
         <label class="patcher-version-option">
           <input type="radio" name="patcherVersion" value="v1" checked>
-          <span><strong>V1</strong><small>ADJN · основной</small></span>
+          <span><strong>V1</strong><small>Обычный · используйте его</small></span>
         </label>
         <label class="patcher-version-option patcher-version-beta">
           <input type="radio" name="patcherVersion" value="v2">
-          <span><strong>V2 <em>BETA</em></strong><small>Rein · экспериментальный</small></span>
+          <span><strong>V2 <em>BETA</em></strong><small>Если V1 лагает или не работает</small></span>
         </label>
       </div>
-      <p class="patcher-version-note" id="patcherVersionNote">Если V1 не работает или опубликованное видео дёргается, попробуйте V2 Beta.</p>
+      <p class="patcher-version-note" id="patcherVersionNote">Если V1 лагает или не работает, попробуйте V2 Beta.</p>
       <button class="process-btn" id="processBtn" type="button" disabled>Process video</button>
       <div class="processing-state hidden" id="processingState">
         <span class="processing-spinner"></span>
@@ -351,7 +351,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261010-20"></script>
-<script src="app.js?v=20261010-58"></script>
+<script src="app.js?v=20261010-59"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
