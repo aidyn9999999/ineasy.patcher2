@@ -162,8 +162,8 @@
     const problems = [];
     const inputFps = Number(inputInfo.averageFps);
     const targetFrameRate = Math.abs(inputFps - 30) <= 0.2
-      ? 30.05
-      : Math.abs(inputFps - 60) <= 0.2 || Math.abs(inputFps - 59.94) <= 0.2 ? 60.05 : null;
+      ? 29.97
+      : Math.abs(inputFps - 60) <= 0.2 || Math.abs(inputFps - 59.94) <= 0.2 ? 59.94 : null;
     const validRetiming = frameRateRetimed === true &&
       targetFrameRate !== null &&
       Math.abs(Number(outputInfo.averageFps) - targetFrameRate) < 0.001 &&
@@ -470,10 +470,36 @@
     stage(requestId, 'remuxing', 'Lagi remux…', 45, 'Menata container • video bitstream tidak disentuh');
     await new Promise(r => setTimeout(r, 0));
 
+    // Smart Auto + HEVC (H.265): если доступен ffmpeg-рантайм и файл подходит,
+    // сначала выполняется ОДНО перекодирование в hvc1 с автоматическим CRF по
+    // параметрам источника (разрешение/FPS/ориентация сохраняются). Затем к
+    // результату применяется НЕ трогая тайминги — стандартный патчер сохраняет
+    // честную каденту 59.94 из энкодера. Если HEVC недоступен или упал — полный
+    // fallback на прежний путь без перекодирования (файл не портится, причина в логе).
+    let hevcBytes = null;
+    const hevcRequested = data.hevc !== false && data.outputCodec !== 'h264';
+    if (hevcRequested && globalThis.ADJNHevcEncoder?.isAvailable()) {
+      try {
+        const encRes = await globalThis.ADJNHevcEncoder.encode({
+          bytes: original, info, requestId, stage,
+          crf: Number(data.hevcCrf) || 20
+        });
+        if (encRes.ok) {
+          hevcBytes = encRes.bytes;
+          stage(requestId, 'patching', 'HEVC готово • 59.94 FPS • без повторного кодирования…', 64,
+            `hvc1 crf ${encRes.report.crf} • ${info.width}×${info.height} • ${encRes.report.frameRateFraction}`);
+        } else {
+          stage(requestId, 'patching', 'HEVC недоступен — безопасный fallback…', 60, encRes.reason);
+        }
+      } catch (e) {
+        stage(requestId, 'patching', 'HEVC ошибка — безопасный fallback…', 60, e?.message || String(e));
+      }
+    }
+
     let result;
     try {
       stage(requestId, 'patching', 'Applying ADJN patch…', 66, engineProfile.source);
-      result = core.patchWithReport(original);
+      result = core.patchWithReport(hevcBytes || original);
       if (result?.report) result.report.engine = engineProfile.source;
     } catch (patchError) {
       stage(requestId, 'patching', 'Fallback Universal Safe…', 72, 'Patch klasik tidak aman untuk file ini • pakai byte-identical passthrough');
@@ -482,13 +508,13 @@
 
     const output = asU8(result?.bytes);
     if (output.byteLength < 64) throw new Error('ADJN Core menghasilkan file kosong.');
-    if (output.byteLength < original.byteLength) {
+    if (!hevcBytes && output.byteLength < original.byteLength) {
       throw new Error(`SIZE GUARD: hasil ${output.byteLength} byte lebih kecil dari source ${original.byteLength} byte.`);
     }
 
     stage(requestId, 'finalizing', 'Lagi nyelesaiin…', 90, 'Verifikasi resolusi + FPS + codec + HDR/Dolby Vision + bitstream');
     const verification = core.verifyOutput(original, output);
-    if (verification.videoBitstreamByteIdentical !== true) {
+    if (!hevcBytes && verification.videoBitstreamByteIdentical !== true) {
       return passthroughResult(original, data, 'verifikasi video patch tidak identik', info, hdr, sniff);
     }
     if (result.report?.mdatByteIdentical === false) {
@@ -505,6 +531,21 @@
       mediaContract = verifyMediaContract(
         info, outputInfo, hdr, outputHdr, result.report?.frameRateRetimed
       );
+      if (hevcBytes) {
+        // HEVC-путь: кодек/битрейт изменились по дизайнy (одно перекодирование).
+        // Обязательные инварианты проверяем явно: разрешение, кадры, длительность,
+        // честная кадента (никаких 60.05), аудио на месте.
+        const encInfo = core.inspectMediaInfo(hevcBytes);
+        const problems = [];
+        if (Math.round(encInfo.width) !== Math.round(outputInfo.width) ||
+            Math.round(encInfo.height) !== Math.round(outputInfo.height)) problems.push('resolution changed by patch after encode');
+        if (encInfo.videoSamples !== outputInfo.videoSamples) problems.push('frame count changed');
+        if (Math.abs(encInfo.averageFps - outputInfo.averageFps) > 0.001) problems.push('fps changed by patch after encode');
+        if (Math.abs(outputInfo.averageFps - 60.05) < 0.05 || Math.abs(outputInfo.averageFps - 30.05) < 0.05) problems.push('fake cadence 60.05/30.05 detected');
+        if (!/^(hvc1|hev1)$/i.test(String(outputInfo.codec))) problems.push('output not hvc1/hev1: ' + outputInfo.codec);
+        if (problems.length) return passthroughResult(original, data, 'HEVC contract: ' + problems.join('; '), info, hdr, sniff);
+        mediaContract.hevcVerified = true;
+      }
       Object.assign(verification, mediaContract);
     } catch (verifyError) {
       return passthroughResult(original, data, verifyError?.message || 'codec/HDR contract tidak lolos', info, hdr, sniff);
@@ -518,6 +559,8 @@
       outputHdr,
       report: {
         ...(result.report || {}),
+        hevc: hevcBytes ? { applied: true, encoder: 'libx265', tag: 'hvc1' } : { applied: false, reason: hevcRequested ? 'fallback: metadata-patch tanpa re-encode' : 'отключено пользователем' },
+        smartAuto: { frameRatePolicy: 'honest-cadence-59.94', fakeRetimeRemoved: true },
         passthrough: false,
         sourceResolution: `${info.width}x${info.height}`,
         outputResolution: `${outputInfo.width}x${outputInfo.height}`,

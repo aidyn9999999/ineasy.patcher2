@@ -356,9 +356,15 @@
     return list;
   }
 
+  // Smart Auto: целевая честная кадента 59.94 (60000/1001). TikTok/iOS стабильно
+  // обрабатывают именно эту стандартную NTSC-каденту; фиктивные 60.05 больше не
+  // используются (именно они давали дрейф таймингов и лаги после публикации).
+  const TARGET_CADENCE_NUM = 60000;
+  const TARGET_CADENCE_DEN = 1001;
+
   function getTargetFrameRate(sourceFps) {
-    if (Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2) return 60.05;
-    if (Math.abs(sourceFps - 30) <= 0.2) return 30.05;
+    if (Math.abs(sourceFps - 60) <= 0.2 || Math.abs(sourceFps - 59.94) <= 0.2) return 59.94;
+    if (Math.abs(sourceFps - 30) <= 0.2) return 29.97;
     return null;
   }
 
@@ -378,7 +384,7 @@
     const mediaDurationSize = mediaVersion === 1 ? 8 : 4;
     if ((mediaVersion !== 0 && mediaVersion !== 1) ||
         mdhd.payload.length < mediaDurationOffset + mediaDurationSize) {
-      throwError('Unsupported MP4 media header for 60.05 FPS.');
+      throwError('Unsupported MP4 media header for 59.94 FPS.');
     }
 
     const sourceTimescale = readU32(mdhd.payload, mediaTimescaleOffset);
@@ -391,20 +397,24 @@
     const sourceFps = sourceDuration > 0 ? frameCount * sourceTimescale / sourceDuration : 0;
     const targetFrameRate = getTargetFrameRate(sourceFps);
     if (!targetFrameRate) return false;
-    const targetTimescale = targetFrameRate === 60.05 ? 1201 : 601;
-    const targetFrameDuration = 20;
+    // Честная кадента: timescale 60000, кадр = 1001 тик => ровно 59.94005994 FPS
+    // (стандарт NTSC, который TikTok/iOS обрабатывают без дрейфа). Для 29.97 —
+    // та же дробь с удвоенным кадром. Никаких фиктивных 60.05/30.05.
+    let targetTimescale = TARGET_CADENCE_NUM;
+    let targetFrameDuration = TARGET_CADENCE_DEN;
+    if (targetFrameRate === 29.97) targetFrameDuration = TARGET_CADENCE_DEN * 2;
     if (!mvhd || !tkhd) {
-      throwError('Cannot safely set 60.05 FPS on this MP4 track.');
+      throwError('Cannot safely set 59.94 FPS on this MP4 track.');
     }
     if (!frameCount || !sourceTimescale || Math.abs(sourceDuration - sourceTicks) > 1 ||
         new Set(timingEntries.map(entry => entry[1])).size !== 1) {
-      throwError('60/59.94 FPS video has variable or inconsistent timestamps; 60.05 FPS cannot be set safely.');
+      throwError('60/59.94 FPS video has variable or inconsistent timestamps; 59.94 FPS cannot be set safely.');
     }
 
     const movieVersion = mvhd.payload[0];
     const movieTimescaleOffset = movieVersion === 1 ? 20 : 12;
     if ((movieVersion !== 0 && movieVersion !== 1) || mvhd.payload.length < movieTimescaleOffset + 4) {
-      throwError('Unsupported MP4 movie header for 60.05 FPS.');
+      throwError('Unsupported MP4 movie header for 59.94 FPS.');
     }
     const movieTimescale = readU32(mvhd.payload, movieTimescaleOffset);
     const trackVersion = tkhd.payload[0];
@@ -412,14 +422,14 @@
     const trackDurationSize = trackVersion === 1 ? 8 : 4;
     if ((trackVersion !== 0 && trackVersion !== 1) ||
         tkhd.payload.length < trackDurationOffset + trackDurationSize) {
-      throwError('Unsupported MP4 track header for 60.05 FPS.');
+      throwError('Unsupported MP4 track header for 59.94 FPS.');
     }
 
     const outputDuration = frameCount * targetFrameDuration;
     let outputTrackDuration = Math.round(outputDuration * movieTimescale / targetTimescale);
     if (!Number.isSafeInteger(outputDuration) ||
         (trackDurationSize === 4 && outputTrackDuration > 0xffffffff)) {
-      throwError('MP4 video duration exceeds the supported range for 60.05 FPS.');
+      throwError('MP4 video duration exceeds the supported range for 59.94 FPS.');
     }
 
     const editList = trak.path('edts', 'elst');
@@ -486,7 +496,7 @@
     if (ctts) {
       const compositionVersion = ctts.payload[0];
       if (compositionVersion !== 0 && compositionVersion !== 1) {
-        throwError('Unsupported MP4 composition offsets for 60.05 FPS.');
+        throwError('Unsupported MP4 composition offsets for 59.94 FPS.');
       }
       const compositionEntries = validateTableEntries(ctts.payload, 8, 8, 'ctts');
       let compositionSampleCount = 0;
@@ -514,6 +524,10 @@
     if (mediaDurationSize === 8) mdhd.payload.set(u64ToBytes(outputDuration), mediaDurationOffset);
     else mdhd.payload.set(u32ToBytes(outputDuration), mediaDurationOffset);
 
+    // ВАЖНО (исправление дрейфа A/V и рассинхрона длительности трека):
+    // при смене каденты на 59.94 реальная длительность медиаматериала меняется,
+    // поэтому синхронизируем audio track (mdhd/tkhd/elst), movie duration (mvhd)
+    // и edit list видеотрека в конце патча — см. syncTimingAfterRetime().
     const updatedStts = new Uint8Array(16);
     updatedStts.set(stts.payload.subarray(0, 4), 0);
     updatedStts.set(u32ToBytes(1), 4);
@@ -524,6 +538,138 @@
     tkhd.payload = cloneBytes(tkhd.payload);
     if (trackDurationSize === 8) tkhd.payload.set(u64ToBytes(outputTrackDuration), trackDurationOffset);
     else tkhd.payload.set(u32ToBytes(outputTrackDuration), trackDurationOffset);
+    return true;
+  }
+
+  // Синхронизация контейнерных таймингов после смены каденты:
+  //  1) tkhd/mvhd видеотрека приводятся к длительности реального станта кадров
+  //     (stts × timescale), даже если edit list давал округлённое значение —
+  //     иначе iPhone показывает рассинхрон длительности трека и «дёрганье»;
+  //  2) длительность аудиотреков (mdhd/tkhd/elst) пересчитывается так, чтобы
+  //     физическая длительность звука совпала с новой длительностью видео —
+  //     это устраняет A/V-дрейф после ретайма;
+  //  3) mvhd.duration = max по всем трекам.
+  function syncTimingAfterRetime(parsed) {
+    const { video, moov } = parsed;
+    const mvhd = moov.find('mvhd');
+    if (!mvhd || !video || !video.trak) return false;
+
+    const movieVersion = mvhd.payload[0];
+    const movieTimescaleOffset = movieVersion === 1 ? 20 : 12;
+    const movieDurationOffset = movieVersion === 1 ? 24 : 16;
+    const movieDurationSize = movieVersion === 1 ? 8 : 4;
+    if ((movieVersion !== 0 && movieVersion !== 1) || mvhd.payload.length < movieDurationOffset + movieDurationSize) return false;
+    const movieTimescale = readU32(mvhd.payload, movieTimescaleOffset);
+
+
+    // --- 1) видео трек: tkhd = stts-duration в movie timescale ---
+    const vTrak = video.trak;
+    const vMdhd = vTrak.path('mdia', 'mdhd');
+    const vTkhd = vTrak.find('tkhd');
+    const vStts = getSampleTableBox(vTrak, 'stts');
+    if (!vMdhd || !vTkhd || !vStts) return false;
+    const vVer = vMdhd.payload[0];
+    const vTs = readU32(vMdhd.payload, vVer === 1 ? 20 : 12);
+    const vDurTicks = parseStts(vStts.payload).reduce((s, e) => s + e[0] * e[1], 0);
+    const tVer = vTkhd.payload[0];
+    const tDurOff = tVer === 1 ? 28 : 20;
+    const tDurSize = tVer === 1 ? 8 : 4;
+    if (vTkhd.payload.length < tDurOff + tDurSize) return false;
+    const wantTrackDur = Math.round(vDurTicks * movieTimescale / vTs);
+    const curTrackDur = tDurSize === 8 ? readU64(vTkhd.payload, tDurOff) : readU32(vTkhd.payload, tDurOff);
+    if (curTrackDur !== wantTrackDur) {
+      vTkhd.payload = cloneBytes(vTkhd.payload);
+      if (tDurSize === 8) vTkhd.payload.set(u64ToBytes(wantTrackDur), tDurOff);
+      else vTkhd.payload.set(u32ToBytes(wantTrackDur >>> 0), tDurOff);
+    }
+
+    // elst видеотрека: сегмент = длительность тиков mdhd (без preroll-ошибок)
+    const vElst = vTrak.path('edts', 'elst');
+    if (vElst) {
+      const eVer = vElst.payload[0];
+      const eSize = eVer === 1 ? 20 : 12;
+      const eCount = validateTableEntries(vElst.payload, 8, eSize, 'elst');
+      vElst.payload = cloneBytes(vElst.payload);
+      for (let i = 0; i < eCount; i++) {
+        const off = 8 + i * eSize;
+        const mTime = eVer === 1
+          ? Number(BigInt.asIntN(64, (BigInt(readU32(vElst.payload, off + 8)) << 32n) | BigInt(readU32(vElst.payload, off + 12))))
+          : (readU32(vElst.payload, off + 4) | 0);
+        if (mTime !== -1) {
+          if (eVer === 1) vElst.payload.set(u64ToBytes(vDurTicks), off);
+          else vElst.payload.set(u32ToBytes(vDurTicks >>> 0), off);
+        }
+      }
+    }
+
+    // --- 2) аудио треки: растягиваем/сжимаем тайминг под новую видео-длительность ---
+    const newVideoSeconds = vDurTicks / vTs;
+    for (const trak of moov.findAll('trak')) {
+      if (trak === vTrak) continue;
+      if (getTrackHandler(trak) !== 'soun') continue;
+      const aMdhd = trak.path('mdia', 'mdhd');
+      const aTkhd = trak.find('tkhd');
+      if (!aMdhd || !aTkhd || aMdhd.payload.length < 20) continue;
+      const aVer = aMdhd.payload[0];
+      const aTsOff = aVer === 1 ? 20 : 12;
+      const aDurOff = aVer === 1 ? 24 : 16;
+      const aDurSize = aVer === 1 ? 8 : 4;
+      if (aMdhd.payload.length < aDurOff + aDurSize) continue;
+      const aTs = readU32(aMdhd.payload, aTsOff);
+      const aDur = aVer === 1 ? readU64(aMdhd.payload, aDurOff) : readU32(aMdhd.payload, aDurOff);
+      if (!aTs || !aDur) continue;
+      const aSeconds = aDur / aTs;
+      const ratio = newVideoSeconds / aSeconds;
+      // Правим только при реальном расхождении (>1 мс), без накопления ошибки.
+      if (Math.abs(newVideoSeconds - aSeconds) < 0.001) continue;
+      const targetTicks = Math.round(aDur * ratio);
+      aMdhd.payload = cloneBytes(aMdhd.payload);
+      if (aDurSize === 8) aMdhd.payload.set(u64ToBytes(targetTicks), aDurOff);
+      else aMdhd.payload.set(u32ToBytes(targetTicks >>> 0), aDurOff);
+      const atVer = aTkhd.payload[0];
+      const atDurOff = atVer === 1 ? 28 : 20;
+      const atDurSize = atVer === 1 ? 8 : 4;
+      if (aTkhd.payload.length >= atDurOff + atDurSize) {
+        const atDur = Math.round(targetTicks * movieTimescale / aTs);
+        aTkhd.payload = cloneBytes(aTkhd.payload);
+        if (atDurSize === 8) aTkhd.payload.set(u64ToBytes(atDur), atDurOff);
+        else aTkhd.payload.set(u32ToBytes(atDur >>> 0), atDurOff);
+      }
+      const aElst = trak.path('edts', 'elst');
+      if (aElst) {
+        const eVer = aElst.payload[0];
+        const eSize = eVer === 1 ? 20 : 12;
+        const eCount = validateTableEntries(aElst.payload, 8, eSize, 'elst');
+        aElst.payload = cloneBytes(aElst.payload);
+        for (let i = 0; i < eCount; i++) {
+          const off = 8 + i * eSize;
+          const mTime = eVer === 1
+            ? Number(BigInt.asIntN(64, (BigInt(readU32(aElst.payload, off + 8)) << 32n) | BigInt(readU32(aElst.payload, off + 12))))
+            : (readU32(aElst.payload, off + 4) | 0);
+          if (mTime !== -1) {
+            if (eVer === 1) aElst.payload.set(u64ToBytes(targetTicks), off);
+            else aElst.payload.set(u32ToBytes(targetTicks >>> 0), off);
+          }
+        }
+      }
+    }
+
+    // --- 3) mvhd.duration = max по трекам ---
+    let maxDur = 0;
+    for (const trak of moov.findAll('trak')) {
+      const tk = trak.find('tkhd');
+      if (!tk) continue;
+      const tv = tk.payload[0];
+      const to = tv === 1 ? 28 : 20;
+      if (tk.payload.length < to + 4) continue;
+      const d = tv === 1 ? readU64(tk.payload, to) : readU32(tk.payload, to);
+      if (d > maxDur) maxDur = d;
+    }
+    if (maxDur > 0) {
+      mvhd.payload = cloneBytes(mvhd.payload);
+      if (movieDurationSize === 8) mvhd.payload.set(u64ToBytes(maxDur), movieDurationOffset);
+      else mvhd.payload.set(u32ToBytes(maxDur >>> 0), movieDurationOffset);
+    }
     return true;
   }
 
@@ -855,7 +1001,10 @@
     const sourceFps = inspectMediaInfo(bytes).averageFps;
     const shouldRetime = getTargetFrameRate(sourceFps) !== null;
     const retimed = retimeVideoToTarget(parsed);
-    if (shouldRetime && !retimed) throwError('Failed to retime 60/59.94 FPS MP4 to 60.05 FPS.');
+    if (shouldRetime && !retimed) throwError('Failed to retime 60/59.94 FPS MP4 to honest 59.94 FPS.');
+    // Smart Auto: после ретайма синхронизируем audio/movie тайминги, чтобы
+    // длительность треков соответствовала реальному видеопотоку (без A/V-дрейфа).
+    if (retimed) syncTimingAfterRetime(parsed);
     const patched = executePatch(bytes, parsed);
     validateFinalOutput(patched);
     return patched;
