@@ -1814,6 +1814,12 @@ app.post('/api/tiktok/publish', requireUserToken, async (req, res) => {
     await redis.del(readyUploadKey, idempotencyKeyName);
     res.status(201).json({ post, draft: false });
   } catch (error) {
+    // Log upstream failure details without exposing API keys or request headers.
+    console.error('[TikTok publish] request failed', {
+      status: error.status || 502,
+      code: error.code || null,
+      message: error.message || 'tiktok_publish_failed',
+    });
     res.status(error.status || 502).json({ error: error.message || 'tiktok_publish_failed' });
   }
 });
