@@ -279,6 +279,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   let inputFileName = 'ineasy-source' + extension;
   const outputFileName = 'ineasy-4k-cfr.mp4';
   let aborted = false;
+  let used1080pFallback = false;
   let stage = 'initialize';
   const recentLogs = [];
   const rememberLog = (value) => {
@@ -341,18 +342,6 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
           classWorkerURL
         });
       }
-    }
-    throwIfAborted(signal);
-      rememberLog('Retrying FFmpeg core load with pinned CDN URLs after blob import failure');
-      stage = 'load_core_cdn_retry';
-      ffmpeg = new FFmpeg();
-      ffmpeg.on('log', handleLog);
-      ffmpeg.on('progress', handleProgress);
-      await ffmpeg.load({
-        coreURL: FFMPEG_CORE_BASE_URL + '/ffmpeg-core.js',
-        wasmURL: FFMPEG_CORE_BASE_URL + '/ffmpeg-core.wasm',
-        classWorkerURL
-      });
     }
     throwIfAborted(signal);
     if (aborted) throw new Error('processing_cancelled');
@@ -418,9 +407,38 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       throwIfAborted(signal);
       if (aborted) throw new Error('processing_cancelled');
       if (code !== 0) {
-        throw new Error('ffmpeg_4k_exec_failed: exit=' + code +
-          '; stage=' + stage + '; detail=' + (diagnosticTail() || 'FFmpeg returned a non-zero exit code') +
-          '; firstAttemptExit=' + firstAttemptCode + '; firstAttemptDetail=' + firstAttemptLog.slice(-240));
+        // Last-resort compatibility mode: use the lightweight 1080p encode profile
+        // for a 4K input if this browser cannot finish either full-resolution attempt.
+        // Keep the source aspect ratio and still perform a real CFR conversion.
+        rememberLog('Trying 1080p compatibility fallback after both full-resolution 4K attempts failed');
+        stage = 'encode_1080p_fallback';
+        try { await ffmpeg.deleteFile(outputFileName); } catch (_) {}
+        code = await ffmpeg.exec([
+          '-hide_banner', '-y',
+          '-filter_threads', '1',
+          '-i', inputFileName,
+          '-map', '0:v:0',
+          '-map', '0:a?',
+          '-map_metadata', '0',
+          '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,fps=' + TARGET_FPS,
+          '-c:v', 'libx264',
+          '-preset', 'ultrafast',
+          '-crf', '23',
+          '-threads', '1',
+          '-pix_fmt', 'yuv420p',
+          '-c:a', 'aac',
+          '-b:a', '128k',
+          '-movflags', '+faststart',
+          outputFileName
+        ]);
+        throwIfAborted(signal);
+        if (aborted) throw new Error('processing_cancelled');
+        if (code !== 0) {
+          throw new Error('ffmpeg_4k_exec_failed: exit=' + code +
+            '; stage=' + stage + '; detail=' + (diagnosticTail() || '4K and 1080p compatibility encodes failed') +
+            '; firstAttemptExit=' + firstAttemptCode + '; firstAttemptDetail=' + firstAttemptLog.slice(-240));
+        }
+        used1080pFallback = true;
       }
     }
 
@@ -437,8 +455,19 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     if (!Number.isFinite(actualFps) || Math.abs(actualFps - 60000 / 1001) > 0.03) {
       throw new Error('fps_encoder_verification_failed: reported=' + String(actualFps));
     }
-    if (Math.abs(Number(verified.width) - width) > 0 || Math.abs(Number(verified.height) - height) > 0) {
+    if (!used1080pFallback &&
+        (Math.abs(Number(verified.width) - width) > 0 || Math.abs(Number(verified.height) - height) > 0)) {
       throw new Error('ffmpeg_4k_resolution_verification_failed');
+    }
+    if (used1080pFallback) {
+      const outW = Number(verified.width);
+      const outH = Number(verified.height);
+      const inputRatio = width / height;
+      const outputRatio = outW / outH;
+      if (!outW || !outH || Math.max(outW, outH) > 1920 ||
+          Math.abs(inputRatio - outputRatio) > 0.015) {
+        throw new Error('ffmpeg_4k_1080p_fallback_verification_failed');
+      }
     }
 
     const blob = new Blob([outputBytes], { type: 'video/mp4' });
@@ -449,7 +478,8 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       outputResolution: verified.width + 'x' + verified.height,
       outputFps: actualFps,
       encoder: 'FFmpeg.wasm libx264',
-      sourceHdrFallback: false
+      sourceHdrFallback: false,
+      used1080pFallback
     });
     onProgress?.(1);
     return {
@@ -461,7 +491,8 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       hdr: false,
       hdrTranscoded: false,
       main10Transcoded: false,
-      hdrProfile: null
+      hdrProfile: null,
+      downscaledFallback: used1080pFallback
     };
   } catch (error) {
     if (signal?.aborted || aborted || /processing_cancelled|AbortError/i.test(String(error?.message || ''))) {
