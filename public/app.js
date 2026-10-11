@@ -1997,7 +1997,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     console.error('[INEASY] CFR conversion failed:', error);
     const detail = String(error?.message || error || 'unknown_error').slice(0, 500);
     if (/mediabunny_load_timeout/i.test(detail)) throw new Error('mediabunny_load_timeout');
-    if (/hdr_main10|hdr_cfr|hdr_audio/i.test(detail)) throw new Error(detail);
+    if (/hdr_main10|hdr_cfr|hdr_audio|hdr_dynamic_metadata_lost/i.test(detail)) throw new Error(detail);
     throw new Error('fps_encoder_failed: ' + detail);
   } finally {
     signal.removeEventListener('abort', abortConversion);
