@@ -1,8 +1,6 @@
 // Dedicated 4K SDR/HDR constant-frame-rate converter.
  // The primary MediaBunny CFR converter and ADJN processing files are intentionally untouched.
 const FFMPEG_VERSION = '0.12.10';
-const MAX_SIDE = 4096;
-const MAX_SHORT_SIDE = 2304;
 const TARGET_FPS = '60000/1001';
 const FFMPEG_PACKAGE_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@' + FFMPEG_VERSION + '/dist/esm/index.js';
 const FFMPEG_CORE_VERSION = '0.12.10';
@@ -315,8 +313,8 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   // to display orientation, so validate against the dimensions shown in the preview.
   const width = Number(dimensions?.width || sourceInfo.width);
   const height = Number(dimensions?.height || sourceInfo.height);
-  if (!width || !height || Math.max(width, height) > MAX_SIDE || Math.min(width, height) > MAX_SHORT_SIDE) {
-    throw new Error('video_resolution_over_4k: requested=' + width + 'x' + height);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width < 1 || height < 1) {
+    throw new Error('video_dimensions_unavailable');
   }
   if (!['avc', 'hevc'].includes(String(sourceInfo.codecFamily || '').toLowerCase())) {
     throw new Error('ffmpeg_4k_source_format_unsupported');
@@ -324,7 +322,10 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   const colorProfile = inspectSourceColorProfile(inputBytes, sourceInfo);
   const isHdrEncode = options?.hdr === true ||
     (options?.hdr === 'auto' && colorProfile.hdr);
-  const hdrType = /HLG/i.test(colorProfile.displayColor) ? 'hlg' : 'pq';
+  const hdrType = String(options?.hdrType || '').toLowerCase() === 'hlg' ||
+    /HLG/i.test(colorProfile.displayColor) ||
+    /HLG/i.test(String(options?.hdrProfile?.displayColor || options?.hdrProfile?.label || ''))
+    ? 'hlg' : 'pq';
   let targetVideoBitrate = smartVideoBitrate(inputBlob.size, duration, 160000);
   const targetMaxRate = Math.round(targetVideoBitrate * 1.02);
   const targetBufferSize = Math.max(Math.round(targetVideoBitrate * 0.5), 256000);
@@ -335,13 +336,15 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   if (isHdrEncode && !colorProfile.hdr && options?.hdr !== true) {
     throw new Error('hdr_metadata_not_detected');
   }
-  if (options?.hdr === true && !colorProfile.hdr) {
-    // The 1080p detector may find HDR in a color box the FFmpeg-side parser cannot
-    // resolve. The caller explicitly classified this file as HDR, so use a safe PQ
-    // fallback rather than rejecting it or routing it through the SDR encoder.
+  if (options?.hdr === true) {
+    // The primary inspector has already classified this as HDR. Never fall back
+    // to the 8-bit SDR encoder because a secondary parser misses a container tag.
     colorProfile.hdr = true;
-    if (!/HLG/i.test(colorProfile.displayColor)) {
-      colorProfile.displayColor = 'BT.2020 / PQ (HDR detected by primary inspector)';
+    colorProfile.tenBit = true;
+    if (hdrType === 'hlg') {
+      colorProfile.displayColor = 'BT.2020 / HLG (confirmed by primary inspector)';
+    } else if (!/PQ|HDR10/i.test(colorProfile.displayColor)) {
+      colorProfile.displayColor = 'BT.2020 / PQ (HDR confirmed by primary inspector)';
     }
     colorProfile.reason = (colorProfile.reason ? colorProfile.reason + '; ' : '') + 'HDR classification supplied by primary inspector';
   }
