@@ -1820,8 +1820,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
         bitrate: Math.max(
           150000,
           Math.floor(
-            ((inputBlob.size * 8 / Math.max(1, Number(sourceDurationSeconds) || 1)) - 192000) *
-            (is4kSource ? 0.97 : 1)
+            (inputBlob.size * 8 / Math.max(1, Number(sourceDurationSeconds) || 1)) - 192000
           )
         ),
         hardwareAcceleration: 'prefer-hardware',
@@ -2113,13 +2112,7 @@ async function handleFile(file) {
   }
   selectedVideoDimensions = dimensions;
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
-  // For 4K only, fetch the fallback assets quietly in the background. Do not
-  // initialize the WASM encoder here; that can exhaust browser memory on selection.
-  if (selectedLongSide >= 3000) {
-    import('./ffmpeg-4k-cfr.js?v=20261011-29')
-      .then((fallbackEncoder) => fallbackEncoder.prepareFFmpeg4kFallback?.())
-      .catch((error) => console.warn('[INEASY] 4K fallback warm-up deferred:', error?.message || error));
-  }
+  // Keep the 4K fallback lazy-loaded: don't download FFmpeg until the browser encoder fails.
   // Load the fallback only if browser hardware encoding actually fails.
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
   patchedDownloadUrl = null;
@@ -2502,7 +2495,7 @@ if (processBtn) {
         // converting it through an SDR encoder; HDR support is intentionally paused.
         console.warn('[INEASY] Hardware 4K CFR failed; trying full-resolution CFR fallback:', primaryMessage);
         setProcessingState('processing', t('uhdWait'));
-        const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-29');
+        const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-30');
         fpsConversion = await fallbackEncoder.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile,
           selectedVideoDimensions,
