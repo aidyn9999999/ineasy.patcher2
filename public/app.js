@@ -1436,7 +1436,7 @@ function setProcessingState(type, text) {
   processingState.classList.remove('hidden');
   processingState.classList.toggle('completed', type === 'success');
   processingState.classList.toggle('failed', type === 'error');
-  if (processingText) processingText.textContent = text;
+  if (processingText) processingText.textContent = type === 'processing' ? '' : text;
 }
 
 let progressTarget = 0;
@@ -2461,7 +2461,7 @@ if (processBtn) {
         Number(selectedVideoDimensions?.height) || 0
       );
       const is4kSource = sourceLongSide >= 3000;
-      const ffmpeg4kEligible = /\.(mp4|m4v|mov)$/i.test(sourceFile.name);
+      const ffmpeg4kEligible = is4kSource && /\.(mp4|m4v|mov)$/i.test(sourceFile.name);
       const reportCfrProgress = (progress) => {
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
       };
@@ -2491,11 +2491,11 @@ if (processBtn) {
         }
       }
       if (is4kSource && ffmpeg4kEligible) {
-        setProcessingState('processing', '4K CFR conversion');
+        setProcessingState('processing', '');
         console.info('[INEASY] 4K source routed directly to the dedicated FFmpeg CFR path; HDR profile is auto-detected');
         fpsConversion = await runFfmpeg4kCfr('auto');
       } else if (hdrInspection?.hdr) {
-        setProcessingState('processing', 'HDR 10-bit conversion');
+        setProcessingState('processing', '');
         console.info('[INEASY] HDR source detected; selecting dedicated HEVC Main10 CFR encoder', hdrInspection);
         const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-23');
         fpsConversion = await hdrEncoder.convertVideoToExact5994FpsWithFFmpeg(
@@ -2504,7 +2504,7 @@ if (processBtn) {
       } else if (ffmpeg4kEligible) {
         // Use the bitrate-controlled FFmpeg encoder for supported MP4/MOV/M4V SDR at every supported resolution.
         // The generic MediaBunny path does not enforce the source-relative output-size ceiling.
-        setProcessingState('processing', 'CFR conversion with size control');
+        setProcessingState('processing', '');
         fpsConversion = await runFfmpeg4kCfr('auto');
       } else try {
         fpsConversion = await runPrimaryCfr();
