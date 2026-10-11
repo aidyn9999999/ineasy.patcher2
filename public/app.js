@@ -72,11 +72,11 @@ const translations = {
     choose: 'Drop your video here',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP and other videos',
     localNote: 'Optimize your video up to 4K at 120 FPS.',
-    exportNote: 'Auto-converts to constant 59.94 FPS.',
+    exportNote: 'Ready for upload.',
     fpsPolicyNote: 'TikTok may change video quality after upload.',
     patcherNoteV1: 'Standard mode.',
     patcherNoteV2: 'Alternative mode. No video re-encoding.',
-    fpsAdvice: 'Video is automatically converted to constant 59.94 FPS.',
+    fpsAdvice: 'Ready to process.',
     fps30Rejected: '30 FPS is not supported. Export as 59.94 FPS and try again.',
     fpsInspectUnavailable: 'FPS could not be checked. Use MP4 H.264 · 59.94 FPS.',
     choosePostingDevice: 'Choose your device before processing.',
@@ -255,11 +255,11 @@ const translations = {
     choose: 'Перетащите видео сюда',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP и другие видео',
     localNote: 'Оптимизируйте видео до 4K и 120 FPS.',
-    exportNote: 'Автоконвертация в постоянные 59,94 FPS.',
+    exportNote: 'Видео готово к загрузке.',
     fpsPolicyNote: 'TikTok может изменить качество видео после загрузки.',
     patcherNoteV1: 'Стандартный режим.',
     patcherNoteV2: 'Альтернативный режим. Видео не перекодируется.',
-    fpsAdvice: 'Видео автоматически конвертируется в постоянные 59,94 FPS.',
+    fpsAdvice: 'Готово к обработке.',
     fps30Rejected: '30 FPS не поддерживается. Экспортируйте видео в 59,94 FPS и выберите его снова.',
     fpsInspectUnavailable: 'Не удалось проверить FPS. Используйте MP4 H.264 · 59,94 FPS.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
@@ -438,11 +438,11 @@ const translations = {
     choose: 'Видеоны осында сүйреп әкеліңіз',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP және басқа бейнелер',
     localNote: 'Бейнені 4K және 120 FPS-ке дейін оңтайландырыңыз.',
-    exportNote: 'Тұрақты 59,94 FPS-ке автоматты түрлендіру.',
+    exportNote: 'Бейне жүктеуге дайын.',
     fpsPolicyNote: 'TikTok жүктегеннен кейін бейне сапасын өзгертуі мүмкін.',
     patcherNoteV1: 'Стандартты режим.',
     patcherNoteV2: 'Балама режим. Бейне қайта кодталмайды.',
-    fpsAdvice: 'Бейне тұрақты 59,94 FPS-ке автоматты түрлендіріледі.',
+    fpsAdvice: 'Өңдеуге дайын.',
     fps30Rejected: '30 FPS қолдау таппайды. Бейнені 59,94 FPS-пен экспорттап, қайта таңдаңыз.',
     fpsInspectUnavailable: 'FPS тексерілмеді. MP4 H.264 · 59,94 FPS қолданыңыз.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
@@ -1571,11 +1571,11 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
   if (!globalThis.FFmpegWASM?.FFmpeg) {
     await new Promise((resolve, reject) => {
       const existing = document.querySelector('script[data-ineasy-ffmpeg]');
-      if (existing) {
-        existing.addEventListener('load', resolve, { once: true });
-        existing.addEventListener('error', () => reject(new Error('fps_encoder_download_failed')), { once: true });
+      if (existing && globalThis.FFmpegWASM?.FFmpeg) {
+        resolve();
         return;
       }
+      if (existing) existing.remove();
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js';
       script.dataset.ineasyFfmpeg = '1';
@@ -2239,7 +2239,7 @@ if (processBtn) {
         ? sourceFile
         : new Blob([outputBytes], { type: result.outputMime || 'video/mp4' });
 
-      setProcessingState('processing', 'Converting to constant 59.94 FPS…');
+      setProcessingState('processing', translations[STATE.lang]?.processingVideo || translations.en.processingVideo || 'Processing video…');
       updateProcessingProgress(84);
       const fpsConversion = await convertVideoToExact5994Fps(outputBlob, sourceFile.name, controller.signal, (p) => {
         updateProcessingProgress(84 + Math.round(p * 14));
@@ -2296,6 +2296,7 @@ if (processBtn) {
       if (processingState) processingState.classList.add('completed');
       if (processedResult) processedResult.classList.remove('hidden');
     } catch (error) {
+      console.error('[INEASY] Video processing failed:', error);
       if (processingState) processingState.classList.add('failed');
       if (processingText) processingText.textContent = processingTimedOut
         ? t('processingTimedOut')
