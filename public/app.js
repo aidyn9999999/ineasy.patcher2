@@ -1681,54 +1681,73 @@ async function loadIneasyFfmpegWasmLibrary(signal) {
   return waitForMediabunnyModule(ineasyFfmpegWasmScriptPromise, signal, 36000);
 }
 
+let ineasyFfmpegCoreWasmObjectUrl = null;
+let ineasyFfmpegCoreWasmDownloadPromise = null;
+
 async function downloadIneasyFfmpegCoreWasm(signal, onProgress) {
-  const urls = [
-    'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.wasm',
-    'https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.wasm'
-  ];
-  let lastError = null;
-  for (const url of urls) {
-    signal.throwIfAborted();
-    try {
-      console.info('[INEASY] Downloading local FFmpeg processing module');
-      const response = await fetch(url, { signal, cache: 'force-cache' });
-      if (!response.ok) throw new Error('hdr_ffmpeg_core_http_' + response.status);
-      const chunks = [];
-      let loaded = 0;
-      const declaredSize = Number(response.headers.get('content-length')) || 32 * 1024 * 1024;
-      const reader = response.body?.getReader?.();
-      if (reader) {
-        while (true) {
-          signal.throwIfAborted();
-          const part = await reader.read();
-          if (part.done) break;
-          if (part.value?.byteLength) {
-            chunks.push(part.value);
-            loaded += part.value.byteLength;
-            onProgress?.(0.04 + 0.095 * Math.min(1, loaded / declaredSize));
+  signal.throwIfAborted();
+  if (ineasyFfmpegCoreWasmObjectUrl) return ineasyFfmpegCoreWasmObjectUrl;
+  if (!ineasyFfmpegCoreWasmDownloadPromise) {
+    ineasyFfmpegCoreWasmDownloadPromise = (async () => {
+      const urls = [
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.wasm',
+        'https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.wasm'
+      ];
+      let lastError = null;
+      for (const url of urls) {
+        try {
+          console.info('[INEASY] Downloading local FFmpeg processing module');
+          const response = await fetch(url, { signal, cache: 'force-cache' });
+          if (!response.ok) throw new Error('hdr_ffmpeg_core_http_' + response.status);
+          const chunks = [];
+          let loaded = 0;
+          const declaredSize = Number(response.headers.get('content-length')) || 32 * 1024 * 1024;
+          const reader = response.body?.getReader?.();
+          if (reader) {
+            while (true) {
+              signal.throwIfAborted();
+              const part = await reader.read();
+              if (part.done) break;
+              if (part.value?.byteLength) {
+                chunks.push(part.value);
+                loaded += part.value.byteLength;
+                onProgress?.(0.04 + 0.095 * Math.min(1, loaded / declaredSize));
+              }
+            }
+          } else {
+            const bytes = new Uint8Array(await response.arrayBuffer());
+            chunks.push(bytes);
+            loaded = bytes.byteLength;
+            onProgress?.(0.135);
           }
+          signal.throwIfAborted();
+          if (!loaded) throw new Error('hdr_ffmpeg_core_empty');
+          ineasyFfmpegCoreWasmObjectUrl = URL.createObjectURL(new Blob(chunks, { type: 'application/wasm' }));
+          onProgress?.(0.135);
+          console.info('[INEASY] Local FFmpeg module downloaded', { bytes: loaded });
+          return ineasyFfmpegCoreWasmObjectUrl;
+        } catch (error) {
+          if (signal.aborted || /AbortError|processing_cancelled/i.test(String(error?.name || '') + ' ' + String(error?.message || ''))) {
+            throw new Error('processing_cancelled');
+          }
+          lastError = error;
+          console.warn('[INEASY] FFmpeg core download source failed:', url, error);
         }
-      } else {
-        const bytes = new Uint8Array(await response.arrayBuffer());
-        chunks.push(bytes);
-        loaded = bytes.byteLength;
-        onProgress?.(0.135);
       }
-      signal.throwIfAborted();
-      if (!loaded) throw new Error('hdr_ffmpeg_core_empty');
-      const blobUrl = URL.createObjectURL(new Blob(chunks, { type: 'application/wasm' }));
-      onProgress?.(0.135);
-      console.info('[INEASY] Local FFmpeg module downloaded', { bytes: loaded });
-      return blobUrl;
-    } catch (error) {
-      if (signal.aborted || /AbortError|processing_cancelled/i.test(String(error?.name || '') + ' ' + String(error?.message || ''))) {
-        throw new Error('processing_cancelled');
-      }
-      lastError = error;
-      console.warn('[INEASY] FFmpeg core download source failed:', url, error);
-    }
+      throw new Error('hdr_ffmpeg_core_download_failed: ' + String(lastError?.message || 'unknown_error'));
+    })().catch((error) => {
+      ineasyFfmpegCoreWasmDownloadPromise = null;
+      throw error;
+    });
   }
-  throw new Error('hdr_ffmpeg_core_download_failed: ' + String(lastError?.message || 'unknown_error'));
+  return waitForMediabunnyModule(ineasyFfmpegCoreWasmDownloadPromise, signal, 90000);
+}
+
+function releaseIneasyFfmpegCoreWasm(blobUrl) {
+  if (!blobUrl || blobUrl !== ineasyFfmpegCoreWasmObjectUrl) return;
+  try { URL.revokeObjectURL(blobUrl); } catch (_) {}
+  ineasyFfmpegCoreWasmObjectUrl = null;
+  ineasyFfmpegCoreWasmDownloadPromise = null;
 }
 
 async function getIneasyFfmpegWasm(signal, onProgress) {
@@ -1756,7 +1775,7 @@ async function getIneasyFfmpegWasm(signal, onProgress) {
           classWorkerURL
         }, { signal });
       } finally {
-        try { URL.revokeObjectURL(wasmObjectURL); } catch (_) {}
+        releaseIneasyFfmpegCoreWasm(wasmObjectURL);
       }
       if (signal.aborted) {
         createdInstance.terminate();
@@ -1870,6 +1889,111 @@ async function inspectIneasyFfmpegStream(ffmpeg, path, signal) {
   } finally {
     try { ffmpeg.off('log', onInspectLog); } catch (_) {}
   }
+}
+
+
+const ineasyHdrEngineWarmups = new WeakMap();
+
+function preloadIneasyHdrEngineForSelection(file) {
+  if (!file || typeof file !== 'object') return Promise.resolve(false);
+  const cached = ineasyHdrEngineWarmups.get(file);
+  if (cached) return cached;
+
+  // This controller belongs to the background preloader, not to a processing
+  // attempt. Cancelling a job must not abort a shared download half-way through.
+  const warmupSignal = new AbortController().signal;
+  const warmupPromise = (async () => {
+    const media = await loadMediabunnyForCfr(warmupSignal, 18000);
+    const { Input, ALL_FORMATS, BlobSource } = media;
+    if (!Input || !ALL_FORMATS || !BlobSource) return false;
+
+    const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
+    let track = null;
+    let codec = '';
+    let codecParameters = '';
+    let colorSpace = null;
+    let hasHdrRange = false;
+    let profile = null;
+    try {
+      track = await input.getPrimaryVideoTrack();
+      if (!track) return false;
+      codec = String(await track.getCodec?.() || '');
+      codecParameters = String(await track.getCodecParameterString?.() || '');
+      try { colorSpace = await track.getColorSpace?.(); } catch (_) {}
+      try { hasHdrRange = Boolean(await track.hasHighDynamicRange?.()); } catch (_) {}
+
+      const detector = globalThis.ADJNVideoProcessor?.detectHdrProfile;
+      if (typeof detector === 'function') {
+        const detectorInfo = {
+          codecFamily: codec.toLowerCase(),
+          codec: (codecParameters || codec).toLowerCase()
+        };
+        const prefixSize = Math.min(file.size, 16 * 1024 * 1024);
+        const prefix = new Uint8Array(await file.slice(0, prefixSize).arrayBuffer());
+        profile = detector(prefix, detectorInfo);
+        const hasHdrSignals = Boolean(profile?.hdr10 || profile?.hdr10plus || profile?.hlg || profile?.dolbyVision);
+        const likelyHevc = Boolean(profile?.hevc) ||
+          /(?:\bhevc\b|hvc1|hev1|dvh1|dvhe|main.?10)/i.test(codec + ' ' + codecParameters);
+        if (likelyHevc && !hasHdrSignals && file.size > prefixSize) {
+          const tailSize = Math.min(4 * 1024 * 1024, file.size - prefixSize);
+          const tailStart = file.size - tailSize;
+          const tail = new Uint8Array(await file.slice(tailStart, file.size).arrayBuffer());
+          const tailProfile = detector(tail, detectorInfo);
+          if (tailProfile) {
+            profile = {
+              ...(profile || {}),
+              ...tailProfile,
+              hevc: Boolean(profile?.hevc || tailProfile.hevc),
+              main10: Boolean(profile?.main10 || tailProfile.main10),
+              hdr10: Boolean(profile?.hdr10 || tailProfile.hdr10),
+              hdr10plus: Boolean(profile?.hdr10plus || tailProfile.hdr10plus),
+              hlg: Boolean(profile?.hlg || tailProfile.hlg),
+              dolbyVision: Boolean(profile?.dolbyVision || tailProfile.dolbyVision)
+            };
+          }
+        }
+      }
+    } finally {
+      try { input.dispose?.(); } catch (_) {}
+    }
+
+    const signature = (codec + ' ' + codecParameters).toLowerCase();
+    const transfer = String(colorSpace?.transfer || '').toLowerCase();
+    const likelyHevc = /(?:\bhevc\b|hvc1|hev1|dvh1|dvhe)/i.test(signature) ||
+      Boolean(profile?.hevc || profile?.dolbyVision);
+    const main10 = /(?:hvc1|hev1)\.2(?:\.|$)|main.?10/i.test(signature) || Boolean(profile?.main10);
+    const isHdr = Boolean(
+      hasHdrRange ||
+      transfer.includes('2084') || transfer === 'pq' || transfer.includes('b67') || transfer === 'hlg' ||
+      profile?.hdr10 || profile?.hdr10plus || profile?.hlg || profile?.dolbyVision
+    );
+
+    if (!(likelyHevc || main10 || isHdr)) {
+      console.info('[INEASY] HDR warmup skipped for SDR AVC source');
+      return false;
+    }
+
+    console.info('[INEASY] HEVC/HDR source selected; warming the local converter before processing');
+    const [, wasmUrl] = await Promise.all([
+      loadIneasyFfmpegWasmLibrary(warmupSignal),
+      downloadIneasyFfmpegCoreWasm(warmupSignal, (progress) => {
+        const pct = Math.max(0, Math.min(100, Math.round(((Number(progress) - 0.04) / 0.095) * 100)));
+        if (pct >= 25 && pct % 25 === 0) console.info('[INEASY] HDR converter download:', pct + '%');
+      })
+    ]);
+    if (!wasmUrl) throw new Error('hdr_ffmpeg_core_empty');
+    // Start WebAssembly initialization now as well; the actual process usually
+    // starts a few seconds after the user picks the file.
+    await getIneasyFfmpegWasm(warmupSignal, () => {});
+    console.info('[INEASY] Local HDR converter ready');
+    return true;
+  })().catch((error) => {
+    console.warn('[INEASY] Background HDR preload skipped; processing can load it on demand:', error);
+    return false;
+  });
+
+  ineasyHdrEngineWarmups.set(file, warmupPromise);
+  return warmupPromise;
 }
 
 async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onProgress, hints = {}) {
@@ -2263,6 +2387,16 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
 
     if (sourceIs10BitOrHdr) {
       hdrEncodingAttempted = true;
+      if (typeof videoTrack.canDecode === 'function') {
+        let sourceCanDecode = false;
+        try {
+          sourceCanDecode = Boolean(await videoTrack.canDecode());
+        } catch (decodeCheckError) {
+          console.debug('[INEASY] WebCodecs source-decodability check failed:', decodeCheckError);
+        }
+        console.info('[INEASY] WebCodecs source decodability:', sourceCanDecode);
+        if (!sourceCanDecode) throw new Error('hdr_browser_decoder_unavailable');
+      }
       // AVC is normally 8-bit and can erase HDR transfer/gamut data. Use HEVC
       // Main10 and verify the actual encoded stream. Unsupported devices fail closed.
       if (typeof VideoSampleSink !== 'function' ||
@@ -2745,6 +2879,7 @@ async function handleFile(file) {
   }
   if (fileMeta) fileMeta.textContent = `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
   if (previewWrap) previewWrap.classList.add('show');
+  void preloadIneasyHdrEngineForSelection(file);
 
   document.querySelector('.patcher-version-picker')?.classList.remove('hidden');
   document.getElementById('patcherVersionNote')?.classList.remove('hidden');
