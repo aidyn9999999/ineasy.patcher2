@@ -1929,13 +1929,30 @@ function preloadIneasyHdrEngineForSelection(file) {
     try {
       track = await input.getPrimaryVideoTrack();
       if (!track) return false;
+      const width = Number(await track.getDisplayWidth?.()) || 0;
+      const height = Number(await track.getDisplayHeight?.()) || 0;
+      if (width && height && (Math.max(width, height) > 4096 || Math.min(width, height) > 2304)) {
+        console.info('[INEASY] HDR warmup skipped for video above the supported resolution');
+        return false;
+      }
       codec = String(await track.getCodec?.() || '');
       codecParameters = String(await track.getCodecParameterString?.() || '');
       try { colorSpace = await track.getColorSpace?.(); } catch (_) {}
       try { hasHdrRange = Boolean(await track.hasHighDynamicRange?.()); } catch (_) {}
 
+      const signature = (codec + ' ' + codecParameters).toLowerCase();
+      const transfer = String(colorSpace?.transfer || '').toLowerCase();
+      const likelyHevcFromMetadata = /(?:\bhevc\b|hvc1|hev1|dvh1|dvhe)/i.test(signature);
+      const likelyMain10FromMetadata = /(?:hvc1|hev1)\.2(?:\.|$)|main.?10/i.test(signature);
+      const likelyHdrFromMetadata = Boolean(
+        hasHdrRange || transfer.includes('2084') || transfer === 'pq' ||
+        transfer.includes('b67') || transfer === 'hlg'
+      );
+
+      // Regular SDR AVC files do not need a bitstream scan or the large WASM engine.
       const detector = globalThis.ADJNVideoProcessor?.detectHdrProfile;
-      if (typeof detector === 'function') {
+      if (typeof detector === 'function' &&
+          (likelyHevcFromMetadata || likelyMain10FromMetadata || likelyHdrFromMetadata)) {
         const detectorInfo = {
           codecFamily: codec.toLowerCase(),
           codec: (codecParameters || codec).toLowerCase()
@@ -1944,8 +1961,7 @@ function preloadIneasyHdrEngineForSelection(file) {
         const prefix = new Uint8Array(await file.slice(0, prefixSize).arrayBuffer());
         profile = detector(prefix, detectorInfo);
         const hasHdrSignals = Boolean(profile?.hdr10 || profile?.hdr10plus || profile?.hlg || profile?.dolbyVision);
-        const likelyHevc = Boolean(profile?.hevc) ||
-          /(?:\bhevc\b|hvc1|hev1|dvh1|dvhe|main.?10)/i.test(codec + ' ' + codecParameters);
+        const likelyHevc = Boolean(profile?.hevc) || likelyHevcFromMetadata || likelyMain10FromMetadata;
         if (likelyHevc && !hasHdrSignals && file.size > prefixSize) {
           const tailSize = Math.min(4 * 1024 * 1024, file.size - prefixSize);
           const tailStart = file.size - tailSize;
