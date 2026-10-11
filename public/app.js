@@ -72,7 +72,10 @@ const translations = {
     choose: 'Drop your video here',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP and other videos',
     localNote: 'Optimize your video up to 4K at 120 FPS.',
-    exportNote: 'Recommended bitrate: 15–35 Mbps.',
+    exportNote: 'Recommended: MP4 H.264, 1080p, constant 59.94 or 60 FPS. A 30 FPS source is rejected when detected. FPS conversion can require re-encoding and may reduce quality.',
+    fpsPolicyNote: 'TikTok controls its own processing. A 59.94 FPS export is a compatibility choice, not a way to bypass TikTok processing.',
+    fps30Rejected: 'This video is 30 FPS. It is not accepted. Export the original edit at a constant 59.94 or 60 FPS, then select it again. Converting 30 to 59.94 FPS does not create real new motion, and TikTok may still reprocess uploads.',
+    fpsInspectUnavailable: 'Frame rate could not be verified automatically. For best motion consistency, export as MP4 H.264 at a constant 59.94 or 60 FPS. TikTok may still reprocess uploads.',
     choosePostingDevice: 'Choose your device before processing.',
     communityTitle: 'Stay in the loop with Ineasy',
     communityBody: 'New tutorials, project updates, and exclusive giveaways on our Telegram channel',
@@ -249,7 +252,10 @@ const translations = {
     choose: 'Перетащите видео сюда',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP и другие видео',
     localNote: 'Оптимизируйте видео до 4K и 120 FPS.',
-    exportNote: 'Рекомендуемый битрейт: 15–35 Мбит/с.',
+    exportNote: 'Рекомендуется: MP4 H.264, 1080p, постоянные 59,94 или 60 FPS. Исходное видео 30 FPS будет отклонено, если частота определена. Конвертация FPS может потребовать повторного кодирования и снизить качество.',
+    fpsPolicyNote: 'Обработку публикации контролирует TikTok. Экспорт в 59,94 FPS — это выбор совместимых настроек, а не способ обойти обработку TikTok.',
+    fps30Rejected: 'В этом видео 30 FPS. Оно не принимается. Экспортируйте исходный монтаж с постоянными 59,94 или 60 FPS и выберите файл снова. Перевод 30 в 59,94 FPS не создаёт настоящие новые движения, а TikTok всё равно может повторно обработать ролик.',
+    fpsInspectUnavailable: 'Не удалось автоматически проверить частоту кадров. Для стабильного движения экспортируйте MP4 H.264 с постоянными 59,94 или 60 FPS. TikTok всё равно может повторно обработать ролик.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
     communityTitle: 'Будь в курсе Ineasy',
     communityBody: 'Новые туториалы, обновления проекта и эксклюзивные розыгрыши — в нашем Telegram-канале',
@@ -426,7 +432,10 @@ const translations = {
     choose: 'Видеоны осында сүйреп әкеліңіз',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP және басқа бейнелер',
     localNote: 'Бейнені 4K және 120 FPS-ке дейін оңтайландырыңыз.',
-    exportNote: 'Ұсынылатын битрейт: 15–35 Мбит/с.',
+    exportNote: 'Ұсыныс: MP4 H.264, 1080p, тұрақты 59,94 немесе 60 FPS. Анықталған 30 FPS бейне қабылданбайды. FPS түрлендіру қайта кодтауды қажет етіп, сапаны төмендетуі мүмкін.',
+    fpsPolicyNote: 'Жарияланған бейнені TikTok өзі өңдейді. 59,94 FPS экспорты — үйлесімділік параметрі, TikTok өңдеуін айналып өту тәсілі емес.',
+    fps30Rejected: 'Бұл бейне 30 FPS. Ол қабылданбайды. Бастапқы монтажды тұрақты 59,94 немесе 60 FPS форматында экспорттап, файлды қайта таңдаңыз. 30 FPS-ті 59,94 FPS-ке ауыстыру шынайы жаңа қозғалыс кадрларын жасамайды, ал TikTok бейнені бәрібір қайта өңдеуі мүмкін.',
+    fpsInspectUnavailable: 'Кадр жиілігін автоматты түрде тексеру мүмкін болмады. Қозғалыстың тұрақтылығы үшін MP4 H.264 файлын тұрақты 59,94 немесе 60 FPS-пен экспорттаңыз. TikTok бейнені бәрібір қайта өңдеуі мүмкін.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
     communityTitle: 'Ineasy жаңалықтарынан хабардар болыңыз',
     communityBody: 'Жаңа нұсқаулықтар, жоба жаңалықтары және арнайы ұтыстар Telegram арнамызда',
@@ -677,6 +686,7 @@ function applyLanguage(lang) {
   setText('buyInTelegram', pack.buyInTelegram);
   setText('localNote', pack.localNote);
   setText('exportNote', pack.exportNote);
+  setText('fpsPolicyNote', pack.fpsPolicyNote || pack.exportNote);
   setText('communityTitle', pack.communityTitle);
   setText('communityBody', pack.communityBody);
   setText('processBtn', pack.process);
@@ -1501,6 +1511,22 @@ function readVideoDimensions(file) {
   });
 }
 
+async function inspectFrameRateForSelection(file) {
+  const isMp4Family = /\.(mp4|mov|m4v)$/i.test(file.name || '') || /^(video\/mp4|video\/quicktime)$/i.test(file.type || '');
+  const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+  if (!isMp4Family || !core || typeof core.inspectMediaInfo !== 'function') return { status: 'unknown', fps: null };
+  try {
+    // The MP4 inspector needs the complete container to read its sample tables accurately.
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const info = core.inspectMediaInfo(bytes);
+    const fps = Number(info?.averageFps);
+    if (!Number.isFinite(fps) || fps <= 0) return { status: 'unknown', fps: null };
+    return { status: Math.abs(fps - 30) <= 0.2 ? '30fps' : 'ok', fps };
+  } catch (_) {
+    return { status: 'unknown', fps: null };
+  }
+}
+
 async function readVideoDimensionsForSelection(file) {
   try {
     return await readVideoDimensions(file);
@@ -1636,6 +1662,17 @@ async function handleFile(file) {
   }
   if (selectionVersion !== fileSelectionVersion) return;
   checkingFileDimensions = false;
+  const fpsCheck = await inspectFrameRateForSelection(file);
+  if (selectionVersion !== fileSelectionVersion) return;
+  if (fpsCheck.status === '30fps') {
+    rejectFileSelection(t('fps30Rejected'));
+    return;
+  }
+  const fpsPolicyNote = document.getElementById('fpsPolicyNote');
+  if (fpsPolicyNote) {
+    fpsPolicyNote.textContent = fpsCheck.status === 'unknown' ? t('fpsInspectUnavailable') : (translations[STATE.lang]?.fpsPolicyNote || translations.en.fpsPolicyNote);
+    fpsPolicyNote.classList.remove('hidden');
+  }
   if (Math.max(dimensions.width, dimensions.height) > 4096 || Math.min(dimensions.width, dimensions.height) > 2304) {
     rejectFileSelection(t('videoResolutionTooHigh'));
     return;
