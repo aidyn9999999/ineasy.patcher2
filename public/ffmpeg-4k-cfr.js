@@ -350,14 +350,6 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   }
   const detectedSourceFps = Number(sourceInfo.averageFps || 0);
   const sourceIsDolbyVision = Boolean(isHdrEncode && /Dolby Vision/i.test(colorProfile.reason));
-  if (sourceIsDolbyVision) {
-    // Explicit fallback: convert Dolby Vision to standards-based HDR10/PQ Main10
-    // at 60000/1001 fps. Output remains HDR, never SDR. Dynamic DV metadata
-    // cannot be recreated by this encoder, so report the change accurately.
-    console.warn('[INEASY] Dolby Vision detected; converting to HDR10/PQ Main10 at 59.94 FPS. Dolby Vision dynamic metadata will not survive this transcode.');
-    colorProfile.displayColor = 'BT.2020 / PQ (Dolby Vision source → HDR10 output)';
-    colorProfile.reason = 'Dolby Vision source explicitly transcoded to HDR10/PQ; dynamic DV metadata is not preserved';
-  }
   if (Number.isFinite(detectedSourceFps) && Math.abs(detectedSourceFps - TARGET_FPS) <= 0.01) {
     console.info('[INEASY] Source is already 59.94 FPS; skipping expensive re-encode', {
       sourceBytes: inputBlob.size, sourceFps: detectedSourceFps, hdr: isHdrEncode
@@ -383,6 +375,14 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       } : null,
       downscaledFallback: false
     };
+  }
+  if (sourceIsDolbyVision) {
+    // Explicit fallback: convert Dolby Vision to standards-based HDR10/PQ Main10
+    // at 60000/1001 fps. Output remains HDR, never SDR. Dynamic DV metadata
+    // cannot be recreated by this encoder, so report the change accurately.
+    console.warn('[INEASY] Dolby Vision detected; converting to HDR10/PQ Main10 at 59.94 FPS. Dolby Vision dynamic metadata will not survive this transcode.');
+    colorProfile.displayColor = 'BT.2020 / PQ (Dolby Vision source → HDR10 output)';
+    colorProfile.reason = 'Dolby Vision source explicitly transcoded to HDR10/PQ; dynamic DV metadata is not preserved';
   }
   if (isHdrEncode && !['avc', 'hevc'].includes(String(sourceInfo.codecFamily || '').toLowerCase())) {
     throw new Error('hdr_source_codec_unsupported');
