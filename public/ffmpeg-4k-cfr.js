@@ -247,12 +247,12 @@ function fileExtension(name) {
   return extension || '';
 }
 
-// Target the original file size plus 120 KiB, leaving the requested 100–200 KiB margin.
-// Account for the AAC stream before assigning the average video bitrate.
+// Match the source file's average total bitrate rather than forcing a larger target size.
+// Account for AAC audio; keep the source resolution unchanged.
 function smartVideoBitrate(sourceBytes, durationSeconds, audioBitrate = 160000) {
   const bytes = Math.max(1, Number(sourceBytes) || 1);
   const seconds = Math.max(0.1, Number(durationSeconds) || 0.1);
-  const targetBytes = bytes + 120 * 1024;
+  const targetBytes = bytes;
   const totalBitsPerSecond = (targetBytes * 8) / seconds;
   return Math.max(250000, Math.min(100000000, Math.floor(totalBitsPerSecond - audioBitrate)));
 }
@@ -541,57 +541,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       throwIfAborted(signal);
       if (aborted) throw new Error('processing_cancelled');
       if (code !== 0) {
-        // Last-resort compatibility mode: downscale to 1080p while still keeping
-        // the source dynamic range. SDR uses H.264 8-bit; HDR uses HEVC Main10
-        // with the detected PQ/HLG transfer characteristics.
-        rememberLog('Trying 1080p compatibility fallback after both full-resolution 4K attempts failed');
-        stage = 'encode_1080p_fallback';
-        try { await ffmpeg.deleteFile(outputFileName); } catch (_) {}
-        code = await ffmpeg.exec([
-          '-hide_banner', '-y',
-          '-filter_threads', '1',
-          '-i', inputFileName,
-          '-map', '0:v:0',
-          '-map', '0:a?',
-          '-map_metadata', '0',
-          '-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,fps=' + TARGET_FPS,
-          ...(isHdrEncode
-            ? [
-                '-c:v', 'libx265',
-                '-preset', 'ultrafast',
-                '-b:v', String(Math.max(250000, Math.round(targetVideoBitrate * 0.8))),
-                '-maxrate', String(Math.round(targetMaxRate * 0.8)),
-                '-bufsize', String(targetBufferSize),
-                '-threads', '1',
-                '-pix_fmt', 'yuv420p10le',
-                '-tag:v', 'hvc1',
-                '-color_primaries', 'bt2020',
-                '-color_trc', hdrType === 'hlg' ? 'arib-std-b67' : 'smpte2084',
-                '-colorspace', 'bt2020nc',
-                '-x265-params', hdrType === 'hlg' ? 'repeat-headers=1' : 'hdr10=1:repeat-headers=1'
-              ]
-            : [
-                '-c:v', 'libx264',
-                '-preset', 'ultrafast',
-                '-b:v', String(Math.max(250000, Math.round(targetVideoBitrate * 0.8))),
-                '-maxrate', String(Math.round(targetMaxRate * 0.8)),
-                '-bufsize', String(targetBufferSize),
-                '-threads', '1',
-                '-pix_fmt', 'yuv420p'
-              ]),
-          '-c:a', 'aac',
-          '-b:a', '160k',
-          '-movflags', '+faststart',
-          outputFileName
-        ]);
-        throwIfAborted(signal);
-        if (aborted) throw new Error('processing_cancelled');
-        if (code !== 0) {
-          throw new Error('ffmpeg_4k_exec_failed: exit=' + code +
-            '; stage=' + stage + '; detail=' + (diagnosticTail() || '4K and 1080p compatibility encodes failed') +
-            '; firstAttemptExit=' + firstAttemptCode + '; firstAttemptDetail=' + firstAttemptLog.slice(-240));
-        }
-        used1080pFallback = true;
+        throw new Error('ffmpeg_full_resolution_encode_failed: exit=' + code +
+          '; stage=' + stage + '; detail=' + (diagnosticTail() || 'FFmpeg full-resolution encoding failed'));
+
       }
     }
 
@@ -602,88 +554,8 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     }
     if (outputBytes.byteLength > MAX_INPUT_BYTES) throw new Error('video_file_over_limit');
 
-    // Bitrate estimates alone are not a size guarantee (especially for HDR/HEVC).
-    // Measure the real muxed file and adaptively re-encode until it is within +200 KiB.
-    // Keep audio bitrate fixed and adjust only video bitrate; never silently return an
-    // output that violates the user's strict size ceiling.
-    const maxOutputBytes = inputBlob.size + 200 * 1024;
-    const preferredOutputBytes = inputBlob.size + 150 * 1024;
-    const estimatedAudioBytes = Math.max(0, Math.round(Math.max(0.1, Number(duration) || 0.1) * 160000 / 8));
-    let sizeCorrectionAttempts = 0;
-    const minPreferredBytes = inputBlob.size + 100 * 1024;
-    // Correct both oversized and undersized encodes. A wrong duration estimate or a
-    // browser/encoder difference can otherwise produce a tiny file (e.g. 8 MB from 34 MB).
-    while ((outputBytes.byteLength > maxOutputBytes || outputBytes.byteLength < minPreferredBytes) &&
-           sizeCorrectionAttempts < 5) {
-      throwIfAborted(signal);
-      if (aborted) throw new Error('processing_cancelled');
-      sizeCorrectionAttempts += 1;
-      const currentVideoBytes = Math.max(1, outputBytes.byteLength - estimatedAudioBytes);
-      const targetVideoBytes = Math.max(1, preferredOutputBytes - estimatedAudioBytes);
-      const isOversized = outputBytes.byteLength > maxOutputBytes;
-      const correctionRatio = (targetVideoBytes / currentVideoBytes) * (isOversized ? 0.97 : 1.03);
-      const correctedBitrate = Math.max(250000, Math.min(100000000,
-        Math.floor(targetVideoBitrate * correctionRatio)));
-      if (correctedBitrate === targetVideoBitrate ||
-          (isOversized && correctedBitrate > targetVideoBitrate) ||
-          (!isOversized && correctedBitrate < targetVideoBitrate)) break;
-      targetVideoBitrate = correctedBitrate;
-      const correctedMaxRate = Math.round(targetVideoBitrate * 1.02);
-      const correctedBufferSize = Math.max(Math.round(targetVideoBitrate * 0.5), 256000);
-      rememberLog('Size correction attempt ' + sizeCorrectionAttempts + ': output=' + outputBytes.byteLength +
-        ' targetMax=' + maxOutputBytes + ' videoBitrate=' + targetVideoBitrate);
-      stage = 'encode_size_correction_' + sizeCorrectionAttempts;
-      try { await ffmpeg.deleteFile(outputFileName); } catch (_) {}
-      const correctionFilter = used1080pFallback
-        ? 'scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,fps=' + TARGET_FPS
-        : 'fps=' + TARGET_FPS;
-      const correctionArgs = [
-        '-hide_banner', '-y',
-        '-filter_threads', '1',
-        '-i', inputFileName,
-        '-map', '0:v:0',
-        '-map', '0:a?',
-        '-map_metadata', '0',
-        '-vf', correctionFilter,
-        ...(isHdrEncode ? [] : ['-fps_mode', 'cfr']),
-        '-c:v', isHdrEncode ? 'libx265' : 'libx264',
-        '-preset', 'ultrafast',
-        '-b:v', String(targetVideoBitrate),
-        '-maxrate', String(correctedMaxRate),
-        '-bufsize', String(correctedBufferSize),
-        '-threads', '1',
-        '-pix_fmt', isHdrEncode ? 'yuv420p10le' : 'yuv420p',
-        ...(isHdrEncode ? [
-          '-tag:v', 'hvc1',
-          '-color_primaries', 'bt2020',
-          '-color_trc', hdrType === 'hlg' ? 'arib-std-b67' : 'smpte2084',
-          '-colorspace', 'bt2020nc',
-          '-x265-params', hdrType === 'hlg' ? 'repeat-headers=1' : 'hdr10=1:repeat-headers=1'
-        ] : ['-tag:v', 'avc1']),
-        '-c:a', 'aac',
-        '-b:a', '160k',
-        '-movflags', '+faststart',
-        outputFileName
-      ];
-      const correctionCode = await ffmpeg.exec(correctionArgs);
-      throwIfAborted(signal);
-      if (aborted) throw new Error('processing_cancelled');
-      if (correctionCode !== 0) {
-        throw new Error('ffmpeg_size_correction_failed: attempt=' + sizeCorrectionAttempts +
-          '; detail=' + (diagnosticTail() || 'FFmpeg exited with ' + correctionCode));
-      }
-      outputBytes = await ffmpeg.readFile(outputFileName);
-      if (!(outputBytes instanceof Uint8Array) || outputBytes.byteLength < 64) {
-        throw new Error('fps_encoder_empty_output');
-      }
-      if (outputBytes.byteLength > MAX_INPUT_BYTES) throw new Error('video_file_over_limit');
-      onProgress?.(Math.min(0.96, 0.88 + sizeCorrectionAttempts * 0.025));
-    }
-    if (outputBytes.byteLength > maxOutputBytes || outputBytes.byteLength < minPreferredBytes) {
-      throw new Error('output_size_target_not_met: source=' + inputBlob.size +
-        '; output=' + outputBytes.byteLength + '; min=' + minPreferredBytes +
-        '; max=' + maxOutputBytes + '; attempts=' + sizeCorrectionAttempts);
-    }
+    // Do not run corrective size re-encodes. The target bitrate is derived from the
+    // source file's average bitrate, so dimensions and quality are not repeatedly altered.
 
     stage = 'verify_output';
     const verified = mediaCore.inspectMediaInfo(outputBytes);
