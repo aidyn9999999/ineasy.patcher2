@@ -1997,18 +1997,6 @@ function neutralizeAdjnEncoderMetadata(bytes) {
   return changed;
 }
 
-function appendMp4Padding(bytes) {
-  const paddingSize = 1024 * 1024;
-  if (!(bytes instanceof Uint8Array) || bytes.byteLength + paddingSize > MAX_VIDEO_FILE_SIZE) return bytes;
-  const padding = new Uint8Array(paddingSize);
-  new DataView(padding.buffer).setUint32(0, paddingSize);
-  padding.set([0x66, 0x72, 0x65, 0x65], 4);
-  const padded = new Uint8Array(bytes.byteLength + paddingSize);
-  padded.set(bytes);
-  padded.set(padding, bytes.byteLength);
-  return padded;
-}
-
 function getPostingDeviceForPlatform() {
   const isPhoneMode = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -2513,6 +2501,12 @@ if (processBtn) {
         fpsConversion = await hdrEncoder.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress, { hdr: true }
         );
+      } else if (ffmpeg4kEligible) {
+        // Use the bitrate-controlled FFmpeg encoder for supported MP4/MOV/M4V SDR too.
+        // MediaBunny Quality('high') can more than double small source files because it
+        // does not enforce the requested source-relative output-size ceiling.
+        setProcessingState('processing', 'CFR conversion with size control');
+        fpsConversion = await runFfmpeg4kCfr('auto');
       } else try {
         fpsConversion = await runPrimaryCfr();
       } catch (primaryError) {
@@ -2771,12 +2765,17 @@ if (processBtn) {
       const isV2InputPassThrough = isV2Selected && Boolean(result.passthrough);
       // The normalized MP4 has already been frame-converted before patching. Keep it in
       // V2 pass-through mode instead of accidentally restoring the unconverted source file.
-      const outputBytes = result.passthrough || isV2Selected
-        ? result.output
-        : (result.outputMime === 'video/mp4' ? appendMp4Padding(result.output) : result.output);
+      // Never append artificial 1 MiB MP4 padding: it violates the strict output-size target.
+      // Metadata FourCC normalization above is used instead of changing the file length.
+      const outputBytes = result.output;
       let outputBlob = isV2InputPassThrough
         ? processingFile
         : new Blob([outputBytes], { type: result.outputMime || 'video/mp4' });
+      const maxFinalBytes = sourceFile.size + 200 * 1024;
+      if (outputBlob.size > maxFinalBytes) {
+        throw new Error('final_output_size_limit_exceeded: source=' + sourceFile.size +
+          '; output=' + outputBlob.size + '; max=' + maxFinalBytes);
+      }
 
       // Inspect the actual patcher output before returning it; never silently skip CFR conversion.
       const outputMediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
