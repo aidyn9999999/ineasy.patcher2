@@ -252,12 +252,26 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   let inputFileName = 'ineasy-source' + extension;
   const outputFileName = 'ineasy-4k-cfr.mp4';
   let aborted = false;
+  let stage = 'initialize';
+  const recentLogs = [];
+  const rememberLog = (value) => {
+    const line = String(value || '').replace(/\s+/g, ' ').trim();
+    if (!line) return;
+    recentLogs.push(line);
+    if (recentLogs.length > 40) recentLogs.shift();
+  };
+  const diagnosticTail = () => recentLogs
+    .filter((line) => !/frame=\s*\d+.*fps=/.test(line))
+    .slice(-8)
+    .join(' | ')
+    .slice(-900);
   const handleAbort = () => {
     aborted = true;
     try { ffmpeg.terminate(); } catch (_) {}
   };
   const handleLog = ({ message }) => {
     const line = String(message || '');
+    rememberLog(line);
     const match = line.match(/time=(\d{2}):(\d{2}):(\d{2}(?:\.\d+)?)/);
     const totalDuration = Number(duration);
     if (match && totalDuration > 0) {
@@ -274,49 +288,56 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   try {
     ffmpeg.on('log', handleLog);
     ffmpeg.on('progress', handleProgress);
+    stage = 'load_core';
     onProgress?.(0.04);
     await ffmpeg.load({ coreURL: coreBlobUrl, wasmURL: wasmBlobUrl });
     throwIfAborted(signal);
     if (aborted) throw new Error('processing_cancelled');
+    stage = 'write_input';
     onProgress?.(0.08);
     await ffmpeg.writeFile(inputFileName, inputBytes);
     throwIfAborted(signal);
+    stage = 'encode_4k';
     onProgress?.(0.12);
 
-    // fps filter performs real frame drop/duplication to CFR; no resize filter is used.
+    // Keep the filter graph and encoder to one thread to reduce memory spikes on phones.
+    // Do not hard-code an H.264 level: valid 4K/UHD and portrait 4K frame sizes differ.
+    // The fps filter performs real drop/duplication to CFR; no scale filter is used.
     const code = await ffmpeg.exec([
       '-hide_banner', '-y',
+      '-filter_threads', '1',
       '-i', inputFileName,
       '-map', '0:v:0',
       '-map', '0:a?',
       '-map_metadata', '0',
       '-vf', 'fps=' + TARGET_FPS,
       '-fps_mode', 'cfr',
-      '-r', TARGET_FPS,
       '-c:v', 'libx264',
       '-preset', 'ultrafast',
-      '-crf', '18',
-      '-maxrate', '45M',
-      '-bufsize', '90M',
-      '-profile:v', 'high',
-      '-level:v', '5.2',
+      '-crf', '20',
+      '-threads', '1',
       '-pix_fmt', 'yuv420p',
       '-tag:v', 'avc1',
       '-c:a', 'aac',
-      '-b:a', '192k',
+      '-b:a', '160k',
       '-movflags', '+faststart',
       outputFileName
     ]);
     throwIfAborted(signal);
     if (aborted) throw new Error('processing_cancelled');
-    if (code !== 0) throw new Error('ffmpeg_4k_exec_failed: exit=' + code);
+    if (code !== 0) {
+      throw new Error('ffmpeg_4k_exec_failed: exit=' + code +
+        '; stage=' + stage + '; detail=' + (diagnosticTail() || 'FFmpeg returned a non-zero exit code'));
+    }
 
+    stage = 'read_output';
     const outputBytes = await ffmpeg.readFile(outputFileName);
     if (!(outputBytes instanceof Uint8Array) || outputBytes.byteLength < 64) {
       throw new Error('fps_encoder_empty_output');
     }
     if (outputBytes.byteLength > MAX_INPUT_BYTES) throw new Error('video_file_over_limit');
 
+    stage = 'verify_output';
     const verified = mediaCore.inspectMediaInfo(outputBytes);
     const actualFps = Number(verified?.averageFps);
     if (!Number.isFinite(actualFps) || Math.abs(actualFps - 60000 / 1001) > 0.03) {
@@ -352,11 +373,20 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     if (signal?.aborted || aborted || /processing_cancelled|AbortError/i.test(String(error?.message || ''))) {
       throw new Error('processing_cancelled');
     }
-    const message = String(error?.message || error || 'unknown_error').slice(0, 400);
-    if (/ffmpeg_4k_hdr_unsafe|ffmpeg_4k_source_format_unsupported|video_file_over_limit|fps_encoder_empty_output|fps_encoder_verification_failed|ffmpeg_4k_resolution_verification_failed/.test(message)) {
+    const rawMessage = String(error?.message || error || 'unknown_error');
+    const diagnostic = diagnosticTail();
+    console.error('[INEASY] 4K FFmpeg failure', {
+      stage,
+      message: rawMessage.slice(0, 500),
+      recentLogs: diagnostic,
+      inputBytes: inputBytes.byteLength,
+      inputResolution: width + 'x' + height
+    });
+    const message = (rawMessage + (diagnostic && !rawMessage.includes(diagnostic) ? '; detail=' + diagnostic : '')).slice(0, 1400);
+    if (/ffmpeg_4k_hdr_unsafe|ffmpeg_4k_source_format_unsupported|video_file_over_limit|fps_encoder_empty_output|fps_encoder_verification_failed|ffmpeg_4k_resolution_verification_failed|ffmpeg_4k_exec_failed/.test(message)) {
       throw new Error(message);
     }
-    throw new Error('ffmpeg_4k_fallback_failed: ' + message);
+    throw new Error('ffmpeg_4k_fallback_failed: stage=' + stage + '; ' + message);
   } finally {
     signal?.removeEventListener('abort', handleAbort);
     try { ffmpeg.terminate(); } catch (_) {}
