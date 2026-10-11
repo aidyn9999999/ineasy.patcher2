@@ -1653,7 +1653,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
       if (!signal.aborted) onProgress?.(Math.max(0, Math.min(1, Number(progress) || 0)));
     });
 
-    const extension = (String(inputName || '').match(/\\.([a-z0-9]+)$/i)?.[1] || 'mp4').toLowerCase();
+    const extension = (String(inputName || '').match(/\.([a-z0-9]+)$/i)?.[1] || 'mp4').toLowerCase();
     const inputPath = 'ineasy-input.' + extension;
     const outputPath = 'ineasy-cfr-5994.mp4';
 
