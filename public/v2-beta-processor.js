@@ -47,6 +47,27 @@
     }
   }
 
+  function compareMedia(input, output) {
+    if (!input || !output) return { compatible: false, reason: 'Input or output media metadata could not be verified.' };
+    const checks = {
+      codecFamily: String(input.codecFamily || '').toLowerCase() === String(output.codecFamily || '').toLowerCase(),
+      codec: String(input.codec || '').toLowerCase() === String(output.codec || '').toLowerCase(),
+      dimensions: Number(input.width) === Number(output.width) && Number(input.height) === Number(output.height),
+      fps: Number.isFinite(Number(input.averageFps)) && Number.isFinite(Number(output.averageFps))
+        ? Math.abs(Number(input.averageFps) - Number(output.averageFps)) <= 0.05
+        : (!input.averageFps && !output.averageFps),
+      audioCodec: !input.audioCodec || String(input.audioCodec).toLowerCase() === String(output.audioCodec || '').toLowerCase(),
+      videoSamples: !input.videoSamples || !output.videoSamples || Number(input.videoSamples) === Number(output.videoSamples),
+      audioSamples: !input.audioSamples || !output.audioSamples || Number(input.audioSamples) === Number(output.audioSamples)
+    };
+    const failed = Object.keys(checks).filter(key => !checks[key]);
+    return {
+      compatible: failed.length === 0,
+      checks,
+      reason: failed.length ? 'Remux changed or could not preserve: ' + failed.join(', ') : ''
+    };
+  }
+
   async function processVideoDirect(data, onProgress) {
     const original = bytes(data.buffer);
     if (original.byteLength < 64) throw new Error('V2_INVALID_VIDEO_FILE');
@@ -60,6 +81,7 @@
     let output = original.slice();
     let remuxed = false;
     let remuxError = '';
+    let streamCheck = null;
 
     if (isMp4 && inputInfo && /^(avc|hevc)$/i.test(inputInfo.codecFamily || '')) {
       progress('Checking source metadata', 12, 'Reading codec, dimensions, FPS and audio tracks');
@@ -70,8 +92,15 @@
         const outputBlob = await remux(sourceBlob);
         const remuxBytes = new Uint8Array(await outputBlob.arrayBuffer());
         if (remuxBytes.byteLength < 64) throw new Error('Remux output is empty or incomplete.');
-        output = remuxBytes;
-        remuxed = true;
+        const remuxInfo = inspect(core, remuxBytes);
+        streamCheck = compareMedia(inputInfo, remuxInfo);
+        if (!streamCheck.compatible) {
+          remuxError = streamCheck.reason;
+          output = original.slice();
+        } else {
+          output = remuxBytes;
+          remuxed = true;
+        }
       } catch (error) {
         remuxError = String(error && error.message || error);
         output = original.slice();
@@ -91,6 +120,10 @@
       inspected: !!inputInfo,
       input: inputInfo,
       output: outputInfo,
+      streamCheck,
+      codecPreserved: !!inputInfo && !!outputInfo && String(inputInfo.codec || '').toLowerCase() === String(outputInfo.codec || '').toLowerCase(),
+      dimensionsPreserved: !!inputInfo && !!outputInfo && inputInfo.width === outputInfo.width && inputInfo.height === outputInfo.height,
+      fpsPreserved: !!inputInfo && !!outputInfo && Number.isFinite(inputInfo.averageFps) && Number.isFinite(outputInfo.averageFps) && Math.abs(inputInfo.averageFps - outputInfo.averageFps) <= 0.05,
       remuxed,
       reencoded: false,
       metadataRewritten: false,
@@ -116,10 +149,14 @@
         reencoded: false,
         metadataInspected: !!inputInfo,
         metadataRewritten: false,
+        codecPreserved: !!inputInfo && !!outputInfo && String(inputInfo.codec || '').toLowerCase() === String(outputInfo.codec || '').toLowerCase(),
+        dimensionsPreserved: !!inputInfo && !!outputInfo && inputInfo.width === outputInfo.width && inputInfo.height === outputInfo.height,
+        fpsPreserved: !!inputInfo && !!outputInfo && Number.isFinite(inputInfo.averageFps) && Number.isFinite(outputInfo.averageFps) && Math.abs(inputInfo.averageFps - outputInfo.averageFps) <= 0.05,
+        streamCheck,
         fallbackReason: remuxed ? null : remuxError,
         note: remuxed
           ? 'Compatible MP4 tracks were repackaged without video/audio re-encoding. TikTok may still transcode after upload.'
-          : 'The original source bytes were preserved because standard remux was not available for this file.'
+          : 'The original source bytes were preserved because remux was unavailable or the output stream metadata did not match the source.'
       }
     };
   }
