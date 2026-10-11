@@ -1226,6 +1226,7 @@
 /* Very narrow phones: keep the complete balance row and all homepage labels readable. */
 @media (max-width: 360px) {
   .app-shell:has(#homeSection.active) > .topbar {
+    display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
     padding: 10px 12px;
