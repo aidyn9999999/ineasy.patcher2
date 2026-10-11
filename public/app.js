@@ -2096,10 +2096,8 @@ async function handleFile(file) {
     fpsPolicyNote.textContent = translations[STATE.lang]?.fpsPolicyNote || translations.en.fpsPolicyNote;
     fpsPolicyNote.classList.remove('hidden');
   }
-  if (Math.max(dimensions.width, dimensions.height) > 4096 || Math.min(dimensions.width, dimensions.height) > 2304) {
-    rejectFileSelection(t('videoResolutionTooHigh'));
-    return;
-  }
+  // Do not reject large HDR/UHD sources by resolution. Actual browser/WASM memory
+  // remains the practical limit; keep the selected dimensions unchanged.
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
   selectedVideoDimensions = dimensions;
   // Warm FFmpeg's JS/WASM assets in the background as soon as a 4K source is selected.
@@ -2487,7 +2485,9 @@ if (processBtn) {
         fpsConversion = await localFfmpeg.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile, selectedVideoDimensions, sourceDuration,
           controller.signal, reportCfrProgress, {
-            hdr: 'auto',
+            hdr: true,
+            hdrType: hdrInspection.hdrType,
+            hdrProfile: hdrInspection,
             sourceBytes: hdrInspection.sourceBytes
           }
         );
@@ -2518,7 +2518,9 @@ if (processBtn) {
             fpsConversion = await localFfmpeg.convertVideoToExact5994FpsWithFFmpeg(
               sourceFile, selectedVideoDimensions, sourceDuration,
               controller.signal, reportCfrProgress, {
-                hdr: 'auto',
+                hdr: true,
+                hdrType: hdrInspection.hdrType,
+                hdrProfile: hdrInspection,
                 sourceBytes: hdrInspection.sourceBytes
               }
             );
