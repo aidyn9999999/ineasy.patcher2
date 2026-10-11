@@ -1565,6 +1565,82 @@ async function readVideoDimensionsForSelection(file) {
   }
 }
 
+async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress) {
+  signal.throwIfAborted();
+  onProgress?.(0.02);
+  const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js');
+  signal.throwIfAborted();
+  const ffmpeg = new FFmpeg();
+  let aborted = false;
+  const onAbort = () => {
+    aborted = true;
+    try { ffmpeg.terminate(); } catch (_) {}
+  };
+  signal.addEventListener('abort', onAbort, { once: true });
+  let coreBlobUrl = null;
+  let wasmBlobUrl = null;
+  const inputPath = 'ineasy-input.' + ((String(inputName || '').match(/\.([a-z0-9]+)$/i)?.[1] || 'mp4').toLowerCase());
+  const outputPath = 'ineasy-cfr-5994.mp4';
+  try {
+    const coreBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
+    const [coreResponse, wasmResponse] = await Promise.all([
+      fetch(coreBase + '/ffmpeg-core.js', { signal }),
+      fetch(coreBase + '/ffmpeg-core.wasm', { signal })
+    ]);
+    if (!coreResponse.ok || !wasmResponse.ok) throw new Error('fps_encoder_download_failed');
+    const [coreCode, wasmBytes] = await Promise.all([coreResponse.blob(), wasmResponse.blob()]);
+    signal.throwIfAborted();
+    coreBlobUrl = URL.createObjectURL(coreCode);
+    wasmBlobUrl = URL.createObjectURL(wasmBytes);
+    await ffmpeg.load({ coreURL: coreBlobUrl, wasmURL: wasmBlobUrl });
+    signal.throwIfAborted();
+    ffmpeg.on('progress', ({ progress }) => {
+      if (!signal.aborted) onProgress?.(Math.max(0, Math.min(1, Number(progress) || 0)));
+    });
+    await ffmpeg.writeFile(inputPath, new Uint8Array(await inputBlob.arrayBuffer()));
+    signal.throwIfAborted();
+    const baseArgs = [
+      '-i', inputPath,
+      '-map', '0:v:0', '-map', '0:a?',
+      '-vf', 'fps=60000/1001',
+      '-r', '60000/1001',
+      '-fps_mode', 'cfr',
+      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
+      '-pix_fmt', 'yuv420p',
+      '-movflags', '+faststart'
+    ];
+    try {
+      await ffmpeg.exec([...baseArgs, '-c:a', 'copy', outputPath]);
+    } catch (audioCopyError) {
+      if (signal.aborted) throw audioCopyError;
+      try { await ffmpeg.deleteFile(outputPath); } catch (_) {}
+      await ffmpeg.exec([...baseArgs, '-c:a', 'aac', '-b:a', '192k', outputPath]);
+    }
+    signal.throwIfAborted();
+    const outputData = await ffmpeg.readFile(outputPath);
+    const outputBlob = new Blob([outputData], { type: 'video/mp4' });
+    if (!outputBlob.size) throw new Error('fps_encoder_empty_output');
+    const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+    if (core?.inspectMediaInfo) {
+      const verified = core.inspectMediaInfo(new Uint8Array(await outputBlob.arrayBuffer()));
+      const fps = Number(verified?.averageFps);
+      if (!Number.isFinite(fps) || Math.abs(fps - (60000 / 1001)) > 0.03) {
+        throw new Error('fps_encoder_verification_failed');
+      }
+      return { blob: outputBlob, info: verified, fps };
+    }
+    throw new Error('fps_encoder_verification_unavailable');
+  } catch (error) {
+    if (signal.aborted || aborted) throw new Error('processing_cancelled');
+    throw error;
+  } finally {
+    signal.removeEventListener('abort', onAbort);
+    try { ffmpeg.terminate(); } catch (_) {}
+    if (coreBlobUrl) URL.revokeObjectURL(coreBlobUrl);
+    if (wasmBlobUrl) URL.revokeObjectURL(wasmBlobUrl);
+  }
+}
+
 async function prepareVideoForPatcher(file, dimensions, signal) {
   signal.throwIfAborted();
   return {
@@ -1675,10 +1751,7 @@ async function handleFile(file) {
   checkingFileDimensions = false;
   const fpsCheck = await inspectFrameRateForSelection(file);
   if (selectionVersion !== fileSelectionVersion) return;
-  if (fpsCheck.status === '30fps') {
-    rejectFileSelection(t('fps30Rejected'));
-    return;
-  }
+  // Frame rate is normalized to constant 59.94 FPS during processing.
   const fpsPolicyNote = document.getElementById('fpsPolicyNote');
   if (fpsPolicyNote) {
     fpsPolicyNote.textContent = fpsCheck.status === 'unknown' ? t('fpsInspectUnavailable') : (translations[STATE.lang]?.fpsPolicyNote || translations.en.fpsPolicyNote);
@@ -2138,9 +2211,20 @@ if (processBtn) {
         : (result.outputMime === 'video/mp4' ? appendMp4Padding(result.output) : result.output);
       // Keep the selected File object only when V2 explicitly reports passthrough.
       // When the real remux engine succeeds, download/post its remuxed output.
-      const outputBlob = isV2OriginalPassThrough
+      let outputBlob = isV2OriginalPassThrough
         ? sourceFile
         : new Blob([outputBytes], { type: result.outputMime || 'video/mp4' });
+
+      setProcessingState('processing', 'Converting to constant 59.94 FPS…');
+      updateProcessingProgress(84);
+      const fpsConversion = await convertVideoToExact5994Fps(outputBlob, sourceFile.name, controller.signal, (p) => {
+        updateProcessingProgress(84 + Math.round(p * 14));
+      });
+      outputBlob = fpsConversion.blob;
+      result.outputInfo = fpsConversion.info;
+      result.outputMime = 'video/mp4';
+      result.passthrough = false;
+      result.mode = (result.mode || 'patched') + '+cfr-5994';
 
       await consumeProcessedVideo();
       processedVideoBlob = outputBlob;
