@@ -303,7 +303,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     // Keep the filter graph and encoder to one thread to reduce memory spikes on phones.
     // Do not hard-code an H.264 level: valid 4K/UHD and portrait 4K frame sizes differ.
     // The fps filter performs real drop/duplication to CFR; no scale filter is used.
-    const code = await ffmpeg.exec([
+    let code = await ffmpeg.exec([
       '-hide_banner', '-y',
       '-filter_threads', '1',
       '-i', inputFileName,
@@ -325,9 +325,40 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     ]);
     throwIfAborted(signal);
     if (aborted) throw new Error('processing_cancelled');
+
+    // Retry once with the most compatible CFR argument set if the stricter command fails.
+    // The fps filter itself guarantees regular 59.94 FPS frames, so -fps_mode is unnecessary here.
     if (code !== 0) {
-      throw new Error('ffmpeg_4k_exec_failed: exit=' + code +
-        '; stage=' + stage + '; detail=' + (diagnosticTail() || 'FFmpeg returned a non-zero exit code'));
+      const firstAttemptCode = code;
+      const firstAttemptLog = diagnosticTail() || 'no FFmpeg log received';
+      rememberLog('Retrying once with simplified 4K CFR arguments after exit=' + code);
+      stage = 'encode_retry';
+      try { await ffmpeg.deleteFile(outputFileName); } catch (_) {}
+      code = await ffmpeg.exec([
+        '-hide_banner', '-y',
+        '-filter_threads', '1',
+        '-i', inputFileName,
+        '-map', '0:v:0',
+        '-map', '0:a?',
+        '-map_metadata', '0',
+        '-vf', 'fps=' + TARGET_FPS,
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-crf', '22',
+        '-threads', '1',
+        '-pix_fmt', 'yuv420p',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-movflags', '+faststart',
+        outputFileName
+      ]);
+      throwIfAborted(signal);
+      if (aborted) throw new Error('processing_cancelled');
+      if (code !== 0) {
+        throw new Error('ffmpeg_4k_exec_failed: exit=' + code +
+          '; stage=' + stage + '; detail=' + (diagnosticTail() || 'FFmpeg returned a non-zero exit code') +
+          '; firstAttemptExit=' + firstAttemptCode + '; firstAttemptDetail=' + firstAttemptLog.slice(-240));
+      }
     }
 
     stage = 'read_output';
