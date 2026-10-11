@@ -126,7 +126,7 @@ if (host && hero && 'WebGLRenderingContext' in window) {
     composition.position.set(onPhone?1.15:3.35,onPhone?-1.7:.02,0);
     composition.scale.setScalar(onPhone?.62:1);
     composition.rotation.set(-.08,-.19,.045);
-    orbit.position.copy(composition.position); orbit.scale.copy(composition.scale);
+    orbit.position.set(0, 0, 0); orbit.scale.setScalar(1);
     markerA.visible=markerB.visible=markerC.visible=!onPhone;
   };
   const ro=new ResizeObserver(resize); ro.observe(host); resize();
