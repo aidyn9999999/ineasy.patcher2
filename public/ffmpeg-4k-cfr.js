@@ -326,7 +326,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
         await ffmpeg.load({ coreURL, wasmURL, classWorkerURL });
       } catch (firstLoadError) {
         const firstLoadMessage = String(firstLoadError?.message || firstLoadError || '');
-        if (!/failed to import ffmpeg-core\\.js|failed to load ffmpeg-core/i.test(firstLoadMessage)) {
+        if (!/failed to import ffmpeg-core\.js|failed to load ffmpeg-core/i.test(firstLoadMessage)) {
           throw firstLoadError;
         }
         try { ffmpeg.terminate(); } catch (_) {}
