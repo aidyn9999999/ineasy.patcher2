@@ -358,7 +358,7 @@
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
-  if (!patcherTest) import('./home-scene.js');
+  if (!patcherTest) import('./home-scene.js?v=20261011-2');
 </script>
 </body>
 </html>
