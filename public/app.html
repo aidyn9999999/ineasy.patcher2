@@ -62,7 +62,6 @@
     <section class="view-section home-section active" id="homeSection">
       <section class="home-hero" id="homeHero" aria-labelledby="homeTitle">
         <div class="home-hero-shade" aria-hidden="true"></div>
-        <div class="home-scene-canvas" id="home3dScene" aria-hidden="true"></div>
         <div class="home-hero-copy">
           <p class="home-eyebrow" id="homeKicker">INEASY VIDEO PATCHER</p>
           <h1 id="homeTitle">Каждый кадр. Под контролем.</h1>
@@ -358,7 +357,6 @@
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
-  if (!patcherTest) import('./home-scene.js?v=20261011-4');
 </script>
 </body>
 </html>
