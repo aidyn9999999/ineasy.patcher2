@@ -204,10 +204,11 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
       if (primaries === 9) result.displayColor = 'BT.2020 / non-HDR transfer';
     }
   }
-  if (isHevc && result.tenBit && !result.hdr && result.displayColor === 'unknown') {
+  if (isHevc && result.tenBit && !result.hdr &&
+      (result.displayColor === 'unknown' || result.displayColor === 'BT.2020 / non-HDR transfer')) {
     result.hdr = true;
     result.displayColor = 'BT.2020 / PQ (inferred from HEVC Main10; transfer metadata missing)';
-    result.reason = 'HEVC Main10 with missing HDR transfer metadata; preserving 10-bit HDR path';
+    result.reason = 'HEVC Main10 with missing/invalid HDR transfer metadata; preserving 10-bit HDR path';
   }
   return result;
 }
@@ -246,13 +247,12 @@ function fileExtension(name) {
   return extension || '';
 }
 
-// Keep output close to source size instead of letting CRF/ultrafast inflate it.
-// Aim ~1 MiB below source to leave room for muxing variance.
-function smartVideoBitrate(sourceBytes, durationSeconds, audioBitrate = 128000) {
+// Target the original file size plus 120 KiB, leaving the requested 100–200 KiB margin.
+// Account for the AAC stream before assigning the average video bitrate.
+function smartVideoBitrate(sourceBytes, durationSeconds, audioBitrate = 160000) {
   const bytes = Math.max(1, Number(sourceBytes) || 1);
   const seconds = Math.max(0.1, Number(durationSeconds) || 0.1);
-  const safetyBytes = Math.min(1024 * 1024, Math.max(64 * 1024, Math.round(bytes * 0.015)));
-  const targetBytes = Math.max(128 * 1024, bytes - safetyBytes);
+  const targetBytes = bytes + 120 * 1024;
   const totalBitsPerSecond = (targetBytes * 8) / seconds;
   return Math.max(250000, Math.min(100000000, Math.floor(totalBitsPerSecond - audioBitrate)));
 }
@@ -299,19 +299,54 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   const isHdrEncode = options?.hdr === true ||
     (options?.hdr === 'auto' && colorProfile.hdr);
   const hdrType = /HLG/i.test(colorProfile.displayColor) ? 'hlg' : 'pq';
-  const targetVideoBitrate = smartVideoBitrate(inputBlob.size, duration, 128000);
-  const targetMaxRate = Math.round(targetVideoBitrate * 1.15);
-  const targetBufferSize = Math.max(targetVideoBitrate * 2, 512000);
+  const targetVideoBitrate = smartVideoBitrate(inputBlob.size, duration, 160000);
+  const targetMaxRate = Math.round(targetVideoBitrate * 1.02);
+  const targetBufferSize = Math.max(Math.round(targetVideoBitrate * 0.5), 256000);
   if (colorProfile.hdr && !isHdrEncode) {
     console.warn('[INEASY] Structured HDR colour metadata detected; SDR path refused:', colorProfile);
     throw new Error('ffmpeg_4k_hdr_unsafe: ' + colorProfile.reason);
   }
-  if (isHdrEncode && !colorProfile.hdr) {
+  if (isHdrEncode && !colorProfile.hdr && options?.hdr !== true) {
     throw new Error('hdr_metadata_not_detected');
+  }
+  if (options?.hdr === true && !colorProfile.hdr) {
+    // The 1080p detector may find HDR in a color box the FFmpeg-side parser cannot
+    // resolve. The caller explicitly classified this file as HDR, so use a safe PQ
+    // fallback rather than rejecting it or routing it through the SDR encoder.
+    colorProfile.hdr = true;
+    if (!/HLG/i.test(colorProfile.displayColor)) {
+      colorProfile.displayColor = 'BT.2020 / PQ (HDR detected by primary inspector)';
+    }
+    colorProfile.reason = (colorProfile.reason ? colorProfile.reason + '; ' : '') + 'HDR classification supplied by primary inspector';
   }
   if (isHdrEncode && /Dolby Vision/i.test(colorProfile.reason)) {
     // A plain HEVC re-encode cannot preserve Dolby Vision dynamic metadata.
     throw new Error('hdr_dolby_vision_transcode_unsupported');
+  }
+  const detectedSourceFps = Number(sourceInfo.averageFps || 0);
+  if (Number.isFinite(detectedSourceFps) && Math.abs(detectedSourceFps - TARGET_FPS) <= 0.01) {
+    console.info('[INEASY] Source is already 59.94 FPS; skipping expensive re-encode', {
+      sourceBytes: inputBlob.size, sourceFps: detectedSourceFps, hdr: isHdrEncode
+    });
+    onProgress?.(1);
+    return {
+      blob: inputBlob,
+      info: sourceInfo,
+      fps: detectedSourceFps,
+      sourceFps: detectedSourceFps,
+      preserveOriginal: true,
+      hdr: isHdrEncode,
+      hdrTranscoded: false,
+      main10Transcoded: false,
+      hdrProfile: isHdrEncode ? {
+        label: colorProfile.displayColor || 'BT.2020 / PQ (HDR10)',
+        hdr10: hdrType !== 'hlg',
+        hlg: hdrType === 'hlg',
+        main10: colorProfile.tenBit,
+        dolbyVision: false
+      } : null,
+      downscaledFallback: false
+    };
   }
   if (isHdrEncode && !['avc', 'hevc'].includes(String(sourceInfo.codecFamily || '').toLowerCase())) {
     throw new Error('hdr_source_codec_unsupported');
@@ -499,7 +534,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
               '-pix_fmt', 'yuv420p'
             ]),
         '-c:a', 'aac',
-        '-b:a', '128k',
+        '-b:a', '160k',
         '-movflags', '+faststart',
         outputFileName
       ]);
@@ -545,7 +580,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
                 '-pix_fmt', 'yuv420p'
               ]),
           '-c:a', 'aac',
-          '-b:a', '128k',
+          '-b:a', '160k',
           '-movflags', '+faststart',
           outputFileName
         ]);
