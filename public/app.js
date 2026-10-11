@@ -1568,8 +1568,25 @@ async function readVideoDimensionsForSelection(file) {
 async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress) {
   signal.throwIfAborted();
   onProgress?.(0.02);
-  const { FFmpeg } = await import('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js');
+  if (!globalThis.FFmpegWASM?.FFmpeg) {
+    await new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-ineasy-ffmpeg]');
+      if (existing) {
+        existing.addEventListener('load', resolve, { once: true });
+        existing.addEventListener('error', () => reject(new Error('fps_encoder_download_failed')), { once: true });
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js';
+      script.dataset.ineasyFfmpeg = '1';
+      script.onload = resolve;
+      script.onerror = () => reject(new Error('fps_encoder_download_failed'));
+      document.head.appendChild(script);
+    });
+  }
   signal.throwIfAborted();
+  const FFmpeg = globalThis.FFmpegWASM?.FFmpeg;
+  if (!FFmpeg) throw new Error('fps_encoder_download_failed');
   const ffmpeg = new FFmpeg();
   let aborted = false;
   const onAbort = () => {
@@ -2317,6 +2334,7 @@ function localizePatchError(message) {
   }
   const knownErrors = [
     { test: /V2_BETA_ENGINE_NOT_LOADED/i, ru: 'Не удалось загрузить модуль V2. Обновите страницу и попробуйте ещё раз.', kk: 'V2 модулін жүктеу мүмкін болмады. Бетті жаңартып, қайталап көріңіз.', en: 'Could not load the V2 module. Refresh the page and try again.' },
+    { test: /fps_encoder_download_failed|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable/i, ru: 'Не удалось преобразовать видео в точные 59,94 FPS. Проверьте соединение и повторите попытку.', kk: 'Бейнені дәл 59,94 FPS-ке түрлендіру мүмкін болмады. Интернетті тексеріп, қайталап көріңіз.', en: 'Could not convert video to exact 59.94 FPS. Check your connection and try again.' },
     { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
