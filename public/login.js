@@ -206,3 +206,44 @@ try { savedLoginLanguage = localStorage.getItem('ineasy-language') || 'ru'; } ca
   try { savedLoginLanguage = sessionStorage.getItem('ineasy-language') || 'ru'; } catch (storageError) {}
 }
 applyLoginLanguage(savedLoginLanguage);
+
+// Restore a remembered login when browser storage was cleared but the
+// same-site persistent session cookie is still available.
+(async function restoreRememberedLogin() {
+  try {
+    const storedId = localStorage.getItem('tg_id') || sessionStorage.getItem('tg_id');
+    const storedToken = localStorage.getItem('tg_auth_token') || sessionStorage.getItem('tg_auth_token');
+    if (storedId && storedToken) {
+      window.location.replace('/app.html');
+      return;
+    }
+  } catch (error) {}
+
+  try {
+    const response = await fetch('/api/auth/session', { cache: 'no-store' });
+    if (!response.ok) return;
+    const data = await response.json();
+    if (!data.authenticated || !data.telegramId || !data.authToken) return;
+    const values = [
+      ['tg_id', data.telegramId],
+      ['tg_auth_token', data.authToken],
+    ];
+    for (const [key, value] of values) {
+      let saved = false;
+      try {
+        localStorage.setItem(key, String(value));
+        saved = localStorage.getItem(key) === String(value);
+      } catch (error) {}
+      if (!saved) {
+        try {
+          sessionStorage.setItem(key, String(value));
+          saved = sessionStorage.getItem(key) === String(value);
+        } catch (error) {}
+      }
+      if (!saved) return;
+    }
+    window.location.replace('/app.html');
+  } catch (error) {
+    // Keep the login form usable if the session cannot be checked.
+  }
+})();
