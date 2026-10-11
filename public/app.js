@@ -1908,27 +1908,71 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
 
       const outputBlob = new Blob([buffer], { type: 'video/mp4' });
       const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
-      if (!mediaCore?.inspectMediaInfo) throw new Error('fps_encoder_verification_unavailable');
-      const verified = mediaCore.inspectMediaInfo(new Uint8Array(buffer));
-      const fps = Number(verified?.averageFps);
-      if (!Number.isFinite(fps) || Math.abs(fps - TARGET_FPS) > 0.03) {
-        throw new Error('fps_encoder_verification_failed: reported=' + String(fps));
+      // The lightweight ADJN MP4 inspector currently cannot parse some valid
+      // HEVC Main10 MP4 files and reports "video track not found". For HDR,
+      // verify the actual muxed track via MediaBunny and measure decoded frame
+      // timestamps instead of rejecting the file based on that parser limitation.
+      let verified = null;
+      let inspectorError = null;
+      try {
+        if (mediaCore?.inspectMediaInfo) verified = mediaCore.inspectMediaInfo(new Uint8Array(buffer));
+      } catch (error) {
+        inspectorError = error;
+        console.warn('[INEASY] MP4 inspector could not parse HDR output; using MediaBunny verification:', error);
       }
+      if (!verified && !inspectorError) throw new Error('fps_encoder_verification_unavailable');
 
-      // Re-open the result to verify HEVC Main10 and real HDR colour characteristics.
+      // Re-open the result to verify the muxed video track, HEVC Main10 and HDR.
       const verificationInput = new Input({ source: new BlobSource(outputBlob), formats: ALL_FORMATS });
       let outputColorSpace = null;
       let outputHasHdrRange = false;
       let outputCodecParameters = '';
+      let outputTrack = null;
+      let fps = Number(verified?.averageFps);
       try {
-        const outputTrack = await verificationInput.getPrimaryVideoTrack();
+        outputTrack = await verificationInput.getPrimaryVideoTrack();
         if (!outputTrack) throw new Error('hdr_cfr_verification_failed: missing video track');
-        outputColorSpace = await outputTrack.getColorSpace();
-        outputHasHdrRange = Boolean(await outputTrack.hasHighDynamicRange());
+        outputColorSpace = await outputTrack.getColorSpace?.();
+        outputHasHdrRange = Boolean(await outputTrack.hasHighDynamicRange?.());
         outputCodecParameters = String(await outputTrack.getCodecParameterString?.() || '');
+
+        if (!Number.isFinite(fps) || Math.abs(fps - TARGET_FPS) > 0.03) {
+          if (typeof VideoSampleSink !== 'function') {
+            throw new Error('fps_encoder_verification_failed: inspector unavailable and frame sink unavailable');
+          }
+          const checkSink = new VideoSampleSink(outputTrack, { hardwareAcceleration: 'no-preference' });
+          let frameCount = 0;
+          let firstTimestamp = null;
+          let lastTimestamp = null;
+          for await (const sample of checkSink.samples()) {
+            try {
+              const timestamp = Number(sample.timestamp);
+              if (Number.isFinite(timestamp)) {
+                if (firstTimestamp === null) firstTimestamp = timestamp;
+                lastTimestamp = timestamp;
+                frameCount++;
+              }
+            } finally {
+              try { sample.close(); } catch (_) {}
+            }
+          }
+          const measuredDuration = firstTimestamp !== null && lastTimestamp !== null
+            ? (lastTimestamp - firstTimestamp) / 1_000_000
+            : 0;
+          fps = measuredDuration > 0 && frameCount > 1 ? (frameCount - 1) / measuredDuration : NaN;
+        }
+        if (!Number.isFinite(fps) || Math.abs(fps - TARGET_FPS) > 0.03) {
+          throw new Error('fps_encoder_verification_failed: reported=' + String(fps));
+        }
       } finally {
         try { verificationInput.dispose?.(); } catch (_) {}
       }
+      verified = verified || {
+        averageFps: fps,
+        codec: outputCodecParameters || 'HEVC Main10',
+        width: null,
+        height: null
+      };
 
       const outputDetector = globalThis.ADJNVideoProcessor?.detectHdrProfile;
       const outputHdrProfile = typeof outputDetector === 'function'
