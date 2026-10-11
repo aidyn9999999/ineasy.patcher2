@@ -2116,7 +2116,7 @@ async function handleFile(file) {
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
   if (selectedLongSide >= 3000 && /\.(mp4|m4v|mov)$/i.test(file.name)) {
     // Download the 4K encoder in the background while the user is choosing the processing mode.
-    import('./ffmpeg-4k-cfr.js?v=20261011-3')
+    import('./ffmpeg-4k-cfr.js?v=20261011-4')
       .then((encoder) => encoder.preloadFFmpeg4k?.())
       .catch((error) => console.warn('[INEASY] 4K runtime pre-load skipped:', error?.message || error));
   }
@@ -2482,7 +2482,7 @@ if (processBtn) {
         sourceFile, sourceFile.name, controller.signal, reportCfrProgress
       );
       const runFfmpeg4kCfr = async () => {
-        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-3');
+        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-4');
         if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
           throw new Error('ffmpeg_4k_api_unavailable');
         }
@@ -2512,7 +2512,7 @@ if (processBtn) {
             fpsConversion = await runPrimaryCfr();
           } catch (primaryError) {
             const primaryMessage = String(primaryError?.message || primaryError || 'unknown_error');
-            if (/ffmpeg_4k_hdr_unsafe/i.test(ffmpegMessage)) throw ffmpegError;
+            if (/ffmpeg_4k_hdr_unsafe|ffmpeg_4k_10bit_unsupported/i.test(ffmpegMessage)) throw ffmpegError;
             throw new Error(
               'ffmpeg_4k_fallback_failed: FFmpeg=' + ffmpegMessage.slice(0, 220) +
               '; MediaBunny=' + primaryMessage.slice(0, 220)
@@ -2853,7 +2853,8 @@ function localizePatchError(message) {
   }
   const knownErrors = [
     { test: /video_resolution_changed_during_cfr|resolution_output_verification_failed/i, ru: 'После конвертации 4K-разрешение изменилось. Файл не выдан.', kk: '4K түрлендіруден кейін ажыратымдылық өзгерді. Файл шығарылған жоқ.', en: 'The 4K resolution changed during processing. No file was produced.' },
-    { test: /ffmpeg_4k_hdr_unsafe/i, ru: 'Для этого 4K-видео обнаружены признаки HDR/10-bit. Запасной FFmpeg-путь не запускался, чтобы не испортить цвета. Нужен отдельный HDR-совместимый кодировщик.', kk: 'Бұл 4K бейнеде HDR/10-bit белгілері табылды. Түстерді бұзбау үшін қосалқы FFmpeg жолы іске қосылмады. HDR қолдайтын бөлек кодтау керек.', en: 'This 4K source appears to use HDR/10-bit. The SDR FFmpeg fallback was stopped to avoid damaging colour; an HDR-capable encoder is required.' },
+    { test: /ffmpeg_4k_hdr_unsafe/i, ru: 'В метаданных 4K-видео обнаружен явный HDR-сигнал (PQ/HLG или Dolby Vision). SDR-кодировщик остановлен, чтобы не испортить цвета.', kk: '4K бейненің метадеректерінде HDR белгісі (PQ/HLG немесе Dolby Vision) анықталды. Түстер бұзылмауы үшін SDR кодтауы тоқтатылды.', en: 'The 4K metadata contains a clear HDR signal (PQ/HLG or Dolby Vision). The SDR encoder was stopped to protect colour.' },
+    { test: /ffmpeg_4k_10bit_unsupported/i, ru: 'Обнаружен 10-битный профиль кодека, но явные HDR-метаданные не найдены. Этот SDR FFmpeg-режим пока не может безопасно перекодировать 10-bit. Обычные 8-битные SDR-файлы не должны попадать под эту ошибку.', kk: '10-биттік кодек профилі анықталды, бірақ HDR метадеректері табылмады. Бұл SDR FFmpeg режимі әзірге 10-bit бейнені қауіпсіз түрлендіре алмайды. Қалыпты 8-биттік SDR файлдары бұл қатеге түспеуі керек.', en: 'A 10-bit codec profile was detected, but no explicit HDR metadata was found. This SDR FFmpeg mode cannot safely re-encode 10-bit yet. Normal 8-bit SDR files should not trigger this.' },
     { test: /ffmpeg_4k_source_format_unsupported/i, ru: 'Запасной 4K-режим пока поддерживает MP4/MOV с AVC/HEVC SDR. Исходный файл не был выдан в ухудшенном качестве.', kk: 'Қосалқы 4K режимі әзірге SDR AVC/HEVC бар MP4/MOV файлдарын қолдайды. Бейне сапасы нашарлатылып шығарылған жоқ.', en: 'The 4K fallback currently supports SDR AVC/HEVC in MP4/MOV. No downgraded file was produced.' },
     { test: /ffmpeg_4k_asset_download_failed|ffmpeg_4k_fallback_failed|ffmpeg_4k_exec_failed/i, ru: 'Запасной FFmpeg-кодировщик 4K не смог завершить обработку. Проверьте соединение и попробуйте более короткий SDR-файл.', kk: 'Қосалқы FFmpeg 4K кодтауы аяқталмады. Интернетті тексеріп, қысқарақ SDR файлмен қайталап көріңіз.', en: 'The FFmpeg 4K fallback could not finish. Check the connection and try a shorter SDR source.' },
     { test: /ffmpeg_4k_api_unavailable/i, ru: 'Не удалось загрузить API FFmpeg для 4K. Обновите страницу и попробуйте снова.', kk: '4K үшін FFmpeg API жүктелмеді. Бетті жаңартып, қайталап көріңіз.', en: 'Could not load the FFmpeg 4K API. Refresh the page and try again.' },
