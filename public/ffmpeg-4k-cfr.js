@@ -149,7 +149,7 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
     }
   }
 
-  if (isAvc || isHevc) {
+  if (isAvc) {
     for (const box of findValidBoxTypes(bytes, moovStart, moovEnd, 'avcC')) {
       if (box.end - box.payloadStart < 4 || bytes[box.payloadStart] !== 1) continue;
       const profileIdc = bytes[box.payloadStart + 1];
@@ -158,6 +158,9 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
         result.reason = 'AVC high-bit-depth profile ' + profileIdc;
       }
     }
+  }
+
+  if (isAvc || isHevc) {
     for (const box of findValidBoxTypes(bytes, moovStart, moovEnd, 'colr')) {
       const p = box.payloadStart;
       if (p + 11 > box.end) continue;
