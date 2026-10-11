@@ -941,7 +941,8 @@ async function notifyFreeBalanceEnded(telegramId, lang, nextAt) {
 
 async function sendBalance(ctx, lang) {
   const id = String(ctx.from.id);
-  const [free, purchased, nextAt] = await Promise.all([getFreeBalance(id), getPurchasedBalance(id), getFreeNextAt(id)]);
+  const free = await getFreeBalance(id);
+  const [purchased, nextAt] = await Promise.all([getPurchasedBalance(id), getFreeNextAt(id)]);
   await ctx.reply(TEXTS[lang].balance(free, purchased, nextAt), mainKeyboard(lang));
 }
 
