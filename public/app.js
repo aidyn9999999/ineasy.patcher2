@@ -2875,6 +2875,16 @@ function localizePatchError(message) {
       en: 'Could not download the FFmpeg asset from the CDN (HTTP ' + assetFailure[1] + '). Check the connection and retry.'
     }[lang];
   }
+  const ffmpegStageFailure = rawError.match(/ffmpeg_4k_fallback_failed:\\s*stage=([^;]+);\\s*([\\s\\S]*?)(?=;\\s*detail=|;\\s*MediaBunny=|$)/i);
+  if (ffmpegStageFailure) {
+    const stage = ffmpegStageFailure[1].trim();
+    const detail = ffmpegStageFailure[2].trim().slice(0, 240);
+    return {
+      ru: 'Сбой FFmpeg на этапе «' + stage + '». Причина: ' + (detail || 'загрузка или запуск кодировщика не завершились'),
+      kk: 'FFmpeg қатесі, кезең: «' + stage + '». Себебі: ' + (detail || 'кодтағышты жүктеу немесе іске қосу аяқталмады'),
+      en: 'FFmpeg failed at stage "' + stage + '". Cause: ' + (detail || 'encoder loading or startup did not finish')
+    }[lang];
+  }
   const knownErrors = [
     { test: /video_resolution_changed_during_cfr|resolution_output_verification_failed/i, ru: 'После конвертации 4K-разрешение изменилось. Файл не выдан.', kk: '4K түрлендіруден кейін ажыратымдылық өзгерді. Файл шығарылған жоқ.', en: 'The 4K resolution changed during processing. No file was produced.' },
     { test: /ffmpeg_4k_hdr_unsafe/i, ru: 'В метаданных 4K-видео обнаружен явный HDR-сигнал (PQ/HLG или Dolby Vision). SDR-кодировщик остановлен, чтобы не испортить цвета.', kk: '4K бейненің метадеректерінде HDR белгісі (PQ/HLG немесе Dolby Vision) анықталды. Түстер бұзылмауы үшін SDR кодтауы тоқтатылды.', en: 'The 4K metadata contains a clear HDR signal (PQ/HLG or Dolby Vision). The SDR encoder was stopped to protect colour.' },
