@@ -1,120 +1,158 @@
+// INEASY hero scene built with the open-source Three.js library (MIT).
+// Official examples and documentation: https://threejs.org/examples/
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
 
-const canvasHost = document.getElementById('mountainScene');
+const host = document.getElementById('home3dScene');
 const hero = document.getElementById('homeHero');
+const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-if (canvasHost && hero && 'WebGLRenderingContext' in window) {
+if (host && hero && 'WebGLRenderingContext' in window) {
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
-  camera.position.set(0, 6.5, 24);
-  camera.lookAt(0, 1.5, 0);
-
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1));
-  renderer.setSize(canvasHost.clientWidth, canvasHost.clientHeight);
+  const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+  camera.position.set(0, 0, 17);
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power', stencil: false });
+  const mobile = () => matchMedia('(max-width: 700px)').matches;
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile() ? 1 : 1.45));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.12;
   renderer.setClearColor(0x000000, 0);
-  canvasHost.appendChild(renderer.domElement);
+  host.appendChild(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xb7d9d3, 0x101b18, 2.1));
-  const warmLight = new THREE.DirectionalLight(0xffb27c, 3.4);
-  warmLight.position.set(-8, 12, 8);
-  scene.add(warmLight);
-  const coolLight = new THREE.DirectionalLight(0x9cc8da, 1.6);
-  coolLight.position.set(7, 8, -8);
-  scene.add(coolLight);
+  scene.add(new THREE.HemisphereLight(0xe5edf7, 0x18202b, 2.0));
+  const keyLight = new THREE.DirectionalLight(0xf5f8ff, 3.2);
+  keyLight.position.set(-5, 8, 10);
+  scene.add(keyLight);
+  const rimLight = new THREE.PointLight(0x9db4d2, 28, 22, 2);
+  rimLight.position.set(5, 2, 4);
+  scene.add(rimLight);
+  const fillLight = new THREE.PointLight(0x7289a8, 15, 18, 2);
+  fillLight.position.set(-5, -3, -1);
+  scene.add(fillLight);
 
-  const terrain = new THREE.PlaneGeometry(38, 23, 96, 56);
-  const positions = terrain.attributes.position;
-  const colors = [];
-  const forest = new THREE.Color('#24483e');
-  const rock = new THREE.Color('#728982');
-  const snow = new THREE.Color('#e6e6db');
-  const color = new THREE.Color();
-  const peaks = [
-    [-10, -2, 5.7, 3.3, 4.2],
-    [-5.5, -3.2, 7.5, 2.1, 3.2],
-    [0, -2.2, 5.1, 3.8, 4.1],
-    [5.4, -3.6, 7.2, 2.7, 3.2],
-    [10.1, -1.8, 5.6, 3.8, 4.3],
-  ];
+  const shellMat = new THREE.MeshPhysicalMaterial({ color: '#cbd5e2', metalness: .82, roughness: .24, clearcoat: .9, clearcoatRoughness: .18 });
+  const edgeMat = new THREE.MeshStandardMaterial({ color: '#7d8ca1', metalness: .78, roughness: .3 });
+  const screenMat = new THREE.MeshPhysicalMaterial({ color: '#0b111b', metalness: .45, roughness: .18, clearcoat: 1, clearcoatRoughness: .12 });
+  const glowMat = new THREE.MeshStandardMaterial({ color: '#e7edf5', emissive: '#7b91ae', emissiveIntensity: .35, metalness: .5, roughness: .23 });
+  const dimGlowMat = new THREE.MeshStandardMaterial({ color: '#64758b', emissive: '#273c56', emissiveIntensity: .62, metalness: .38, roughness: .3, transparent: true, opacity: .92 });
 
-  for (let index = 0; index < positions.count; index += 1) {
-    const x = positions.getX(index);
-    const depth = positions.getY(index);
-    let height = -1.4;
-    for (const [peakX, peakDepth, amplitude, spreadX, spreadDepth] of peaks) {
-      const dx = (x - peakX) / spreadX;
-      const dz = (depth - peakDepth) / spreadDepth;
-      height += amplitude * Math.exp(-((dx * dx) + (dz * dz)) * 1.25);
-    }
-    height += Math.sin(x * 0.62 + depth * 0.34) * 0.22;
-    height += Math.sin(x * 1.27 - depth * 0.58) * 0.12;
-    positions.setZ(index, height);
-    const snowMix = THREE.MathUtils.smoothstep(height, 2.5, 4.5);
-    const rockMix = THREE.MathUtils.smoothstep(height, 0.2, 2.8);
-    color.copy(forest).lerp(rock, rockMix).lerp(snow, snowMix);
-    colors.push(color.r, color.g, color.b);
+  function roundedShape(w, h, radius) {
+    const x = w / 2, y = h / 2, r = Math.min(radius, x, y);
+    const s = new THREE.Shape();
+    s.moveTo(-x+r,-y); s.lineTo(x-r,-y); s.quadraticCurveTo(x,-y,x,-y+r);
+    s.lineTo(x,y-r); s.quadraticCurveTo(x,y,x-r,y); s.lineTo(-x+r,y);
+    s.quadraticCurveTo(-x,y,-x,y-r); s.lineTo(-x,-y+r); s.quadraticCurveTo(-x,-y,-x+r,-y);
+    return s;
+  }
+  function plate(w,h,d,r,mat,bevel=.035) {
+    const g = new THREE.ExtrudeGeometry(roundedShape(w,h,r), { depth:d, bevelEnabled:bevel>0, bevelThickness:bevel, bevelSize:bevel, bevelSegments:3, curveSegments:7, steps:1 });
+    g.computeVertexNormals();
+    return new THREE.Mesh(g,mat);
   }
 
-  terrain.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  terrain.computeVertexNormals();
-  terrain.rotateX(-Math.PI / 2);
-  const mountain = new THREE.Mesh(terrain, new THREE.MeshStandardMaterial({
-    vertexColors: true,
-    roughness: 0.94,
-    metalness: 0.02,
-    transparent: true,
-    opacity: 0.96,
-  }));
-  mountain.position.set(0, -3.4, -1.8);
-  scene.add(mountain);
+  const composition = new THREE.Group();
+  scene.add(composition);
+  const card = new THREE.Group();
+  composition.add(card);
 
-  const pointer = { x: 0, y: 0 };
-  const onPointerMove = (event) => {
-    const bounds = hero.getBoundingClientRect();
-    pointer.x = ((event.clientX - bounds.left) / bounds.width - 0.5) * 0.22;
-    pointer.y = ((event.clientY - bounds.top) / bounds.height - 0.5) * 0.1;
+  const shell = plate(5.8,3.85,.28,.38,shellMat,.07);
+  shell.position.z=-.16; card.add(shell);
+  const frame = plate(5.53,3.58,.08,.3,edgeMat,.025);
+  frame.position.z=.055; card.add(frame);
+  const screen = plate(5.38,3.43,.07,.24,screenMat,.014);
+  screen.position.z=.13; card.add(screen);
+
+  const dots = [
+    new THREE.MeshStandardMaterial({ color:'#dbe3ed', emissive:'#7d91aa', emissiveIntensity:.3 }),
+    new THREE.MeshStandardMaterial({ color:'#8293a8', metalness:.45, roughness:.3 }),
+    new THREE.MeshStandardMaterial({ color:'#54657a', metalness:.45, roughness:.32 })
+  ];
+  const dotGeom = new THREE.SphereGeometry(.055,18,14);
+  [-2.2,-2.0,-1.8].forEach((x,i)=>{ const d=new THREE.Mesh(dotGeom,dots[i]); d.position.set(x,1.27,.24); card.add(d); });
+  const status = plate(.85,.11,.035,.055,dimGlowMat,.01);
+  status.position.set(1.85,1.27,.24); card.add(status);
+
+  const triangle = new THREE.Shape();
+  triangle.moveTo(-.2,-.42); triangle.lineTo(.48,0); triangle.lineTo(-.2,.42); triangle.closePath();
+  const play = new THREE.Mesh(new THREE.ShapeGeometry(triangle),glowMat);
+  play.position.set(.02,.1,.265); card.add(play);
+  const playRing = new THREE.Mesh(new THREE.TorusGeometry(.78,.018,10,96),dimGlowMat);
+  playRing.position.set(0,.1,.26); card.add(playRing);
+
+  const timeline = plate(2.9,.075,.028,.0375,edgeMat,.008);
+  timeline.position.set(-.25,-1.18,.25); card.add(timeline);
+  const timelineFill = plate(1.92,.048,.03,.024,glowMat,.006);
+  timelineFill.position.set(-.74,-1.18,.29); card.add(timelineFill);
+  const scrubber = new THREE.Mesh(new THREE.SphereGeometry(.09,20,16),glowMat);
+  scrubber.position.set(.24,-1.18,.32); card.add(scrubber);
+  const tinyBarGeom = new THREE.BoxGeometry(.36,.055,.025);
+  for(let i=0;i<3;i++){const bar=new THREE.Mesh(tinyBarGeom,i===0?glowMat:dimGlowMat);bar.position.set(-1.75+i*.46,-.93,.25);card.add(bar);}
+
+  const orbit = new THREE.Group();
+  composition.add(orbit);
+  const ringMat = new THREE.MeshStandardMaterial({ color:'#a9b9ce', metalness:.78, roughness:.25, transparent:true, opacity:.48 });
+  const ringA = new THREE.Mesh(new THREE.TorusGeometry(3.48,.013,8,150),ringMat);
+  ringA.rotation.set(.42,.18,.28); orbit.add(ringA);
+  const ringB = new THREE.Mesh(new THREE.TorusGeometry(3.18,.009,8,140),dimGlowMat);
+  ringB.rotation.set(1.08,-.48,-.35); orbit.add(ringB);
+
+  const markerA = new THREE.Mesh(new THREE.OctahedronGeometry(.14,0),glowMat);
+  markerA.position.set(3.38,.68,.12); composition.add(markerA);
+  const markerB = new THREE.Mesh(new THREE.IcosahedronGeometry(.105,0),edgeMat);
+  markerB.position.set(-3,-1.06,.45); composition.add(markerB);
+  const markerC = new THREE.Mesh(new THREE.BoxGeometry(.19,.19,.19),dimGlowMat);
+  markerC.position.set(2.5,-1.55,.15); markerC.rotation.set(.5,.4,.2); composition.add(markerC);
+
+  const flecks=[];
+  for(let i=0;i<85;i++){const a=i*2.399963229728653,r=3.7+((i%11)/11)*2;flecks.push(Math.cos(a)*r,Math.sin(a*1.27)*2.6,-1.8-(i%7)*.18);}
+  const fleckGeometry=new THREE.BufferGeometry();
+  fleckGeometry.setAttribute('position',new THREE.Float32BufferAttribute(flecks,3));
+  const particles=new THREE.Points(fleckGeometry,new THREE.PointsMaterial({color:'#b2c2d6',size:.026,transparent:true,opacity:.56,depthWrite:false,sizeAttenuation:true}));
+  scene.add(particles);
+
+  const pointer={x:0,y:0,tx:0,ty:0};
+  hero.addEventListener('pointermove',(e)=>{
+    const b=hero.getBoundingClientRect();
+    pointer.tx=THREE.MathUtils.clamp(((e.clientX-b.left)/Math.max(b.width,1)-.5)*.22,-.12,.12);
+    pointer.ty=THREE.MathUtils.clamp(((e.clientY-b.top)/Math.max(b.height,1)-.5)*.12,-.08,.08);
+  },{passive:true});
+  hero.addEventListener('pointerleave',()=>{pointer.tx=0;pointer.ty=0;},{passive:true});
+
+  const resize=()=>{
+    const w=Math.max(1,host.clientWidth),h=Math.max(1,host.clientHeight);
+    camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h,false);
+    const onPhone=mobile();
+    renderer.setPixelRatio(Math.min(devicePixelRatio||1,onPhone?1:1.45));
+    composition.position.set(onPhone?1.15:3.35,onPhone?-1.7:.02,0);
+    composition.scale.setScalar(onPhone?.62:1);
+    composition.rotation.set(-.08,-.19,.045);
+    orbit.position.copy(composition.position); orbit.scale.copy(composition.scale);
+    markerA.visible=markerB.visible=markerC.visible=!onPhone;
   };
-  hero.addEventListener('pointermove', onPointerMove, { passive: true });
+  const ro=new ResizeObserver(resize); ro.observe(host); resize();
 
-  const resize = () => {
-    const width = Math.max(1, canvasHost.clientWidth);
-    const height = Math.max(1, canvasHost.clientHeight);
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-    renderer.setSize(width, height);
-  };
-  const resizeObserver = new ResizeObserver(resize);
-  resizeObserver.observe(canvasHost);
-
-  let frameId = 0;
-  let isVisible = true;
-  let lastRenderAt = 0;
-  const draw = (time = 0) => {
-    if (!isVisible) return;
-    if (!lastRenderAt || time - lastRenderAt >= 1000 / 30) {
-      const scrollProgress = THREE.MathUtils.clamp(-hero.getBoundingClientRect().top / Math.max(hero.clientHeight, 1), 0, 1);
-      const scale = 0.98 + scrollProgress * 0.23;
-      mountain.scale.set(scale, scale, scale);
-      mountain.rotation.z += (pointer.x - mountain.rotation.z) * 0.025;
-      mountain.rotation.x = -0.025 + pointer.y;
-      mountain.position.y = -3.4 + scrollProgress * 0.18 + Math.sin(time * 0.00035) * 0.035;
-      renderer.render(scene, camera);
-      lastRenderAt = time;
+  let raf=0, visible=true, last=0;
+  function draw(time=0){
+    if(!visible||document.hidden)return;
+    if(reducedMotion){renderer.render(scene,camera);return;}
+    const onPhone=mobile(), interval=1000/(onPhone?24:30);
+    if(!last||time-last>=interval){
+      pointer.x+=(pointer.tx-pointer.x)*.035; pointer.y+=(pointer.ty-pointer.y)*.035;
+      composition.rotation.y=-.19+pointer.x+Math.sin(time*.00032)*.07;
+      composition.rotation.x=-.08+pointer.y+Math.sin(time*.00045)*.018;
+      composition.position.y=(onPhone?-1.7:.02)+Math.sin(time*.00048)*(onPhone?.055:.09);
+      orbit.rotation.z=Math.sin(time*.00016)*.04;
+      card.rotation.z=Math.sin(time*.00038)*.018;
+      markerA.rotation.x+=.002; markerA.rotation.y+=.003; markerC.rotation.y+=.003;
+      particles.rotation.z=Math.sin(time*.00013)*.025;
+      renderer.render(scene,camera); last=time;
     }
-    frameId = requestAnimationFrame(draw);
-  };
-  const visibilityObserver = new IntersectionObserver(([entry]) => {
-    isVisible = entry.isIntersecting && !document.hidden;
-    cancelAnimationFrame(frameId);
-    if (isVisible) frameId = requestAnimationFrame(draw);
-  }, { threshold: 0.01 });
-  visibilityObserver.observe(hero);
-  document.addEventListener('visibilitychange', () => {
-    isVisible = !document.hidden && hero.getBoundingClientRect().bottom > 0 && hero.getBoundingClientRect().top < window.innerHeight;
-    cancelAnimationFrame(frameId);
-    if (isVisible) frameId = requestAnimationFrame(draw);
-  });
+    raf=requestAnimationFrame(draw);
+  }
+  const show=()=>{visible=!document.hidden&&hero.getBoundingClientRect().bottom>0&&hero.getBoundingClientRect().top<innerHeight;cancelAnimationFrame(raf);if(visible){if(!reducedMotion)raf=requestAnimationFrame(draw);else renderer.render(scene,camera);}};
+  const io=new IntersectionObserver(([entry])=>{visible=entry.isIntersecting&&!document.hidden;cancelAnimationFrame(raf);if(visible){if(!reducedMotion)raf=requestAnimationFrame(draw);else renderer.render(scene,camera);}}, {threshold:.01});
+  io.observe(hero);
+  document.addEventListener('visibilitychange',show);
+  window.addEventListener('resize',resize,{passive:true});
   draw();
 }
