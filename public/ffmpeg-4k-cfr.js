@@ -6,7 +6,8 @@ const MAX_SIDE = 4096;
 const MAX_SHORT_SIDE = 2304;
 const TARGET_FPS = '60000/1001';
 const FFMPEG_PACKAGE_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@' + FFMPEG_VERSION + '/dist/esm/index.js';
-const FFMPEG_CORE_BASE_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@' + FFMPEG_VERSION + '/dist/umd';
+const FFMPEG_CORE_VERSION = '0.12.6';
+const FFMPEG_CORE_BASE_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@' + FFMPEG_CORE_VERSION + '/dist/umd';
 
 let ffmpegRuntime = null;
 let ffmpegRuntimePromise = null;
