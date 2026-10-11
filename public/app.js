@@ -2507,6 +2507,10 @@ if (processBtn) {
               /processing_cancelled|AbortError|video_file_over_limit/i.test(ffmpegMessage)) {
             throw ffmpegError;
           }
+          if (/ffmpeg_4k_hdr_unsafe|ffmpeg_4k_10bit_unsupported/i.test(ffmpegMessage)) {
+            // Do not silently run a suspected HDR/10-bit source through the SDR primary encoder.
+            throw ffmpegError;
+          }
           console.warn('[INEASY] 4K FFmpeg path unavailable; trying the established MediaBunny route:', ffmpegMessage);
           try {
             fpsConversion = await runPrimaryCfr();
