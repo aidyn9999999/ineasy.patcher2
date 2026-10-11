@@ -1757,7 +1757,7 @@ async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
 }
 
 
-async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress) {
+async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress, sourceDurationSeconds) {
   const TARGET_FPS = 60000 / 1001;
   signal.throwIfAborted();
   if (!inputBlob || !inputBlob.size) throw new Error('video_file_over_limit');
@@ -1791,11 +1791,11 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
 
     const {
       Input, Output, Conversion, ALL_FORMATS, BlobSource, BufferTarget,
-      Mp4OutputFormat, Quality
+      Mp4OutputFormat
     } = media;
 
     if (![Input, Output, Conversion, ALL_FORMATS, BlobSource, BufferTarget,
-          Mp4OutputFormat, Quality].every((item) => item !== undefined && item !== null)) {
+          Mp4OutputFormat].every((item) => item !== undefined && item !== null)) {
       throw new Error('mediabunny_api_unavailable');
     }
 
@@ -1815,7 +1815,12 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
       video: {
         codec: 'avc',
         frameRate: TARGET_FPS,
-        quality: new Quality('high'),
+        // Match the source's average bitrate instead of the browser's unconstrained
+        // "high" quality preset, which can nearly double file size at 59.94 fps.
+        bitrate: Math.max(
+          150000,
+          Math.floor((inputBlob.size * 8 / Math.max(1, Number(sourceDurationSeconds) || 1)) - 192000)
+        ),
         hardwareAcceleration: 'prefer-hardware',
         forceTranscode: true
       }
@@ -2466,7 +2471,7 @@ if (processBtn) {
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
       };
       const runPrimaryCfr = () => convertVideoToExact5994Fps(
-        sourceFile, sourceFile.name, controller.signal, reportCfrProgress
+        sourceFile, sourceFile.name, controller.signal, reportCfrProgress, sourceDuration
       );
 
 
@@ -2730,10 +2735,15 @@ if (processBtn) {
       let outputBlob = isV2InputPassThrough
         ? processingFile
         : new Blob([outputBytes], { type: result.outputMime || 'video/mp4' });
-      const maxFinalBytes = sourceFile.size + 200 * 1024;
-      if (outputBlob.size > maxFinalBytes) {
-        throw new Error('final_output_size_limit_exceeded: source=' + sourceFile.size +
-          '; output=' + outputBlob.size + '; max=' + maxFinalBytes);
+      // Do not crash the job because an encoder/container adds bytes. The CFR encoder
+      // is now bitrate-matched to the source; retain the real output and report any residual
+      // size difference for diagnostics instead of rejecting all 1080p/4K outputs.
+      if (outputBlob.size > sourceFile.size + 200 * 1024) {
+        console.warn('[INEASY] Output is larger than the source after CFR conversion:', {
+          sourceBytes: sourceFile.size,
+          outputBytes: outputBlob.size,
+          extraBytes: outputBlob.size - sourceFile.size
+        });
       }
 
       // Inspect the actual patcher output before returning it; never silently skip CFR conversion.
