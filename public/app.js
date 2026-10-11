@@ -1683,10 +1683,19 @@ async function loadIneasyFfmpegWasmLibrary(signal) {
 
 let ineasyFfmpegCoreWasmObjectUrl = null;
 let ineasyFfmpegCoreWasmDownloadPromise = null;
+const ineasyFfmpegCoreWasmProgressListeners = new Set();
+
+function reportIneasyFfmpegCoreDownloadProgress(progress) {
+  for (const listener of ineasyFfmpegCoreWasmProgressListeners) {
+    try { listener(progress); } catch (_) {}
+  }
+}
 
 async function downloadIneasyFfmpegCoreWasm(signal, onProgress) {
   signal.throwIfAborted();
   if (ineasyFfmpegCoreWasmObjectUrl) return ineasyFfmpegCoreWasmObjectUrl;
+  if (typeof onProgress === 'function') ineasyFfmpegCoreWasmProgressListeners.add(onProgress);
+  try {
   if (!ineasyFfmpegCoreWasmDownloadPromise) {
     ineasyFfmpegCoreWasmDownloadPromise = (async () => {
       const urls = [
@@ -1711,14 +1720,14 @@ async function downloadIneasyFfmpegCoreWasm(signal, onProgress) {
               if (part.value?.byteLength) {
                 chunks.push(part.value);
                 loaded += part.value.byteLength;
-                onProgress?.(0.04 + 0.095 * Math.min(1, loaded / declaredSize));
+                reportIneasyFfmpegCoreDownloadProgress(0.04 + 0.095 * Math.min(1, loaded / declaredSize));
               }
             }
           } else {
             const bytes = new Uint8Array(await response.arrayBuffer());
             chunks.push(bytes);
             loaded = bytes.byteLength;
-            onProgress?.(0.135);
+            reportIneasyFfmpegCoreDownloadProgress(0.135);
           }
           signal.throwIfAborted();
           if (!loaded) throw new Error('hdr_ffmpeg_core_empty');
@@ -1740,7 +1749,10 @@ async function downloadIneasyFfmpegCoreWasm(signal, onProgress) {
       throw error;
     });
   }
-  return waitForMediabunnyModule(ineasyFfmpegCoreWasmDownloadPromise, signal, 90000);
+  return await waitForMediabunnyModule(ineasyFfmpegCoreWasmDownloadPromise, signal, 90000);
+  } finally {
+    if (typeof onProgress === 'function') ineasyFfmpegCoreWasmProgressListeners.delete(onProgress);
+  }
 }
 
 function releaseIneasyFfmpegCoreWasm(blobUrl) {
