@@ -2038,7 +2038,10 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
   const ffmpeg = await getIneasyFfmpegWasm(signal, onProgress);
   signal.throwIfAborted();
   const extensionMatch = String(inputName || '').match(/\.(mp4|mov|m4v|mkv|webm|avi|3gp)$/i);
-  const inputPath = 'ineasy_hdr_source' + (extensionMatch ? extensionMatch[0].toLowerCase() : '.mp4');
+  const inputFileName = 'ineasy_hdr_source' + (extensionMatch ? extensionMatch[0].toLowerCase() : '.mp4');
+  const workerFsMountPath = '/ineasy-source';
+  let inputPath = inputFileName;
+  let sourceWorkerFsMounted = false;
   const outputPath = 'ineasy_hdr_5994.mp4';
   const logTail = [];
   let sourceDurationSeconds = 0;
@@ -2069,8 +2072,44 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
   try {
     signal.throwIfAborted();
     onProgress?.(0.16);
-    const inputBytes = new Uint8Array(await inputBlob.arrayBuffer());
-    await ffmpeg.writeFile(inputPath, inputBytes, { signal });
+
+    // WorkerFS exposes the selected File directly to the FFmpeg worker. This
+    // avoids copying the entire source into a second Uint8Array/WASM filesystem
+    // allocation and shortens the startup/memory spike for large HDR videos.
+    const workerFsType = globalThis.FFmpegWASM?.FFFSType?.WORKERFS;
+    if (typeof ffmpeg.mount === 'function' && workerFsType && typeof File === 'function') {
+      try {
+        try { await ffmpeg.unmount(workerFsMountPath); } catch (_) {}
+        try { await ffmpeg.deleteDir(workerFsMountPath); } catch (_) {}
+        await ffmpeg.createDir(workerFsMountPath, { signal });
+        const workerFile = new File([inputBlob], inputFileName, {
+          type: inputBlob.type || 'video/mp4',
+          lastModified: Number(inputBlob.lastModified) || Date.now()
+        });
+        sourceWorkerFsMounted = Boolean(await ffmpeg.mount(
+          workerFsType,
+          { files: [workerFile] },
+          workerFsMountPath
+        ));
+        if (sourceWorkerFsMounted) {
+          inputPath = workerFsMountPath + '/' + inputFileName;
+          console.info('[INEASY] HDR source attached through WorkerFS without a full-file memory copy', {
+            bytes: inputBlob.size
+          });
+        }
+      } catch (workerFsError) {
+        sourceWorkerFsMounted = false;
+        console.warn('[INEASY] WorkerFS is unavailable for this browser; using the compatible file-copy path:', workerFsError);
+        try { await ffmpeg.unmount(workerFsMountPath); } catch (_) {}
+        try { await ffmpeg.deleteDir(workerFsMountPath); } catch (_) {}
+      }
+    }
+
+    if (!sourceWorkerFsMounted) {
+      inputPath = inputFileName;
+      const inputBytes = new Uint8Array(await inputBlob.arrayBuffer());
+      await ffmpeg.writeFile(inputPath, inputBytes, { signal });
+    }
     signal.throwIfAborted();
 
     // Read source codec and colour tags through FFmpeg's demuxer output.
@@ -2236,7 +2275,13 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
     try { ffmpeg.off('log', onLog); } catch (_) {}
     try { ffmpeg.off('progress', onProgressEvent); } catch (_) {}
     if (!signal.aborted && ffmpeg.loaded) {
-      for (const path of [inputPath, outputPath]) {
+      if (sourceWorkerFsMounted) {
+        try { await ffmpeg.unmount(workerFsMountPath); } catch (_) {}
+        try { await ffmpeg.deleteDir(workerFsMountPath); } catch (_) {}
+      } else {
+        try { await ffmpeg.deleteFile(inputPath); } catch (_) {}
+      }
+      for (const path of [outputPath]) {
         try { await ffmpeg.deleteFile(path); } catch (_) {}
       }
     }
