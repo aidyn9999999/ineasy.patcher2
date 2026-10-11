@@ -2010,7 +2010,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261011-43');
+        const worker = new Worker('adjn-worker.js?v=20261011-44');
 
         worker.onmessage = (e) => {
           const msg = e.data;
