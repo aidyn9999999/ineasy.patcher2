@@ -525,10 +525,26 @@ function runYtDlp(url) {
 }
 
 function pickBestVideo(info) {
-  const formats = (info.formats || []).filter((f) => f.vcodec && f.vcodec !== 'none' && f.height);
+  const formats = (info.formats || []).filter((f) =>
+    f.vcodec && f.vcodec !== 'none' && Number(f.width) > 0 && Number(f.height) > 0
+  );
   if (!formats.length) return info.height ? info : null;
-  formats.sort((a, b) => (b.height - a.height) || ((b.tbr || 0) - (a.tbr || 0)));
-  return formats[0];
+
+  // Keep the highest resolution, but prefer a same-resolution variant that reports FPS.
+  formats.sort((a, b) => {
+    const longA = Math.max(Number(a.width) || 0, Number(a.height) || 0);
+    const longB = Math.max(Number(b.width) || 0, Number(b.height) || 0);
+    if (longB !== longA) return longB - longA;
+    const fpsA = parseFraction(a.fps) ? 1 : 0;
+    const fpsB = parseFraction(b.fps) ? 1 : 0;
+    if (fpsB !== fpsA) return fpsB - fpsA;
+    return (Number(b.tbr) || Number(b.vbr) || 0) - (Number(a.tbr) || Number(a.vbr) || 0);
+  });
+  const bestLongSide = Math.max(Number(formats[0].width) || 0, Number(formats[0].height) || 0);
+  const sameResolutionWithFps = formats.find((f) =>
+    Math.max(Number(f.width) || 0, Number(f.height) || 0) === bestLongSide && parseFraction(f.fps)
+  );
+  return sameResolutionWithFps || formats[0];
 }
 
 function fmtDuration(sec) {
@@ -538,11 +554,18 @@ function fmtDuration(sec) {
 }
 
 // ===== FFPROBE START =====
-function parseFraction(str) {
-  if (!str || typeof str !== 'string') return null;
-  const [a, b] = str.split('/').map(Number);
-  if (!a || !b) return null;
-  return a / b;
+function parseFraction(value) {
+  if (Number.isFinite(value) && value > 0) return value;
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const parts = value.trim().split('/');
+  if (parts.length === 1) {
+    const decimal = Number(parts[0]);
+    return Number.isFinite(decimal) && decimal > 0 ? decimal : null;
+  }
+  const [a, b] = parts.map(Number);
+  if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) return null;
+  const result = a / b;
+  return Number.isFinite(result) && result > 0 ? result : null;
 }
 
 function prettyCodec(name) {
