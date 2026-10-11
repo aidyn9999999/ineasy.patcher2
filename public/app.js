@@ -2116,7 +2116,7 @@ async function handleFile(file) {
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
   if (selectedLongSide >= 3000 && /\.(mp4|m4v|mov)$/i.test(file.name)) {
     // Download the 4K encoder in the background while the user is choosing the processing mode.
-    import('./ffmpeg-4k-cfr.js?v=20261011-14')
+    import('./ffmpeg-4k-cfr.js?v=20261011-15')
       .then((encoder) => encoder.preloadFFmpeg4k?.())
       .catch((error) => console.warn('[INEASY] 4K runtime pre-load skipped:', error?.message || error));
   }
@@ -2482,7 +2482,7 @@ if (processBtn) {
         sourceFile, sourceFile.name, controller.signal, reportCfrProgress
       );
       const runFfmpeg4kCfr = async () => {
-        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-14');
+        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-15');
         if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
           throw new Error('ffmpeg_4k_api_unavailable');
         }
@@ -2492,7 +2492,19 @@ if (processBtn) {
       };
 
       let fpsConversion;
-      try {
+      let hdrInspection = null;
+      if (/\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
+        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-15');
+        hdrInspection = await hdrEncoder.inspectHDRVideo(sourceFile);
+      }
+      if (hdrInspection?.hdr) {
+        setProcessingState('processing', 'HDR 10-bit conversion');
+        console.info('[INEASY] HDR source detected; selecting dedicated HEVC Main10 CFR encoder', hdrInspection);
+        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-15');
+        fpsConversion = await hdrEncoder.convertVideoToExact5994FpsWithFFmpeg(
+          sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress, { hdr: true }
+        );
+      } else try {
         fpsConversion = await runPrimaryCfr();
       } catch (primaryError) {
         const primaryMessage = String(primaryError?.message || primaryError || '');
@@ -2637,12 +2649,25 @@ if (processBtn) {
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
         const worker = new Worker('adjn-worker.js?v=20261011-45');
+        let workerReadyTimeoutId = setTimeout(() => {
+          if (workerDone) return;
+          workerDone = true;
+          controller.signal.removeEventListener('abort', onAbort);
+          worker.terminate();
+          reject(new Error('adjn_worker_ready_timeout'));
+        }, 15000);
+
+        const clearWorkerReadyTimeout = () => {
+          if (workerReadyTimeoutId) clearTimeout(workerReadyTimeoutId);
+          workerReadyTimeoutId = null;
+        };
 
         worker.onmessage = (e) => {
           const msg = e.data;
           if (!msg) return;
 
           if (msg.type === 'READY') {
+            clearWorkerReadyTimeout();
             // Worker is ready, send the job (transfer buffer ownership — zero copy)
             worker.postMessage({
               type: 'PROCESS',
@@ -2666,6 +2691,7 @@ if (processBtn) {
           }
 
           if (msg.type === 'DONE') {
+            clearWorkerReadyTimeout();
             workerDone = true;
             controller.signal.removeEventListener('abort', onAbort);
             worker.terminate();
@@ -2688,6 +2714,7 @@ if (processBtn) {
           }
 
           if (msg.type === 'ERROR') {
+            clearWorkerReadyTimeout();
             workerDone = true;
             controller.signal.removeEventListener('abort', onAbort);
             worker.terminate();
@@ -2697,9 +2724,20 @@ if (processBtn) {
 
         worker.onerror = (err) => {
           if (!workerDone) {
+            clearWorkerReadyTimeout();
             workerDone = true;
             controller.signal.removeEventListener('abort', onAbort);
+            worker.terminate();
             reject(new Error(err?.message || 'Worker crashed'));
+          }
+        };
+        worker.onmessageerror = () => {
+          if (!workerDone) {
+            clearWorkerReadyTimeout();
+            workerDone = true;
+            controller.signal.removeEventListener('abort', onAbort);
+            worker.terminate();
+            reject(new Error('adjn_worker_message_error'));
           }
         };
       });
@@ -2897,7 +2935,10 @@ function localizePatchError(message) {
   }
   const knownErrors = [
     { test: /video_resolution_changed_during_cfr|resolution_output_verification_failed/i, ru: 'После конвертации 4K-разрешение изменилось. Файл не выдан.', kk: '4K түрлендіруден кейін ажыратымдылық өзгерді. Файл шығарылған жоқ.', en: 'The 4K resolution changed during processing. No file was produced.' },
-    { test: /ffmpeg_4k_hdr_unsafe/i, ru: 'В метаданных 4K-видео обнаружен явный HDR-сигнал (PQ/HLG или Dolby Vision). SDR-кодировщик остановлен, чтобы не испортить цвета.', kk: '4K бейненің метадеректерінде HDR белгісі (PQ/HLG немесе Dolby Vision) анықталды. Түстер бұзылмауы үшін SDR кодтауы тоқтатылды.', en: 'The 4K metadata contains a clear HDR signal (PQ/HLG or Dolby Vision). The SDR encoder was stopped to protect colour.' },
+    { test: /hdr_dolby_vision_transcode_unsupported/i, ru: 'Обнаружен Dolby Vision. Этот режим пока не может сохранить динамические метаданные Dolby Vision; файл не будет перекодирован в SDR.', kk: 'Dolby Vision анықталды. Бұл режим динамикалық метадеректерді сақтай алмайды, сондықтан SDR-ге түрлендірілмейді.', en: 'Dolby Vision was detected. This encoder cannot preserve Dolby Vision dynamic metadata, so the file was not converted to SDR.' },
+    { test: /hdr_hevc10_encode_failed|hdr_output_verification_failed|hdr_metadata_not_detected|hdr_source_codec_unsupported/i, ru: 'Не удалось безопасно перекодировать HDR в HEVC Main10 с сохранением HDR-сигнала. Файл не выдан.', kk: 'HDR сигналын сақтай отырып HEVC Main10 кодтау мүмкін болмады. Файл шығарылған жоқ.', en: 'HDR could not be safely re-encoded as HEVC Main10 with HDR signaling. No output was produced.' },
+    { test: /adjn_worker_ready_timeout/i, ru: 'Патчер не запустился: Web Worker не прислал READY за 15 секунд. Проверьте загрузку adjn-worker.js и связанных скриптов в браузере.', kk: 'Патчер іске қосылмады: Web Worker 15 секунд ішінде READY жібермеді. Браузерде adjn-worker.js жүктелуін тексеріңіз.', en: 'The patcher did not start: its Web Worker did not send READY within 15 seconds. Check adjn-worker.js and its imported scripts in the browser.' },
+    { test: /ffmpeg_4k_hdr_unsafe/i, ru: 'В метаданных обнаружен HDR-сигнал, но SDR-кодировщик остановлен, чтобы не испортить цвета.', kk: 'HDR сигналы анықталды, бірақ түстер бұзылмауы үшін SDR кодтауы тоқтатылды.', en: 'HDR signaling was detected, so the SDR encoder was stopped to protect colour.' },
     { test: /ffmpeg_4k_10bit_unsupported/i, ru: 'Обнаружен 10-битный профиль кодека, но явные HDR-метаданные не найдены. Этот SDR FFmpeg-режим пока не может безопасно перекодировать 10-bit. Обычные 8-битные SDR-файлы не должны попадать под эту ошибку.', kk: '10-биттік кодек профилі анықталды, бірақ HDR метадеректері табылмады. Бұл SDR FFmpeg режимі әзірге 10-bit бейнені қауіпсіз түрлендіре алмайды. Қалыпты 8-биттік SDR файлдары бұл қатеге түспеуі керек.', en: 'A 10-bit codec profile was detected, but no explicit HDR metadata was found. This SDR FFmpeg mode cannot safely re-encode 10-bit yet. Normal 8-bit SDR files should not trigger this.' },
     { test: /ffmpeg_4k_source_format_unsupported/i, ru: 'Запасной 4K-режим пока поддерживает MP4/MOV с AVC/HEVC SDR. Исходный файл не был выдан в ухудшенном качестве.', kk: 'Қосалқы 4K режимі әзірге SDR AVC/HEVC бар MP4/MOV файлдарын қолдайды. Бейне сапасы нашарлатылып шығарылған жоқ.', en: 'The 4K fallback currently supports SDR AVC/HEVC in MP4/MOV. No downgraded file was produced.' },
     { test: /ffmpeg_4k_asset_download_failed|ffmpeg_4k_fallback_failed|ffmpeg_4k_exec_failed/i, ru: 'Запасной FFmpeg-кодировщик 4K не смог завершить обработку. Проверьте соединение и попробуйте более короткий SDR-файл.', kk: 'Қосалқы FFmpeg 4K кодтауы аяқталмады. Интернетті тексеріп, қысқарақ SDR файлмен қайталап көріңіз.', en: 'The FFmpeg 4K fallback could not finish. Check the connection and try a shorter SDR source.' },
