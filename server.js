@@ -462,11 +462,12 @@ async function getPatchedCount(telegramId) {
 async function consumeOneVideo(telegramId) {
   await Promise.all([getFreeBalance(telegramId), getPurchasedBalance(telegramId)]);
   const consumed = await redis.eval(
-    "local free = tonumber(redis.call('GET', KEYS[1]) or '0'); local purchased = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[1]); if free <= 0 then local nextAt = tonumber(redis.call('GET', KEYS[4]) or '0'); if nextAt > 0 and now >= nextAt then free = tonumber(ARGV[3]); redis.call('SET', KEYS[1], free); redis.call('DEL', KEYS[4]); end; end; if free > 0 then free = redis.call('DECR', KEYS[1]); if tonumber(free) <= 0 then redis.call('SET', KEYS[4], tostring(now + tonumber(ARGV[2]))); end; elseif purchased > 0 then redis.call('DECR', KEYS[2]); else return 0; end; redis.call('INCR', KEYS[3]); return 1",
+    "local free = tonumber(redis.call('GET', KEYS[1]) or '0'); local purchased = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[1]); if free <= 0 then local nextAt = tonumber(redis.call('GET', KEYS[4]) or '0'); if nextAt > 0 and now >= nextAt then free = tonumber(ARGV[3]); redis.call('SET', KEYS[1], free); redis.call('DEL', KEYS[4]); end; end; if free > 0 then free = redis.call('DECR', KEYS[1]); if tonumber(free) <= 0 then redis.call('SET', KEYS[4], tostring(now + tonumber(ARGV[2]))); redis.call('INCR', KEYS[3]); return 2; end; elseif purchased > 0 then redis.call('DECR', KEYS[2]); else return 0; end; redis.call('INCR', KEYS[3]); return 1",
     [`freeBalance:${telegramId}`, `purchased:${telegramId}`, `patched:${telegramId}`, `freeNextAt:${telegramId}`],
     [String(Date.now()), String(FREE_BALANCE_INTERVAL_MS), String(WEEKLY_FREE_BALANCE)]
   );
-  if (Number(consumed) !== 1) throw new Error('no_balance');
+  if (Number(consumed) === 0) throw new Error('no_balance');
+  return Number(consumed);
 }
 
 // ============ ЧЕКЕР ВИДЕО TIKTOK (yt-dlp) ============
@@ -1989,7 +1990,7 @@ app.post('/api/consume/:telegramId', requireUserToken, async (req, res) => {
   try {
     const telegramId = String(req.params.telegramId);
     if (telegramId !== req.telegramId) return res.status(403).json({ error: 'account_mismatch' });
-    await consumeOneVideo(telegramId);
+    const consumeResult = await consumeOneVideo(telegramId);
     await recordUserActivity(telegramId, 'Обработано видео');
     const [free, purchased, patched, freeNextAt] = await Promise.all([
       getFreeBalance(telegramId),
@@ -1997,7 +1998,7 @@ app.post('/api/consume/:telegramId', requireUserToken, async (req, res) => {
       getPatchedCount(telegramId),
       getFreeNextAt(telegramId),
     ]);
-    if (free === 0 && freeNextAt) {
+    if (consumeResult === 2 && free === 0 && freeNextAt) {
       await notifyFreeBalanceEnded(telegramId, await getLang(telegramId), freeNextAt);
     }
     res.json({ free, purchased, patched, freeNextAt });
