@@ -2466,9 +2466,9 @@ if (processBtn) {
 
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
 
-      // Route supported 4K MP4/MOV to the prewarmed FFmpeg encoder directly.
-      // This avoids a full high-resolution WebCodecs attempt before the FFmpeg retry.
-      // The stable convertVideoToExact5994Fps function remains unchanged for other inputs.
+      // Always run the established real-frame CFR converter first.
+      // The FFmpeg 4K SDR encoder is only a fallback if WebCodecs cannot encode 4K;
+      // it must not replace the normal 59.94 FPS conversion path.
       const sourceLongSide = Math.max(
         Number(selectedVideoDimensions?.width) || 0,
         Number(selectedVideoDimensions?.height) || 0
@@ -2482,7 +2482,7 @@ if (processBtn) {
         sourceFile, sourceFile.name, controller.signal, reportCfrProgress
       );
       const runFfmpeg4kCfr = async () => {
-        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-9');
+        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-10');
         if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
           throw new Error('ffmpeg_4k_api_unavailable');
         }
@@ -2492,10 +2492,19 @@ if (processBtn) {
       };
 
       let fpsConversion;
-      if (ffmpeg4kEligible) {
+      try {
+        fpsConversion = await runPrimaryCfr();
+      } catch (primaryError) {
+        const primaryMessage = String(primaryError?.message || primaryError || '');
+        if (controller.signal.aborted ||
+            /processing_cancelled|AbortError|video_file_over_limit/i.test(primaryMessage)) {
+          throw primaryError;
+        }
+        if (!ffmpeg4kEligible) throw primaryError;
+        console.warn('[INEASY] Primary 59.94 FPS conversion failed; trying 4K FFmpeg fallback:', primaryMessage);
         try {
           fpsConversion = await runFfmpeg4kCfr();
-          console.info('[INEASY] 4K direct CFR conversion completed', {
+          console.info('[INEASY] 4K FFmpeg fallback CFR conversion completed', {
             sourceResolution: selectedVideoDimensions.width + 'x' + selectedVideoDimensions.height,
             sourceFps: fpsConversion.sourceFps || 'unknown',
             outputFps: fpsConversion.fps,
@@ -2508,23 +2517,13 @@ if (processBtn) {
             throw ffmpegError;
           }
           if (/ffmpeg_4k_hdr_unsafe|ffmpeg_4k_10bit_unsupported/i.test(ffmpegMessage)) {
-            // Do not silently run a suspected HDR/10-bit source through the SDR primary encoder.
             throw ffmpegError;
           }
-          console.warn('[INEASY] 4K FFmpeg path unavailable; trying the established MediaBunny route:', ffmpegMessage);
-          try {
-            fpsConversion = await runPrimaryCfr();
-          } catch (primaryError) {
-            const primaryMessage = String(primaryError?.message || primaryError || 'unknown_error');
-            if (/ffmpeg_4k_hdr_unsafe|ffmpeg_4k_10bit_unsupported/i.test(ffmpegMessage)) throw ffmpegError;
-            throw new Error(
-              'ffmpeg_4k_fallback_failed: FFmpeg=' + ffmpegMessage.slice(0, 1000) +
-              '; MediaBunny=' + primaryMessage.slice(0, 220)
-            );
-          }
+          throw new Error(
+            'ffmpeg_4k_fallback_failed: MediaBunny=' + primaryMessage.slice(0, 220) +
+            '; FFmpeg=' + ffmpegMessage.slice(0, 1000)
+          );
         }
-      } else {
-        fpsConversion = await runPrimaryCfr();
       }
 
       // Verify the actual converted 4K file BEFORE passing it into ADJN.
