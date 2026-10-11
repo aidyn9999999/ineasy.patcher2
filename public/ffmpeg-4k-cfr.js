@@ -1,7 +1,6 @@
 // Dedicated 4K SDR/HDR constant-frame-rate converter.
  // The primary MediaBunny CFR converter and ADJN processing files are intentionally untouched.
 const FFMPEG_VERSION = '0.12.10';
-const MAX_INPUT_BYTES = 500 * 1024 * 1024;
 const MAX_SIDE = 4096;
 const MAX_SHORT_SIDE = 2304;
 const TARGET_FPS = '60000/1001';
@@ -223,7 +222,7 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
 }
 
 export async function inspectHDRVideo(inputBlob) {
-  if (!inputBlob || !inputBlob.size || inputBlob.size > MAX_INPUT_BYTES) {
+  if (!inputBlob || !inputBlob.size) {
     return { hdr: false, reason: 'file_size_unavailable' };
   }
   const extension = fileExtension(inputBlob.name);
@@ -275,7 +274,7 @@ function smartVideoBitrate(sourceBytes, durationSeconds, audioBitrate = 160000) 
  */
 export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions, duration, signal, onProgress, options = {}) {
   throwIfAborted(signal);
-  if (!inputBlob || !inputBlob.size || inputBlob.size > MAX_INPUT_BYTES) throw new Error('video_file_over_limit');
+  if (!inputBlob || !inputBlob.size) throw new Error('video_file_over_limit');
   const extension = fileExtension(inputBlob.name);
   if (!extension) throw new Error('ffmpeg_4k_source_format_unsupported');
 
@@ -561,7 +560,6 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     if (!(outputBytes instanceof Uint8Array) || outputBytes.byteLength < 64) {
       throw new Error('fps_encoder_empty_output');
     }
-    if (outputBytes.byteLength > MAX_INPUT_BYTES) throw new Error('video_file_over_limit');
 
     // Do not run corrective size re-encodes. The target bitrate is derived from the
     // source file's average bitrate, so dimensions and quality are not repeatedly altered.
@@ -643,7 +641,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       inputResolution: width + 'x' + height
     });
     const message = (rawMessage + (diagnostic && !rawMessage.includes(diagnostic) ? '; detail=' + diagnostic : '')).slice(0, 1400);
-    if (/ffmpeg_4k_hdr_unsafe|ffmpeg_4k_source_format_unsupported|video_file_over_limit|fps_encoder_empty_output|fps_encoder_verification_failed|ffmpeg_4k_resolution_verification_failed|ffmpeg_4k_exec_failed/.test(message)) {
+    if (/ffmpeg_4k_hdr_unsafe|ffmpeg_4k_source_format_unsupported|fps_encoder_empty_output|fps_encoder_verification_failed|ffmpeg_4k_resolution_verification_failed|ffmpeg_4k_exec_failed/.test(message)) {
       throw new Error(message);
     }
     throw new Error('ffmpeg_4k_fallback_failed: stage=' + stage + '; ' + message);
