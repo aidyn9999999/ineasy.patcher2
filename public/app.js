@@ -2107,7 +2107,7 @@ async function handleFile(file) {
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
   if (selectedLongSide >= 3000 && /\.(mp4|m4v|mov)$/i.test(file.name)) {
     // Download the 4K encoder in the background while the user is choosing the processing mode.
-    import('./ffmpeg-4k-cfr.js?v=20261011-25')
+    import('./ffmpeg-4k-cfr.js?v=20261011-26')
       .then((encoder) => encoder.preloadFFmpeg4k?.())
       .catch((error) => console.warn('[INEASY] 4K runtime pre-load skipped:', error?.message || error));
   }
@@ -2464,7 +2464,6 @@ if (processBtn) {
         Number(selectedVideoDimensions?.height) || 0
       );
       const is4kSource = sourceLongSide >= 3000;
-      const ffmpeg4kEligible = is4kSource && /\.(mp4|m4v|mov)$/i.test(sourceFile.name);
       if (is4kSource) setProcessingState('processing', t('uhdWait'));
       const reportCfrProgress = (progress) => {
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
@@ -2472,28 +2471,21 @@ if (processBtn) {
       const runPrimaryCfr = () => convertVideoToExact5994Fps(
         sourceFile, sourceFile.name, controller.signal, reportCfrProgress
       );
-      const runFfmpeg4kCfr = async (hdrMode = false) => {
-        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-25');
-        if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
-          throw new Error('ffmpeg_4k_api_unavailable');
-        }
-        return ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg(
-          sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress,
-          { hdr: hdrMode }
-        );
-      };
+
 
       let fpsConversion;
       let hdrInspection = null;
       if (/\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
         try {
-          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-25');
+          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-26');
           hdrInspection = await hdrEncoder.inspectHDRVideo(sourceFile);
         } catch (error) {
           console.warn('[INEASY] Structural HDR inspection unavailable:', error?.message || error);
         }
       }
-      if (!hdrInspection?.hdr && /\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
+      if (!hdrInspection?.hdr &&
+          (!hdrInspection || ['metadata_inspection_inconclusive', 'media_inspector_unavailable'].includes(hdrInspection.reason)) &&
+          /\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
         try {
           const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
           const fallbackBytes = new Uint8Array(await sourceFile.arrayBuffer());
@@ -2518,7 +2510,7 @@ if (processBtn) {
         // HDR must use the dedicated 10-bit path to retain PQ/HLG signaling.
         setProcessingState('processing', is4kSource ? t('uhdWait') : '');
         console.info('[INEASY] HDR source detected; selecting dedicated HEVC Main10 CFR encoder', hdrInspection);
-        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-25');
+        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-26');
         fpsConversion = await hdrEncoder.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress, { hdr: true }
         );
