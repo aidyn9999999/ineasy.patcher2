@@ -1,4 +1,4 @@
-// Dedicated 4K SDR fallback for browsers whose WebCodecs H.264 encoder rejects 4K.
+// Dedicated 4K SDR/HDR constant-frame-rate converter.
  // The primary MediaBunny CFR converter and ADJN processing files are intentionally untouched.
 const FFMPEG_VERSION = '0.12.10';
 const MAX_INPUT_BYTES = 500 * 1024 * 1024;
