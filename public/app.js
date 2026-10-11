@@ -1446,7 +1446,7 @@ let progressLastTimestamp = 0;
 
 function paintProcessingProgress() {
   const percent = Math.max(0, Math.min(100, Math.round(progressDisplayed)));
-  if (processingPercent) processingPercent.textContent = `${t('progressLabel')}: ${percent}%`;
+  if (processingPercent) processingPercent.textContent = `${percent}%`;
   if (processingProgress) processingProgress.style.width = `${progressDisplayed.toFixed(2)}%`;
 }
 
@@ -2104,7 +2104,7 @@ async function handleFile(file) {
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
   if (selectedLongSide >= 3000 && /\.(mp4|m4v|mov)$/i.test(file.name)) {
     // Download the 4K encoder in the background while the user is choosing the processing mode.
-    import('./ffmpeg-4k-cfr.js?v=20261011-24')
+    import('./ffmpeg-4k-cfr.js?v=20261011-25')
       .then((encoder) => encoder.preloadFFmpeg4k?.())
       .catch((error) => console.warn('[INEASY] 4K runtime pre-load skipped:', error?.message || error));
   }
@@ -2469,7 +2469,7 @@ if (processBtn) {
         sourceFile, sourceFile.name, controller.signal, reportCfrProgress
       );
       const runFfmpeg4kCfr = async (hdrMode = false) => {
-        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-24');
+        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-25');
         if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
           throw new Error('ffmpeg_4k_api_unavailable');
         }
@@ -2481,32 +2481,30 @@ if (processBtn) {
 
       let fpsConversion;
       let hdrInspection = null;
-      if (!is4kSource && /\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
+      if (/\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
         try {
-          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-24');
+          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-25');
           hdrInspection = await hdrEncoder.inspectHDRVideo(sourceFile);
         } catch (error) {
           // HDR inspection must never prevent the ordinary SDR converter from running.
           console.warn('[INEASY] HDR inspection module unavailable; continuing with standard CFR path:', error?.message || error);
         }
       }
-      if (is4kSource && ffmpeg4kEligible) {
-        setProcessingState('processing', '');
-        console.info('[INEASY] 4K source routed directly to the dedicated FFmpeg CFR path; HDR profile is auto-detected');
-        fpsConversion = await runFfmpeg4kCfr('auto');
-      } else if (hdrInspection?.hdr) {
+      if (hdrInspection?.hdr) {
+        // HDR must use the dedicated 10-bit path to retain PQ/HLG signaling.
         setProcessingState('processing', '');
         console.info('[INEASY] HDR source detected; selecting dedicated HEVC Main10 CFR encoder', hdrInspection);
-        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-24');
+        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-25');
         fpsConversion = await hdrEncoder.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress, { hdr: true }
         );
-      } else if (ffmpeg4kEligible) {
-        // Use the bitrate-controlled FFmpeg encoder for supported MP4/MOV/M4V SDR at every supported resolution.
-        // The generic MediaBunny path does not enforce the source-relative output-size ceiling.
+      } else if (is4kSource && !hdrInspection && ffmpeg4kEligible) {
+        // If 4K colour inspection is inconclusive, use FFmpeg auto-detection rather than risk stripping HDR.
         setProcessingState('processing', '');
         fpsConversion = await runFfmpeg4kCfr('auto');
       } else try {
+        // Prefer browser/WebCodecs hardware acceleration for SDR at both 1080p and 4K.
+        // Avoid the slower bitrate-controlled FFmpeg path unless 4K conversion fails or HDR requires it.
         fpsConversion = await runPrimaryCfr();
       } catch (primaryError) {
         const primaryMessage = String(primaryError?.message || primaryError || '');
