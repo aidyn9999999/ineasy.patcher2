@@ -7,7 +7,7 @@
 
 // We need to import the core and processor scripts into the worker context.
 // importScripts is synchronous and available in dedicated workers.
-importScripts('adjn-mp4-core.js?v=20261010-16', 'adjn-processor.js?v=20261011-21', 'v2-beta-processor.js?v=20261011-4');
+importScripts('adjn-mp4-core.js?v=20261010-16');
 
 
 self.onmessage = async function (event) {
@@ -68,6 +68,9 @@ self.onmessage = async function (event) {
         report: { hdrSafePassthrough: true }
       };
     } else {
+      // Load the larger patching engines only for SDR jobs. HDR has already been
+      // CFR-converted locally and exits through the safe byte-preserving path above.
+      importScripts('adjn-processor.js?v=20261011-21', 'v2-beta-processor.js?v=20261011-4');
       if (engine === 'rein-beta') {
         if (!globalThis.V2BetaVideoProcessor?.processVideoDirect) {
           throw new Error('V2_BETA_ENGINE_NOT_LOADED');
