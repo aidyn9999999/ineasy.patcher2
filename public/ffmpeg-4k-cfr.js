@@ -207,19 +207,48 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
   return result;
 }
 
+export async function inspectHDRVideo(inputBlob) {
+  if (!inputBlob || !inputBlob.size || inputBlob.size > MAX_INPUT_BYTES) {
+    return { hdr: false, reason: 'file_size_unavailable' };
+  }
+  const extension = fileExtension(inputBlob.name);
+  if (!extension) return { hdr: false, reason: 'unsupported_container' };
+  try {
+    const bytes = new Uint8Array(await inputBlob.arrayBuffer());
+    const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+    if (!mediaCore?.inspectMediaInfo) return { hdr: false, reason: 'media_inspector_unavailable' };
+    const info = mediaCore.inspectMediaInfo(bytes);
+    const profile = inspectSourceColorProfile(bytes, info);
+    return {
+      ...profile,
+      codec: info.codec || '',
+      codecFamily: info.codecFamily || '',
+      width: Number(info.width) || null,
+      height: Number(info.height) || null,
+      hdrType: /Dolby Vision/i.test(profile.reason) ? 'dolby-vision' :
+        /HLG/i.test(profile.displayColor) ? 'hlg' :
+        /PQ|HDR10/i.test(profile.displayColor) ? 'pq' : 'unknown',
+      label: profile.displayColor || 'HDR / 10-bit'
+    };
+  } catch (error) {
+    console.warn('[INEASY] HDR metadata inspection inconclusive:', error?.message || error);
+    return { hdr: false, reason: 'metadata_inspection_inconclusive' };
+  }
+}
+
 function fileExtension(name) {
   const extension = String(name || '').toLowerCase().match(/\.(mp4|m4v|mov)$/)?.[1];
   return extension || '';
 }
 
 /**
- * Actual FFmpeg-wasm frame conversion for 4K SDR AVC/8-bit HEVC sources.
+ * FFmpeg-wasm CFR conversion for 4K SDR and explicit HDR10/HLG Main10 paths.
  * It accepts inputs up to 4096x2304, including 4K sources up to 120 fps, and
  * produces a real constant 60000/1001 fps (59.94) MP4 without scaling the frame.
- * Explicit PQ/HLG/Dolby Vision metadata is rejected by this SDR path. Main10 without
- * explicit HDR signaling may be converted to 8-bit SDR output (not HDR-preserving).
+ * Explicit HDR conversion uses HEVC Main10 and retains PQ/HLG signaling; Dolby Vision
+ * is rejected because dynamic metadata cannot be preserved by this re-encode.
  */
-export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions, duration, signal, onProgress) {
+export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions, duration, signal, onProgress, options = {}) {
   throwIfAborted(signal);
   if (!inputBlob || !inputBlob.size || inputBlob.size > MAX_INPUT_BYTES) throw new Error('video_file_over_limit');
   const extension = fileExtension(inputBlob.name);
@@ -251,11 +280,22 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     throw new Error('ffmpeg_4k_source_format_unsupported');
   }
   const colorProfile = inspectSourceColorProfile(inputBytes, sourceInfo);
-  if (colorProfile.hdr) {
-    console.warn('[INEASY] Structured HDR colour metadata detected:', colorProfile);
+  const isHdrEncode = options?.hdr === true;
+  if (colorProfile.hdr && !isHdrEncode) {
+    console.warn('[INEASY] Structured HDR colour metadata detected; SDR path refused:', colorProfile);
     throw new Error('ffmpeg_4k_hdr_unsafe: ' + colorProfile.reason);
   }
-  if (colorProfile.tenBit) {
+  if (isHdrEncode && !colorProfile.hdr) {
+    throw new Error('hdr_metadata_not_detected');
+  }
+  if (isHdrEncode && /Dolby Vision/i.test(colorProfile.reason)) {
+    // A plain HEVC re-encode cannot preserve Dolby Vision dynamic metadata.
+    throw new Error('hdr_dolby_vision_transcode_unsupported');
+  }
+  if (isHdrEncode && !['avc', 'hevc'].includes(String(sourceInfo.codecFamily || '').toLowerCase())) {
+    throw new Error('hdr_source_codec_unsupported');
+  }
+  if (colorProfile.tenBit && !isHdrEncode) {
     // Main10/10-bit by itself does not mean HDR. Only explicit PQ/HLG/Dolby Vision
     // metadata above blocks this SDR path. With no such signalling, process the file
     // as SDR and let the existing yuv420p output perform a normal 8-bit SDR conversion.
@@ -363,13 +403,28 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       '-map', '0:a?',
       '-map_metadata', '0',
       '-vf', 'fps=' + TARGET_FPS,
-      '-fps_mode', 'cfr',
-      '-c:v', 'libx264',
-      '-preset', 'ultrafast',
-      '-crf', '20',
-      '-threads', '1',
-      '-pix_fmt', 'yuv420p',
-      '-tag:v', 'avc1',
+      ...(isHdrEncode ? [] : ['-fps_mode', 'cfr']),
+      ...(isHdrEncode
+        ? [
+            '-c:v', 'libx265',
+            '-preset', 'ultrafast',
+            '-crf', '22',
+            '-threads', '1',
+            '-pix_fmt', 'yuv420p10le',
+            '-tag:v', 'hvc1',
+            '-color_primaries', 'bt2020',
+            '-color_trc', colorProfile.hdrType === 'hlg' ? 'arib-std-b67' : 'smpte2084',
+            '-colorspace', 'bt2020nc',
+            '-x265-params', colorProfile.hdrType === 'hlg' ? 'repeat-headers=1' : 'hdr10=1:repeat-headers=1'
+          ]
+        : [
+            '-c:v', 'libx264',
+            '-preset', 'ultrafast',
+            '-crf', '20',
+            '-threads', '1',
+            '-pix_fmt', 'yuv420p',
+            '-tag:v', 'avc1'
+          ]),
       '-c:a', 'aac',
       '-b:a', '160k',
       '-movflags', '+faststart',
@@ -394,11 +449,26 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
         '-map', '0:a?',
         '-map_metadata', '0',
         '-vf', 'fps=' + TARGET_FPS,
-        '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', '22',
-        '-threads', '1',
-        '-pix_fmt', 'yuv420p',
+        ...(isHdrEncode
+          ? [
+              '-c:v', 'libx265',
+              '-preset', 'ultrafast',
+              '-crf', '25',
+              '-threads', '1',
+              '-pix_fmt', 'yuv420p10le',
+              '-tag:v', 'hvc1',
+              '-color_primaries', 'bt2020',
+              '-color_trc', colorProfile.hdrType === 'hlg' ? 'arib-std-b67' : 'smpte2084',
+              '-colorspace', 'bt2020nc',
+              '-x265-params', colorProfile.hdrType === 'hlg' ? 'repeat-headers=1' : 'hdr10=1:repeat-headers=1'
+            ]
+          : [
+              '-c:v', 'libx264',
+              '-preset', 'ultrafast',
+              '-crf', '22',
+              '-threads', '1',
+              '-pix_fmt', 'yuv420p'
+            ]),
         '-c:a', 'aac',
         '-b:a', '128k',
         '-movflags', '+faststart',
@@ -410,6 +480,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
         // Last-resort compatibility mode: use the lightweight 1080p encode profile
         // for a 4K input if this browser cannot finish either full-resolution attempt.
         // Keep the source aspect ratio and still perform a real CFR conversion.
+        if (isHdrEncode) {
+          throw new Error('hdr_hevc10_encode_failed: ' + (diagnosticTail() || 'HEVC Main10 HDR encode returned a non-zero exit code'));
+        }
         rememberLog('Trying 1080p compatibility fallback after both full-resolution 4K attempts failed');
         stage = 'encode_1080p_fallback';
         try { await ffmpeg.deleteFile(outputFileName); } catch (_) {}
@@ -459,6 +532,12 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
         (Math.abs(Number(verified.width) - width) > 0 || Math.abs(Number(verified.height) - height) > 0)) {
       throw new Error('ffmpeg_4k_resolution_verification_failed');
     }
+    if (isHdrEncode) {
+      const outputProfile = inspectSourceColorProfile(outputBytes, verified);
+      if (!outputProfile.hdr || !outputProfile.tenBit) {
+        throw new Error('hdr_output_verification_failed: ' + JSON.stringify(outputProfile));
+      }
+    }
     if (used1080pFallback) {
       const outW = Number(verified.width);
       const outH = Number(verified.height);
@@ -471,7 +550,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     }
 
     const blob = new Blob([outputBytes], { type: 'video/mp4' });
-    console.info('[INEASY] FFmpeg 4K SDR fallback verified', {
+    console.info(isHdrEncode ? '[INEASY] HDR HEVC Main10 CFR conversion verified' : '[INEASY] FFmpeg 4K SDR fallback verified', {
       inputCodec: sourceInfo.codec || 'unknown',
       outputCodec: verified.codec || 'unknown',
       inputResolution: width + 'x' + height,
@@ -479,6 +558,8 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       outputFps: actualFps,
       encoder: 'FFmpeg.wasm libx264',
       sourceHdrFallback: false,
+      hdrTranscoded: isHdrEncode,
+      hdrProfile: isHdrEncode ? colorProfile : null,
       used1080pFallback
     });
     onProgress?.(1);
@@ -488,10 +569,16 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       fps: actualFps,
       sourceFps: sourceInfo.averageFps || null,
       preserveOriginal: false,
-      hdr: false,
-      hdrTranscoded: false,
-      main10Transcoded: false,
-      hdrProfile: null,
+      hdr: isHdrEncode,
+      hdrTranscoded: isHdrEncode,
+      main10Transcoded: isHdrEncode,
+      hdrProfile: isHdrEncode ? {
+        label: colorProfile.displayColor || (colorProfile.hdrType === 'hlg' ? 'BT.2020 / HLG' : 'BT.2020 / PQ (HDR10)'),
+        hdr10: colorProfile.hdrType !== 'hlg',
+        hlg: colorProfile.hdrType === 'hlg',
+        main10: true,
+        dolbyVision: false
+      } : null,
       downscaledFallback: used1080pFallback
     };
   } catch (error) {
