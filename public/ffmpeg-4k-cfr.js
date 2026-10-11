@@ -462,7 +462,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     // The fps filter performs real drop/duplication to CFR; no scale filter is used.
     let code = await ffmpeg.exec([
       '-hide_banner', '-y',
-      '-filter_threads', '1',
+      '-filter_threads', '2',
       '-i', inputFileName,
       '-map', '0:v:0',
       '-map', '0:a?',
@@ -476,7 +476,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
             '-b:v', String(targetVideoBitrate),
             '-maxrate', String(targetMaxRate),
             '-bufsize', String(targetBufferSize),
-            '-threads', '1',
+            '-threads', '2',
             '-pix_fmt', 'yuv420p10le',
             '-tag:v', 'hvc1',
             '-color_primaries', 'bt2020',
@@ -490,7 +490,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
             '-b:v', String(targetVideoBitrate),
             '-maxrate', String(targetMaxRate),
             '-bufsize', String(targetBufferSize),
-            '-threads', '1',
+            '-threads', '2',
             '-pix_fmt', 'yuv420p',
             '-tag:v', 'avc1'
           ]),
