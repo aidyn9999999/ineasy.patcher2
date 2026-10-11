@@ -1583,18 +1583,26 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
           const script = document.createElement('script');
           script.dataset.ineasyFfmpeg = '1';
           script.src = src;
+          let settled = false;
+          const finish = (error) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeoutId);
+            signal.removeEventListener('abort', onAbort);
+            if (error) {
+              script.remove();
+              reject(error);
+            } else {
+              resolve();
+            }
+          };
+          const onAbort = () => finish(new Error('processing_cancelled'));
+          const timeoutId = setTimeout(() => finish(new Error('fps_encoder_download_failed: script timeout')), 20000);
           script.onload = () => globalThis.FFmpegWASM?.FFmpeg
-            ? resolve()
-            : reject(new Error('ffmpeg_global_missing'));
-          script.onerror = () => reject(new Error('fps_encoder_download_failed'));
-          script.onload = ((onload) => function () {
-            onload.call(this);
-            if (!globalThis.FFmpegWASM?.FFmpeg) this.remove();
-          })(script.onload);
-          script.onerror = ((onerror) => function () {
-            onerror.call(this);
-            this.remove();
-          })(script.onerror);
+            ? finish()
+            : finish(new Error('ffmpeg_global_missing'));
+          script.onerror = () => finish(new Error('fps_encoder_download_failed'));
+          signal.addEventListener('abort', onAbort, { once: true });
           document.head.appendChild(script);
         });
         if (globalThis.FFmpegWASM?.FFmpeg) break;
@@ -2201,25 +2209,33 @@ if (processBtn) {
         { type: 'video/mp4', lastModified: Date.now() }
       );
 
-      const preparedInput = isV2SelectedForJob
+      const basePreparedInput = isV2SelectedForJob
         ? {
             blob: normalizedFile,
-            sourceFps: fpsConversion.fps,
-            targetFrameRate: 60000 / 1001,
             report: {
-              performed: true,
               compressionDisabled: false,
-              frameRateRetimed: true,
-              targetFrameRate: 60000 / 1001,
-              inputWidth: selectedVideoDimensions?.width || null,
-              inputHeight: selectedVideoDimensions?.height || null,
-              outputWidth: fpsConversion.info?.width || selectedVideoDimensions?.width || null,
-              outputHeight: fpsConversion.info?.height || selectedVideoDimensions?.height || null
+              skippedForV2: false
             }
           }
         : await prepareVideoForPatcher(normalizedFile, selectedVideoDimensions, controller.signal, (progress) => {
             updateProcessingProgress(15 + Math.round(Math.max(0, Math.min(1, progress)) * 1));
           });
+      const preparedInput = {
+        ...basePreparedInput,
+        blob: normalizedFile,
+        sourceFps: fpsConversion.sourceFps,
+        targetFrameRate: 60000 / 1001,
+        report: {
+          ...(basePreparedInput.report || {}),
+          performed: true,
+          frameRateRetimed: true,
+          targetFrameRate: 60000 / 1001,
+          inputWidth: selectedVideoDimensions?.width || null,
+          inputHeight: selectedVideoDimensions?.height || null,
+          outputWidth: fpsConversion.info?.width || selectedVideoDimensions?.width || null,
+          outputHeight: fpsConversion.info?.height || selectedVideoDimensions?.height || null
+        }
+      };
       const processingFile = preparedInput.blob;
       const processingFileName = `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`;
       const buffer = await processingFile.arrayBuffer();
