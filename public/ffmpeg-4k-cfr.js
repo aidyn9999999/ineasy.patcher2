@@ -679,10 +679,10 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       if (outputBytes.byteLength > MAX_INPUT_BYTES) throw new Error('video_file_over_limit');
       onProgress?.(Math.min(0.96, 0.88 + sizeCorrectionAttempts * 0.025));
     }
-    if (outputBytes.byteLength > maxOutputBytes) {
+    if (outputBytes.byteLength > maxOutputBytes || outputBytes.byteLength < minPreferredBytes) {
       throw new Error('output_size_target_not_met: source=' + inputBlob.size +
-        '; output=' + outputBytes.byteLength + '; max=' + maxOutputBytes +
-        '; attempts=' + sizeCorrectionAttempts);
+        '; output=' + outputBytes.byteLength + '; min=' + minPreferredBytes +
+        '; max=' + maxOutputBytes + '; attempts=' + sizeCorrectionAttempts);
     }
 
     stage = 'verify_output';
