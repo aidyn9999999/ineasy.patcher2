@@ -2116,7 +2116,7 @@ async function handleFile(file) {
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
   if (selectedLongSide >= 3000 && /\.(mp4|m4v|mov)$/i.test(file.name)) {
     // Download the 4K encoder in the background while the user is choosing the processing mode.
-    import('./ffmpeg-4k-cfr.js?v=20261011-16')
+    import('./ffmpeg-4k-cfr.js?v=20261011-17')
       .then((encoder) => encoder.preloadFFmpeg4k?.())
       .catch((error) => console.warn('[INEASY] 4K runtime pre-load skipped:', error?.message || error));
   }
