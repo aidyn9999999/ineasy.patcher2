@@ -1787,6 +1787,18 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
       activeOutput = hdrOutput;
 
       let encoderConfigAttempts = 0;
+      // WebCodecs does not reliably infer HDR signalling from decoded frames.
+      // Carry the source transfer/gamut explicitly into the HEVC encoder config;
+      // otherwise the output can be encoded as Main10 but tagged as SDR and fail
+      // the post-encode HDR verification (or display with washed-out colours).
+      const hdrOutputTransfer = sourceTransfer ||
+        (sourceHdrProfile?.hlg ? 'hlg' :
+          (sourceHdrProfile?.hdr10 || sourceHdrProfile?.hdr10plus || sourceHdrProfile?.dolbyVision) ? 'pq' : '');
+      const hdrOutputPrimaries = sourcePrimaries || (sourceIsHdr ? 'bt2020' : '');
+      const hdrOutputMatrix = String(sourceColorSpace?.matrix || '').toLowerCase() ||
+        (hdrOutputPrimaries === 'bt2020' ? 'bt2020-ncl' : '');
+      const hdrOutputFullRange = typeof sourceColorSpace?.fullRange === 'boolean'
+        ? sourceColorSpace.fullRange : undefined;
       const hdrVideoSource = new VideoSampleSource({
         codec: 'hevc',
         quality: new Quality('high'),
@@ -1803,6 +1815,16 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
           if (!match) throw new Error('hdr_main10_encoder_config_unavailable: ' + String(config.codec || 'unknown'));
           const sampleEntry = encoderConfigAttempts++ % 2 === 0 ? 'hev1' : 'hvc1';
           config.codec = sampleEntry + '.2.4.' + match[1];
+
+          // Use valid WebCodecs colour-space labels, not raw container labels
+          // such as SMPTE 2084 / ARIB STD-B67. Fall back to the standard BT.2020
+          // gamut only when HDR was detected but the container omitted primaries.
+          const colorSpace = { ...(config.colorSpace || {}) };
+          if (hdrOutputPrimaries) colorSpace.primaries = hdrOutputPrimaries;
+          if (hdrOutputTransfer) colorSpace.transfer = hdrOutputTransfer;
+          if (hdrOutputMatrix) colorSpace.matrix = hdrOutputMatrix;
+          if (hdrOutputFullRange !== undefined) colorSpace.fullRange = hdrOutputFullRange;
+          if (Object.keys(colorSpace).length) config.colorSpace = colorSpace;
         }
       });
 
