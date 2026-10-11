@@ -2116,7 +2116,7 @@ async function handleFile(file) {
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
   if (selectedLongSide >= 3000 && /\.(mp4|m4v|mov)$/i.test(file.name)) {
     // Download the 4K encoder in the background while the user is choosing the processing mode.
-    import('./ffmpeg-4k-cfr.js?v=20261011-13')
+    import('./ffmpeg-4k-cfr.js?v=20261011-14')
       .then((encoder) => encoder.preloadFFmpeg4k?.())
       .catch((error) => console.warn('[INEASY] 4K runtime pre-load skipped:', error?.message || error));
   }
@@ -2482,7 +2482,7 @@ if (processBtn) {
         sourceFile, sourceFile.name, controller.signal, reportCfrProgress
       );
       const runFfmpeg4kCfr = async () => {
-        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-13');
+        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-14');
         if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
           throw new Error('ffmpeg_4k_api_unavailable');
         }
@@ -2534,10 +2534,21 @@ if (processBtn) {
       if (is4kSource) {
         const convertedWidth = Number(fpsConversion.info?.width);
         const convertedHeight = Number(fpsConversion.info?.height);
+        const expectedWidth = Number(selectedVideoDimensions?.width);
+        const expectedHeight = Number(selectedVideoDimensions?.height);
+        const accepted1080pFallback = fpsConversion.downscaledFallback === true &&
+          Math.max(convertedWidth, convertedHeight) <= 1920 &&
+          Math.abs((convertedWidth / convertedHeight) - (expectedWidth / expectedHeight)) <= 0.015;
         if (!convertedWidth || !convertedHeight ||
-            convertedWidth !== Number(selectedVideoDimensions?.width) ||
-            convertedHeight !== Number(selectedVideoDimensions?.height)) {
+            (!accepted1080pFallback &&
+             (convertedWidth !== expectedWidth || convertedHeight !== expectedHeight))) {
           throw new Error('video_resolution_changed_during_cfr');
+        }
+        if (accepted1080pFallback) {
+          console.warn('[INEASY] Full-resolution 4K encoding failed; accepted verified 1080p compatibility fallback', {
+            sourceResolution: expectedWidth + 'x' + expectedHeight,
+            outputResolution: convertedWidth + 'x' + convertedHeight
+          });
         }
         console.info('[INEASY] 4K CFR output verified before ADJN', {
           sourceResolution: selectedVideoDimensions.width + 'x' + selectedVideoDimensions.height,
