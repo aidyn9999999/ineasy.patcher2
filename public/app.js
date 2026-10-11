@@ -2376,53 +2376,82 @@ if (processBtn) {
 
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
 
-      // Keep the established MediaBunny converter as the primary route.
-      // For 4K only, use the separate FFmpeg fallback if this browser's H.264 encoder rejects the source.
-      // The convertVideoToExact5994Fps function itself remains unchanged.
+      // Route supported 4K MP4/MOV to the prewarmed FFmpeg encoder directly.
+      // This avoids a full high-resolution WebCodecs attempt before the FFmpeg retry.
+      // The stable convertVideoToExact5994Fps function remains unchanged for other inputs.
+      const sourceLongSide = Math.max(
+        Number(selectedVideoDimensions?.width) || 0,
+        Number(selectedVideoDimensions?.height) || 0
+      );
+      const is4kSource = sourceLongSide >= 3000;
+      const ffmpeg4kEligible = is4kSource && /\.(mp4|m4v|mov)$/i.test(sourceFile.name);
       const reportCfrProgress = (progress) => {
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
       };
-      let fpsConversion;
-      try {
-        fpsConversion = await convertVideoToExact5994Fps(
-          sourceFile, sourceFile.name, controller.signal, reportCfrProgress
-        );
-      } catch (primaryConversionError) {
-        const sourceLongSide = Math.max(
-          Number(selectedVideoDimensions?.width) || 0,
-          Number(selectedVideoDimensions?.height) || 0
-        );
-        const primaryErrorText = String(primaryConversionError?.message || primaryConversionError || '');
-        if (controller.signal.aborted ||
-            sourceLongSide < 3000 ||
-            /video_file_over_limit|processing_cancelled|mediabunny_load_timeout|mediabunny_module_load_failed/i.test(primaryErrorText)) {
-          throw primaryConversionError;
+      const runPrimaryCfr = () => convertVideoToExact5994Fps(
+        sourceFile, sourceFile.name, controller.signal, reportCfrProgress
+      );
+      const runFfmpeg4kCfr = async () => {
+        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-3');
+        if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
+          throw new Error('ffmpeg_4k_api_unavailable');
         }
+        return ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg(
+          sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress
+        );
+      };
 
-        console.warn('[INEASY] Native 4K CFR conversion failed; trying isolated FFmpeg fallback:', primaryErrorText);
+      let fpsConversion;
+      if (ffmpeg4kEligible) {
         try {
-          const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-2');
-          if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
-            throw new Error('ffmpeg_4k_api_unavailable');
+          fpsConversion = await runFfmpeg4kCfr();
+          console.info('[INEASY] 4K direct CFR conversion completed', {
+            sourceResolution: selectedVideoDimensions.width + 'x' + selectedVideoDimensions.height,
+            sourceFps: fpsConversion.sourceFps || 'unknown',
+            outputFps: fpsConversion.fps,
+            outputResolution: fpsConversion.info?.width + 'x' + fpsConversion.info?.height
+          });
+        } catch (ffmpegError) {
+          const ffmpegMessage = String(ffmpegError?.message || ffmpegError || '');
+          if (controller.signal.aborted ||
+              /processing_cancelled|AbortError|video_file_over_limit/i.test(ffmpegMessage)) {
+            throw ffmpegError;
           }
-          fpsConversion = await ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg(
-            sourceFile,
-            selectedVideoDimensions,
-            sourceDuration,
-            controller.signal,
-            reportCfrProgress
-          );
-        } catch (fallbackError) {
-          if (controller.signal.aborted || /processing_cancelled|AbortError/i.test(String(fallbackError?.message || ''))) {
-            throw new Error('processing_cancelled');
+          console.warn('[INEASY] 4K FFmpeg path unavailable; trying the established MediaBunny route:', ffmpegMessage);
+          try {
+            fpsConversion = await runPrimaryCfr();
+          } catch (primaryError) {
+            const primaryMessage = String(primaryError?.message || primaryError || 'unknown_error');
+            if (/ffmpeg_4k_hdr_unsafe/i.test(ffmpegMessage)) throw ffmpegError;
+            throw new Error(
+              'ffmpeg_4k_fallback_failed: FFmpeg=' + ffmpegMessage.slice(0, 220) +
+              '; MediaBunny=' + primaryMessage.slice(0, 220)
+            );
           }
-          console.error('[INEASY] FFmpeg 4K fallback failed:', fallbackError);
-          const fallbackMessage = String(fallbackError?.message || fallbackError || 'unknown_error');
-          if (/ffmpeg_4k_|video_file_over_limit|fps_encoder_empty_output|fps_encoder_verification_failed|video_resolution_over_4k/.test(fallbackMessage)) {
-            throw fallbackError;
-          }
-          throw new Error('ffmpeg_4k_fallback_failed: ' + fallbackMessage.slice(0, 350));
         }
+      } else {
+        fpsConversion = await runPrimaryCfr();
+      }
+
+      // Verify the actual converted 4K file BEFORE passing it into ADJN.
+      const convertedFps = Number(fpsConversion.fps ?? fpsConversion.info?.averageFps);
+      if (!Number.isFinite(convertedFps) || Math.abs(convertedFps - (60000 / 1001)) > 0.03) {
+        throw new Error('fps_encoder_verification_failed: reported=' + String(convertedFps));
+      }
+      if (is4kSource) {
+        const convertedWidth = Number(fpsConversion.info?.width);
+        const convertedHeight = Number(fpsConversion.info?.height);
+        if (!convertedWidth || !convertedHeight ||
+            convertedWidth !== Number(selectedVideoDimensions?.width) ||
+            convertedHeight !== Number(selectedVideoDimensions?.height)) {
+          throw new Error('video_resolution_changed_during_cfr');
+        }
+        console.info('[INEASY] 4K CFR output verified before ADJN', {
+          sourceResolution: selectedVideoDimensions.width + 'x' + selectedVideoDimensions.height,
+          cfrResolution: convertedWidth + 'x' + convertedHeight,
+          cfrFps: convertedFps,
+          targetFps: '60000/1001'
+        });
       }
       originalInputFps = fpsConversion.sourceFps;
       const normalizedFile = fpsConversion.preserveOriginal
