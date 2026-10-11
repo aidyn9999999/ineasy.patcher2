@@ -806,9 +806,18 @@ document.getElementById('copyIdBtn').addEventListener('click', () => {
   });
 });
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  ['tg_id', 'tg_username', 'tg_first_name', 'tg_auth_token'].forEach(removeBrowserValue);
-  window.location.href = '/';
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  const button = document.getElementById('logoutBtn');
+  button.disabled = true;
+  try {
+    const response = await fetch('/api/logout', { method: 'POST', cache: 'no-store' });
+    if (!response.ok) throw new Error('Could not clear the login session.');
+    ['tg_id', 'tg_username', 'tg_first_name', 'tg_auth_token'].forEach(removeBrowserValue);
+    window.location.replace('/');
+  } catch (error) {
+    button.disabled = false;
+    console.error('Не удалось завершить сессию:', error);
+  }
 });
 
 // --- Balance ---
