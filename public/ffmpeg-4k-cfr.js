@@ -28,7 +28,7 @@ function containsHdrSignals(bytes) {
   for (const [start, end] of ranges) {
     const chunk = bytes.subarray(start, end);
     const text = decoder.decode(chunk).toLowerCase();
-    if (/smpte.?2084|arib.?std.?b67|bt.?2020|dolby.?vision|dvh1|dvhe|dvc[cC]|dvv[cC]|hdr10|hlg/.test(text)) return true;
+    if (/smpte.?2084|arib.?std.?b67|bt.?2020|dolby.?vision|dvh1|dvhe|dvcc|dvvc|hdr10/.test(text)) return true;
 
     // ISO-BMFF 'colr'/'nclx' stores colour primaries, transfer, and matrix as 16-bit codes.
     let at = text.indexOf('nclx');
