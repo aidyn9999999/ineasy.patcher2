@@ -281,14 +281,14 @@ function smartVideoBitrate(sourceBytes, durationSeconds, audioBitrate = 160000) 
 
 /**
  * FFmpeg-wasm CFR conversion for 4K SDR and explicit HDR10/HLG Main10 paths.
- * It accepts inputs up to 4096x2304, including 4K sources up to 120 fps, and
+ * It keeps the selected source dimensions without a hard resolution ceiling,
  * produces a real constant 60000/1001 fps (59.94) MP4 without scaling the frame.
  * Explicit HDR conversion uses HEVC Main10 and retains PQ/HLG signaling; Dolby Vision
  * is rejected because dynamic metadata cannot be preserved by this re-encode.
  */
 export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions, duration, signal, onProgress, options = {}) {
   throwIfAborted(signal);
-  if (!inputBlob || !inputBlob.size) throw new Error('video_file_over_limit');
+  if (!inputBlob || !inputBlob.size) throw new Error('video_file_empty');
   const extension = fileExtension(inputBlob.name);
   if (!extension) throw new Error('ffmpeg_4k_source_format_unsupported');
 
