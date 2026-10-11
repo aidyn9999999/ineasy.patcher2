@@ -61,22 +61,22 @@ const translations = {
     stepTwoBody: 'Videos up to 4K (4096×2304) are processed locally. Frame rates up to 120 FPS are supported at 4K.',
     stepThreeTitle: 'Publish through Zernio',
     stepThreeBody: 'Tap “Auto-post”, connect your Zernio API key, review the caption, and publish to TikTok.',
-    localProcessingCopy: 'Your video stays on your device and is processed locally at constant 59.94 FPS. HDR videos use a 10-bit path when supported.',
+    localProcessingCopy: 'Your video stays on your device. The preview displays the target frame rate as 60 FPS. HDR uses a 10-bit path when supported.',
     homeBottomCta: 'Start processing',
     faqLabel: 'FAQ / FREQUENTLY ASKED QUESTIONS',
     analyzerEyebrow: 'VIDEO ANALYZER',
     videos: 'videos',
     report: 'Report',
-    patchTitle: 'Patch your video now.',
-    patchSub: 'Publish in high quality.',
+    patchTitle: 'Optimize video up to 4K • 120 FPS.',
+    patchSub: 'Supports source videos up to 4K / 120 FPS. Recommended source bitrate: 15–45 Mbps.',
     choose: 'Drop your video here',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP and other videos',
-    localNote: 'Optimize your video up to 4K at 120 FPS.',
-    exportNote: 'Ready for upload.',
+    localNote: 'Supports source videos up to 4K / 120 FPS • recommended bitrate 15–45 Mbps.',
+    exportNote: 'Your video is ready to process — tap “Process video”, then publish it to TikTok.',
     fpsPolicyNote: 'TikTok may change video quality after upload.',
-    patcherNoteV1: 'Standard mode.',
-    patcherNoteV2: 'Alternative patching mode.',
-    fpsAdvice: 'Ready to process.',
+    patcherNoteV1: 'V1 is the standard mode for everyday use. Choose V1 for regular processing.',
+    patcherNoteV2: 'V2 is for testing only. It is not intended for everyday use.',
+    fpsAdvice: 'V1 is the recommended mode for regular processing.',
     fps30Rejected: 'This video cannot be processed. Choose another file.',
     fpsInspectUnavailable: 'Could not read video details. The file will be checked during processing.',
     choosePostingDevice: 'Choose your device before processing.',
@@ -85,9 +85,11 @@ const translations = {
     newsText: 'Tutorials, updates, and giveaways',
     newsButton: 'View',
     process: 'Process video',
-    progressLabel: 'Loading',
-    ready: 'Video ready',
-    readySub: 'Download your patched file',
+    progressLabel: 'Processing',
+    ready: 'Your video is ready',
+    readySub: '1080p • 60 FPS',
+    previewMeta: '1080p • 60 FPS',
+    optimizeAnother: 'Optimize another video',
     download: 'Download',
     publishTikTok: 'Post on site (easy)',
     publishTikTokStudio: 'Open TikTok Studio',
@@ -153,7 +155,7 @@ const translations = {
     publishFailed: 'TikTok could not publish this video. Check the options and try again.',
     authExpired: 'Your session expired. Sign in again to publish.',
     close: 'Close',
-    notice: 'If the video duration shows 0:00 after patching, this is normal. The file works fine.',
+    notice: 'If the duration displays as 0:00, check the downloaded MP4 in a separate video player before publishing.',
     analyzerTitle: 'Video Analyzer',
     analyzerDesc: 'Check the parameters of your published video and compare them with the original file.',
     analyzerButton: 'Analyze video',
@@ -244,22 +246,22 @@ const translations = {
     stepTwoBody: 'Локально обрабатываются видео до 4K (4096×2304). Для 4K поддерживается частота до 120 FPS.',
     stepThreeTitle: 'Опубликуйте через Zernio',
     stepThreeBody: 'Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и опубликуйте видео в TikTok.',
-    localProcessingCopy: 'Видео остаётся на устройстве и обрабатывается локально в постоянные 59,94 FPS. Для HDR используется 10-битный режим, если формат поддерживается.',
+    localProcessingCopy: 'Видео остаётся на устройстве. В предпросмотре целевая частота отображается как 60 FPS. Для HDR используется 10-битный режим, если формат поддерживается.',
     homeBottomCta: 'Начать обработку',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
     videos: 'видео',
     report: 'Сообщить',
-    patchTitle: 'Патчите видео прямо сейчас.',
-    patchSub: 'Публикуйте в высоком качестве.',
+    patchTitle: 'Оптимизируйте видео до 4K • 120 FPS.',
+    patchSub: 'Поддержка исходников до 4K / 120 FPS. Рекомендуемый исходный битрейт — 15–45 Мбит/с.',
     choose: 'Перетащите видео сюда',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP и другие видео',
-    localNote: 'Оптимизируйте видео до 4K и 120 FPS.',
-    exportNote: 'Видео готово к загрузке.',
+    localNote: 'Поддержка исходников до 4K / 120 FPS • рекомендуемый битрейт 15–45 Мбит/с.',
+    exportNote: 'Ваше видео готово к обработке — нажмите «Обработать видео», а затем опубликуйте его в TikTok.',
     fpsPolicyNote: 'TikTok может изменить качество видео после загрузки.',
-    patcherNoteV1: 'Стандартный режим.',
-    patcherNoteV2: 'Альтернативный режим патчинга.',
-    fpsAdvice: 'Готово к обработке.',
+    patcherNoteV1: 'V1 — обычный режим для повседневной обработки. Выбирайте его для стандартной работы.',
+    patcherNoteV2: 'V2 — тестовый режим. Используйте его только для тестирования; для обычного использования он не предназначен.',
+    fpsAdvice: 'Для обычной обработки используйте V1.',
     fps30Rejected: 'Не удалось подготовить это видео. Выберите другой файл.',
     fpsInspectUnavailable: 'Не удалось прочитать параметры видео. Файл будет проверен при обработке.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
@@ -268,9 +270,11 @@ const translations = {
     newsText: 'Туториалы, обновления и розыгрыши',
     newsButton: 'Смотреть',
     process: 'Обработать видео',
-    progressLabel: 'Загрузка',
-    ready: 'Видео готово',
-    readySub: 'Можно скачать обработанный файл',
+    progressLabel: 'Обработка',
+    ready: 'Ваше видео готово',
+    readySub: '1080p • 60 FPS',
+    previewMeta: '1080p • 60 FPS',
+    optimizeAnother: 'Оптимизировать другое видео',
     download: 'Скачать',
     publishTikTok: 'Пост в сайте (легкий)',
     publishTikTokStudio: 'Открыть TikTok Studio',
@@ -336,7 +340,7 @@ const translations = {
     publishFailed: 'Не удалось опубликовать видео в TikTok. Проверьте настройки и попробуйте снова.',
     authExpired: 'Сессия истекла. Войдите снова, чтобы опубликовать видео.',
     close: 'Закрыть',
-    notice: 'Если после патчинга длительность видео показывает 0:00, это нормально. Файл работает корректно.',
+    notice: 'Если длительность отображается как 0:00, проверьте скачанный MP4 в отдельном видеоплеере перед публикацией.',
     analyzerTitle: 'Анализатор видео',
     analyzerDesc: 'Проверьте параметры опубликованного видео и сравните их с исходным файлом.',
     analyzerButton: 'Проверить видео',
@@ -427,22 +431,22 @@ const translations = {
     stepTwoBody: 'Құрылғыда 4K (4096×2304) дейінгі бейнелер өңделеді. 4K үшін 120 FPS-ке дейін қолдау бар.',
     stepThreeTitle: 'Zernio арқылы жариялаңыз',
     stepThreeBody: '«Автожариялау» түймесін басып, Zernio API кілтін қосыңыз, сипаттаманы тексеріп, TikTok-қа жариялаңыз.',
-    localProcessingCopy: 'Бейне құрылғыңызда қалады және тұрақты 59,94 FPS жиілігімен жергілікті өңделеді. HDR бейнеге қолдау болса, 10-биттік режим қолданылады.',
+    localProcessingCopy: 'Бейне құрылғыңызда қалады. Алдын ала көріністе нысаналы жиілік 60 FPS деп көрсетіледі. Қолдау болса, HDR үшін 10-биттік режим қолданылады.',
     homeBottomCta: 'Өңдеуді бастау',
     faqLabel: 'FAQ / ЖИІ ҚОЙЫЛАТЫН СҰРАҚТАР',
     analyzerEyebrow: 'БЕЙНЕ АНАЛИЗАТОРЫ',
     videos: 'бейне',
     report: 'Хабарлау',
-    patchTitle: 'Бейнеңізді қазір патчтаңыз.',
-    patchSub: 'Жоғары сапада жариялаңыз.',
+    patchTitle: 'Бейнені 4K • 120 FPS дейін оңтайландырыңыз.',
+    patchSub: '4K / 120 FPS дейінгі бастапқы бейнелерге қолдау бар. Ұсынылатын бастапқы битрейт: 15–45 Мбит/с.',
     choose: 'Видеоны осында сүйреп әкеліңіз',
     chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP және басқа бейнелер',
-    localNote: 'Бейнені 4K және 120 FPS-ке дейін оңтайландырыңыз.',
-    exportNote: 'Бейне жүктеуге дайын.',
+    localNote: '4K / 120 FPS дейінгі бастапқы бейнелерге қолдау бар • ұсынылатын битрейт 15–45 Мбит/с.',
+    exportNote: 'Бейнеңіз өңдеуге дайын — «Бейнені өңдеу» түймесін басып, TikTok-та жариялаңыз.',
     fpsPolicyNote: 'TikTok жүктегеннен кейін бейне сапасын өзгертуі мүмкін.',
-    patcherNoteV1: 'Стандартты режим.',
-    patcherNoteV2: 'Балама патчтау режимі.',
-    fpsAdvice: 'Өңдеуге дайын.',
+    patcherNoteV1: 'V1 — күнделікті қолдануға арналған қалыпты режим. Әдеттегі өңдеу үшін оны таңдаңыз.',
+    patcherNoteV2: 'V2 — тек сынақ режимі. Ол күнделікті қолдануға арналмаған.',
+    fpsAdvice: 'Қалыпты өңдеу үшін V1 нұсқасын пайдаланыңыз.',
     fps30Rejected: 'Бұл бейнені өңдеу мүмкін болмады. Басқа файл таңдаңыз.',
     fpsInspectUnavailable: 'Бейне параметрлерін оқу мүмкін болмады. Файл өңдеу кезінде тексеріледі.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
@@ -451,9 +455,11 @@ const translations = {
     newsText: 'Туториалдар, жаңартулар және ұтыс ойындары',
     newsButton: 'Көру',
     process: 'Бейнені өңдеу',
-    progressLabel: 'Жүктелуде',
-    ready: 'Бейне дайын',
-    readySub: 'Өңделген файлын жүктеп алыңыз',
+    progressLabel: 'Өңдеу',
+    ready: 'Бейнеңіз дайын',
+    readySub: '1080p • 60 FPS',
+    previewMeta: '1080p • 60 FPS',
+    optimizeAnother: 'Басқа бейнені оңтайландыру',
     download: 'Жүктеу',
     publishTikTok: 'Сайтқа жариялау (жеңіл)',
     publishTikTokStudio: 'TikTok Studio ашу',
@@ -519,7 +525,7 @@ const translations = {
     publishFailed: 'Бейне TikTok-та жарияланбады. Параметрлерді тексеріп, қайталап көріңіз.',
     authExpired: 'Сеанс аяқталды. Жариялау үшін қайта кіріңіз.',
     close: 'Жабу',
-    notice: 'Егер өңдеуден кейін ұзақтығы 0:00 болса, бұл қалыпты. Файл дұрыс жұмыс істейді.',
+    notice: 'Ұзақтығы 0:00 болып көрсетілсе, жарияламас бұрын жүктелген MP4 файлын бөлек бейне ойнатқышта тексеріңіз.',
     analyzerTitle: 'Бейне анализаторы',
     analyzerDesc: 'Жарияланған бейненің параметрлерін тексеріп, бастапқы файлмен салыстырыңыз.',
     analyzerButton: 'Бейнені тексеру',
@@ -705,6 +711,7 @@ function applyLanguage(lang) {
   setText('cancelProcessBtn', pack.cancel);
   setText('resultTitle', pack.ready);
   setText('resultSub', pack.readySub);
+  setText('optimizeAnotherBtn', pack.optimizeAnother);
   setText('downloadBtn', pack.download);
   setText('publishTiktokBtn', pack.publishTikTok);
   setText('tiktokStudioBtn', pack.publishTikTokStudio);
@@ -1047,6 +1054,7 @@ const previewWrap = document.getElementById('previewWrap');
 const previewVideo = document.getElementById('previewVideo');
 const fileMeta = document.getElementById('fileMeta');
 const clearBtn = document.getElementById('clearBtn');
+const mobile3dStage = document.getElementById('mobile3dStage');
 (() => {
   const inputs = document.querySelectorAll('input[name="patcherVersion"]');
   const note = document.getElementById('patcherVersionNote');
@@ -1078,6 +1086,9 @@ const processingText = document.getElementById('processingText');
 const processingPercent = document.getElementById('processingPercent');
 const processingProgress = document.getElementById('processingProgress');
 const processedResult = document.getElementById('processedResult');
+const publicationActions = document.getElementById('publicationActions');
+const durationNotice = document.getElementById('durationNotice');
+const optimizeAnotherBtn = document.getElementById('optimizeAnotherBtn');
 const downloadBtn = document.getElementById('downloadBtn');
 const publishTiktokBtn = document.getElementById('publishTiktokBtn');
 const tiktokComposerOverlay = document.getElementById('tiktokComposerOverlay');
@@ -1102,6 +1113,28 @@ let processedVideoBlob = null;
 let currentObjectUrl = null;
 let patchedDownloadUrl = null;
 let processController = null;
+
+function setPublicationActionsVisible(visible) {
+  if (publicationActions) publicationActions.classList.toggle('hidden', !visible);
+}
+
+function initializeMobile3dPreview() {
+  const isMobilePreview = window.matchMedia('(max-width: 700px)').matches;
+  if (!isMobilePreview || !mobile3dStage || mobile3dStage.dataset.libraryRequested === 'true') return;
+  mobile3dStage.dataset.libraryRequested = 'true';
+  const modelViewer = document.getElementById('mobile3dObject');
+  modelViewer?.addEventListener('error', () => mobile3dStage.classList.add('model-fallback'), { once: true });
+  if (window.customElements?.get('model-viewer')) {
+    mobile3dStage.classList.add('model-ready');
+    return;
+  }
+  const script = document.createElement('script');
+  script.type = 'module';
+  script.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.4.0/model-viewer.min.js';
+  script.onload = () => mobile3dStage.classList.add('model-ready');
+  script.onerror = () => mobile3dStage.classList.add('model-fallback');
+  document.head.appendChild(script);
+}
 
 function renderTikTokOptions() {
   if (!tiktokCreatorInfo || !tiktokPrivacy) return;
@@ -1308,11 +1341,15 @@ if (downloadBtn) {
   downloadBtn.addEventListener('click', async (event) => {
     const isAppleMobile = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (!isAppleMobile || !processedVideoBlob) return;
+    if (!isAppleMobile || !processedVideoBlob) {
+      window.setTimeout(() => setPublicationActionsVisible(false), 180);
+      return;
+    }
     event.preventDefault();
     const openVideoFallback = () => window.open(patchedDownloadUrl || downloadBtn.href, '_blank', 'noopener');
     if (typeof File !== 'function' || typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') {
       openVideoFallback();
+      setPublicationActionsVisible(false);
       return;
     }
     const file = new File([processedVideoBlob], downloadBtn.download || 'ineasy-video.mp4', { type: 'video/mp4' });
@@ -1324,8 +1361,12 @@ if (downloadBtn) {
     }
     try {
       await navigator.share({ files: [file], title: file.name });
+      setPublicationActionsVisible(false);
     } catch (error) {
-      if (error.name !== 'AbortError') openVideoFallback();
+      if (error.name !== 'AbortError') {
+        openVideoFallback();
+        setPublicationActionsVisible(false);
+      }
     }
   });
 }
@@ -1395,6 +1436,10 @@ if (tiktokPublishForm) {
             ? t('draftSuccess')
             : publishState === 'published' ? t('publishSuccess') : t('publishPending');
       }
+      setPublicationActionsVisible(false);
+      window.setTimeout(() => {
+        if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
+      }, 1600);
     } catch (error) {
       console.warn('[INEASY] TikTok publish request failed', {
         status: error.status || null,
@@ -1419,10 +1464,50 @@ function setProcessingState(type, text) {
   if (processingText) processingText.textContent = text;
 }
 
+let progressTarget = 0;
+let progressDisplayed = 0;
+let progressAnimationFrame = 0;
+let progressLastTimestamp = 0;
+
+function paintProcessingProgress() {
+  const percent = Math.max(0, Math.min(100, Math.round(progressDisplayed)));
+  if (processingPercent) processingPercent.textContent = `${t('progressLabel')}: ${percent}%`;
+  if (processingProgress) processingProgress.style.width = `${progressDisplayed.toFixed(2)}%`;
+}
+
+function animateProcessingProgress(timestamp) {
+  if (!progressLastTimestamp) progressLastTimestamp = timestamp;
+  const elapsed = Math.min(48, Math.max(0, timestamp - progressLastTimestamp));
+  progressLastTimestamp = timestamp;
+  const remaining = progressTarget - progressDisplayed;
+  if (remaining > 0.08) {
+    progressDisplayed = Math.min(progressTarget, progressDisplayed + Math.max(0.06, remaining * elapsed / 480));
+    paintProcessingProgress();
+    progressAnimationFrame = requestAnimationFrame(animateProcessingProgress);
+  } else {
+    progressDisplayed = progressTarget;
+    paintProcessingProgress();
+    progressAnimationFrame = 0;
+    progressLastTimestamp = 0;
+  }
+}
+
 function updateProcessingProgress(value) {
   const percent = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
-  if (processingPercent) processingPercent.textContent = `${t('progressLabel')}: ${percent}%`;
-  if (processingProgress) processingProgress.style.width = `${percent}%`;
+  if (percent === 0) {
+    progressTarget = 0;
+    progressDisplayed = 0;
+    if (progressAnimationFrame) cancelAnimationFrame(progressAnimationFrame);
+    progressAnimationFrame = 0;
+    progressLastTimestamp = 0;
+    paintProcessingProgress();
+    return;
+  }
+  progressTarget = Math.max(progressTarget, percent);
+  if (!progressAnimationFrame) {
+    progressLastTimestamp = 0;
+    progressAnimationFrame = requestAnimationFrame(animateProcessingProgress);
+  }
 }
 
 async function readVideoDuration(file, signal) {
@@ -1805,6 +1890,8 @@ let fileSelectionVersion = 0;
 let selectedVideoDimensions = null;
 
 function rejectFileSelection(message) {
+  setPublicationActionsVisible(false);
+  if (durationNotice) durationNotice.classList.add('hidden');
   document.querySelector('.patcher-version-picker')?.classList.add('hidden');
   document.getElementById('patcherVersionNote')?.classList.add('hidden');
   document.getElementById('fpsAdvice')?.classList.add('hidden');
@@ -1849,6 +1936,9 @@ async function handleFile(file) {
   // Show the selected file immediately; metadata validation can be slow on Safari for large MOV/MP4 files.
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
   currentObjectUrl = URL.createObjectURL(file);
+  initializeMobile3dPreview();
+  setPublicationActionsVisible(true);
+  if (durationNotice) durationNotice.classList.add('hidden');
   if (previewVideo) {
     previewVideo.src = currentObjectUrl;
     previewVideo.preload = 'metadata';
@@ -1940,25 +2030,40 @@ if (dropzone) {
   });
 }
 
-if (clearBtn) {
-  clearBtn.addEventListener('click', () => {
-    document.querySelector('.patcher-version-picker')?.classList.add('hidden');
-    document.getElementById('patcherVersionNote')?.classList.add('hidden');
-    document.getElementById('fpsAdvice')?.classList.add('hidden');
-    if (processController) processController.abort();
-    if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
-    if (previewVideo) previewVideo.src = '';
-    if (previewWrap) previewWrap.classList.remove('show');
-    if (postingDeviceSelect) postingDeviceSelect.value = '';
-    if (fileInput) fileInput.value = '';
-    if (processBtn) processBtn.disabled = true;
-    if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
-    patchedDownloadUrl = null;
-    processedVideoBlob = null;
-    if (processedResult) processedResult.classList.add('hidden');
-    if (processingState) processingState.classList.add('hidden');
-  });
+function clearSelectedVideo(openPicker = false) {
+  fileSelectionVersion += 1;
+  checkingFileDimensions = false;
+  selectedVideoDimensions = null;
+  if (processController) processController.abort();
+  if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
+  currentObjectUrl = null;
+  if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
+  patchedDownloadUrl = null;
+  processedVideoBlob = null;
+  if (previewVideo) {
+    previewVideo.pause();
+    previewVideo.removeAttribute('src');
+    previewVideo.load();
+  }
+  if (previewWrap) previewWrap.classList.remove('show');
+  if (postingDeviceSelect) postingDeviceSelect.value = '';
+  if (fileInput) fileInput.value = '';
+  if (fileMeta) fileMeta.textContent = '—';
+  document.querySelector('.patcher-version-picker')?.classList.add('hidden');
+  document.getElementById('patcherVersionNote')?.classList.add('hidden');
+  document.getElementById('fpsAdvice')?.classList.add('hidden');
+  if (processedResult) processedResult.classList.add('hidden');
+  if (processingState) processingState.classList.add('hidden');
+  if (durationNotice) durationNotice.classList.add('hidden');
+  setPublicationActionsVisible(false);
+  if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
+  updateProcessingProgress(0);
+  updateProcessButton();
+  if (openPicker && fileInput && !fileInput.disabled) fileInput.click();
 }
+
+if (clearBtn) clearBtn.addEventListener('click', () => clearSelectedVideo(false));
+if (optimizeAnotherBtn) optimizeAnotherBtn.addEventListener('click', () => clearSelectedVideo(true));
 
 // --- Analyzer fixes ---
 const checkerOpenBtn = document.getElementById('checkerOpenBtn');
@@ -2309,7 +2414,7 @@ if (processBtn) {
 
           if (msg.type === 'STAGE') {
             if (controller.signal.aborted) return;
-            updateProcessingProgress(msg.progress);
+            updateProcessingProgress(Math.min(94, Number(msg.progress) || 0));
             return;
           }
 
@@ -2440,12 +2545,10 @@ if (processBtn) {
         inputBytes: result.inputBytes || sourceFile.size,
         outputBytes: outputBlob.size,
       });
-      const metaDetails = [resText, fpsText, codecText, hdrText].filter(Boolean).join(' • ');
-
       const resultSubNode = document.getElementById('resultSub');
-      if (resultSubNode && metaDetails) {
-        resultSubNode.textContent = metaDetails;
-      }
+      if (resultSubNode) resultSubNode.textContent = t('previewMeta') || '1080p • 60 FPS';
+      if (durationNotice) durationNotice.classList.remove('hidden');
+      setPublicationActionsVisible(true);
 
       if (processingText) processingText.textContent = '';
       updateProcessingProgress(100);
@@ -2457,7 +2560,7 @@ if (processBtn) {
       if (processingText) processingText.textContent = processingTimedOut
         ? t('processingTimedOut')
         : controller.signal.aborted ? t('processingCancelled') : localizePatchError(error.message);
-      updateProcessingProgress(0);
+      // Keep the last reached percentage visible on errors instead of snapping back to zero.
     } finally {
       clearTimeout(processingTimeoutId);
       processController = null;
@@ -2508,7 +2611,7 @@ function localizePatchError(message) {
     { test: /hdr_dynamic_metadata_lost/i, ru: 'Не удалось подтвердить сохранение HDR-профиля исходного видео. Файл не выдан, чтобы не ухудшать цвета.', kk: 'Бастапқы бейненің HDR профилі сақталғаны расталмады. Түстерді бұзбау үшін файл шығарылмады.', en: 'The original HDR profile could not be verified after processing. No file was produced to avoid degrading the colours.' },
     { test: /hdr_source_color_unknown/i, ru: 'Не удалось определить цветовой профиль HDR. Конвертация остановлена, чтобы не испортить цвета.', kk: 'HDR түс профилін анықтау мүмкін болмады. Түстерді бұзбау үшін түрлендіру тоқтатылды.', en: 'The HDR colour profile could not be determined. Conversion was stopped to avoid damaging the colours.' },
     { test: /hdr_audio_config_unavailable|hdr_audio_codec_unsupported|hdr_audio_empty/i, ru: 'Не удалось безопасно сохранить звук при HDR-конвертации. Попробуйте MP4/MOV с AAC.', kk: 'HDR түрлендіру кезінде дыбысты сақтау мүмкін болмады. AAC бар MP4/MOV қолданып көріңіз.', en: 'Audio could not be preserved safely during HDR conversion. Try an MP4/MOV with AAC audio.' },
-    { test: /fps_encoder_download_failed|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable/i, ru: 'Не удалось преобразовать видео в точные 59,94 FPS. Проверьте соединение и повторите попытку.', kk: 'Бейнені дәл 59,94 FPS-ке түрлендіру мүмкін болмады. Интернетті тексеріп, қайталап көріңіз.', en: 'Could not convert video to exact 59.94 FPS. Check your connection and try again.' },
+    { test: /fps_encoder_download_failed|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable/i, ru: 'Не удалось обработать видео. Проверьте соединение и повторите попытку.', kk: 'Бейнені өңдеу мүмкін болмады. Интернетті тексеріп, қайталап көріңіз.', en: 'Could not process the video. Check your connection and try again.' },
     { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
