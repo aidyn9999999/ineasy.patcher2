@@ -291,7 +291,11 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     ffmpeg.on('progress', handleProgress);
     stage = 'load_core';
     onProgress?.(0.04);
-    await ffmpeg.load({ coreURL: coreBlobUrl, wasmURL: wasmBlobUrl });
+    // FFmpeg 0.12 creates a module Worker relative to its CDN import URL by default.
+    // Browsers reject that cross-origin Worker on ineasy.site. Use our same-origin
+    // worker entry point; it imports the pinned official worker module from jsDelivr.
+    const classWorkerURL = new URL('/ffmpeg/worker.js', window.location.origin).href;
+    await ffmpeg.load({ coreURL: coreBlobUrl, wasmURL: wasmBlobUrl, classWorkerURL });
     throwIfAborted(signal);
     if (aborted) throw new Error('processing_cancelled');
     stage = 'write_input';
