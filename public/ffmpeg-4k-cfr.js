@@ -281,6 +281,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   }
   const colorProfile = inspectSourceColorProfile(inputBytes, sourceInfo);
   const isHdrEncode = options?.hdr === true;
+  const hdrType = /HLG/i.test(colorProfile.displayColor) ? 'hlg' : 'pq';
   if (colorProfile.hdr && !isHdrEncode) {
     console.warn('[INEASY] Structured HDR colour metadata detected; SDR path refused:', colorProfile);
     throw new Error('ffmpeg_4k_hdr_unsafe: ' + colorProfile.reason);
@@ -413,9 +414,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
             '-pix_fmt', 'yuv420p10le',
             '-tag:v', 'hvc1',
             '-color_primaries', 'bt2020',
-            '-color_trc', colorProfile.hdrType === 'hlg' ? 'arib-std-b67' : 'smpte2084',
+            '-color_trc', hdrType === 'hlg' ? 'arib-std-b67' : 'smpte2084',
             '-colorspace', 'bt2020nc',
-            '-x265-params', colorProfile.hdrType === 'hlg' ? 'repeat-headers=1' : 'hdr10=1:repeat-headers=1'
+            '-x265-params', hdrType === 'hlg' ? 'repeat-headers=1' : 'hdr10=1:repeat-headers=1'
           ]
         : [
             '-c:v', 'libx264',
@@ -458,9 +459,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
               '-pix_fmt', 'yuv420p10le',
               '-tag:v', 'hvc1',
               '-color_primaries', 'bt2020',
-              '-color_trc', colorProfile.hdrType === 'hlg' ? 'arib-std-b67' : 'smpte2084',
+              '-color_trc', hdrType === 'hlg' ? 'arib-std-b67' : 'smpte2084',
               '-colorspace', 'bt2020nc',
-              '-x265-params', colorProfile.hdrType === 'hlg' ? 'repeat-headers=1' : 'hdr10=1:repeat-headers=1'
+              '-x265-params', hdrType === 'hlg' ? 'repeat-headers=1' : 'hdr10=1:repeat-headers=1'
             ]
           : [
               '-c:v', 'libx264',
@@ -573,9 +574,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       hdrTranscoded: isHdrEncode,
       main10Transcoded: isHdrEncode,
       hdrProfile: isHdrEncode ? {
-        label: colorProfile.displayColor || (colorProfile.hdrType === 'hlg' ? 'BT.2020 / HLG' : 'BT.2020 / PQ (HDR10)'),
+        label: colorProfile.displayColor || (hdrType === 'hlg' ? 'BT.2020 / HLG' : 'BT.2020 / PQ (HDR10)'),
         hdr10: colorProfile.hdrType !== 'hlg',
-        hlg: colorProfile.hdrType === 'hlg',
+        hlg: hdrType === 'hlg',
         main10: true,
         dolbyVision: false
       } : null,
