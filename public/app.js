@@ -1655,7 +1655,9 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     throw new Error('fps_encoder_verification_unavailable');
   } catch (error) {
     if (signal.aborted || aborted) throw new Error('processing_cancelled');
-    throw error;
+    console.error('[INEASY] FPS conversion failed:', error);
+    const detail = String(error?.message || error || 'unknown_error').slice(0, 240);
+    throw new Error('fps_encoder_failed: ' + detail);
   } finally {
     signal.removeEventListener('abort', onAbort);
     try { ffmpeg.terminate(); } catch (_) {}
@@ -2342,6 +2344,7 @@ function localizePatchError(message) {
   }
   const knownErrors = [
     { test: /V2_BETA_ENGINE_NOT_LOADED/i, ru: 'Не удалось загрузить модуль V2. Обновите страницу и попробуйте ещё раз.', kk: 'V2 модулін жүктеу мүмкін болмады. Бетті жаңартып, қайталап көріңіз.', en: 'Could not load the V2 module. Refresh the page and try again.' },
+    { test: /fps_encoder_failed/i, ru: 'Не удалось обработать видео. Попробуйте ещё раз или выберите другой файл.', kk: 'Бейнені өңдеу мүмкін болмады. Қайталап көріңіз немесе басқа файл таңдаңыз.', en: 'Could not process the video. Try again or choose another file.' },
     { test: /fps_encoder_download_failed|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable/i, ru: 'Не удалось преобразовать видео в точные 59,94 FPS. Проверьте соединение и повторите попытку.', kk: 'Бейнені дәл 59,94 FPS-ке түрлендіру мүмкін болмады. Интернетті тексеріп, қайталап көріңіз.', en: 'Could not convert video to exact 59.94 FPS. Check your connection and try again.' },
     { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
