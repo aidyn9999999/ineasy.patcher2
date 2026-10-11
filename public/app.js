@@ -1651,26 +1651,32 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     // HDR10/HLG/Dolby Vision/Main10 files skip transcoding and preserve source bytes.
     const hdrDetector = globalThis.ADJNVideoProcessor?.detectHdrProfile;
     if (typeof hdrDetector === 'function') {
-      const peekSize = 8 * 1024 * 1024;
+      const peekSize = 4 * 1024 * 1024;
       const peekParts = [
         await inputBlob.slice(0, Math.min(inputBlob.size, peekSize)).arrayBuffer()
       ];
       if (inputBlob.size > peekSize * 2) {
         peekParts.push(await inputBlob.slice(inputBlob.size - peekSize, inputBlob.size).arrayBuffer());
       }
-      const containsAscii = (bytes, text) => {
-        for (let i = 0; i <= bytes.length - text.length; i++) {
-          let match = true;
-          for (let j = 0; j < text.length; j++) {
-            if (bytes[i + j] !== text.charCodeAt(j)) { match = false; break; }
+      const containsAnyHdrCodecTag = (bytes) => {
+        const tagsByFirstByte = {
+          104: ['hvcC', 'hvc1', 'hev1'], // h
+          100: ['dvh1', 'dvhe'] // d
+        };
+        for (let i = 0; i <= bytes.length - 4; i++) {
+          const tags = tagsByFirstByte[bytes[i]];
+          if (!tags) continue;
+          for (const tag of tags) {
+            if (bytes[i + 1] === tag.charCodeAt(1) &&
+                bytes[i + 2] === tag.charCodeAt(2) &&
+                bytes[i + 3] === tag.charCodeAt(3)) return true;
           }
-          if (match) return true;
         }
         return false;
       };
       for (const part of peekParts) {
         const bytes = new Uint8Array(part);
-        const looksHevc = ['hvcC', 'hvc1', 'hev1', 'dvh1', 'dvhe'].some((tag) => containsAscii(bytes, tag));
+        const looksHevc = containsAnyHdrCodecTag(bytes);
         if (!looksHevc) continue;
         const profile = hdrDetector(bytes, { codecFamily: 'hevc', codec: 'hvc1' });
         const detected = Boolean(
