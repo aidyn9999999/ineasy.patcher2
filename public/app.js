@@ -1675,6 +1675,80 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     if (!videoTrack) throw new Error('video_track_missing');
     signal.throwIfAborted();
 
+    // Do not run 10-bit HDR through an 8-bit AVC transcode: that can destroy HDR
+    // transfer characteristics, wide gamut, and Dolby Vision metadata. Preserve
+    // the original encoded stream and let the MP4 patcher verify the container edit.
+    let sourceHdrProfile = null;
+    let sourceColorSpace = null;
+    let sourceIsHdr = false;
+    let sourceCodec = '';
+    let sourceCodecParameters = '';
+    try {
+      sourceCodec = String(await videoTrack.getCodec?.() || '');
+      sourceCodecParameters = String(await videoTrack.getCodecParameterString?.() || '');
+      sourceColorSpace = await videoTrack.getColorSpace?.();
+      if (typeof videoTrack.hasHighDynamicRange === 'function') {
+        sourceIsHdr = await videoTrack.hasHighDynamicRange();
+      }
+    } catch (metadataError) {
+      console.debug('[INEASY] HDR track metadata could not be fully read:', metadataError);
+    }
+
+    const transferCharacteristic = String(sourceColorSpace?.transfer || '').toLowerCase();
+    const hdrTransfer = /smpte2084|arib-std-b67|pq|hlg/.test(transferCharacteristic);
+    const dolbyVisionCodec = /dvh1|dvhe|dolby.?vision/i.test(sourceCodec + ' ' + sourceCodecParameters);
+    try {
+      const headerBytes = new Uint8Array(await inputBlob.slice(0, Math.min(inputBlob.size, 16 * 1024 * 1024)).arrayBuffer());
+      const detector = globalThis.ADJNVideoProcessor?.detectHdrProfile;
+      if (typeof detector === 'function') {
+        sourceHdrProfile = detector(headerBytes, {
+          codecFamily: sourceCodec.toLowerCase(),
+          codec: (sourceCodecParameters || sourceCodec).toLowerCase()
+        });
+      }
+    } catch (hdrDetectionError) {
+      console.debug('[INEASY] HDR signature scan skipped:', hdrDetectionError);
+    }
+
+    const sourceIs10BitOrHdr = Boolean(
+      sourceIsHdr ||
+      hdrTransfer ||
+      dolbyVisionCodec ||
+      sourceHdrProfile?.main10 ||
+      sourceHdrProfile?.hdr10 ||
+      sourceHdrProfile?.hdr10plus ||
+      sourceHdrProfile?.hlg ||
+      sourceHdrProfile?.dolbyVision
+    );
+
+    if (sourceIs10BitOrHdr) {
+      const hdrLabel = sourceHdrProfile?.label && sourceHdrProfile.label !== 'SDR / unknown'
+        ? sourceHdrProfile.label
+        : (dolbyVisionCodec ? 'Dolby Vision' : hdrTransfer ? 'HDR / wide-gamut' : 'HDR / 10-bit');
+      console.info('[INEASY] HDR source detected; preserving original encoded video instead of SDR-prone transcoding', {
+        profile: hdrLabel,
+        codec: sourceCodec || 'unknown',
+        colorSpace: sourceColorSpace || null,
+        bytes: inputBlob.size
+      });
+      onProgress?.(1);
+      return {
+        blob: inputBlob,
+        info: null,
+        fps: null,
+        sourceFps: null,
+        preserveOriginal: true,
+        hdr: true,
+        hdrProfile: {
+          ...(sourceHdrProfile || {}),
+          detected: true,
+          label: hdrLabel,
+          colorSpace: sourceColorSpace || null,
+          codec: sourceCodec || sourceCodecParameters || 'unknown'
+        }
+      };
+    }
+
     const target = new BufferTarget();
     const output = new Output({
       format: new Mp4OutputFormat(),
@@ -2202,11 +2276,13 @@ if (processBtn) {
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
       });
       originalInputFps = fpsConversion.sourceFps;
-      const normalizedFile = new File(
-        [fpsConversion.blob],
-        `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`,
-        { type: 'video/mp4', lastModified: Date.now() }
-      );
+      const normalizedFile = fpsConversion.preserveOriginal
+        ? sourceFile
+        : new File(
+            [fpsConversion.blob],
+            `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`,
+            { type: 'video/mp4', lastModified: Date.now() }
+          );
 
       const basePreparedInput = isV2SelectedForJob
         ? {
@@ -2226,11 +2302,13 @@ if (processBtn) {
         targetFrameRate: 60000 / 1001,
         report: {
           ...(basePreparedInput.report || {}),
-          performed: true,
-          compressionDisabled: false,
-          cfrNormalized: true,
-          frameRateRetimed: Number.isFinite(fpsConversion.sourceFps) && Math.abs(fpsConversion.sourceFps - (60000 / 1001)) > 0.03,
-          targetFrameRate: 60000 / 1001,
+          performed: !fpsConversion.preserveOriginal,
+          compressionDisabled: Boolean(fpsConversion.preserveOriginal),
+          cfrNormalized: !fpsConversion.preserveOriginal,
+          hdrSourcePreserved: Boolean(fpsConversion.preserveOriginal && fpsConversion.hdr),
+          hdrProfile: fpsConversion.hdrProfile || null,
+          frameRateRetimed: !fpsConversion.preserveOriginal && Number.isFinite(fpsConversion.sourceFps) && Math.abs(fpsConversion.sourceFps - (60000 / 1001)) > 0.03,
+          targetFrameRate: fpsConversion.preserveOriginal ? null : 60000 / 1001,
           inputWidth: selectedVideoDimensions?.width || null,
           inputHeight: selectedVideoDimensions?.height || null,
           outputWidth: fpsConversion.info?.width || selectedVideoDimensions?.width || null,
@@ -2238,7 +2316,7 @@ if (processBtn) {
         }
       };
       const processingFile = preparedInput.blob;
-      const processingFileName = `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`;
+      const processingFileName = processingFile.name || `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`;
       const buffer = await processingFile.arrayBuffer();
       controller.signal.throwIfAborted();
       if (buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
@@ -2299,6 +2377,7 @@ if (processBtn) {
               outputMime: msg.outputMime,
               inputInfo: msg.inputInfo,
               outputInfo: msg.outputInfo,
+              hdr: msg.hdr,
               outputHdr: msg.outputHdr,
               passthrough: msg.passthrough,
               mode: msg.mode,
@@ -2352,8 +2431,27 @@ if (processBtn) {
       }
       verifiedOutputInfo = verifiedOutputInfo || result.outputInfo || result.info || null;
       const verifiedOutputFps = Number(verifiedOutputInfo?.averageFps);
-      if (!Number.isFinite(verifiedOutputFps) || Math.abs(verifiedOutputFps - (60000 / 1001)) > 0.03) {
+      const hdrSourcePreserved = Boolean(preparedInput.report?.hdrSourcePreserved);
+      if (!hdrSourcePreserved &&
+          (!Number.isFinite(verifiedOutputFps) || Math.abs(verifiedOutputFps - (60000 / 1001)) > 0.03)) {
         throw new Error('fps_output_verification_failed');
+      }
+      if (hdrSourcePreserved) {
+        const outputHdrProfile = result.outputHdr || result.hdr || null;
+        const outputHasHdrSignaling = Boolean(
+          result.passthrough ||
+          outputHdrProfile?.hdr10 ||
+          outputHdrProfile?.hdr10plus ||
+          outputHdrProfile?.hlg ||
+          outputHdrProfile?.dolbyVision ||
+          outputHdrProfile?.main10
+        );
+        if (!outputHasHdrSignaling) throw new Error('hdr_output_verification_failed');
+        console.info('[INEASY] HDR output verified; original video stream was not CFR-transcoded', {
+          profile: outputHdrProfile?.label || preparedInput.report?.hdrProfile?.label || 'HDR / 10-bit',
+          passthrough: Boolean(result.passthrough),
+          fps: verifiedOutputFps || 'source timing preserved'
+        });
       }
       result.outputInfo = verifiedOutputInfo;
       result.outputMime = 'video/mp4';
@@ -2455,6 +2553,7 @@ function localizePatchError(message) {
     { test: /fps_encoder_failed/i, ru: 'Не удалось обработать видео. Попробуйте ещё раз или выберите другой файл.', kk: 'Бейнені өңдеу мүмкін болмады. Қайталап көріңіз немесе басқа файл таңдаңыз.', en: 'Could not process the video. Try again or choose another file.' },
     { test: /mediabunny_load_timeout/i, ru: 'Модуль обработки не загрузился за 25 секунд. Проверьте интернет и обновите страницу.', kk: 'Өңдеу модулі 25 секундта жүктелмеді. Интернетті тексеріп, бетті жаңартыңыз.', en: 'The lightweight processing module did not load within 25 seconds. Check your connection and refresh the page.' },
     { test: /fps_output_verification_failed/i, ru: 'Проверка частоты кадров не пройдена. Повторите обработку файла.', kk: 'Кадр жиілігін тексеру өтпеді. Файлды қайта өңдеңіз.', en: 'The output frame-rate check failed. Process the file again.' },
+    { test: /hdr_output_verification_failed/i, ru: 'Не удалось подтвердить сохранение HDR. Исходное видео не было перекодировано.', kk: 'HDR сақталғанын растау мүмкін болмады. Бастапқы бейне қайта кодталмады.', en: 'Could not verify HDR preservation. The source video was not re-encoded.' },
     { test: /fps_encoder_download_failed|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable/i, ru: 'Не удалось преобразовать видео в точные 59,94 FPS. Проверьте соединение и повторите попытку.', kk: 'Бейнені дәл 59,94 FPS-ке түрлендіру мүмкін болмады. Интернетті тексеріп, қайталап көріңіз.', en: 'Could not convert video to exact 59.94 FPS. Check your connection and try again.' },
     { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
