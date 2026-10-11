@@ -1060,18 +1060,20 @@ bot.action('invite_now', async (ctx) => {
   await sendInvite(ctx, await getLang(ctx.from.id));
 });
 
-bot.command('broadcast_balance_update', async (ctx) => {
-  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
+async function runBalanceMigrationBroadcast(reportCtx = null) {
   if (await redis.get('balanceMigrationBroadcast:v1')) {
-    await ctx.reply('Эта миграция и рассылка уже выполнены. Повторный запуск заблокирован, чтобы не начислять бесплатные видео повторно.');
-    return;
+    const message = 'Эта миграция и рассылка уже выполнены. Повторный запуск заблокирован, чтобы не начислять бесплатные видео повторно.';
+    if (reportCtx) await reportCtx.reply(message);
+    return { alreadyDone: true };
   }
   const lock = await redis.set('balanceMigrationBroadcastLock:v1', String(Date.now()), { nx: true, ex: 3600 });
   if (lock !== 'OK') {
-    await ctx.reply('Миграция баланса уже выполняется. Повторите позже.');
-    return;
+    if (reportCtx) await reportCtx.reply('Миграция баланса уже выполняется. Повторите позже.');
+    return { busy: true };
   }
-  await ctx.reply('Запускаю одноразовое обновление: пользователям, которые уже обрабатывали видео и имеют 0 бесплатных видео, начислю 2; ненулевой баланс и аккаунты без обработанных видео не трогаю. Затем отправлю сообщение.');
+  if (reportCtx) {
+    await reportCtx.reply('Запускаю одноразовое обновление: пользователям, которые уже обрабатывали видео и имеют 0 бесплатных видео, начислю 2; ненулевой баланс и аккаунты без обработанных видео не трогаю. Затем отправлю сообщение.');
+  }
   let cursor = '0';
   let sent = 0;
   let failed = 0;
@@ -1110,13 +1112,22 @@ bot.command('broadcast_balance_update', async (ctx) => {
       }
     } while (cursor !== '0');
     await redis.set('balanceMigrationBroadcast:v1', JSON.stringify({ completedAt: new Date().toISOString(), sent, failed, repaired }));
-    await ctx.reply(`Готово. Отправлено: ${sent}; не доставлено: ${failed}; бесплатный баланс восстановлен для активных пользователей: ${repaired}. Повторный запуск отключён.`);
+    const summary = `Готово. Отправлено: ${sent}; не доставлено: ${failed}; бесплатный баланс восстановлен для активных пользователей: ${repaired}. Повторный запуск отключён.`;
+    if (reportCtx) await reportCtx.reply(summary);
+    else console.log('[INEASY] ' + summary);
+    return { sent, failed, repaired };
   } catch (error) {
     console.error('Миграция/рассылка баланса не завершена:', error.message);
-    await ctx.reply('Ошибка миграции или рассылки. Подробности записаны в журнал сервера; блокировка будет снята автоматически через час.');
+    if (reportCtx) await reportCtx.reply('Ошибка миграции или рассылки. Подробности записаны в журнал сервера; блокировка будет снята автоматически через час.');
+    throw error;
   } finally {
     await redis.del('balanceMigrationBroadcastLock:v1');
   }
+}
+
+bot.command('broadcast_balance_update', async (ctx) => {
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
+  await runBalanceMigrationBroadcast(ctx);
 });
 
 bot.command('buyvideo', async (ctx) => sendPackagesMenu(ctx, await getLang(ctx.from.id)));
@@ -2077,6 +2088,8 @@ app.listen(PORT, async () => {
     bot.launch();
     console.log('Бот слушает команды (локальный polling)...');
   }
+  // One-time production migration + broadcast. Redis guard prevents duplicate sends on restarts.
+  runBalanceMigrationBroadcast().catch((error) => console.error('[INEASY] Одноразовое обновление баланса не удалось:', error.message));
   if (!ADMIN_ID) console.log('⚠️  ADMIN_ID не задан — проверка чеков, админ-команды и модерация отключены.');
   ensureYtDlp().catch((e) => console.error('Не удалось установить yt-dlp:', e.message));
 });
