@@ -9,6 +9,12 @@ const fs = require('fs');
 const https = require('https');
 const os = require('os');
 const crypto = require('crypto');
+const { Transform } = require('stream');
+const { pipeline } = require('stream/promises');
+const FFMPEG_PATH = process.env.FFMPEG_PATH || 'ffmpeg';
+const MAX_SERVER_4K_BYTES = 50 * 1024 * 1024;
+const MAX_SERVER_4K_JOBS = 1;
+let activeServer4kJobs = 0;
 let FFPROBE_PATH = 'ffprobe';
 try { FFPROBE_PATH = require('ffprobe-static').path; } catch (e) { /* используем системный ffprobe */ }
 
@@ -1513,6 +1519,258 @@ async function requireUserToken(req, res, next) {
   }
   return next();
 }
+
+// INEASY_RAILWAY_4K_ENDPOINT
+function parseFpsRatio(value) {
+  if (typeof value !== 'string') return Number(value) || 0;
+  const parts = value.split('/');
+  if (parts.length === 2) {
+    const numerator = Number(parts[0]);
+    const denominator = Number(parts[1]);
+    return denominator ? numerator / denominator : 0;
+  }
+  return Number(value) || 0;
+}
+
+function ffmpegExec(binary, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    execFile(binary, args, {
+      encoding: 'utf8',
+      maxBuffer: 12 * 1024 * 1024,
+      ...options,
+    }, (error, stdout, stderr) => {
+      if (error) {
+        error.stderr = stderr;
+        reject(error);
+        return;
+      }
+      resolve({ stdout: String(stdout || ''), stderr: String(stderr || '') });
+    });
+  });
+}
+
+function ffprobeVideoInfo(probe) {
+  const video = (probe.streams || []).find((stream) => stream.codec_type === 'video');
+  if (!video) throw Object.assign(new Error('server_4k_video_stream_missing'), { status: 422 });
+  const duration = Number(video.duration || probe.format?.duration || 0);
+  const width = Number(video.width || 0);
+  const height = Number(video.height || 0);
+  if (!width || !height || !duration) throw Object.assign(new Error('server_4k_metadata_unavailable'), { status: 422 });
+  if (duration > 60.05) throw Object.assign(new Error('server_4k_duration_limit'), { status: 422 });
+  if (Math.max(width, height) <= 1920 || Math.max(width, height) > 4096 || Math.min(width, height) > 2304) {
+    throw Object.assign(new Error('server_4k_resolution_not_supported'), { status: 422 });
+  }
+  return { video, duration, width, height };
+}
+
+function numberFromProbe(value) {
+  if (typeof value === 'number') return value;
+  if (typeof value !== 'string') return NaN;
+  if (value.includes('/')) {
+    const parts = value.split('/').map(Number);
+    return parts[1] ? parts[0] / parts[1] : NaN;
+  }
+  return Number(value);
+}
+
+function x265MasterDisplay(sideData) {
+  const n = (key) => numberFromProbe(sideData && sideData[key]);
+  const fields = ['green_x', 'green_y', 'blue_x', 'blue_y', 'red_x', 'red_y', 'white_point_x', 'white_point_y', 'max_luminance', 'min_luminance'];
+  if (!sideData || fields.some((key) => !Number.isFinite(n(key)))) return '';
+  const xy = (key) => Math.round(n(key) * 50000);
+  const lum = (key) => Math.round(n(key) * 10000);
+  return 'master-display=G(' + xy('green_x') + ',' + xy('green_y') + ')B(' + xy('blue_x') + ',' + xy('blue_y') + ')R(' + xy('red_x') + ',' + xy('red_y') + ')WP(' + xy('white_point_x') + ',' + xy('white_point_y') + ')L(' + lum('max_luminance') + ',' + lum('min_luminance') + ')';
+}
+
+function ffprobeVideoInfoForOutput(probe) {
+  const video = (probe.streams || []).find((stream) => stream.codec_type === 'video');
+  const duration = Number(video && video.duration || probe.format?.duration || 0);
+  const width = Number(video && video.width || 0);
+  const height = Number(video && video.height || 0);
+  if (!video || !width || !height || !duration) {
+    throw Object.assign(new Error('server_4k_output_verification_failed'), { status: 422 });
+  }
+  return { video, duration, width, height };
+}
+
+app.post('/api/process-4k', requireUserToken, async (req, res) => {
+  if (activeServer4kJobs >= MAX_SERVER_4K_JOBS) {
+    return res.status(429).json({ error: 'server_4k_busy' });
+  }
+  const declaredLength = Number(req.headers['content-length'] || 0);
+  if (declaredLength > MAX_SERVER_4K_BYTES) {
+    return res.status(413).json({ error: 'video_file_over_limit' });
+  }
+
+  activeServer4kJobs += 1;
+  let workDir = null;
+  try {
+    workDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'ineasy-4k-'));
+    const inputPath = path.join(workDir, 'source-video');
+    const outputPath = path.join(workDir, 'converted.mp4');
+    let receivedBytes = 0;
+    const sizeGuard = new Transform({
+      transform(chunk, encoding, callback) {
+        receivedBytes += chunk.length;
+        if (receivedBytes > MAX_SERVER_4K_BYTES) {
+          callback(Object.assign(new Error('video_file_over_limit'), { status: 413 }));
+          return;
+        }
+        callback(null, chunk);
+      },
+    });
+    await pipeline(req, sizeGuard, fs.createWriteStream(inputPath, { flags: 'wx' }));
+    if (receivedBytes < 16) throw Object.assign(new Error('error_invalid_video_file'), { status: 422 });
+
+    const probeResult = await ffmpegExec(FFPROBE_PATH, [
+      '-v', 'error', '-print_format', 'json', '-show_streams', '-show_format', inputPath,
+    ], { timeout: 30000 });
+    const probe = JSON.parse(probeResult.stdout);
+    const source = ffprobeVideoInfo(probe);
+    const sourceVideo = source.video;
+    const sourceTransfer = String(sourceVideo.color_transfer || '').toLowerCase();
+    const sideData = Array.isArray(sourceVideo.side_data_list) ? sourceVideo.side_data_list : [];
+    const sideDataText = JSON.stringify(sideData).toLowerCase();
+    const dvDetected = sourceVideo.dv_profile !== undefined ||
+      /dolby vision|dovi configuration|dv_profile|dovi metadata/.test(sideDataText);
+    const hdr10PlusDetected = /smpte2094-40|hdr10\+|hdr dynamic metadata/.test(sideDataText);
+    if (dvDetected || hdr10PlusDetected) {
+      throw Object.assign(new Error('hdr_dynamic_metadata_not_supported'), { status: 422 });
+    }
+
+    const hasMasteringData = sideData.some((item) => /mastering display/i.test(String(item.side_data_type || '')));
+    const hdr = ['smpte2084', 'arib-std-b67'].includes(sourceTransfer) || hasMasteringData;
+    if (hdr && !['smpte2084', 'arib-std-b67'].includes(sourceTransfer)) {
+      throw Object.assign(new Error('hdr_source_color_unknown'), { status: 422 });
+    }
+    const isTenBitSource = /10|12|16/.test(String(sourceVideo.pix_fmt || ''));
+    const useHevc = hdr || isTenBitSource || sourceVideo.codec_name === 'hevc';
+    const codec = useHevc ? 'libx265' : 'libx264';
+    const pixelFormat = hdr || isTenBitSource ? 'yuv420p10le' : 'yuv420p';
+    const sourceFps = parseFpsRatio(sourceVideo.avg_frame_rate || sourceVideo.r_frame_rate);
+    const targetFps = 60000 / 1001;
+    const videoBitrate = Math.max(300000, Math.min(100000000,
+      Math.floor((receivedBytes * 8 / Math.max(1, source.duration)) - 192000)));
+
+    const encoderParams = ['repeat-headers=1'];
+    if (sourceTransfer === 'smpte2084') {
+      encoderParams.push('hdr10=1');
+      const mastering = sideData.find((item) => /mastering display/i.test(String(item.side_data_type || '')));
+      const masterParam = x265MasterDisplay(mastering);
+      if (masterParam) encoderParams.push(masterParam);
+      const contentLight = sideData.find((item) => /content light/i.test(String(item.side_data_type || '')));
+      const maxContent = numberFromProbe(contentLight && contentLight.max_content);
+      const maxAverage = numberFromProbe(contentLight && contentLight.max_average);
+      if (Number.isFinite(maxContent) && Number.isFinite(maxAverage)) {
+        encoderParams.push('max-cll=' + Math.round(maxContent) + ',' + Math.round(maxAverage));
+      }
+    }
+
+    const ffmpegArgs = [
+      '-hide_banner', '-loglevel', 'error', '-y',
+      '-filter_threads', '2', '-i', inputPath,
+      '-map', '0:v:0', '-map', '0:a?',
+      '-vf', 'fps=60000/1001',
+      '-fps_mode', 'cfr',
+      '-c:v', codec, '-preset', 'ultrafast',
+      '-threads', '2',
+      '-pix_fmt', pixelFormat,
+      '-b:v', String(videoBitrate),
+      '-maxrate', String(Math.min(120000000, Math.round(videoBitrate * 1.15))),
+      '-bufsize', String(Math.min(200000000, Math.round(videoBitrate * 2))),
+      '-c:a', 'copy',
+      '-map_metadata', '0',
+    ];
+    if (useHevc) ffmpegArgs.push('-tag:v', 'hvc1', '-x265-params', encoderParams.join(':'));
+    if (hdr) {
+      ffmpegArgs.push(
+        '-color_primaries', sourceVideo.color_primaries || 'bt2020',
+        '-color_trc', sourceTransfer,
+        '-colorspace', sourceVideo.color_space || 'bt2020nc'
+      );
+    } else {
+      if (sourceVideo.color_primaries) ffmpegArgs.push('-color_primaries', sourceVideo.color_primaries);
+      if (sourceVideo.color_transfer) ffmpegArgs.push('-color_trc', sourceVideo.color_transfer);
+      if (sourceVideo.color_space) ffmpegArgs.push('-colorspace', sourceVideo.color_space);
+    }
+    ffmpegArgs.push('-movflags', '+faststart', outputPath);
+
+    console.info('[INEASY][4K] start', {
+      telegramId: req.telegramId,
+      inputBytes: receivedBytes,
+      resolution: source.width + 'x' + source.height,
+      sourceFps: Number.isFinite(sourceFps) ? sourceFps : null,
+      hdr,
+      transfer: sourceTransfer || 'unknown',
+      encoder: codec,
+    });
+
+    await ffmpegExec(FFMPEG_PATH, ffmpegArgs, { timeout: 18 * 60 * 1000 });
+    const outputProbeResult = await ffmpegExec(FFPROBE_PATH, [
+      '-v', 'error', '-print_format', 'json', '-show_streams', '-show_format', outputPath,
+    ], { timeout: 30000 });
+    const outputProbe = JSON.parse(outputProbeResult.stdout);
+    const output = ffprobeVideoInfoForOutput(outputProbe);
+    const outputFps = parseFpsRatio(output.video.avg_frame_rate || output.video.r_frame_rate);
+    if (!Number.isFinite(outputFps) || Math.abs(outputFps - targetFps) > 0.03) {
+      throw Object.assign(new Error('server_4k_output_verification_failed'), { status: 422 });
+    }
+    if (output.width !== source.width || output.height !== source.height) {
+      throw Object.assign(new Error('server_4k_output_verification_failed'), { status: 422 });
+    }
+    const outputTransfer = String(output.video.color_transfer || '').toLowerCase();
+    if (hdr && (outputTransfer !== sourceTransfer || !/10|12|16/.test(String(output.video.pix_fmt || '')))) {
+      throw Object.assign(new Error('hdr_output_verification_failed'), { status: 422 });
+    }
+
+    res.set({
+      'Content-Type': 'video/mp4',
+      'Content-Disposition': 'attachment; filename="ineasy-4k.mp4"',
+      'Cache-Control': 'no-store',
+      'X-Video-Width': String(output.width),
+      'X-Video-Height': String(output.height),
+      'X-Video-Fps': String(outputFps),
+      'X-Video-Source-Fps': String(Number.isFinite(sourceFps) ? sourceFps : 0),
+      'X-Video-Codec': String(output.video.codec_name || ''),
+      'X-Video-Pixel-Format': String(output.video.pix_fmt || ''),
+      'X-Video-Color-Transfer': outputTransfer,
+      'X-Video-Color-Primaries': String(output.video.color_primaries || ''),
+      'X-Video-HDR': hdr ? 'true' : 'false',
+      'X-Video-HDR-Profile': sourceTransfer === 'smpte2084' ? 'HDR10/PQ' :
+        (sourceTransfer === 'arib-std-b67' ? 'HLG' : 'SDR'),
+    });
+    console.info('[INEASY][4K] verified', {
+      telegramId: req.telegramId,
+      outputBytes: (await fs.promises.stat(outputPath)).size,
+      resolution: output.width + 'x' + output.height,
+      fps: outputFps,
+      hdr,
+      transfer: outputTransfer || 'unknown',
+      pixelFormat: output.video.pix_fmt || 'unknown',
+    });
+    await new Promise((resolve, reject) => {
+      res.sendFile(outputPath, (error) => error ? reject(error) : resolve());
+    });
+  } catch (error) {
+    const code = error.status || (error.message === 'video_file_over_limit' ? 413 : 500);
+    console.error('[INEASY][4K] failed', {
+      telegramId: req.telegramId,
+      error: String(error.message || error).slice(0, 180),
+    });
+    if (!res.headersSent) res.status(code).json({
+      error: error.message === 'hdr_dynamic_metadata_not_supported' ? 'hdr_dynamic_metadata_not_supported' :
+        error.message === 'hdr_source_color_unknown' ? 'hdr_source_color_unknown' :
+        error.message === 'hdr_output_verification_failed' ? 'hdr_output_verification_failed' :
+        error.message === 'server_4k_duration_limit' ? 'server_4k_duration_limit' :
+        error.message === 'server_4k_resolution_not_supported' ? 'server_4k_resolution_not_supported' :
+        error.message === 'server_4k_output_verification_failed' ? 'server_4k_output_verification_failed' :
+        error.message === 'video_file_over_limit' ? 'video_file_over_limit' : 'server_4k_failed',
+    });
+  } finally {
+    if (workDir) await fs.promises.rm(workDir, { recursive: true, force: true }).catch(() => {});
+    activeServer4kJobs = Math.max(0, activeServer4kJobs - 1);
+  }
+});
 
 function zernioEncryptionKey() {
   return crypto.createHmac('sha256', BOT_TOKEN).update('ineasy:zernio-api-key:v1').digest();
