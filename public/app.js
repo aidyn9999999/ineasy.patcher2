@@ -1629,189 +1629,142 @@ async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
 
 
 async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress) {
+  const TARGET_FPS = 60000 / 1001;
   signal.throwIfAborted();
-  onProgress?.(0);
+  if (!inputBlob || !inputBlob.size) throw new Error('video_file_over_limit');
+  if (inputBlob.size > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
 
-  // The UMD bundle splits its worker into 814.ffmpeg.js. Load the worker
-  // explicitly and pass its blob URL to avoid resolving it against the site URL.
-  if (!globalThis.FFmpegWASM?.FFmpeg) {
-    const scriptUrls = [
-      'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js',
-      'https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js'
-    ];
-    let lastScriptError = null;
-    for (const src of scriptUrls) {
-      try {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.dataset.ineasyFfmpeg = '1';
-          script.src = src;
-          let settled = false;
-          const finish = (error) => {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timeoutId);
-            signal.removeEventListener('abort', onAbort);
-            if (error) {
-              script.remove();
-              reject(error);
-            } else {
-              resolve();
-            }
-          };
-          const onAbort = () => finish(new Error('processing_cancelled'));
-          const timeoutId = setTimeout(() => finish(new Error('fps_encoder_download_failed: script timeout')), 20000);
-          script.onload = () => globalThis.FFmpegWASM?.FFmpeg
-            ? finish()
-            : finish(new Error('ffmpeg_global_missing'));
-          script.onerror = () => finish(new Error('fps_encoder_download_failed'));
-          signal.addEventListener('abort', onAbort, { once: true });
-          document.head.appendChild(script);
-        });
-        if (globalThis.FFmpegWASM?.FFmpeg) break;
-      } catch (error) {
-        lastScriptError = error;
-      }
-    }
-    if (!globalThis.FFmpegWASM?.FFmpeg) {
-      throw new Error('fps_encoder_download_failed: ' + String(lastScriptError?.message || 'unable to load ffmpeg.js'));
-    }
-  }
-
-  signal.throwIfAborted();
-  const FFmpeg = globalThis.FFmpegWASM?.FFmpeg;
-  if (!FFmpeg) throw new Error('fps_encoder_download_failed');
-  const ffmpeg = new FFmpeg();
+  onProgress?.(0.01);
+  let input = null;
+  let conversion = null;
+  let activeOutput = null;
   let aborted = false;
-  const onAbort = () => {
-    aborted = true;
-    try { ffmpeg.terminate(); } catch (_) {}
-  };
-  signal.addEventListener('abort', onAbort, { once: true });
 
-  let coreBlobUrl = null;
-  let wasmBlobUrl = null;
-  let workerBlobUrl = null;
-  const inputPath = 'ineasy-input.' + ((String(inputName || '').match(/\.([a-z0-9]+)$/i)?.[1] || 'mp4').toLowerCase());
-  const outputPath = 'ineasy-cfr-5994.mp4';
+  const cancelQuietly = (target) => {
+    try {
+      const task = target?.cancel?.();
+      task?.catch?.(() => {});
+    } catch (_) {}
+  };
+  const abortConversion = () => {
+    aborted = true;
+    cancelQuietly(conversion);
+    cancelQuietly(activeOutput);
+  };
+  signal.addEventListener('abort', abortConversion, { once: true });
 
   try {
-    const cdnBases = [
-      {
-        ffmpeg: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd',
-        core: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd'
-      },
-      {
-        ffmpeg: 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd',
-        core: 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd'
-      }
-    ];
-    let assets = null;
-    let lastAssetError = null;
-    for (const base of cdnBases) {
-      try {
-        const responses = await Promise.all([
-          fetch(base.ffmpeg + '/814.ffmpeg.js', { signal }),
-          fetch(base.core + '/ffmpeg-core.js', { signal }),
-          fetch(base.core + '/ffmpeg-core.wasm', { signal })
-        ]);
-        if (responses.some((response) => !response.ok)) {
-          throw new Error('CDN asset returned a non-success status');
-        }
-        assets = await Promise.all(responses.map((response) => response.blob()));
-        break;
-      } catch (error) {
-        if (signal.aborted) throw error;
-        lastAssetError = error;
-      }
-    }
-    if (!assets) {
-      throw new Error('fps_encoder_download_failed: ' + String(lastAssetError?.message || 'unable to download ffmpeg assets'));
-    }
-    const [workerCode, coreCode, wasmBytes] = assets;
-    workerBlobUrl = URL.createObjectURL(new Blob([workerCode], { type: 'text/javascript' }));
-    coreBlobUrl = URL.createObjectURL(new Blob([coreCode], { type: 'text/javascript' }));
-    wasmBlobUrl = URL.createObjectURL(new Blob([wasmBytes], { type: 'application/wasm' }));
-
-    ffmpeg.on('log', ({ message }) => {
-      if (message && /error|failed|encoder|fps/i.test(message)) {
-        console.debug('[INEASY] FFmpeg:', message);
-      }
-    });
-    await ffmpeg.load({ classWorkerURL: workerBlobUrl, coreURL: coreBlobUrl, wasmURL: wasmBlobUrl });
+    // Stable pre-HDR motor: MediaBunny decodes and re-encodes actual frames.
+    // frameRate + forceTranscode makes this a real CFR conversion, not an MP4
+    // metadata edit. Keep the ADJN output inspector as the final FPS verifier.
+    const media = await loadMediabunnyForCfr(signal, 25000);
     signal.throwIfAborted();
-    ffmpeg.on('progress', ({ progress }) => {
-      if (!signal.aborted) onProgress?.(Math.max(0, Math.min(1, Number(progress) || 0)));
+
+    const {
+      Input, Output, Conversion, ALL_FORMATS, BlobSource, BufferTarget,
+      Mp4OutputFormat, Quality
+    } = media;
+
+    if (![Input, Output, Conversion, ALL_FORMATS, BlobSource, BufferTarget,
+          Mp4OutputFormat, Quality].every((item) => item !== undefined && item !== null)) {
+      throw new Error('mediabunny_api_unavailable');
+    }
+
+    input = new Input({ source: new BlobSource(inputBlob), formats: ALL_FORMATS });
+    const videoTrack = await input.getPrimaryVideoTrack();
+    if (!videoTrack) throw new Error('video_track_missing');
+    signal.throwIfAborted();
+
+    const target = new BufferTarget();
+    const output = new Output({ format: new Mp4OutputFormat(), target });
+    activeOutput = output;
+
+    conversion = await Conversion.init({
+      input,
+      output,
+      tracks: 'primary',
+      video: {
+        codec: 'avc',
+        frameRate: TARGET_FPS,
+        quality: new Quality('high'),
+        hardwareAcceleration: 'prefer-hardware',
+        forceTranscode: true
+      }
     });
 
-    let inputBytes = new Uint8Array(await inputBlob.arrayBuffer());
-    let sourceFps = null;
+    if (!conversion.isValid) {
+      const discarded = (conversion.discardedTracks || [])
+        .map((item) => item.reason || item.message || 'unsupported track')
+        .join('; ');
+      throw new Error('mediabunny_conversion_invalid' + (discarded ? ': ' + discarded : ''));
+    }
+
+    conversion.onProgress = (progress) => {
+      if (!signal.aborted) {
+        onProgress?.(Math.max(0, Math.min(1, Number(progress) || 0)));
+      }
+    };
+    signal.throwIfAborted();
+    await conversion.execute();
+    signal.throwIfAborted();
+    activeOutput = null;
+
+    const buffer = target.buffer;
+    if (!(buffer instanceof ArrayBuffer) || buffer.byteLength === 0) {
+      throw new Error('fps_encoder_empty_output');
+    }
+    if (buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
+
     const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
-    if (mediaCore?.inspectMediaInfo) {
-      try {
-        sourceFps = Number(mediaCore.inspectMediaInfo(inputBytes)?.averageFps) || null;
-      } catch (_) {}
-    }
-    signal.throwIfAborted();
-    await ffmpeg.writeFile(inputPath, inputBytes);
-    inputBytes = null;
-
-    const baseArgs = [
-      '-hide_banner', '-loglevel', 'error', '-y',
-      '-i', inputPath,
-      '-map', '0:v:0', '-map', '0:a?',
-      '-vf', 'fps=60000/1001:round=near',
-      '-fps_mode', 'cfr',
-      '-r', '60000/1001',
-      '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '18',
-      '-pix_fmt', 'yuv420p',
-      '-movflags', '+faststart',
-      '-video_track_timescale', '60000'
-    ];
-    let exitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'copy', outputPath]);
-    if (exitCode !== 0) {
-      try { await ffmpeg.deleteFile(outputPath); } catch (_) {}
-      exitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'aac', '-b:a', '192k', outputPath]);
-    }
-    if (exitCode !== 0) throw new Error('fps_encoder_empty_output');
-    signal.throwIfAborted();
-
-    const outputData = await ffmpeg.readFile(outputPath);
-    const outputBlob = new Blob([outputData], { type: 'video/mp4' });
-    if (!outputBlob.size) throw new Error('fps_encoder_empty_output');
-    if (outputBlob.size > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
     if (!mediaCore?.inspectMediaInfo) throw new Error('fps_encoder_verification_unavailable');
-
-    const verified = mediaCore.inspectMediaInfo(new Uint8Array(await outputBlob.arrayBuffer()));
+    const verified = mediaCore.inspectMediaInfo(new Uint8Array(buffer));
     const fps = Number(verified?.averageFps);
-    if (!Number.isFinite(fps) || Math.abs(fps - (60000 / 1001)) > 0.03) {
-      throw new Error('fps_encoder_verification_failed');
+    if (!Number.isFinite(fps) || Math.abs(fps - TARGET_FPS) > 0.03) {
+      throw new Error('fps_encoder_verification_failed: reported=' + String(fps));
     }
 
+    const outputBlob = new Blob([buffer], { type: 'video/mp4' });
     console.info('[INEASY] CFR conversion verified', {
-      inputFps: sourceFps,
+      inputBytes: inputBlob.size,
+      outputBytes: outputBlob.size,
       outputFps: fps,
-      target: '60000/1001',
+      targetFps: '60000/1001',
       codec: verified.codec || 'unknown',
-      resolution: verified.width && verified.height ? `${verified.width}x${verified.height}` : 'unknown',
-      bytes: outputBlob.size
+      resolution: verified.width && verified.height
+        ? String(verified.width) + 'x' + String(verified.height)
+        : 'unknown',
+      encoder: 'MediaBunny WebCodecs'
     });
     onProgress?.(1);
-    return { blob: outputBlob, info: verified, fps, sourceFps };
+    return {
+      blob: outputBlob,
+      info: verified,
+      fps,
+      sourceFps: null,
+      preserveOriginal: false,
+      hdr: false,
+      hdrTranscoded: false,
+      main10Transcoded: false,
+      hdrProfile: null
+    };
   } catch (error) {
-    if (signal.aborted || aborted) throw new Error('processing_cancelled');
+    if (signal.aborted || aborted || /processing_cancelled|AbortError/i.test(String(error?.message || ''))) {
+      throw new Error('processing_cancelled');
+    }
+    cancelQuietly(conversion);
+    cancelQuietly(activeOutput);
     console.error('[INEASY] CFR conversion failed:', error);
-    const detail = String(error?.message || error || 'unknown_error').slice(0, 240);
+    const detail = String(error?.message || error || 'unknown_error').slice(0, 500);
+    if (/mediabunny_load_timeout/i.test(detail)) throw new Error('mediabunny_load_timeout');
+    if (/^(?:video_file_over_limit|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable)$/i.test(detail)) {
+      throw new Error(detail);
+    }
     throw new Error('fps_encoder_failed: ' + detail);
   } finally {
-    signal.removeEventListener('abort', onAbort);
-    try { ffmpeg.terminate(); } catch (_) {}
-    if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl);
-    if (coreBlobUrl) URL.revokeObjectURL(coreBlobUrl);
-    if (wasmBlobUrl) URL.revokeObjectURL(wasmBlobUrl);
+    signal.removeEventListener('abort', abortConversion);
+    try { input?.dispose?.(); } catch (_) {}
   }
 }
-
 async function prepareVideoForPatcher(file, dimensions, signal) {
   signal.throwIfAborted();
   return {
