@@ -1554,7 +1554,8 @@ async function readVideoDimensionsForSelection(file) {
         if (width > 0 && height > 0) return { width, height };
       }
     } catch (_) {}
-    const { Input, ALL_FORMATS, BlobSource } = await import('https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm');
+    const mediaModule = await loadMediabunnyForCfr(new AbortController().signal);
+    const { Input, ALL_FORMATS, BlobSource } = mediaModule;
     const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
     const track = await input.getPrimaryVideoTrack();
     if (!track) throw nativeError;
@@ -1613,7 +1614,10 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
   let aborted = false;
   const abortConversion = () => {
     aborted = true;
-    try { void conversion?.cancel?.(); } catch (_) {}
+    try {
+      const cancelPromise = conversion?.cancel?.();
+      cancelPromise?.catch?.(() => {});
+    } catch (_) {}
   };
   signal.addEventListener('abort', abortConversion, { once: true });
 
