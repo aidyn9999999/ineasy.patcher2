@@ -2303,11 +2303,54 @@ if (processBtn) {
 
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
 
-      // Always perform a real CFR transcode on the selected media before patching.
-      // The FPS filter rewrites decoded frames and timestamps; this is not a metadata-only change.
-      const fpsConversion = await convertVideoToExact5994Fps(sourceFile, sourceFile.name, controller.signal, (progress) => {
+      // Keep the established MediaBunny converter as the primary route.
+      // For 4K only, use the separate FFmpeg fallback if this browser's H.264 encoder rejects the source.
+      // The convertVideoToExact5994Fps function itself remains unchanged.
+      const reportCfrProgress = (progress) => {
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
-      });
+      };
+      let fpsConversion;
+      try {
+        fpsConversion = await convertVideoToExact5994Fps(
+          sourceFile, sourceFile.name, controller.signal, reportCfrProgress
+        );
+      } catch (primaryConversionError) {
+        const sourceLongSide = Math.max(
+          Number(selectedVideoDimensions?.width) || 0,
+          Number(selectedVideoDimensions?.height) || 0
+        );
+        const primaryErrorText = String(primaryConversionError?.message || primaryConversionError || '');
+        if (controller.signal.aborted ||
+            sourceLongSide < 3000 ||
+            /video_file_over_limit|processing_cancelled/i.test(primaryErrorText)) {
+          throw primaryConversionError;
+        }
+
+        console.warn('[INEASY] Native 4K CFR conversion failed; trying isolated FFmpeg fallback:', primaryErrorText);
+        try {
+          const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-1');
+          if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
+            throw new Error('ffmpeg_4k_api_unavailable');
+          }
+          fpsConversion = await ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg(
+            sourceFile,
+            selectedVideoDimensions,
+            sourceDuration,
+            controller.signal,
+            reportCfrProgress
+          );
+        } catch (fallbackError) {
+          if (controller.signal.aborted || /processing_cancelled|AbortError/i.test(String(fallbackError?.message || ''))) {
+            throw new Error('processing_cancelled');
+          }
+          console.error('[INEASY] FFmpeg 4K fallback failed:', fallbackError);
+          const fallbackMessage = String(fallbackError?.message || fallbackError || 'unknown_error');
+          if (/ffmpeg_4k_|video_file_over_limit|fps_encoder_empty_output|fps_encoder_verification_failed|video_resolution_over_4k/.test(fallbackMessage)) {
+            throw fallbackError;
+          }
+          throw new Error('ffmpeg_4k_fallback_failed: ' + fallbackMessage.slice(0, 350));
+        }
+      }
       originalInputFps = fpsConversion.sourceFps;
       const normalizedFile = fpsConversion.preserveOriginal
         ? sourceFile
@@ -2585,6 +2628,11 @@ function localizePatchError(message) {
     return `${text}: ${fpsRetimingFailure[1]}`;
   }
   const knownErrors = [
+    { test: /ffmpeg_4k_hdr_unsafe/i, ru: 'Для этого 4K-видео обнаружены признаки HDR/10-bit. Запасной FFmpeg-путь не запускался, чтобы не испортить цвета. Нужен отдельный HDR-совместимый кодировщик.', kk: 'Бұл 4K бейнеде HDR/10-bit белгілері табылды. Түстерді бұзбау үшін қосалқы FFmpeg жолы іске қосылмады. HDR қолдайтын бөлек кодтау керек.', en: 'This 4K source appears to use HDR/10-bit. The SDR FFmpeg fallback was stopped to avoid damaging colour; an HDR-capable encoder is required.' },
+    { test: /ffmpeg_4k_source_format_unsupported/i, ru: 'Запасной 4K-режим пока поддерживает MP4/MOV с AVC/HEVC SDR. Исходный файл не был выдан в ухудшенном качестве.', kk: 'Қосалқы 4K режимі әзірге SDR AVC/HEVC бар MP4/MOV файлдарын қолдайды. Бейне сапасы нашарлатылып шығарылған жоқ.', en: 'The 4K fallback currently supports SDR AVC/HEVC in MP4/MOV. No downgraded file was produced.' },
+    { test: /ffmpeg_4k_asset_download_failed|ffmpeg_4k_fallback_failed|ffmpeg_4k_exec_failed/i, ru: 'Запасной FFmpeg-кодировщик 4K не смог завершить обработку. Проверьте соединение и попробуйте более короткий SDR-файл.', kk: 'Қосалқы FFmpeg 4K кодтауы аяқталмады. Интернетті тексеріп, қысқарақ SDR файлмен қайталап көріңіз.', en: 'The FFmpeg 4K fallback could not finish. Check the connection and try a shorter SDR source.' },
+    { test: /ffmpeg_4k_api_unavailable/i, ru: 'Не удалось загрузить API FFmpeg для 4K. Обновите страницу и попробуйте снова.', kk: '4K үшін FFmpeg API жүктелмеді. Бетті жаңартып, қайталап көріңіз.', en: 'Could not load the FFmpeg 4K API. Refresh the page and try again.' },
+    { test: /ffmpeg_4k_resolution_verification_failed|video_resolution_over_4k/i, ru: 'Проверка разрешения 4K не пройдена. Файл не выдан.', kk: '4K ажыратымдылығын тексеру өтпеді. Файл шығарылған жоқ.', en: 'The 4K output resolution check failed. No file was produced.' },
     { test: /V2_BETA_ENGINE_NOT_LOADED/i, ru: 'Не удалось загрузить модуль V2. Обновите страницу и попробуйте ещё раз.', kk: 'V2 модулін жүктеу мүмкін болмады. Бетті жаңартып, қайталап көріңіз.', en: 'Could not load the V2 module. Refresh the page and try again.' },
     { test: /fps_encoder_failed/i, ru: 'Не удалось обработать видео. Попробуйте ещё раз или выберите другой файл.', kk: 'Бейнені өңдеу мүмкін болмады. Қайталап көріңіз немесе басқа файл таңдаңыз.', en: 'Could not process the video. Try again or choose another file.' },
     { test: /mediabunny_load_timeout/i, ru: 'Модуль обработки не загрузился за 25 секунд. Проверьте интернет и обновите страницу.', kk: 'Өңдеу модулі 25 секундта жүктелмеді. Интернетті тексеріп, бетті жаңартыңыз.', en: 'The lightweight processing module did not load within 25 seconds. Check your connection and refresh the page.' },
