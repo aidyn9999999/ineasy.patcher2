@@ -1637,6 +1637,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
   let input = null;
   let conversion = null;
   let activeOutput = null;
+  let hdrEncodingAttempted = false;
   let aborted = false;
 
   const cancelQuietly = (target) => {
@@ -1704,13 +1705,52 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     const dolbyVisionCodec = /dvh1|dvhe|dolby.?vision/i.test(sourceCodec + ' ' + sourceCodecParameters);
 
     try {
-      const headerBytes = new Uint8Array(await inputBlob.slice(0, Math.min(inputBlob.size, 16 * 1024 * 1024)).arrayBuffer());
+      // MP4/MOV metadata can be stored at the end of the file (moov-at-end).
+      // Probe the tail only for likely HEVC/10-bit sources to avoid extra reads
+      // on the common SDR AVC path.
       const detector = globalThis.ADJNVideoProcessor?.detectHdrProfile;
       if (typeof detector === 'function') {
-        sourceHdrProfile = detector(headerBytes, {
+        const detectorInfo = {
           codecFamily: sourceCodec.toLowerCase(),
           codec: (sourceCodecParameters || sourceCodec).toLowerCase()
-        });
+        };
+        const prefixSize = Math.min(inputBlob.size, 16 * 1024 * 1024);
+        const prefixBytes = new Uint8Array(await inputBlob.slice(0, prefixSize).arrayBuffer());
+        sourceHdrProfile = detector(prefixBytes, detectorInfo);
+
+        const prefixHasHdrColorInfo = Boolean(
+          sourceHdrProfile?.hdr10 || sourceHdrProfile?.hdr10plus ||
+          sourceHdrProfile?.hlg || sourceHdrProfile?.dolbyVision
+        );
+        const likelyHevc = Boolean(sourceHdrProfile?.hevc) ||
+          /(?:\bhevc\b|hvc1|hev1|dvh1|dvhe|main.?10)/i.test(sourceCodec + ' ' + sourceCodecParameters);
+        if (likelyHevc && !prefixHasHdrColorInfo && inputBlob.size > prefixSize) {
+          const tailSize = Math.min(4 * 1024 * 1024, inputBlob.size - prefixSize);
+          const tailStart = inputBlob.size - tailSize;
+          const tailBytes = new Uint8Array(await inputBlob.slice(tailStart, inputBlob.size).arrayBuffer());
+          const tailProfile = detector(tailBytes, detectorInfo);
+          if (tailProfile) {
+            const merged = {
+              ...(sourceHdrProfile || {}),
+              ...tailProfile,
+              hevc: Boolean(sourceHdrProfile?.hevc || tailProfile.hevc),
+              main10: Boolean(sourceHdrProfile?.main10 || tailProfile.main10),
+              hdr10: Boolean(sourceHdrProfile?.hdr10 || tailProfile.hdr10),
+              hdr10plus: Boolean(sourceHdrProfile?.hdr10plus || tailProfile.hdr10plus),
+              hlg: Boolean(sourceHdrProfile?.hlg || tailProfile.hlg),
+              dolbyVision: Boolean(sourceHdrProfile?.dolbyVision || tailProfile.dolbyVision)
+            };
+            merged.label = merged.dolbyVision && merged.hlg ? 'Dolby Vision • HLG'
+              : merged.dolbyVision ? 'Dolby Vision'
+              : merged.hdr10plus ? 'HDR10+'
+              : merged.hdr10 ? 'HDR10'
+              : merged.hlg ? 'HLG HDR'
+              : merged.main10 ? 'HEVC Main10'
+              : 'SDR / unknown';
+            merged.reason = [sourceHdrProfile?.reason, tailProfile.reason].filter(Boolean).join('; ');
+            sourceHdrProfile = merged;
+          }
+        }
       }
     } catch (hdrDetectionError) {
       console.debug('[INEASY] HDR signature scan skipped:', hdrDetectionError);
@@ -1726,6 +1766,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     const sourceIs10BitOrHdr = Boolean(sourceIsHdr || sourceMain10);
 
     if (sourceIs10BitOrHdr) {
+      hdrEncodingAttempted = true;
       // AVC is normally 8-bit and can erase HDR transfer/gamut data. Use HEVC
       // Main10 and verify the actual encoded stream. Unsupported devices fail closed.
       if (typeof VideoSampleSink !== 'function' ||
@@ -1755,7 +1796,10 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
         onEncoderConfig(config) {
           // MediaBunny's default HEVC config is Main (8-bit). Request Main10 and
           // let the browser's VideoEncoder config support check confirm capability.
-          const match = String(config.codec || '').match(/^(?:hev1|hvc1)\.1\.6\.(.+)$/i);
+          // Browser implementations may emit different profile/compatibility
+          // fields in the initial HEVC codec string. Preserve its level suffix
+          // and explicitly request Main10 rather than assuming ".1.6.".
+          const match = String(config.codec || '').match(/^(?:hev1|hvc1)\.\d+\.[^.]+\.(.+)$/i);
           if (!match) throw new Error('hdr_main10_encoder_config_unavailable: ' + String(config.codec || 'unknown'));
           const sampleEntry = encoderConfigAttempts++ % 2 === 0 ? 'hev1' : 'hvc1';
           config.codec = sampleEntry + '.2.4.' + match[1];
@@ -1997,7 +2041,14 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     console.error('[INEASY] CFR conversion failed:', error);
     const detail = String(error?.message || error || 'unknown_error').slice(0, 500);
     if (/mediabunny_load_timeout/i.test(detail)) throw new Error('mediabunny_load_timeout');
-    if (/hdr_main10|hdr_cfr|hdr_audio|hdr_dynamic_metadata_lost/i.test(detail)) throw new Error(detail);
+    // Keep all HDR-specific failures actionable. Errors such as
+    // hdr_source_color_unknown were previously wrapped in fps_encoder_failed,
+    // hiding their real reason behind the generic UI message.
+    if (/^hdr_[a-z0-9_]+(?::|$)/i.test(detail)) throw new Error(detail);
+    if (/^(?:video_file_over_limit|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable)$/i.test(detail)) {
+      throw new Error(detail);
+    }
+    if (hdrEncodingAttempted) throw new Error('hdr_main10_encoder_failed: ' + detail);
     throw new Error('fps_encoder_failed: ' + detail);
   } finally {
     signal.removeEventListener('abort', abortConversion);
@@ -2742,6 +2793,7 @@ function localizePatchError(message) {
     { test: /mediabunny_load_timeout/i, ru: 'Модуль обработки не загрузился за 25 секунд. Проверьте интернет и обновите страницу.', kk: 'Өңдеу модулі 25 секундта жүктелмеді. Интернетті тексеріп, бетті жаңартыңыз.', en: 'The lightweight processing module did not load within 25 seconds. Check your connection and refresh the page.' },
     { test: /fps_output_verification_failed/i, ru: 'Проверка частоты кадров не пройдена. Повторите обработку файла.', kk: 'Кадр жиілігін тексеру өтпеді. Файлды қайта өңдеңіз.', en: 'The output frame-rate check failed. Process the file again.' },
     { test: /hdr_output_verification_failed/i, ru: 'После обработки не удалось подтвердить сохранение HDR. Файл не выдан.', kk: 'Өңдеуден кейін HDR сақталғанын растау мүмкін болмады. Файл шығарылмады.', en: 'HDR could not be verified after processing. No file was produced.' },
+    { test: /hdr_main10_encoder_failed/i, ru: 'Не удалось преобразовать HDR-видео в постоянные 59,94 FPS с сохранением 10-битного цвета. Подробности: F12 → Console.', kk: 'HDR бейнені 10-бит түсті сақтап, тұрақты 59,94 FPS-ке түрлендіру мүмкін болмады. Толығырақ: F12 → Console.', en: 'HDR could not be converted to constant 59.94 FPS while retaining 10-bit colour. Details: F12 → Console.' },
     { test: /hdr_main10_encoder_unavailable|hdr_main10_encoder_config_unavailable/i, ru: 'Браузер не поддерживает безопасное кодирование HDR Main10. Видео не выдано с потерянным HDR.', kk: 'Браузер HDR Main10 кодтауын қолдамайды. HDR жоғалған бейне шығарылған жоқ.', en: 'This browser cannot encode HDR Main10 safely. A result with lost HDR was not produced.' },
     { test: /hdr_main10_verification_failed|hdr_cfr_verification_failed/i, ru: 'После конвертации не удалось подтвердить сохранение HDR и 10-битного цвета. Файл не выдан.', kk: 'Түрлендіруден кейін HDR және 10-бит түс сақталғаны расталмады. Файл шығарылмады.', en: 'HDR and 10-bit colour could not be verified after conversion. No file was produced.' },
     { test: /hdr_dynamic_metadata_lost/i, ru: 'Браузер не сохранил динамические метаданные Dolby Vision/HDR10+. Чтобы не терять HDR-профиль, файл не выдан.', kk: 'Браузер Dolby Vision/HDR10+ динамикалық метадеректерін сақтамады. HDR профилін жоғалтпау үшін файл шығарылмады.', en: 'The browser did not preserve Dolby Vision/HDR10+ dynamic metadata. No file was produced to avoid silently degrading HDR.' },
