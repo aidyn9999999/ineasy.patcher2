@@ -204,12 +204,8 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
       if (primaries === 9) result.displayColor = 'BT.2020 / non-HDR transfer';
     }
   }
-  if (isHevc && result.tenBit && !result.hdr &&
-      (result.displayColor === 'unknown' || result.displayColor === 'BT.2020 / non-HDR transfer')) {
-    result.hdr = true;
-    result.displayColor = 'BT.2020 / PQ (inferred from HEVC Main10; transfer metadata missing)';
-    result.reason = 'HEVC Main10 with missing/invalid HDR transfer metadata; preserving 10-bit HDR path';
-  }
+  // Do not infer HDR from HEVC Main 10 alone. 10-bit HEVC is also used for SDR;
+  // only explicit PQ/HLG color signaling or Dolby Vision configuration counts as HDR.
   return result;
 }
 
