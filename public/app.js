@@ -2322,7 +2322,7 @@ if (processBtn) {
         const primaryErrorText = String(primaryConversionError?.message || primaryConversionError || '');
         if (controller.signal.aborted ||
             sourceLongSide < 3000 ||
-            /video_file_over_limit|processing_cancelled/i.test(primaryErrorText)) {
+            /video_file_over_limit|processing_cancelled|mediabunny_load_timeout|mediabunny_module_load_failed/i.test(primaryErrorText)) {
           throw primaryConversionError;
         }
 
