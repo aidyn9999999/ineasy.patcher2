@@ -2693,7 +2693,9 @@ if (processBtn) {
         outputBytes: outputBlob.size,
       });
       const resultSubNode = document.getElementById('resultSub');
-      if (resultSubNode) resultSubNode.textContent = t('previewMeta') || '1080p • 60 FPS';
+      const outputLongSide = Math.max(Number(metaInfo?.width) || 0, Number(metaInfo?.height) || 0);
+      const outputResolutionLabel = outputLongSide >= 3000 ? '4K' : '1080p';
+      if (resultSubNode) resultSubNode.textContent = `${outputResolutionLabel} • 60 FPS`;
       if (durationNotice) durationNotice.classList.remove('hidden');
       setPublicationActionsVisible(true);
 
