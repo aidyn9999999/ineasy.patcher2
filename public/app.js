@@ -1886,14 +1886,16 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
         );
       }
 
-      if (sourceHdrProfile?.dolbyVision || sourceHdrProfile?.hdr10plus || dolbyVisionCodec) {
-        // Browser WebCodecs cannot reliably re-author DV/HDR10+ dynamic metadata.
-        console.warn('[INEASY] Dynamic HDR metadata may not survive this browser transcode', {
-          sourceDolbyVision: Boolean(sourceHdrProfile?.dolbyVision || dolbyVisionCodec),
-          sourceHDR10Plus: Boolean(sourceHdrProfile?.hdr10plus),
-          retainedStaticHDR: Boolean(outputHasHdrRange),
-          outputColorSpace
-        });
+      // HDR10+ and Dolby Vision depend on dynamic metadata, not just the static
+      // PQ/BT.2020 transfer characteristics. Never silently deliver a file after
+      // dropping those metadata layers during a browser re-encode.
+      const sourceHasDolbyVision = Boolean(sourceHdrProfile?.dolbyVision || dolbyVisionCodec);
+      const sourceHasHdr10Plus = Boolean(sourceHdrProfile?.hdr10plus);
+      if (sourceHasDolbyVision && !outputHdrProfile?.dolbyVision) {
+        throw new Error('hdr_dynamic_metadata_lost: Dolby Vision metadata was not retained');
+      }
+      if (sourceHasHdr10Plus && !outputHdrProfile?.hdr10plus) {
+        throw new Error('hdr_dynamic_metadata_lost: HDR10+ metadata was not retained');
       }
 
       console.info('[INEASY] HDR Main10 CFR conversion verified', {
@@ -2742,6 +2744,7 @@ function localizePatchError(message) {
     { test: /hdr_output_verification_failed/i, ru: 'После обработки не удалось подтвердить сохранение HDR. Файл не выдан.', kk: 'Өңдеуден кейін HDR сақталғанын растау мүмкін болмады. Файл шығарылмады.', en: 'HDR could not be verified after processing. No file was produced.' },
     { test: /hdr_main10_encoder_unavailable|hdr_main10_encoder_config_unavailable/i, ru: 'Браузер не поддерживает безопасное кодирование HDR Main10. Видео не выдано с потерянным HDR.', kk: 'Браузер HDR Main10 кодтауын қолдамайды. HDR жоғалған бейне шығарылған жоқ.', en: 'This browser cannot encode HDR Main10 safely. A result with lost HDR was not produced.' },
     { test: /hdr_main10_verification_failed|hdr_cfr_verification_failed/i, ru: 'После конвертации не удалось подтвердить сохранение HDR и 10-битного цвета. Файл не выдан.', kk: 'Түрлендіруден кейін HDR және 10-бит түс сақталғаны расталмады. Файл шығарылмады.', en: 'HDR and 10-bit colour could not be verified after conversion. No file was produced.' },
+    { test: /hdr_dynamic_metadata_lost/i, ru: 'Браузер не сохранил динамические метаданные Dolby Vision/HDR10+. Чтобы не терять HDR-профиль, файл не выдан.', kk: 'Браузер Dolby Vision/HDR10+ динамикалық метадеректерін сақтамады. HDR профилін жоғалтпау үшін файл шығарылмады.', en: 'The browser did not preserve Dolby Vision/HDR10+ dynamic metadata. No file was produced to avoid silently degrading HDR.' },
     { test: /hdr_source_color_unknown/i, ru: 'Не удалось определить цветовой профиль HDR. Конвертация остановлена, чтобы не испортить цвета.', kk: 'HDR түс профилін анықтау мүмкін болмады. Түстерді бұзбау үшін түрлендіру тоқтатылды.', en: 'The HDR colour profile could not be determined. Conversion was stopped to avoid damaging the colours.' },
     { test: /hdr_audio_config_unavailable|hdr_audio_codec_unsupported|hdr_audio_empty/i, ru: 'Не удалось безопасно сохранить звук при HDR-конвертации. Попробуйте MP4/MOV с AAC.', kk: 'HDR түрлендіру кезінде дыбысты сақтау мүмкін болмады. AAC бар MP4/MOV қолданып көріңіз.', en: 'Audio could not be preserved safely during HDR conversion. Try an MP4/MOV with AAC audio.' },
     { test: /fps_encoder_download_failed|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable/i, ru: 'Не удалось преобразовать видео в точные 59,94 FPS. Проверьте соединение и повторите попытку.', kk: 'Бейнені дәл 59,94 FPS-ке түрлендіру мүмкін болмады. Интернетті тексеріп, қайталап көріңіз.', en: 'Could not convert video to exact 59.94 FPS. Check your connection and try again.' },
