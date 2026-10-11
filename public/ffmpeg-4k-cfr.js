@@ -308,7 +308,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   const isHdrEncode = options?.hdr === true ||
     (options?.hdr === 'auto' && colorProfile.hdr);
   const hdrType = /HLG/i.test(colorProfile.displayColor) ? 'hlg' : 'pq';
-  let targetVideoBitrate = Math.floor(smartVideoBitrate(inputBlob.size, duration, 160000) * 0.97);
+  let targetVideoBitrate = smartVideoBitrate(inputBlob.size, duration, 160000);
   const targetMaxRate = Math.round(targetVideoBitrate * 1.02);
   const targetBufferSize = Math.max(Math.round(targetVideoBitrate * 0.5), 256000);
   if (colorProfile.hdr && !isHdrEncode) {
