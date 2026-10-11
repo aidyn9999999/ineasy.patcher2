@@ -144,6 +144,7 @@
 
       <p class="local-note" id="localNote">Your video stays on your device. Maximum accepted resolution: Full HD (1920×1080).</p>
       <p class="export-note" id="exportNote">For smoother playback, export in 1080p, 60 FPS, with a bitrate of 6–10 Mbps.</p>
+      <p class="fps-policy-note" id="fpsPolicyNote">TikTok controls its own processing. A 59.94 FPS export is a compatibility choice, not a way to bypass TikTok processing.</p>
       <input id="postingDevice" type="hidden" value="">
       <div class="patcher-version-picker hidden" role="group" aria-label="Patcher version">
         <label class="patcher-version-option">
@@ -352,7 +353,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261010-20"></script>
-<script src="app.js?v=20261011-69"></script>
+<script src="app.js?v=20261011-70"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
