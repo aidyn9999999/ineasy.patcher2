@@ -2102,8 +2102,13 @@ async function handleFile(file) {
   }
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
   selectedVideoDimensions = dimensions;
-  // Keep the 4K fallback lazy-loaded: don't download FFmpeg until the browser encoder fails.
-  // Load the fallback only if browser hardware encoding actually fails.
+  // Warm FFmpeg's JS/WASM assets in the background as soon as a 4K source is selected.
+  // Downloading in parallel with the user's preparation removes this wait from conversion.
+  if (selectedLongSide >= 3000) {
+    import('./ffmpeg-4k-cfr.js?v=20261012-3')
+      .then((module) => module.prepareFFmpeg4kFallback())
+      .catch((error) => console.warn('[INEASY] 4K assets will load on demand:', error?.message || error));
+  }
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
   patchedDownloadUrl = null;
   processedVideoBlob = null;
@@ -2469,8 +2474,8 @@ if (processBtn) {
 
       // Inspect source color metadata before selecting an encoder. Never send HDR through
       // the browser's generic 8-bit SDR encoder path.
-      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-2');
-      const hdrInspection = await localFfmpeg.inspectHDRVideo(sourceFile);
+      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-3');
+      const hdrInspection = await localFfmpeg.inspectHDRVideo(sourceFile, { includeBytes: true });
       controller.signal.throwIfAborted();
       let fpsConversion;
       if (hdrInspection.hdr) {
@@ -2481,7 +2486,10 @@ if (processBtn) {
         setProcessingState('processing', 'HDR • 10-bit • 59.94 FPS');
         fpsConversion = await localFfmpeg.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile, selectedVideoDimensions, sourceDuration,
-          controller.signal, reportCfrProgress, { hdr: 'auto' }
+          controller.signal, reportCfrProgress, {
+            hdr: 'auto',
+            sourceBytes: hdrInspection.sourceBytes
+          }
         );
       } else {
         try {
@@ -2509,7 +2517,10 @@ if (processBtn) {
             console.warn('[INEASY] 4K browser CFR failed; retrying with local FFmpeg:', primaryMessage);
             fpsConversion = await localFfmpeg.convertVideoToExact5994FpsWithFFmpeg(
               sourceFile, selectedVideoDimensions, sourceDuration,
-              controller.signal, reportCfrProgress, { hdr: 'auto' }
+              controller.signal, reportCfrProgress, {
+                hdr: 'auto',
+                sourceBytes: hdrInspection.sourceBytes
+              }
             );
           }
         }
@@ -2623,7 +2634,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261011-45');
+        const worker = new Worker('adjn-worker.js?v=20261012-1');
         let workerReadyTimeoutId = setTimeout(() => {
           if (workerDone) return;
           workerDone = true;
