@@ -85,7 +85,8 @@ const translations = {
     newsText: 'Tutorials, updates, and giveaways',
     newsButton: 'View',
     process: 'Process video',
-    progressLabel: 'Processing',
+    progressLabel: 'Loading',
+    uhdWait: '4K video processing can take 1–2 minutes. Please wait.',
     ready: 'Your video is ready',
     readySub: '1080p • 60 FPS',
     previewMeta: '1080p • 60 FPS',
@@ -270,7 +271,8 @@ const translations = {
     newsText: 'Туториалы, обновления и розыгрыши',
     newsButton: 'Смотреть',
     process: 'Обработать видео',
-    progressLabel: 'Обработка',
+    progressLabel: 'Загрузка',
+    uhdWait: 'Обработка видео 4K может занять 1–2 минуты. Пожалуйста, подождите.',
     ready: 'Ваше видео готово',
     readySub: '1080p • 60 FPS',
     previewMeta: '1080p • 60 FPS',
@@ -455,7 +457,8 @@ const translations = {
     newsText: 'Туториалдар, жаңартулар және ұтыс ойындары',
     newsButton: 'Көру',
     process: 'Бейнені өңдеу',
-    progressLabel: 'Өңдеу',
+    progressLabel: 'Жүктелуде',
+    uhdWait: '4K бейнесін өңдеу 1–2 минутқа созылуы мүмкін. Күте тұрыңыз.',
     ready: 'Бейнеңіз дайын',
     readySub: '1080p • 60 FPS',
     previewMeta: '1080p • 60 FPS',
@@ -1436,7 +1439,7 @@ function setProcessingState(type, text) {
   processingState.classList.remove('hidden');
   processingState.classList.toggle('completed', type === 'success');
   processingState.classList.toggle('failed', type === 'error');
-  if (processingText) processingText.textContent = type === 'processing' ? '' : text;
+  if (processingText) processingText.textContent = text || '';
 }
 
 let progressTarget = 0;
@@ -1446,7 +1449,7 @@ let progressLastTimestamp = 0;
 
 function paintProcessingProgress() {
   const percent = Math.max(0, Math.min(100, Math.round(progressDisplayed)));
-  if (processingPercent) processingPercent.textContent = `${percent}%`;
+  if (processingPercent) processingPercent.textContent = `${t('progressLabel')}: ${percent}%`;
   if (processingProgress) processingProgress.style.width = `${progressDisplayed.toFixed(2)}%`;
 }
 
@@ -2462,6 +2465,7 @@ if (processBtn) {
       );
       const is4kSource = sourceLongSide >= 3000;
       const ffmpeg4kEligible = is4kSource && /\.(mp4|m4v|mov)$/i.test(sourceFile.name);
+      if (is4kSource) setProcessingState('processing', t('uhdWait'));
       const reportCfrProgress = (progress) => {
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
       };
@@ -2486,22 +2490,38 @@ if (processBtn) {
           const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-25');
           hdrInspection = await hdrEncoder.inspectHDRVideo(sourceFile);
         } catch (error) {
-          // HDR inspection must never prevent the ordinary SDR converter from running.
-          console.warn('[INEASY] HDR inspection module unavailable; continuing with standard CFR path:', error?.message || error);
+          console.warn('[INEASY] Structural HDR inspection unavailable:', error?.message || error);
+        }
+      }
+      if (!hdrInspection?.hdr && /\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
+        try {
+          const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+          const fallbackBytes = new Uint8Array(await sourceFile.arrayBuffer());
+          const fallbackInfo = mediaCore?.inspectMediaInfo?.(fallbackBytes);
+          const fallbackHdr = globalThis.ADJNVideoProcessor?.detectHdrProfile?.(fallbackBytes, fallbackInfo);
+          if (fallbackHdr && (fallbackHdr.hdr10 || fallbackHdr.hlg || fallbackHdr.dolbyVision)) {
+            hdrInspection = {
+              hdr: true,
+              tenBit: fallbackHdr.main10,
+              reason: fallbackHdr.reason || fallbackHdr.label,
+              displayColor: fallbackHdr.hlg ? 'BT.2020 / HLG' : 'BT.2020 / PQ (HDR10)',
+              hdrType: fallbackHdr.dolbyVision ? 'dolby-vision' : fallbackHdr.hlg ? 'hlg' : 'pq',
+              label: fallbackHdr.label
+            };
+            console.warn('[INEASY] HDR detected by secondary metadata inspector:', hdrInspection);
+          }
+        } catch (error) {
+          console.warn('[INEASY] Secondary HDR inspection unavailable:', error?.message || error);
         }
       }
       if (hdrInspection?.hdr) {
         // HDR must use the dedicated 10-bit path to retain PQ/HLG signaling.
-        setProcessingState('processing', '');
+        setProcessingState('processing', is4kSource ? t('uhdWait') : '');
         console.info('[INEASY] HDR source detected; selecting dedicated HEVC Main10 CFR encoder', hdrInspection);
         const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-25');
         fpsConversion = await hdrEncoder.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress, { hdr: true }
         );
-      } else if (is4kSource && !hdrInspection && ffmpeg4kEligible) {
-        // If 4K colour inspection is inconclusive, use FFmpeg auto-detection rather than risk stripping HDR.
-        setProcessingState('processing', '');
-        fpsConversion = await runFfmpeg4kCfr('auto');
       } else try {
         // Prefer browser/WebCodecs hardware acceleration for SDR at both 1080p and 4K.
         // Avoid the slower bitrate-controlled FFmpeg path unless 4K conversion fails or HDR requires it.
@@ -2512,30 +2532,12 @@ if (processBtn) {
             /processing_cancelled|AbortError|video_file_over_limit/i.test(primaryMessage)) {
           throw primaryError;
         }
-        if (!ffmpeg4kEligible) throw primaryError;
-        console.warn('[INEASY] Primary 59.94 FPS conversion failed; trying 4K FFmpeg fallback:', primaryMessage);
-        try {
-          fpsConversion = await runFfmpeg4kCfr();
-          console.info('[INEASY] 4K FFmpeg fallback CFR conversion completed', {
-            sourceResolution: selectedVideoDimensions.width + 'x' + selectedVideoDimensions.height,
-            sourceFps: fpsConversion.sourceFps || 'unknown',
-            outputFps: fpsConversion.fps,
-            outputResolution: fpsConversion.info?.width + 'x' + fpsConversion.info?.height
-          });
-        } catch (ffmpegError) {
-          const ffmpegMessage = String(ffmpegError?.message || ffmpegError || '');
-          if (controller.signal.aborted ||
-              /processing_cancelled|AbortError|video_file_over_limit/i.test(ffmpegMessage)) {
-            throw ffmpegError;
-          }
-          if (/ffmpeg_4k_hdr_unsafe|ffmpeg_4k_10bit_unsupported/i.test(ffmpegMessage)) {
-            throw ffmpegError;
-          }
-          throw new Error(
-            'ffmpeg_4k_fallback_failed: MediaBunny=' + primaryMessage.slice(0, 220) +
-            '; FFmpeg=' + ffmpegMessage.slice(0, 1000)
-          );
+        if (is4kSource) {
+          // Never send ordinary SDR 4K through slow FFmpeg wasm as an automatic fallback.
+          console.error('[INEASY] Browser hardware-accelerated 4K CFR failed; no slow SDR FFmpeg fallback:', primaryMessage);
+          throw new Error('hardware_cfr_4k_failed: ' + primaryMessage.slice(0, 700));
         }
+        throw primaryError;
       }
 
       // Verify the actual converted 4K file BEFORE passing it into ADJN.
