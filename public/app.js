@@ -2856,7 +2856,7 @@ function localizePatchError(message) {
     return `${text}: ${fpsRetimingFailure[1]}`;
   }
   const rawError = String(message || '');
-  const ffmpegExecFailure = rawError.match(/ffmpeg_4k_exec_failed:\\s*exit=(\\d+);\\s*stage=([^;]+);\\s*detail=([\\s\\S]*?)(?=;\\s*(?:firstAttemptExit|MediaBunny)=|$)/i);
+  const ffmpegExecFailure = rawError.match(/ffmpeg_4k_exec_failed:\s*exit=(\d+);\s*stage=([^;]+);\s*detail=([\s\S]*?)(?=;\s*(?:firstAttemptExit|MediaBunny)=|$)/i);
   if (ffmpegExecFailure) {
     const exitCode = ffmpegExecFailure[1];
     const stage = ffmpegExecFailure[2].trim();
@@ -2867,7 +2867,7 @@ function localizePatchError(message) {
       en: 'FFmpeg 4K error (stage ' + stage + ', code ' + exitCode + '). Cause: ' + (detail || 'see browser console')
     }[lang];
   }
-  const assetFailure = rawError.match(/ffmpeg_4k_asset_download_failed:\\s*(\\d+)/i);
+  const assetFailure = rawError.match(/ffmpeg_4k_asset_download_failed:\s*(\d+)/i);
   if (assetFailure) {
     return {
       ru: 'Не удалось загрузить файл FFmpeg с CDN (HTTP ' + assetFailure[1] + '). Проверьте соединение и повторите попытку.',
@@ -2875,7 +2875,7 @@ function localizePatchError(message) {
       en: 'Could not download the FFmpeg asset from the CDN (HTTP ' + assetFailure[1] + '). Check the connection and retry.'
     }[lang];
   }
-  const ffmpegStageFailure = rawError.match(/ffmpeg_4k_fallback_failed:\\s*stage=([^;]+);\\s*([\\s\\S]*?)(?=;\\s*detail=|;\\s*MediaBunny=|$)/i);
+  const ffmpegStageFailure = rawError.match(/ffmpeg_4k_fallback_failed:\s*stage=([^;]+);\s*([\s\S]*?)(?=;\s*detail=|;\s*MediaBunny=|$)/i);
   if (ffmpegStageFailure) {
     const stage = ffmpegStageFailure[1].trim();
     const detail = ffmpegStageFailure[2].trim().slice(0, 240);
