@@ -1746,14 +1746,13 @@ function parseIneasyFfmpegRate(value) {
 async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onProgress, hints = {}) {
   const TARGET_FPS = 60000 / 1001;
   signal.throwIfAborted();
-  const isHdr = Boolean(hints.sourceIsHdr);
+  let isHdr = Boolean(hints.sourceIsHdr);
   const profile = hints.sourceHdrProfile || {};
   const codecSignature = String(hints.sourceCodecSignature || '').toLowerCase();
   const sourceHasDolbyVision = Boolean(profile.dolbyVision || /dvh1|dvhe|dolby.?vision/i.test(codecSignature));
   const sourceHasHdr10Plus = Boolean(profile.hdr10plus);
-  const transfer = hints.sourceTransfer || (profile.hlg ? 'hlg' :
+  let transfer = hints.sourceTransfer || (profile.hlg ? 'hlg' :
     (profile.hdr10 || profile.hdr10plus || profile.dolbyVision) ? 'pq' : '');
-  if (isHdr && transfer !== 'hlg' && transfer !== 'pq') throw new Error('hdr_source_color_unknown');
 
   const ffmpeg = await getIneasyFfmpegWasm(signal, onProgress);
   signal.throwIfAborted();
@@ -1782,8 +1781,29 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
     await ffmpeg.writeFile(inputPath, inputBytes, { signal });
     signal.throwIfAborted();
 
-    const sourcePrimaries = String(hints.sourcePrimaries || '').toLowerCase();
-    const sourceMatrix = String(hints.sourceMatrix || '').toLowerCase();
+    // Probe container colour metadata with FFmpeg itself. This works even when
+    // WebCodecs cannot decode the source frames.
+    const sourceProbeCode = await ffmpeg.ffprobe([
+      '-v', 'error',
+      '-select_streams', 'v:0',
+      '-show_entries', 'stream=codec_name,profile,pix_fmt,avg_frame_rate,color_primaries,color_transfer,color_space,width,height',
+      '-of', 'json',
+      inputPath,
+      '-o', probePath
+    ], -1, { signal });
+    if (sourceProbeCode !== 0) throw new Error('hdr_source_probe_failed');
+    const sourceProbeData = await ffmpeg.readFile(probePath, 'utf8', { signal });
+    const sourceProbeText = typeof sourceProbeData === 'string' ? sourceProbeData : new TextDecoder().decode(sourceProbeData);
+    const sourceStream = JSON.parse(sourceProbeText)?.streams?.[0];
+    if (!sourceStream) throw new Error('hdr_source_probe_failed');
+    const sourceProbeTransfer = String(sourceStream.color_transfer || '').toLowerCase();
+    if (!transfer && /smpte2084|smpte 2084/i.test(sourceProbeTransfer)) transfer = 'pq';
+    if (!transfer && /arib-std-b67|hlg/i.test(sourceProbeTransfer)) transfer = 'hlg';
+    if (sourceProbeTransfer === 'smpte2084' || sourceProbeTransfer === 'arib-std-b67') isHdr = true;
+    if (isHdr && transfer !== 'hlg' && transfer !== 'pq') throw new Error('hdr_source_color_unknown');
+
+    const sourcePrimaries = String(hints.sourcePrimaries || sourceStream.color_primaries || '').toLowerCase();
+    const sourceMatrix = String(hints.sourceMatrix || sourceStream.color_space || '').toLowerCase();
     const primaries = isHdr ? 'bt2020' : /2020/.test(sourcePrimaries) ? 'bt2020' : /709/.test(sourcePrimaries) ? 'bt709' : '';
     const matrix = isHdr ? (/cl/.test(sourceMatrix) ? 'bt2020c' : 'bt2020nc')
       : /2020/.test(sourceMatrix) ? (/cl/.test(sourceMatrix) ? 'bt2020c' : 'bt2020nc')
