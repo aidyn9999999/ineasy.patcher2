@@ -1756,14 +1756,33 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
       console.debug('[INEASY] HDR signature scan skipped:', hdrDetectionError);
     }
 
-    const sourceMain10 = /(?:hvc1|hev1)\.2(?:\.|$)|main.?10/i.test(sourceCodec + ' ' + sourceCodecParameters) ||
+    const sourceCodecSignature = (sourceCodec + ' ' + sourceCodecParameters).toLowerCase();
+    const sourceMain10 = /(?:hvc1|hev1)\.2(?:\.|$)|main.?10/i.test(sourceCodecSignature) ||
       Boolean(sourceHdrProfile?.main10);
     const sourceIsHdr = Boolean(
       sourceHasHdrRange || hdrTransfer ||
       sourceHdrProfile?.hdr10 || sourceHdrProfile?.hdr10plus ||
       sourceHdrProfile?.hlg || sourceHdrProfile?.dolbyVision
     );
-    const sourceIs10BitOrHdr = Boolean(sourceIsHdr || sourceMain10);
+    // MediaBunny's generic Conversion can discard HEVC inputs as
+    // "undecodable_source_codec" even when the MP4 contains a valid video
+    // track. Route HEVC/Dolby Vision sources through the sample pipeline too.
+    // This route encodes Main10, but only applies HDR colour signalling when
+    // the source was actually identified as HDR.
+    const sourceIsHevc = /(?:hevc|hvc1|hev1|dvh1|dvhe)/i.test(sourceCodecSignature) ||
+      Boolean(sourceHdrProfile?.hevc || sourceHdrProfile?.dolbyVision);
+    const sourceIs10BitOrHdr = Boolean(sourceIsHdr || sourceMain10 || sourceIsHevc);
+    console.info('[INEASY] CFR source classification', {
+      sourceCodec,
+      sourceCodecParameters,
+      sourceTransfer,
+      sourceHasHdrRange,
+      sourceHdrProfile: sourceHdrProfile?.label || null,
+      sourceIsHdr,
+      sourceMain10,
+      sourceIsHevc,
+      route: sourceIs10BitOrHdr ? 'HEVC/Main10 sample pipeline' : 'SDR AVC conversion'
+    });
 
     if (sourceIs10BitOrHdr) {
       hdrEncodingAttempted = true;
