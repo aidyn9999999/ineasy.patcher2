@@ -1743,6 +1743,72 @@ function parseIneasyFfmpegRate(value) {
   return Number(value);
 }
 
+// Inspect a stream using FFmpeg's own demuxer output. Some distributed
+// @ffmpeg/ffmpeg browser bundles don't expose ffprobe() even though the
+// WebAssembly core has a separate ffprobe entry point, so this intentionally
+// uses the public exec() API only.
+async function inspectIneasyFfmpegStream(ffmpeg, path, signal) {
+  const recentMessages = [];
+  let videoLine = '';
+  const onInspectLog = (event) => {
+    const message = String(event?.message || '');
+    if (!message) return;
+    if (!videoLine && /Stream #\d+:\d+[^\n]*Video:/i.test(message)) videoLine = message;
+    recentMessages.push(message);
+    if (recentMessages.length > 120) recentMessages.shift();
+  };
+  ffmpeg.on('log', onInspectLog);
+  try {
+    signal.throwIfAborted();
+    const exitCode = await ffmpeg.exec([
+      '-hide_banner',
+      '-loglevel', 'info',
+      '-i', path,
+      '-map', '0:v:0',
+      '-c:v', 'copy',
+      '-f', 'null',
+      '-'
+    ], -1, { signal });
+    signal.throwIfAborted();
+    if (exitCode !== 0) {
+      throw new Error('hdr_stream_inspection_failed: ' + recentMessages.slice(-8).join(' | ').slice(0, 900));
+    }
+    if (!videoLine) {
+      throw new Error('hdr_stream_inspection_failed: video stream details unavailable');
+    }
+
+    const codecMatch = videoLine.match(/Video:\s*([^\s,(]+)/i);
+    const profileMatch = videoLine.match(/Video:\s*[^\s,(]+\s*\(([^)]+)\)/i);
+    const pixelFormatMatch = videoLine.match(/,\s*(yuv\d{3}p\d*(?:le|be)?|p0(?:10|12)(?:le|be)?)(?:\s*\(|,|\s)/i);
+    const dimensionsMatch = videoLine.match(/\b(\d{2,5})x(\d{2,5})\b/);
+    const fpsMatch = videoLine.match(/\b(\d+(?:\.\d+)?)\s*fps\b/i);
+    const normalizedLine = videoLine.toLowerCase();
+    const colorTransfer = /smpte\s*2084/.test(normalizedLine) || /smpte2084/.test(normalizedLine)
+      ? 'smpte2084'
+      : /arib-std-b67|\bhlg\b/.test(normalizedLine) ? 'arib-std-b67' : '';
+    const colorPrimaries = /bt2020/.test(normalizedLine) ? 'bt2020'
+      : /bt709/.test(normalizedLine) ? 'bt709' : '';
+    const colorSpace = /bt2020nc/.test(normalizedLine) ? 'bt2020nc'
+      : /bt2020c/.test(normalizedLine) ? 'bt2020c'
+      : /bt709/.test(normalizedLine) ? 'bt709' : '';
+
+    return {
+      codec_name: String(codecMatch?.[1] || '').toLowerCase(),
+      profile: String(profileMatch?.[1] || ''),
+      pix_fmt: String(pixelFormatMatch?.[1] || '').toLowerCase(),
+      avg_frame_rate: fpsMatch ? fpsMatch[1] : '',
+      color_primaries: colorPrimaries,
+      color_transfer: colorTransfer,
+      color_space: colorSpace,
+      width: dimensionsMatch ? Number(dimensionsMatch[1]) : null,
+      height: dimensionsMatch ? Number(dimensionsMatch[2]) : null,
+      reportLine: videoLine
+    };
+  } finally {
+    try { ffmpeg.off('log', onInspectLog); } catch (_) {}
+  }
+}
+
 async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onProgress, hints = {}) {
   const TARGET_FPS = 60000 / 1001;
   signal.throwIfAborted();
@@ -1759,7 +1825,6 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
   const extensionMatch = String(inputName || '').match(/\.(mp4|mov|m4v|mkv|webm|avi|3gp)$/i);
   const inputPath = 'ineasy_hdr_source' + (extensionMatch ? extensionMatch[0].toLowerCase() : '.mp4');
   const outputPath = 'ineasy_hdr_5994.mp4';
-  const probePath = 'ineasy_hdr_probe.json';
   const logTail = [];
   const onLog = (event) => {
     const message = String(event?.message || '');
@@ -1781,24 +1846,12 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
     await ffmpeg.writeFile(inputPath, inputBytes, { signal });
     signal.throwIfAborted();
 
-    // Probe container colour metadata with FFmpeg itself. This works even when
-    // WebCodecs cannot decode the source frames.
-    const sourceProbeCode = await ffmpeg.ffprobe([
-      '-v', 'error',
-      '-select_streams', 'v:0',
-      '-show_entries', 'stream=codec_name,profile,pix_fmt,avg_frame_rate,color_primaries,color_transfer,color_space,width,height',
-      '-of', 'json',
-      inputPath,
-      '-o', probePath
-    ], -1, { signal });
-    if (sourceProbeCode !== 0) throw new Error('hdr_source_probe_failed');
-    const sourceProbeData = await ffmpeg.readFile(probePath, 'utf8', { signal });
-    const sourceProbeText = typeof sourceProbeData === 'string' ? sourceProbeData : new TextDecoder().decode(sourceProbeData);
-    const sourceStream = JSON.parse(sourceProbeText)?.streams?.[0];
-    if (!sourceStream) throw new Error('hdr_source_probe_failed');
+    // Read source codec and colour tags through FFmpeg's demuxer output.
+    // This doesn't rely on WebCodecs being able to decode the original HEVC frames.
+    const sourceStream = await inspectIneasyFfmpegStream(ffmpeg, inputPath, signal);
     const sourceProbeTransfer = String(sourceStream.color_transfer || '').toLowerCase();
-    if (!transfer && /smpte2084|smpte 2084/i.test(sourceProbeTransfer)) transfer = 'pq';
-    if (!transfer && /arib-std-b67|hlg/i.test(sourceProbeTransfer)) transfer = 'hlg';
+    if (!transfer && sourceProbeTransfer === 'smpte2084') transfer = 'pq';
+    if (!transfer && sourceProbeTransfer === 'arib-std-b67') transfer = 'hlg';
     if (sourceProbeTransfer === 'smpte2084' || sourceProbeTransfer === 'arib-std-b67') isHdr = true;
     if (isHdr && transfer !== 'hlg' && transfer !== 'pq') throw new Error('hdr_source_color_unknown');
 
@@ -1839,20 +1892,11 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
       throw new Error('hdr_ffmpeg_transcode_failed: ' + logTail.slice(-8).join(' | ').slice(0, 1200));
     }
 
-    const probeCode = await ffmpeg.ffprobe([
-      '-v', 'error',
-      '-select_streams', 'v:0',
-      '-show_entries', 'stream=codec_name,profile,pix_fmt,avg_frame_rate,r_frame_rate,color_primaries,color_transfer,color_space,width,height',
-      '-of', 'json',
-      outputPath,
-      '-o', probePath
-    ], -1, { signal });
-    if (probeCode !== 0) throw new Error('hdr_cfr_verification_failed: ffprobe failed');
-    const probeData = await ffmpeg.readFile(probePath, 'utf8', { signal });
-    const probeText = typeof probeData === 'string' ? probeData : new TextDecoder().decode(probeData);
-    const stream = JSON.parse(probeText)?.streams?.[0];
-    if (!stream) throw new Error('hdr_cfr_verification_failed: no video stream');
-
+    // Re-open the finished MP4 and parse FFmpeg's stream report. This verifies
+    // the actual muxed file while remaining compatible with builds that don't
+    // expose a JavaScript ffprobe() method.
+    logTail.length = 0;
+    const stream = await inspectIneasyFfmpegStream(ffmpeg, outputPath, signal);
     const fps = parseIneasyFfmpegRate(stream.avg_frame_rate);
     if (!Number.isFinite(fps) || Math.abs(fps - TARGET_FPS) > 0.03) {
       throw new Error('fps_encoder_verification_failed: reported=' + String(stream.avg_frame_rate));
@@ -1872,7 +1916,8 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
       const outputTransferMatches = outputTransfer === expectedOutputTransfer;
       const outputPrimariesMatches = !primaries || outputPrimaries === primaries;
       if (!outputTransferMatches || !outputPrimariesMatches) {
-        throw new Error('hdr_cfr_verification_failed: transfer=' + outputTransfer + ', primaries=' + outputPrimaries);
+        throw new Error('hdr_cfr_verification_failed: transfer=' + outputTransfer + ', primaries=' + outputPrimaries +
+          ', stream=' + String(stream.reportLine || '').slice(0, 350));
       }
     }
 
@@ -1949,7 +1994,7 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
     try { ffmpeg.off('log', onLog); } catch (_) {}
     try { ffmpeg.off('progress', onProgressEvent); } catch (_) {}
     if (!signal.aborted && ffmpeg.loaded) {
-      for (const path of [inputPath, outputPath, probePath]) {
+      for (const path of [inputPath, outputPath]) {
         try { await ffmpeg.deleteFile(path); } catch (_) {}
       }
     }
