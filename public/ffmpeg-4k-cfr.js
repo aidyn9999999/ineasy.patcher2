@@ -610,15 +610,23 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     const preferredOutputBytes = inputBlob.size + 150 * 1024;
     const estimatedAudioBytes = Math.max(0, Math.round(Math.max(0.1, Number(duration) || 0.1) * 160000 / 8));
     let sizeCorrectionAttempts = 0;
-    while (outputBytes.byteLength > maxOutputBytes && sizeCorrectionAttempts < 3) {
+    const minPreferredBytes = inputBlob.size + 100 * 1024;
+    // Correct both oversized and undersized encodes. A wrong duration estimate or a
+    // browser/encoder difference can otherwise produce a tiny file (e.g. 8 MB from 34 MB).
+    while ((outputBytes.byteLength > maxOutputBytes || outputBytes.byteLength < minPreferredBytes) &&
+           sizeCorrectionAttempts < 5) {
       throwIfAborted(signal);
       if (aborted) throw new Error('processing_cancelled');
       sizeCorrectionAttempts += 1;
       const currentVideoBytes = Math.max(1, outputBytes.byteLength - estimatedAudioBytes);
       const targetVideoBytes = Math.max(1, preferredOutputBytes - estimatedAudioBytes);
-      const correctionRatio = Math.min(0.95, (targetVideoBytes / currentVideoBytes) * 0.97);
-      const correctedBitrate = Math.max(250000, Math.floor(targetVideoBitrate * correctionRatio));
-      if (correctedBitrate >= targetVideoBitrate) break;
+      const isOversized = outputBytes.byteLength > maxOutputBytes;
+      const correctionRatio = (targetVideoBytes / currentVideoBytes) * (isOversized ? 0.97 : 1.03);
+      const correctedBitrate = Math.max(250000, Math.min(100000000,
+        Math.floor(targetVideoBitrate * correctionRatio)));
+      if (correctedBitrate === targetVideoBitrate ||
+          (isOversized && correctedBitrate > targetVideoBitrate) ||
+          (!isOversized && correctedBitrate < targetVideoBitrate)) break;
       targetVideoBitrate = correctedBitrate;
       const correctedMaxRate = Math.round(targetVideoBitrate * 1.02);
       const correctedBufferSize = Math.max(Math.round(targetVideoBitrate * 0.5), 256000);
