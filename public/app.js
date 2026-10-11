@@ -2469,7 +2469,7 @@ if (processBtn) {
 
       // Inspect source color metadata before selecting an encoder. Never send HDR through
       // the browser's generic 8-bit SDR encoder path.
-      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-3');
+      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-4');
       const hdrInspection = await localFfmpeg.inspectHDRVideo(sourceFile, { includeBytes: true });
       controller.signal.throwIfAborted();
       let fpsConversion;
@@ -2945,7 +2945,7 @@ function localizePatchError(message) {
   }
   const knownErrors = [
     { test: /video_resolution_changed_during_cfr|resolution_output_verification_failed/i, ru: 'После конвертации 4K-разрешение изменилось. Файл не выдан.', kk: '4K түрлендіруден кейін ажыратымдылық өзгерді. Файл шығарылған жоқ.', en: 'The 4K resolution changed during processing. No file was produced.' },
-    { test: /hdr_dolby_vision_transcode_unsupported/i, ru: 'Обнаружен Dolby Vision. Этот режим пока не может сохранить динамические метаданные Dolby Vision; файл не будет перекодирован в SDR.', kk: 'Dolby Vision анықталды. Бұл режим динамикалық метадеректерді сақтай алмайды, сондықтан SDR-ге түрлендірілмейді.', en: 'Dolby Vision was detected. This encoder cannot preserve Dolby Vision dynamic metadata, so the file was not converted to SDR.' },
+    { test: /hdr_dolby_vision_transcode_unsupported/i, ru: 'Обнаружен Dolby Vision. Для конвертации в 59,94 FPS нужен режим HDR10; исходные динамические метаданные Dolby Vision не сохраняются, но видео не переводится в SDR.', kk: 'Dolby Vision анықталды. 59,94 FPS түрлендіру үшін HDR10 режимі қолданылады; Dolby Vision динамикалық метадеректері сақталмайды, бірақ видео SDR-ге айналмайды.', en: 'Dolby Vision detected. 59.94 FPS conversion uses HDR10; Dolby Vision dynamic metadata is not preserved, but video is not converted to SDR.' },
     { test: /hdr_hevc10_encode_failed|hdr_output_verification_failed|hdr_metadata_not_detected|hdr_source_codec_unsupported/i, ru: 'Не удалось безопасно перекодировать HDR в HEVC Main10 с сохранением HDR-сигнала. Файл не выдан.', kk: 'HDR сигналын сақтай отырып HEVC Main10 кодтау мүмкін болмады. Файл шығарылған жоқ.', en: 'HDR could not be safely re-encoded as HEVC Main10 with HDR signaling. No output was produced.' },
     { test: /adjn_worker_ready_timeout/i, ru: 'Патчер не запустился: Web Worker не прислал READY за 15 секунд. Проверьте загрузку adjn-worker.js и связанных скриптов в браузере.', kk: 'Патчер іске қосылмады: Web Worker 15 секунд ішінде READY жібермеді. Браузерде adjn-worker.js жүктелуін тексеріңіз.', en: 'The patcher did not start: its Web Worker did not send READY within 15 seconds. Check adjn-worker.js and its imported scripts in the browser.' },
     { test: /adjn_worker_post_message_failed|adjn_worker_message_error/i, ru: 'Браузер не смог передать подготовленное видео в патчер. Обновите страницу и попробуйте ещё раз; если ошибка повторяется, откройте консоль браузера.', kk: 'Браузер дайын бейнені патчерге жібере алмады. Бетті жаңартып, қайталап көріңіз; қате қайталанса, браузер консолін ашыңыз.', en: 'The browser could not pass the prepared video to the patcher. Refresh and retry; if it repeats, check the browser console.' },
