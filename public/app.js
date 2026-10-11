@@ -185,7 +185,9 @@ const translations = {
     fileName: 'Selected file',
     packageLabel: 'Video package',
     errorInvalidFile: 'Choose a supported video file.',
-    fileTooLarge: 'Video files must be 500 MB or smaller.',
+    fileTooLarge: '1080p videos must be 500 MB or smaller.',
+    fileTooLarge4k: '4K / high-resolution videos must be 50 MB or smaller for server processing.',
+    server4kWait: 'Uploading 4K video to Railway and converting it to 59.94 FPS…',
     readingVideoMetadata: 'Reading video details…',
     loadingVideoData: 'Preparing video for local processing…',
     analyzingVideo: 'Analyzing video…',
@@ -371,7 +373,9 @@ const translations = {
     fileName: 'Выбранный файл',
     packageLabel: 'Пакет видео',
     errorInvalidFile: 'Выберите поддерживаемый видеофайл.',
-    fileTooLarge: 'Размер видео не должен превышать 500 МБ.',
+    fileTooLarge: 'Для локальной обработки 1080p видео должно быть не больше 500 МБ.',
+    fileTooLarge4k: 'Для серверной обработки 4K / высокого разрешения размер видео не должен превышать 50 МБ.',
+    server4kWait: 'Отправляем 4K-видео на Railway и конвертируем в 59,94 FPS…',
     readingVideoMetadata: 'Читаем параметры видео…',
     loadingVideoData: 'Подготавливаем видео к локальной обработке…',
     analyzingVideo: 'Анализируем видео…',
@@ -557,7 +561,9 @@ const translations = {
     fileName: 'Таңдалған файл',
     packageLabel: 'Бейне пакеті',
     errorInvalidFile: 'Қолдау көрсетілетін бейне файлын таңдаңыз.',
-    fileTooLarge: 'Бейне файлының өлшемі 500 МБ-тан аспауы керек.',
+    fileTooLarge: '1080p бейнесін жергілікті өңдеу үшін өлшемі 500 МБ-тан аспауы керек.',
+    fileTooLarge4k: '4K / жоғары ажыратымдылықтағы бейне серверде өңделуі үшін 50 МБ-тан аспауы керек.',
+    server4kWait: '4K бейнесі Railway серверіне жіберіліп, 59,94 FPS форматына түрлендірілуде…',
     readingVideoMetadata: 'Бейне параметрлері оқылуда…',
     loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
     analyzingVideo: 'Бейне талдануда…',
@@ -2014,6 +2020,7 @@ function getPostingDeviceForPlatform() {
 }
 
 const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
+const MAX_SERVER_VIDEO_FILE_SIZE = 50 * 1024 * 1024;
 let fileSelectionVersion = 0;
 let selectedVideoDimensions = null;
 
@@ -2110,8 +2117,12 @@ async function handleFile(file) {
     rejectFileSelection(t('videoResolutionTooHigh'));
     return;
   }
-  selectedVideoDimensions = dimensions;
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
+  if (selectedLongSide > 1920 && file.size > MAX_SERVER_VIDEO_FILE_SIZE) {
+    rejectFileSelection(t('fileTooLarge4k'));
+    return;
+  }
+  selectedVideoDimensions = dimensions;
   // Keep the 4K fallback lazy-loaded: don't download FFmpeg until the browser encoder fails.
   // Load the fallback only if browser hardware encoding actually fails.
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
@@ -2408,6 +2419,68 @@ if (comparisonRange && qualityComparison) {
   updateComparison();
 }
 
+
+async function convert4kOnRailway(sourceFile, signal, onProgress, sourceDurationSeconds) {
+  if (sourceFile.size > MAX_SERVER_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
+  signal.throwIfAborted();
+  onProgress?.(0.05);
+  const token = getBrowserValue('tg_auth_token') || '';
+  const response = await fetch('/api/process-4k', {
+    method: 'POST',
+    headers: {
+      Authorization: 'Bearer ' + token,
+      'Content-Type': sourceFile.type || 'application/octet-stream',
+    },
+    body: sourceFile,
+    signal,
+    cache: 'no-store',
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.error || 'server_4k_failed');
+  }
+  const blob = await response.blob();
+  signal.throwIfAborted();
+  if (!blob.size) throw new Error('server_4k_failed');
+  const width = Number(response.headers.get('X-Video-Width'));
+  const height = Number(response.headers.get('X-Video-Height'));
+  const fps = Number(response.headers.get('X-Video-Fps'));
+  const sourceFps = Number(response.headers.get('X-Video-Source-Fps'));
+  const codec = response.headers.get('X-Video-Codec') || 'unknown';
+  const pixelFormat = response.headers.get('X-Video-Pixel-Format') || '';
+  const transfer = (response.headers.get('X-Video-Color-Transfer') || '').toLowerCase();
+  const primaries = response.headers.get('X-Video-Color-Primaries') || '';
+  const hdr = response.headers.get('X-Video-HDR') === 'true';
+  const hdrLabel = response.headers.get('X-Video-HDR-Profile') || (hdr ? 'HDR / 10-bit' : 'SDR');
+  if (!width || !height || !Number.isFinite(fps) || Math.abs(fps - (60000 / 1001)) > 0.03) {
+    throw new Error('server_4k_output_verification_failed');
+  }
+  if (hdr && (!/10|12|16/.test(pixelFormat) || !['smpte2084', 'arib-std-b67'].includes(transfer))) {
+    throw new Error('hdr_output_verification_failed');
+  }
+  onProgress?.(1);
+  const info = {
+    width, height, averageFps: fps, codec, pixFmt: pixelFormat,
+    colorTransfer: transfer, colorPrimaries: primaries,
+  };
+  const hdrProfile = {
+    label: hdrLabel,
+    hdr10: transfer === 'smpte2084',
+    hlg: transfer === 'arib-std-b67',
+    main10: hdr && /10|12|16/.test(pixelFormat),
+  };
+  console.info('[INEASY] Railway CFR verified', {
+    inputBytes: sourceFile.size, outputBytes: blob.size,
+    resolution: width + 'x' + height, fps, sourceFps,
+    encoder: codec, hdr, hdrProfile: hdrLabel,
+  });
+  return {
+    blob, info, fps, sourceFps: Number.isFinite(sourceFps) ? sourceFps : sourceDurationSeconds,
+    hdr, hdrTranscoded: hdr, main10Transcoded: hdr,
+    hdrProfile, preserveOriginal: false,
+  };
+}
+
 if (processBtn) {
   processBtn.addEventListener('click', async () => {
     if (!fileInput || !fileInput.files[0] || processBtn.disabled) return;
@@ -2477,54 +2550,44 @@ if (processBtn) {
 
 
       let fpsConversion;
-      try {
-        // Normal path for both 1080p and 4K: browser WebCodecs with hardware acceleration.
-        // This path does not scale the frame; source dimensions are verified after encoding.
-        fpsConversion = await runPrimaryCfr();
-      } catch (primaryError) {
-        const primaryMessage = String(primaryError?.message || primaryError || '');
-        if (controller.signal.aborted ||
-            /processing_cancelled|AbortError|video_file_over_limit/i.test(primaryMessage)) {
-          throw primaryError;
-        }
-        if (!is4kSource) {
-          // Keep the normal 1080p path and quality settings unchanged. If hardware
-          // encoding rejects a particular clip, retry only that failed clip in software.
-          console.warn('[INEASY] Hardware CFR failed; retrying this clip with software encoding:', primaryMessage);
-          try {
-            fpsConversion = await convertVideoToExact5994Fps(
-              sourceFile,
-              sourceFile.name,
-              controller.signal,
-              reportCfrProgress,
-              sourceDuration,
-              false,
-              'prefer-software'
-            );
-          } catch (softwareError) {
-            const softwareMessage = String(softwareError?.message || softwareError || 'unknown_error');
-            console.error('[INEASY] Software CFR retry also failed:', softwareMessage);
-            throw new Error('fps_encoder_failed: hardware=' + primaryMessage.slice(0, 220) +
-              '; software=' + softwareMessage.slice(0, 220));
+      const useServerProcessing = sourceLongSide > 1920 && !PATCHER_TEST_MODE;
+      if (useServerProcessing) {
+        setProcessingState('processing', t('server4kWait'));
+        fpsConversion = await convert4kOnRailway(sourceFile, controller.signal, reportCfrProgress, sourceDuration);
+      } else {
+        try {
+          // Local 1080p path: use browser hardware acceleration and retain the existing settings.
+          fpsConversion = await runPrimaryCfr();
+        } catch (primaryError) {
+          const primaryMessage = String(primaryError?.message || primaryError || '');
+          if (controller.signal.aborted ||
+              /processing_cancelled|AbortError|video_file_over_limit/i.test(primaryMessage)) {
+            throw primaryError;
           }
-        } else {
-          // Only load FFmpeg after hardware encoding fails. The SDR fallback keeps the
-          // original frame dimensions and uses a true 60000/1001 CFR fps filter.
-          // HDR is never silently routed through the SDR fallback.
-          console.warn('[INEASY] Hardware 4K CFR failed; trying full-resolution CFR fallback:', primaryMessage);
-          setProcessingState('processing', t('uhdWait'));
-          const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-30');
-          fpsConversion = await fallbackEncoder.convertVideoToExact5994FpsWithFFmpeg(
-            sourceFile,
-            selectedVideoDimensions,
-            sourceDuration,
-            controller.signal,
-            reportCfrProgress,
-            { hdr: false }
-          );
+          if (!is4kSource) {
+            console.warn('[INEASY] Hardware CFR failed; retrying this clip with software encoding:', primaryMessage);
+            try {
+              fpsConversion = await convertVideoToExact5994Fps(
+                sourceFile, sourceFile.name, controller.signal, reportCfrProgress,
+                sourceDuration, false, 'prefer-software'
+              );
+            } catch (softwareError) {
+              const softwareMessage = String(softwareError?.message || softwareError || 'unknown_error');
+              console.error('[INEASY] Software CFR retry also failed:', softwareMessage);
+              throw new Error('fps_encoder_failed: hardware=' + primaryMessage.slice(0, 220) +
+                '; software=' + softwareMessage.slice(0, 220));
+            }
+          } else {
+            // Localhost test mode only; production 4K always uses Railway.
+            console.warn('[INEASY] Test-mode 4K browser fallback:', primaryMessage);
+            const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-30');
+            fpsConversion = await fallbackEncoder.convertVideoToExact5994FpsWithFFmpeg(
+              sourceFile, selectedVideoDimensions, sourceDuration,
+              controller.signal, reportCfrProgress, { hdr: false }
+            );
+          }
         }
       }
-
       // Verify the actual converted 4K file BEFORE passing it into ADJN.
       const convertedFps = Number(fpsConversion.fps ?? fpsConversion.info?.averageFps);
       if (!Number.isFinite(convertedFps) || Math.abs(convertedFps - (60000 / 1001)) > 0.03) {
@@ -2954,6 +3017,11 @@ function localizePatchError(message) {
     { test: /ffmpeg_4k_api_unavailable/i, ru: 'Не удалось загрузить API FFmpeg для 4K. Обновите страницу и попробуйте снова.', kk: '4K үшін FFmpeg API жүктелмеді. Бетті жаңартып, қайталап көріңіз.', en: 'Could not load the FFmpeg 4K API. Refresh the page and try again.' },
     { test: /ffmpeg_4k_resolution_verification_failed|video_resolution_over_4k/i, ru: 'Проверка разрешения 4K не пройдена. Файл не выдан.', kk: '4K ажыратымдылығын тексеру өтпеді. Файл шығарылған жоқ.', en: 'The 4K output resolution check failed. No file was produced.' },
     { test: /V2_BETA_ENGINE_NOT_LOADED/i, ru: 'Не удалось загрузить модуль V2. Обновите страницу и попробуйте ещё раз.', kk: 'V2 модулін жүктеу мүмкін болмады. Бетті жаңартып, қайталап көріңіз.', en: 'Could not load the V2 module. Refresh the page and try again.' },
+    { test: /hdr_dynamic_metadata_not_supported/i, ru: 'Это видео содержит Dolby Vision или HDR10+ с динамическими метаданными. Серверный режим пока не может гарантировать их сохранение, поэтому файл не выдан.', kk: 'Бұл видеода Dolby Vision немесе HDR10+ динамикалық метадеректері бар. Сервер оларды сақтауға кепілдік бере алмайды, сондықтан файл берілмеді.', en: 'This video contains Dolby Vision or HDR10+ dynamic metadata. The server cannot guarantee preserving it yet, so no file was produced.' },
+    { test: /server_4k_busy/i, ru: 'Сервер уже обрабатывает другое 4K-видео. Попробуйте ещё раз через минуту.', kk: 'Сервер басқа 4K бейнесін өңдеп жатыр. Бір минуттан кейін қайталап көріңіз.', en: 'The server is processing another 4K video. Please retry in a minute.' },
+    { test: /server_4k_duration_limit/i, ru: 'Для серверной обработки видео должно длиться не больше 60 секунд.', kk: 'Серверде өңдеу үшін бейне ұзақтығы 60 секундтан аспауы керек.', en: 'Server processing supports videos up to 60 seconds.' },
+    { test: /server_4k_output_verification_failed/i, ru: 'Сервер не подтвердил разрешение или частоту 59,94 FPS. Файл не выдан.', kk: 'Сервер ажыратымдылықты немесе 59,94 FPS жиілігін растамады. Файл берілмеді.', en: 'The server could not verify the resolution or 59.94 FPS output. No file was produced.' },
+    { test: /server_4k_failed|server_4k_metadata_unavailable|server_4k_video_stream_missing|server_4k_resolution_not_supported/i, ru: 'Не удалось обработать 4K-видео на Railway. Проверьте формат файла и попробуйте ещё раз.', kk: '4K бейнесін Railway серверінде өңдеу мүмкін болмады. Файл пішімін тексеріп, қайталап көріңіз.', en: 'Railway could not process this 4K video. Check the file format and try again.' },
     { test: /fps_encoder_failed/i, ru: 'Не удалось обработать видео. Попробуйте ещё раз или выберите другой файл.', kk: 'Бейнені өңдеу мүмкін болмады. Қайталап көріңіз немесе басқа файл таңдаңыз.', en: 'Could not process the video. Try again or choose another file.' },
     { test: /mediabunny_load_timeout/i, ru: 'Модуль обработки не загрузился за 25 секунд. Проверьте интернет и обновите страницу.', kk: 'Өңдеу модулі 25 секундта жүктелмеді. Интернетті тексеріп, бетті жаңартыңыз.', en: 'The lightweight processing module did not load within 25 seconds. Check your connection and refresh the page.' },
     { test: /fps_output_verification_failed/i, ru: 'Проверка частоты кадров не пройдена. Повторите обработку файла.', kk: 'Кадр жиілігін тексеру өтпеді. Файлды қайта өңдеңіз.', en: 'The output frame-rate check failed. Process the file again.' },
