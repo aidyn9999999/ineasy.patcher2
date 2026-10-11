@@ -61,7 +61,7 @@ const translations = {
     stepTwoBody: 'Videos up to 4K (4096×2304) are processed locally. Frame rates up to 120 FPS are supported at 4K.',
     stepThreeTitle: 'Publish through Zernio',
     stepThreeBody: 'Tap “Auto-post”, connect your Zernio API key, review the caption, and publish to TikTok.',
-    localProcessingCopy: 'Video stays on your device. Videos are re-encoded locally to constant 59.94 FPS; HDR sources use a separate 10-bit HEVC path with colour-profile checks.',
+    localProcessingCopy: 'Your video stays on your device and is processed locally at constant 59.94 FPS. HDR videos use a 10-bit path when supported.',
     homeBottomCta: 'Start processing',
     faqLabel: 'FAQ / FREQUENTLY ASKED QUESTIONS',
     analyzerEyebrow: 'VIDEO ANALYZER',
@@ -244,7 +244,7 @@ const translations = {
     stepTwoBody: 'Локально обрабатываются видео до 4K (4096×2304). Для 4K поддерживается частота до 120 FPS.',
     stepThreeTitle: 'Опубликуйте через Zernio',
     stepThreeBody: 'Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и опубликуйте видео в TikTok.',
-    localProcessingCopy: 'Видео остаётся на устройстве. Оно локально перекодируется в постоянные 59,94 FPS; HDR-файлы проходят отдельный 10-битный HEVC-процесс с проверкой цветового профиля.',
+    localProcessingCopy: 'Видео остаётся на устройстве и обрабатывается локально в постоянные 59,94 FPS. Для HDR используется 10-битный режим, если формат поддерживается.',
     homeBottomCta: 'Начать обработку',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
@@ -427,7 +427,7 @@ const translations = {
     stepTwoBody: 'Құрылғыда 4K (4096×2304) дейінгі бейнелер өңделеді. 4K үшін 120 FPS-ке дейін қолдау бар.',
     stepThreeTitle: 'Zernio арқылы жариялаңыз',
     stepThreeBody: '«Автожариялау» түймесін басып, Zernio API кілтін қосыңыз, сипаттаманы тексеріп, TikTok-қа жариялаңыз.',
-    localProcessingCopy: 'Бейне құрылғыңызда қалады. Ол тұрақты 59,94 FPS жиілігіне жергілікті қайта кодталады; HDR файлдары түс профилін тексеретін бөлек 10-биттік HEVC жолымен өңделеді.',
+    localProcessingCopy: 'Бейне құрылғыңызда қалады және тұрақты 59,94 FPS жиілігімен жергілікті өңделеді. HDR бейнеге қолдау болса, 10-биттік режим қолданылады.',
     homeBottomCta: 'Өңдеуді бастау',
     faqLabel: 'FAQ / ЖИІ ҚОЙЫЛАТЫН СҰРАҚТАР',
     analyzerEyebrow: 'БЕЙНЕ АНАЛИЗАТОРЫ',
@@ -1627,6 +1627,316 @@ async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
   throw new Error('mediabunny_module_load_failed: ' + String(lastError?.message || 'unknown_error'));
 }
 
+
+let ineasyFfmpegWasmInstance = null;
+let ineasyFfmpegWasmLoadPromise = null;
+let ineasyFfmpegWasmScriptPromise = null;
+
+async function loadIneasyFfmpegWasmLibrary(signal) {
+  if (globalThis.FFmpegWASM?.FFmpeg) return globalThis.FFmpegWASM;
+  if (!ineasyFfmpegWasmScriptPromise) {
+    ineasyFfmpegWasmScriptPromise = (async () => {
+      const urls = [
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js',
+        'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.min.js'
+      ];
+      let lastError = null;
+      for (const url of urls) {
+        try {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            let settled = false;
+            let timeoutId = null;
+            const finish = (callback, value) => {
+              if (settled) return;
+              settled = true;
+              clearTimeout(timeoutId);
+              script.onload = null;
+              script.onerror = null;
+              if (!globalThis.FFmpegWASM?.FFmpeg) script.remove();
+              callback(value);
+            };
+            timeoutId = setTimeout(() => finish(reject, new Error('hdr_ffmpeg_library_timeout')), 17000);
+            script.async = true;
+            script.src = url;
+            script.onload = () => globalThis.FFmpegWASM?.FFmpeg
+              ? finish(resolve, true)
+              : finish(reject, new Error('hdr_ffmpeg_library_unavailable'));
+            script.onerror = () => finish(reject, new Error('hdr_ffmpeg_library_load_failed'));
+            document.head.appendChild(script);
+          });
+          return globalThis.FFmpegWASM;
+        } catch (error) {
+          lastError = error;
+          console.warn('[INEASY] Browser FFmpeg library source failed:', url, error);
+          if (signal.aborted) throw new Error('processing_cancelled');
+        }
+      }
+      throw lastError || new Error('hdr_ffmpeg_library_load_failed');
+    })().catch((error) => {
+      ineasyFfmpegWasmScriptPromise = null;
+      throw error;
+    });
+  }
+  return waitForMediabunnyModule(ineasyFfmpegWasmScriptPromise, signal, 36000);
+}
+
+async function getIneasyFfmpegWasm(signal, onProgress) {
+  signal.throwIfAborted();
+  if (ineasyFfmpegWasmInstance?.loaded) return ineasyFfmpegWasmInstance;
+  let createdInstance = null;
+  if (!ineasyFfmpegWasmLoadPromise) {
+    ineasyFfmpegWasmLoadPromise = (async () => {
+      onProgress?.(0.04);
+      const library = await loadIneasyFfmpegWasmLibrary(signal);
+      signal.throwIfAborted();
+      const appScript = Array.from(document.scripts).find((script) =>
+        /(?:^|\/)app\.js(?:[?#]|$)/i.test(script.src || '')
+      );
+      const classWorkerURL = new URL('ffmpeg-cfr-worker.js', appScript?.src || document.baseURI).href;
+      createdInstance = new library.FFmpeg();
+      await createdInstance.load({
+        coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.js',
+        wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.wasm',
+        classWorkerURL
+      }, { signal });
+      if (signal.aborted) {
+        createdInstance.terminate();
+        throw new Error('processing_cancelled');
+      }
+      if (!createdInstance.loaded) throw new Error('hdr_ffmpeg_core_load_failed');
+      ineasyFfmpegWasmInstance = createdInstance;
+      onProgress?.(0.15);
+      return createdInstance;
+    })().catch((error) => {
+      ineasyFfmpegWasmLoadPromise = null;
+      throw error;
+    });
+  }
+  try {
+    ineasyFfmpegWasmInstance = await waitForMediabunnyModule(ineasyFfmpegWasmLoadPromise, signal, 90000);
+    ineasyFfmpegWasmLoadPromise = null;
+    return ineasyFfmpegWasmInstance;
+  } catch (error) {
+    if (signal.aborted) {
+      try { createdInstance?.terminate(); } catch (_) {}
+      if (ineasyFfmpegWasmInstance === createdInstance) ineasyFfmpegWasmInstance = null;
+      ineasyFfmpegWasmLoadPromise = null;
+      throw new Error('processing_cancelled');
+    }
+    if (/mediabunny_cdn_timeout/i.test(String(error?.message || ''))) {
+      try { createdInstance?.terminate(); } catch (_) {}
+      ineasyFfmpegWasmLoadPromise = null;
+      throw new Error('hdr_ffmpeg_core_load_timeout');
+    }
+    throw error;
+  }
+}
+
+function parseIneasyFfmpegRate(value) {
+  const parts = String(value || '').split('/');
+  if (parts.length === 2) {
+    const numerator = Number(parts[0]);
+    const denominator = Number(parts[1]);
+    return denominator ? numerator / denominator : NaN;
+  }
+  return Number(value);
+}
+
+async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onProgress, hints = {}) {
+  const TARGET_FPS = 60000 / 1001;
+  signal.throwIfAborted();
+  const isHdr = Boolean(hints.sourceIsHdr);
+  const profile = hints.sourceHdrProfile || {};
+  const codecSignature = String(hints.sourceCodecSignature || '').toLowerCase();
+  const sourceHasDolbyVision = Boolean(profile.dolbyVision || /dvh1|dvhe|dolby.?vision/i.test(codecSignature));
+  const sourceHasHdr10Plus = Boolean(profile.hdr10plus);
+  const transfer = hints.sourceTransfer || (profile.hlg ? 'hlg' :
+    (profile.hdr10 || profile.hdr10plus || profile.dolbyVision) ? 'pq' : '');
+  if (isHdr && transfer !== 'hlg' && transfer !== 'pq') throw new Error('hdr_source_color_unknown');
+
+  const ffmpeg = await getIneasyFfmpegWasm(signal, onProgress);
+  signal.throwIfAborted();
+  const extensionMatch = String(inputName || '').match(/\.(mp4|mov|m4v|mkv|webm|avi|3gp)$/i);
+  const inputPath = 'ineasy_hdr_source' + (extensionMatch ? extensionMatch[0].toLowerCase() : '.mp4');
+  const outputPath = 'ineasy_hdr_5994.mp4';
+  const probePath = 'ineasy_hdr_probe.json';
+  const logTail = [];
+  const onLog = (event) => {
+    const message = String(event?.message || '');
+    if (message) {
+      logTail.push(message);
+      if (logTail.length > 80) logTail.shift();
+    }
+  };
+  const onProgressEvent = (event) => {
+    const value = Number(event?.progress);
+    if (Number.isFinite(value)) onProgress?.(0.15 + Math.max(0, Math.min(1, value)) * 0.75);
+  };
+  ffmpeg.on('log', onLog);
+  ffmpeg.on('progress', onProgressEvent);
+  try {
+    signal.throwIfAborted();
+    onProgress?.(0.16);
+    const inputBytes = new Uint8Array(await inputBlob.arrayBuffer());
+    await ffmpeg.writeFile(inputPath, inputBytes, { signal });
+    signal.throwIfAborted();
+
+    const sourcePrimaries = String(hints.sourcePrimaries || '').toLowerCase();
+    const sourceMatrix = String(hints.sourceMatrix || '').toLowerCase();
+    const primaries = isHdr ? 'bt2020' : /2020/.test(sourcePrimaries) ? 'bt2020' : /709/.test(sourcePrimaries) ? 'bt709' : '';
+    const matrix = isHdr ? (/cl/.test(sourceMatrix) ? 'bt2020c' : 'bt2020nc')
+      : /2020/.test(sourceMatrix) ? (/cl/.test(sourceMatrix) ? 'bt2020c' : 'bt2020nc')
+      : /709/.test(sourceMatrix) ? 'bt709' : '';
+    const colorTransfer = transfer === 'hlg' ? 'arib-std-b67' : transfer === 'pq' ? 'smpte2084' : '';
+    const args = [
+      '-hide_banner', '-loglevel', 'info', '-y',
+      '-i', inputPath,
+      '-map', '0:v:0',
+      '-map', '0:a?',
+      '-map_metadata', '0',
+      '-map_chapters', '0',
+      '-vf', 'fps=60000/1001',
+      '-c:v', 'libx265',
+      '-preset', 'ultrafast',
+      '-crf', '20',
+      '-pix_fmt', 'yuv420p10le',
+      '-profile:v', 'main10',
+      '-x265-params', 'repeat-headers=1:hdr-opt=1',
+      '-tag:v', 'hvc1',
+      '-c:a', 'aac',
+      '-b:a', '192k'
+    ];
+    if (primaries) args.push('-color_primaries', primaries);
+    if (colorTransfer) args.push('-color_trc', colorTransfer);
+    if (matrix) args.push('-colorspace', matrix);
+    args.push('-movflags', '+faststart', outputPath);
+
+    onProgress?.(0.18);
+    const exitCode = await ffmpeg.exec(args, -1, { signal });
+    signal.throwIfAborted();
+    if (exitCode !== 0) {
+      throw new Error('hdr_ffmpeg_transcode_failed: ' + logTail.slice(-8).join(' | ').slice(0, 1200));
+    }
+
+    const probeCode = await ffmpeg.ffprobe([
+      '-v', 'error',
+      '-select_streams', 'v:0',
+      '-show_entries', 'stream=codec_name,profile,pix_fmt,avg_frame_rate,r_frame_rate,color_primaries,color_transfer,color_space,width,height',
+      '-of', 'json',
+      outputPath,
+      '-o', probePath
+    ], -1, { signal });
+    if (probeCode !== 0) throw new Error('hdr_cfr_verification_failed: ffprobe failed');
+    const probeData = await ffmpeg.readFile(probePath, 'utf8', { signal });
+    const probeText = typeof probeData === 'string' ? probeData : new TextDecoder().decode(probeData);
+    const stream = JSON.parse(probeText)?.streams?.[0];
+    if (!stream) throw new Error('hdr_cfr_verification_failed: no video stream');
+
+    const fps = parseIneasyFfmpegRate(stream.avg_frame_rate);
+    if (!Number.isFinite(fps) || Math.abs(fps - TARGET_FPS) > 0.03) {
+      throw new Error('fps_encoder_verification_failed: reported=' + String(stream.avg_frame_rate));
+    }
+    const pixelFormat = String(stream.pix_fmt || '').toLowerCase();
+    const codecName = String(stream.codec_name || '').toLowerCase();
+    const streamProfile = String(stream.profile || '');
+    const outputMain10 = /10le|10be|p010/i.test(pixelFormat) || /main\s*10/i.test(streamProfile);
+    if (codecName !== 'hevc' || !outputMain10) {
+      throw new Error('hdr_main10_verification_failed: codec=' + codecName + ', profile=' + streamProfile + ', pix_fmt=' + pixelFormat);
+    }
+
+    const outputTransfer = String(stream.color_transfer || '').toLowerCase();
+    const outputPrimaries = String(stream.color_primaries || '').toLowerCase();
+    if (isHdr) {
+      const expectedOutputTransfer = transfer === 'hlg' ? 'arib-std-b67' : 'smpte2084';
+      const outputTransferMatches = outputTransfer === expectedOutputTransfer;
+      const outputPrimariesMatches = !primaries || outputPrimaries === primaries;
+      if (!outputTransferMatches || !outputPrimariesMatches) {
+        throw new Error('hdr_cfr_verification_failed: transfer=' + outputTransfer + ', primaries=' + outputPrimaries);
+      }
+    }
+
+    const outputData = await ffmpeg.readFile(outputPath, 'binary', { signal });
+    const outputBytes = outputData instanceof Uint8Array ? outputData : new Uint8Array(outputData);
+    if (!outputBytes.byteLength || outputBytes.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
+    const outputBlob = new Blob([outputBytes], { type: 'video/mp4' });
+    const info = {
+      averageFps: fps,
+      codec: codecName,
+      profile: streamProfile,
+      pixelFormat,
+      width: Number(stream.width) || null,
+      height: Number(stream.height) || null,
+      colorPrimaries: outputPrimaries,
+      colorTransfer: outputTransfer,
+      colorSpace: String(stream.color_space || '').toLowerCase()
+    };
+    const detector = globalThis.ADJNVideoProcessor?.detectHdrProfile;
+    const outputHdrProfile = typeof detector === 'function' ? detector(outputBytes, info) : null;
+    if (sourceHasDolbyVision && !outputHdrProfile?.dolbyVision) {
+      throw new Error('hdr_dynamic_metadata_lost: Dolby Vision metadata was not preserved');
+    }
+    if (sourceHasHdr10Plus && !outputHdrProfile?.hdr10plus) {
+      throw new Error('hdr_dynamic_metadata_lost: HDR10+ metadata was not preserved');
+    }
+    if (isHdr && !(outputTransfer === 'smpte2084' || outputTransfer === 'arib-std-b67' ||
+        outputHdrProfile?.hdr10 || outputHdrProfile?.hdr10plus || outputHdrProfile?.hlg || outputHdrProfile?.dolbyVision)) {
+      throw new Error('hdr_cfr_verification_failed: output HDR metadata was not detected');
+    }
+
+    console.info('[INEASY] Browser FFmpeg HDR CFR conversion verified', {
+      inputBytes: inputBlob.size,
+      outputBytes: outputBytes.byteLength,
+      outputFps: fps,
+      targetFps: '60000/1001',
+      inputCodec: hints.sourceCodecSignature || 'unknown',
+      outputCodec: codecName + ' / ' + streamProfile,
+      pixelFormat,
+      outputColorPrimaries: outputPrimaries,
+      outputColorTransfer: outputTransfer,
+      hdr: isHdr,
+      dynamicMetadataVerified: (!sourceHasDolbyVision || Boolean(outputHdrProfile?.dolbyVision)) &&
+        (!sourceHasHdr10Plus || Boolean(outputHdrProfile?.hdr10plus))
+    });
+    onProgress?.(1);
+    return {
+      blob: outputBlob,
+      info,
+      fps,
+      sourceFps: null,
+      preserveOriginal: false,
+      hdr: isHdr,
+      hdrTranscoded: isHdr,
+      main10Transcoded: true,
+      hdrProfile: {
+        ...profile,
+        detected: isHdr || Boolean(hints.sourceMain10),
+        label: profile.label || (transfer === 'hlg' ? 'HLG HDR' : transfer === 'pq' ? 'HDR10 / PQ' : 'HEVC Main10'),
+        sourceColorSpace: { primaries: hints.sourcePrimaries || null, transfer, matrix: hints.sourceMatrix || null },
+        outputColorSpace: { primaries: outputPrimaries, transfer: outputTransfer, matrix: String(stream.color_space || '').toLowerCase() },
+        codec: codecName + ' / ' + streamProfile
+      }
+    };
+  } catch (error) {
+    if (signal.aborted || /processing_cancelled|AbortError/i.test(String(error?.message || error))) {
+      if (ineasyFfmpegWasmInstance === ffmpeg) ineasyFfmpegWasmInstance = null;
+      try { ffmpeg.terminate(); } catch (_) {}
+      throw new Error('processing_cancelled');
+    }
+    console.error('[INEASY] Browser FFmpeg HDR fallback error:', error, logTail.slice(-12));
+    throw error;
+  } finally {
+    try { ffmpeg.off('log', onLog); } catch (_) {}
+    try { ffmpeg.off('progress', onProgressEvent); } catch (_) {}
+    if (!signal.aborted && ffmpeg.loaded) {
+      for (const path of [inputPath, outputPath, probePath]) {
+        try { await ffmpeg.deleteFile(path); } catch (_) {}
+      }
+    }
+    if (signal.aborted && ineasyFfmpegWasmInstance === ffmpeg) ineasyFfmpegWasmInstance = null;
+  }
+}
+
 async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress) {
   const TARGET_FPS = 60000 / 1001;
   signal.throwIfAborted();
@@ -1638,6 +1948,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
   let conversion = null;
   let activeOutput = null;
   let hdrEncodingAttempted = false;
+  let hdrFallbackHints = null;
   let aborted = false;
 
   const cancelQuietly = (target) => {
@@ -1783,6 +2094,17 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
       sourceIsHevc,
       route: sourceIs10BitOrHdr ? 'HEVC/Main10 sample pipeline' : 'SDR AVC conversion'
     });
+    hdrFallbackHints = {
+      sourceIsHdr,
+      sourceMain10,
+      sourceIsHevc,
+      sourceTransfer,
+      sourcePrimaries,
+      sourceMatrix: String(sourceColorSpace?.matrix || '').toLowerCase(),
+      sourceColorSpace,
+      sourceCodecSignature,
+      sourceHdrProfile: sourceHdrProfile ? { ...sourceHdrProfile } : null
+    };
 
     if (sourceIs10BitOrHdr) {
       hdrEncodingAttempted = true;
@@ -2144,8 +2466,24 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     }
     cancelQuietly(conversion);
     cancelQuietly(activeOutput);
-    console.error('[INEASY] CFR conversion failed:', error);
     const detail = String(error?.message || error || 'unknown_error').slice(0, 500);
+    if (hdrEncodingAttempted) {
+      console.warn('[INEASY] Browser HDR pipeline failed; retrying locally with FFmpeg.wasm:', error);
+      try {
+        return await convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onProgress, hdrFallbackHints || {});
+      } catch (fallbackError) {
+        if (signal.aborted || /processing_cancelled|AbortError/i.test(String(fallbackError?.message || fallbackError))) {
+          throw new Error('processing_cancelled');
+        }
+        const fallbackDetail = String(fallbackError?.message || fallbackError || 'unknown_error').slice(0, 900);
+        console.error('[INEASY] Local FFmpeg HDR fallback failed:', fallbackError);
+        if (/^hdr_(?:dynamic_metadata_lost|source_color_unknown|cfr_verification_failed|main10_verification_failed)(?::|$)/i.test(fallbackDetail)) {
+          throw new Error(fallbackDetail);
+        }
+        throw new Error('hdr_main10_encoder_failed: ' + fallbackDetail);
+      }
+    }
+    console.error('[INEASY] CFR conversion failed:', error);
     if (/mediabunny_load_timeout/i.test(detail)) throw new Error('mediabunny_load_timeout');
     // Keep all HDR-specific failures actionable. Errors such as
     // hdr_source_color_unknown were previously wrapped in fps_encoder_failed,
@@ -2154,7 +2492,6 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     if (/^(?:video_file_over_limit|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable)$/i.test(detail)) {
       throw new Error(detail);
     }
-    if (hdrEncodingAttempted) throw new Error('hdr_main10_encoder_failed: ' + detail);
     throw new Error('fps_encoder_failed: ' + detail);
   } finally {
     signal.removeEventListener('abort', abortConversion);
@@ -2899,10 +3236,10 @@ function localizePatchError(message) {
     { test: /mediabunny_load_timeout/i, ru: 'Модуль обработки не загрузился за 25 секунд. Проверьте интернет и обновите страницу.', kk: 'Өңдеу модулі 25 секундта жүктелмеді. Интернетті тексеріп, бетті жаңартыңыз.', en: 'The lightweight processing module did not load within 25 seconds. Check your connection and refresh the page.' },
     { test: /fps_output_verification_failed/i, ru: 'Проверка частоты кадров не пройдена. Повторите обработку файла.', kk: 'Кадр жиілігін тексеру өтпеді. Файлды қайта өңдеңіз.', en: 'The output frame-rate check failed. Process the file again.' },
     { test: /hdr_output_verification_failed/i, ru: 'После обработки не удалось подтвердить сохранение HDR. Файл не выдан.', kk: 'Өңдеуден кейін HDR сақталғанын растау мүмкін болмады. Файл шығарылмады.', en: 'HDR could not be verified after processing. No file was produced.' },
-    { test: /hdr_main10_encoder_failed/i, ru: 'Не удалось преобразовать HDR-видео в постоянные 59,94 FPS с сохранением 10-битного цвета. Подробности: F12 → Console.', kk: 'HDR бейнені 10-бит түсті сақтап, тұрақты 59,94 FPS-ке түрлендіру мүмкін болмады. Толығырақ: F12 → Console.', en: 'HDR could not be converted to constant 59.94 FPS while retaining 10-bit colour. Details: F12 → Console.' },
+    { test: /hdr_main10_encoder_failed/i, ru: 'Не удалось обработать HDR-видео с сохранением HDR и 10-битного цвета. Попробуйте ещё раз или выберите другой файл.', kk: 'HDR және 10-бит түсін сақтап, бейнені өңдеу мүмкін болмады. Қайталап көріңіз немесе басқа файл таңдаңыз.', en: 'Could not process this HDR video while preserving HDR and 10-bit colour. Try again or choose another file.' },
     { test: /hdr_main10_encoder_unavailable|hdr_main10_encoder_config_unavailable/i, ru: 'Браузер не поддерживает безопасное кодирование HDR Main10. Видео не выдано с потерянным HDR.', kk: 'Браузер HDR Main10 кодтауын қолдамайды. HDR жоғалған бейне шығарылған жоқ.', en: 'This browser cannot encode HDR Main10 safely. A result with lost HDR was not produced.' },
     { test: /hdr_main10_verification_failed|hdr_cfr_verification_failed/i, ru: 'После конвертации не удалось подтвердить сохранение HDR и 10-битного цвета. Файл не выдан.', kk: 'Түрлендіруден кейін HDR және 10-бит түс сақталғаны расталмады. Файл шығарылмады.', en: 'HDR and 10-bit colour could not be verified after conversion. No file was produced.' },
-    { test: /hdr_dynamic_metadata_lost/i, ru: 'Браузер не сохранил динамические метаданные Dolby Vision/HDR10+. Чтобы не терять HDR-профиль, файл не выдан.', kk: 'Браузер Dolby Vision/HDR10+ динамикалық метадеректерін сақтамады. HDR профилін жоғалтпау үшін файл шығарылмады.', en: 'The browser did not preserve Dolby Vision/HDR10+ dynamic metadata. No file was produced to avoid silently degrading HDR.' },
+    { test: /hdr_dynamic_metadata_lost/i, ru: 'Не удалось подтвердить сохранение HDR-профиля исходного видео. Файл не выдан, чтобы не ухудшать цвета.', kk: 'Бастапқы бейненің HDR профилі сақталғаны расталмады. Түстерді бұзбау үшін файл шығарылмады.', en: 'The original HDR profile could not be verified after processing. No file was produced to avoid degrading the colours.' },
     { test: /hdr_source_color_unknown/i, ru: 'Не удалось определить цветовой профиль HDR. Конвертация остановлена, чтобы не испортить цвета.', kk: 'HDR түс профилін анықтау мүмкін болмады. Түстерді бұзбау үшін түрлендіру тоқтатылды.', en: 'The HDR colour profile could not be determined. Conversion was stopped to avoid damaging the colours.' },
     { test: /hdr_audio_config_unavailable|hdr_audio_codec_unsupported|hdr_audio_empty/i, ru: 'Не удалось безопасно сохранить звук при HDR-конвертации. Попробуйте MP4/MOV с AAC.', kk: 'HDR түрлендіру кезінде дыбысты сақтау мүмкін болмады. AAC бар MP4/MOV қолданып көріңіз.', en: 'Audio could not be preserved safely during HDR conversion. Try an MP4/MOV with AAC audio.' },
     { test: /fps_encoder_download_failed|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable/i, ru: 'Не удалось преобразовать видео в точные 59,94 FPS. Проверьте соединение и повторите попытку.', kk: 'Бейнені дәл 59,94 FPS-ке түрлендіру мүмкін болмады. Интернетті тексеріп, қайталап көріңіз.', en: 'Could not convert video to exact 59.94 FPS. Check your connection and try again.' },
