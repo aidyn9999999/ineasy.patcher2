@@ -569,8 +569,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     }
     if (isHdrEncode) {
       const outputProfile = inspectSourceColorProfile(outputBytes, verified);
-      if (!outputProfile.hdr || !outputProfile.tenBit) {
-        throw new Error('hdr_output_verification_failed: ' + JSON.stringify(outputProfile));
+      const expectedTransfer = hdrType === 'hlg' ? /HLG/i : /PQ|HDR10/i;
+      if (!outputProfile.hdr || !outputProfile.tenBit || !expectedTransfer.test(outputProfile.displayColor)) {
+        throw new Error('hdr_output_verification_failed: expected=' + hdrType + '; actual=' + JSON.stringify(outputProfile));
       }
     }
     if (used1080pFallback) {
