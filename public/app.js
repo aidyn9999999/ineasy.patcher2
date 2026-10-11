@@ -2494,7 +2494,7 @@ if (processBtn) {
         // converting it through an SDR encoder; HDR support is intentionally paused.
         console.warn('[INEASY] Hardware 4K CFR failed; trying full-resolution CFR fallback:', primaryMessage);
         setProcessingState('processing', t('uhdWait'));
-        const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-27');
+        const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-28');
         fpsConversion = await fallbackEncoder.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile,
           selectedVideoDimensions,
