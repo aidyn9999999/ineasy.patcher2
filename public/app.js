@@ -202,6 +202,7 @@ const translations = {
     noCreditsText: 'Add credits to process another video.',
     buyOnSite: 'Buy on the site',
     buyInTelegram: 'Buy in Telegram',
+    inviteOnSite: 'Invite a friend',
     balanceUpdateFailed: 'The video was patched, but the balance could not be updated. Contact support before processing again.',
     successText: 'Done. Video and audio stayed on your device; only MP4 metadata was sent.',
     checkResult: 'Result',
@@ -386,6 +387,7 @@ const translations = {
     noCreditsText: 'Пополните баланс, чтобы снова обрабатывать видео.',
     buyOnSite: 'Купить на сайте',
     buyInTelegram: 'Купить в Telegram',
+    inviteOnSite: '👥 Пригласить друга',
     balanceUpdateFailed: 'Видео обработано, но баланс не удалось обновить. Перед повторной обработкой обратитесь в поддержку.',
     successText: 'Готово. Видео и аудио не отправлялись; сервис получил только метаданные MP4.',
     checkResult: 'Результат проверки',
@@ -570,6 +572,7 @@ const translations = {
     noCreditsText: 'Келесі видеоны өңдеу үшін балансты толтырыңыз.',
     buyOnSite: 'Сайттан сатып алу',
     buyInTelegram: 'Telegram-нан сатып алу',
+    inviteOnSite: '👥 Дос шақыру',
     balanceUpdateFailed: 'Бейне өңделді, бірақ баланс жаңартылмады. Қайталап өңдемей, қолдау қызметіне хабарласыңыз.',
     successText: 'Дайын. Бейне мен аудио жіберілмеді; сервис тек MP4 метадеректерін алды.',
     checkResult: 'Нәтиже',
@@ -696,6 +699,7 @@ function applyLanguage(lang) {
   setText('noCreditsText', pack.noCreditsText);
   setText('buyOnSiteBtn', pack.buyOnSite);
   setText('buyInTelegram', pack.buyInTelegram);
+  setText('inviteOnSiteBtn', pack.inviteOnSite);
   setText('localNote', pack.localNote);
   setText('exportNote', pack.exportNote);
   setText('fpsPolicyNote', pack.fpsPolicyNote || pack.exportNote);
@@ -849,6 +853,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
 // --- Balance ---
 const balanceLabel = document.getElementById('balanceLabel');
 let currentBalance = null;
+let currentFreeNextAt = null;
 let balanceRequestVersion = 0;
 let checkingFileDimensions = false;
 
@@ -864,8 +869,42 @@ function balanceTotal(data) {
 
 function renderBalance() {
   if (balanceLabel && currentBalance !== null) balanceLabel.textContent = `${currentBalance} ${t('videos')}`;
+  updateFreeBalanceNextAt();
   updateDropzoneAvailability();
   updateProcessButton();
+}
+
+function updateFreeBalanceNextAt() {
+  const label = document.getElementById('freeBalanceNextAt');
+  const inviteLink = document.getElementById('inviteOnSiteBtn');
+  if (label) {
+    if (currentBalance !== 0 || !currentFreeNextAt) {
+      label.hidden = true;
+      label.textContent = '';
+    } else {
+      const locale = STATE.lang === 'ru' ? 'ru-RU' : STATE.lang === 'kk' ? 'kk-KZ' : 'en-GB';
+      const formatted = new Intl.DateTimeFormat(locale, {
+        timeZone: 'Asia/Almaty',
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(new Date(Number(currentFreeNextAt)));
+      label.hidden = false;
+      label.textContent = STATE.lang === 'ru'
+        ? `Следующий бесплатный баланс: ${formatted} (время Астаны). Пополнение — ровно через 7 дней после исчерпания бесплатных видео.`
+        : STATE.lang === 'kk'
+          ? `Келесі тегін баланс: ${formatted} (Астана уақыты). Тегін видео таусылғаннан кейін дәл 7 күн өткенде толтырылады.`
+          : `Next free balance: ${formatted} (Astana time). It refills exactly 7 days after your free videos run out.`;
+    }
+  }
+  if (inviteLink && tgId && /^\\d+$/.test(String(tgId))) {
+    const referralUrl = `https://t.me/${BOT_USERNAME}?start=ref_${encodeURIComponent(tgId)}`;
+    const shareText = STATE.lang === 'ru'
+      ? 'Приглашаю в INEASY Patcher. Открой ссылку и нажми Start в боте, чтобы приглашение засчиталось.'
+      : STATE.lang === 'kk'
+        ? 'INEASY Patcher-ге шақырамын. Шақыру есептелуі үшін сілтемені ашып, ботта Start бас.'
+        : 'Try INEASY Patcher. Open the link and press Start in the bot for the invite to count.';
+    inviteLink.href = `https://t.me/share/url?url=${encodeURIComponent(referralUrl)}&text=${encodeURIComponent(shareText)}`;
+  }
 }
 
 function updateDropzoneAvailability() {
@@ -917,6 +956,7 @@ async function loadBalance() {
     const data = await res.json();
     if (requestVersion !== balanceRequestVersion) return;
     currentBalance = balanceTotal(data);
+    currentFreeNextAt = data.freeNextAt || null;
     renderBalance();
   } catch (e) {
     if (requestVersion !== balanceRequestVersion) return;
@@ -946,6 +986,7 @@ async function refreshBalanceForProcessing() {
   const data = await response.json();
   if (requestVersion !== balanceRequestVersion) return false;
   currentBalance = balanceTotal(data);
+  currentFreeNextAt = data.freeNextAt || null;
   renderBalance();
   return currentBalance > 0;
 }
@@ -963,6 +1004,7 @@ async function consumeProcessedVideo() {
     if (data.error === 'no_balance') {
       if (requestVersion === balanceRequestVersion) {
         currentBalance = 0;
+        currentFreeNextAt = data.freeNextAt || currentFreeNextAt;
         renderBalance();
       }
       throw new Error(t('noBalance'));
@@ -972,6 +1014,7 @@ async function consumeProcessedVideo() {
   }
   if (requestVersion === balanceRequestVersion) {
     currentBalance = data.free + data.purchased;
+    currentFreeNextAt = data.freeNextAt || null;
     renderBalance();
   }
   return data;
