@@ -122,9 +122,11 @@
           <svg class="balance-lock-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 14v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           <p class="dz-title" id="noCreditsTitle">Лимиты закончились</p>
           <p class="dz-sub" id="noCreditsText">Пополните баланс, чтобы снова обрабатывать видео.</p>
+          <p class="dz-sub" id="freeBalanceNextAt" hidden></p>
           <div class="balance-lock-actions">
             <button class="balance-buy-site" id="buyOnSiteBtn" type="button">Купить на сайте</button>
             <a class="balance-buy-telegram" id="buyInTelegram" href="https://t.me/ineasybot" target="_blank" rel="noopener">Купить в Telegram</a>
+            <a class="balance-buy-telegram" id="inviteOnSiteBtn" href="https://t.me/ineasybot" target="_blank" rel="noopener">👥 Пригласить друга</a>
           </div>
         </div>
       </div>
@@ -353,7 +355,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261011-21"></script>
-<script src="app.js?v=20261012-7"></script>
+<script src="app.js?v=20261012-8"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
