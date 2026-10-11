@@ -9,7 +9,6 @@
 // importScripts is synchronous and available in dedicated workers.
 importScripts('adjn-mp4-core.js?v=20261010-16', 'adjn-processor.js?v=20261011-21', 'v2-beta-processor.js?v=20261011-4');
 
-const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
 
 self.onmessage = async function (event) {
   const data = event.data;
@@ -23,9 +22,6 @@ self.onmessage = async function (event) {
   const rateControlReport = data.preparationReport || { performed: false, compressionDisabled: true };
 
   try {
-    if (Number(fileSize || buffer?.byteLength || 0) > MAX_VIDEO_FILE_SIZE) {
-      throw new Error('video_file_over_limit');
-    }
     self.postMessage({ type: 'STAGE', requestId, phase: 'analyzing', progress: 3 });
 
     if (engine === 'rein-beta') {
