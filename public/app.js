@@ -1757,7 +1757,7 @@ async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
 }
 
 
-async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress, sourceDurationSeconds) {
+async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress, sourceDurationSeconds, is4kSource = false) {
   const TARGET_FPS = 60000 / 1001;
   signal.throwIfAborted();
   if (!inputBlob || !inputBlob.size) throw new Error('video_file_over_limit');
@@ -1819,7 +1819,10 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
         // "high" quality preset, which can nearly double file size at 59.94 fps.
         bitrate: Math.max(
           150000,
-          Math.floor((inputBlob.size * 8 / Math.max(1, Number(sourceDurationSeconds) || 1)) - 192000)
+          Math.floor(
+            ((inputBlob.size * 8 / Math.max(1, Number(sourceDurationSeconds) || 1)) - 192000) *
+            (is4kSource ? 0.97 : 1)
+          )
         ),
         hardwareAcceleration: 'prefer-hardware',
         forceTranscode: true
@@ -2110,8 +2113,13 @@ async function handleFile(file) {
   }
   selectedVideoDimensions = dimensions;
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
-  // Do not preload FFmpeg/WASM when a file is selected: initializing its large
-  // runtime here can exhaust browser memory and crash the page before processing.
+  // For 4K only, fetch the fallback assets quietly in the background. Do not
+  // initialize the WASM encoder here; that can exhaust browser memory on selection.
+  if (selectedLongSide >= 3000) {
+    import('./ffmpeg-4k-cfr.js?v=20261011-29')
+      .then((fallbackEncoder) => fallbackEncoder.prepareFFmpeg4kFallback?.())
+      .catch((error) => console.warn('[INEASY] 4K fallback warm-up deferred:', error?.message || error));
+  }
   // Load the fallback only if browser hardware encoding actually fails.
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
   patchedDownloadUrl = null;
@@ -2471,7 +2479,7 @@ if (processBtn) {
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
       };
       const runPrimaryCfr = () => convertVideoToExact5994Fps(
-        sourceFile, sourceFile.name, controller.signal, reportCfrProgress, sourceDuration
+        sourceFile, sourceFile.name, controller.signal, reportCfrProgress, sourceDuration, is4kSource
       );
 
 
@@ -2494,7 +2502,7 @@ if (processBtn) {
         // converting it through an SDR encoder; HDR support is intentionally paused.
         console.warn('[INEASY] Hardware 4K CFR failed; trying full-resolution CFR fallback:', primaryMessage);
         setProcessingState('processing', t('uhdWait'));
-        const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-28');
+        const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-29');
         fpsConversion = await fallbackEncoder.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile,
           selectedVideoDimensions,
