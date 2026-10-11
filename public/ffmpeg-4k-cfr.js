@@ -133,7 +133,7 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
 
   if (isHevc) {
     for (const box of findValidBoxTypes(bytes, moovStart, moovEnd, 'hvcC')) {
-      if (box.end - box.payloadStart < 13 || bytes[box.payloadStart] !== 1) continue;
+      if (box.end - box.payloadStart < 23 || bytes[box.payloadStart] !== 1) continue;
       const profileIdc = bytes[box.payloadStart + 1] & 0x1f;
       if (profileIdc === 2) {
         result.tenBit = true; // HEVC Main 10 profile, whether HDR or SDR.
@@ -141,7 +141,8 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
       }
     }
     for (const tag of ['dvcC', 'dvvC']) {
-      if (findValidBoxTypes(bytes, moovStart, moovEnd, tag).length) {
+      const configs = findValidBoxTypes(bytes, moovStart, moovEnd, tag);
+      if (configs.some((box) => box.end - box.payloadStart >= 2 && bytes[box.payloadStart] === 1)) {
         result.hdr = true;
         result.reason = 'Dolby Vision configuration box ' + tag;
         return result;
