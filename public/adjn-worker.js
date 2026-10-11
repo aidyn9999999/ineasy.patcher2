@@ -24,29 +24,74 @@ self.onmessage = async function (event) {
   try {
     self.postMessage({ type: 'STAGE', requestId, phase: 'analyzing', progress: 3 });
 
-    if (engine === 'rein-beta') {
-      if (!globalThis.V2BetaVideoProcessor?.processVideoDirect) {
-        throw new Error('V2_BETA_ENGINE_NOT_LOADED');
-      }
-    } else if (!globalThis.ADJNVideoProcessor?.processVideoDirect) {
-      throw new Error('ADJN engine not loaded in worker.');
-    }
+    const prep = data.preparationReport || {};
+    const hdrCfrOutput = Boolean(prep.hdrCfrRequired || prep.hdrSourcePreserved);
+    let result;
 
-    self.postMessage({ type: 'STAGE', requestId, phase: 'patching', progress: 10 });
-    const processor = engine === 'rein-beta'
-      ? globalThis.V2BetaVideoProcessor
-      : globalThis.ADJNVideoProcessor;
-    const result = await processor.processVideoDirect(
-      {
-        requestId,
-        buffer: inputBuffer,
-        fileName: outputName,
-        fileType: outputType,
-        fileSize: inputBuffer.byteLength,
-        engine,
-      },
-      (label, progress, detail, key) => self.postMessage({ type: 'STAGE', requestId, phase: 'patching', label, progress, detail, key })
-    );
+    if (hdrCfrOutput) {
+      // HDR has already been safely handled by the local 10-bit CFR encoder (or
+      // was already 59.94 FPS). Do not run the generic patcher on it: even a
+      // metadata-only pass can rewrite color/HDR signalling. Return the exact
+      // prepared bytes and verify them in the main thread instead.
+      self.postMessage({ type: 'STAGE', requestId, phase: 'hdr-safe-passthrough', progress: 95 });
+      let info = null;
+      try {
+        const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+        if (core?.inspectMediaInfo) info = core.inspectMediaInfo(inputBuffer);
+      } catch (_) {}
+      const profile = prep.hdrProfile || {};
+      result = {
+        output: inputBuffer,
+        outputMime: 'video/mp4',
+        info,
+        outputInfo: info,
+        hdr: {
+          ...profile,
+          label: profile.label || 'HDR / 10-bit',
+          hdr10: Boolean(profile.hdr10),
+          hdr10plus: Boolean(profile.hdr10plus),
+          hlg: Boolean(profile.hlg),
+          dolbyVision: Boolean(profile.dolbyVision),
+          main10: Boolean(profile.main10)
+        },
+        outputHdr: {
+          ...profile,
+          label: profile.label || 'HDR / 10-bit',
+          hdr10: Boolean(profile.hdr10),
+          hdr10plus: Boolean(profile.hdr10plus),
+          hlg: Boolean(profile.hlg),
+          dolbyVision: Boolean(profile.dolbyVision),
+          main10: Boolean(profile.main10)
+        },
+        passthrough: true,
+        mode: 'hdr-safe-cfr-passthrough',
+        report: { hdrSafePassthrough: true }
+      };
+    } else {
+      if (engine === 'rein-beta') {
+        if (!globalThis.V2BetaVideoProcessor?.processVideoDirect) {
+          throw new Error('V2_BETA_ENGINE_NOT_LOADED');
+        }
+      } else if (!globalThis.ADJNVideoProcessor?.processVideoDirect) {
+        throw new Error('ADJN engine not loaded in worker.');
+      }
+
+      self.postMessage({ type: 'STAGE', requestId, phase: 'patching', progress: 10 });
+      const processor = engine === 'rein-beta'
+        ? globalThis.V2BetaVideoProcessor
+        : globalThis.ADJNVideoProcessor;
+      result = await processor.processVideoDirect(
+        {
+          requestId,
+          buffer: inputBuffer,
+          fileName: outputName,
+          fileType: outputType,
+          fileSize: inputBuffer.byteLength,
+          engine,
+        },
+        (label, progress, detail, key) => self.postMessage({ type: 'STAGE', requestId, phase: 'patching', label, progress, detail, key })
+      );
+    }
 
     // Transfer the output buffer to avoid copying large ArrayBuffer
     let output = result.output;
