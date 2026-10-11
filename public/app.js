@@ -74,6 +74,9 @@ const translations = {
     localNote: 'Optimize your video up to 4K at 120 FPS.',
     exportNote: 'Recommended: MP4 H.264, 1080p, constant 59.94 or 60 FPS. A 30 FPS source is rejected when detected. FPS conversion can require re-encoding and may reduce quality.',
     fpsPolicyNote: 'TikTok controls its own processing. A 59.94 FPS export is a compatibility choice, not a way to bypass TikTok processing.',
+    patcherNoteV1: 'V1 is the standard mode. If a post becomes 30 FPS, check the source export settings and upload options; this is not a guaranteed fix.',
+    patcherNoteV2: 'V2 Beta uses a standard MP4 remux when compatible. It does not re-encode video, and TikTok may still process the upload.',
+    fpsAdvice: 'For consistent motion, export the finished edit as MP4 H.264 at a constant 59.94 or 60 FPS. TikTok controls the final playback and may reprocess it.',
     fps30Rejected: 'This video is 30 FPS. It is not accepted. Export the original edit at a constant 59.94 or 60 FPS, then select it again. Converting 30 to 59.94 FPS does not create real new motion, and TikTok may still reprocess uploads.',
     fpsInspectUnavailable: 'Frame rate could not be verified automatically. For best motion consistency, export as MP4 H.264 at a constant 59.94 or 60 FPS. TikTok may still reprocess uploads.',
     choosePostingDevice: 'Choose your device before processing.',
@@ -254,6 +257,9 @@ const translations = {
     localNote: 'Оптимизируйте видео до 4K и 120 FPS.',
     exportNote: 'Рекомендуется: MP4 H.264, 1080p, постоянные 59,94 или 60 FPS. Исходное видео 30 FPS будет отклонено, если частота определена. Конвертация FPS может потребовать повторного кодирования и снизить качество.',
     fpsPolicyNote: 'Обработку публикации контролирует TikTok. Экспорт в 59,94 FPS — это выбор совместимых настроек, а не способ обойти обработку TikTok.',
+    patcherNoteV1: 'V1 — стандартный режим. Если после публикации видео стало 30 FPS, проверьте настройки исходного экспорта и загрузки; это не гарантированное решение.',
+    patcherNoteV2: 'V2 Beta выполняет стандартную перепаковку MP4, если формат совместим. Видео не перекодируется, но TikTok всё равно может обработать загрузку.',
+    fpsAdvice: 'Для стабильного движения экспортируйте готовый монтаж в MP4 H.264 с постоянными 59,94 или 60 FPS. Итоговое воспроизведение контролирует TikTok, и платформа может повторно обработать видео.',
     fps30Rejected: 'В этом видео 30 FPS. Оно не принимается. Экспортируйте исходный монтаж с постоянными 59,94 или 60 FPS и выберите файл снова. Перевод 30 в 59,94 FPS не создаёт настоящие новые движения, а TikTok всё равно может повторно обработать ролик.',
     fpsInspectUnavailable: 'Не удалось автоматически проверить частоту кадров. Для стабильного движения экспортируйте MP4 H.264 с постоянными 59,94 или 60 FPS. TikTok всё равно может повторно обработать ролик.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
@@ -434,6 +440,9 @@ const translations = {
     localNote: 'Бейнені 4K және 120 FPS-ке дейін оңтайландырыңыз.',
     exportNote: 'Ұсыныс: MP4 H.264, 1080p, тұрақты 59,94 немесе 60 FPS. Анықталған 30 FPS бейне қабылданбайды. FPS түрлендіру қайта кодтауды қажет етіп, сапаны төмендетуі мүмкін.',
     fpsPolicyNote: 'Жарияланған бейнені TikTok өзі өңдейді. 59,94 FPS экспорты — үйлесімділік параметрі, TikTok өңдеуін айналып өту тәсілі емес.',
+    patcherNoteV1: 'V1 — стандартты режим. Жарияланған бейне 30 FPS болып кетсе, бастапқы экспорт пен жүктеу параметрлерін тексеріңіз; бұл кепілді шешім емес.',
+    patcherNoteV2: 'V2 Beta үйлесімді болса, MP4 файлын стандартты түрде қайта орайды. Бейне қайта кодталмайды, бірақ TikTok жүктелген бейнені бәрібір өңдеуі мүмкін.',
+    fpsAdvice: 'Қозғалыс бірқалыпты болуы үшін дайын монтажды тұрақты 59,94 немесе 60 FPS-пен MP4 H.264 форматында экспорттаңыз. Соңғы ойнатуды TikTok басқарады және бейнені қайта өңдеуі мүмкін.',
     fps30Rejected: 'Бұл бейне 30 FPS. Ол қабылданбайды. Бастапқы монтажды тұрақты 59,94 немесе 60 FPS форматында экспорттап, файлды қайта таңдаңыз. 30 FPS-ті 59,94 FPS-ке ауыстыру шынайы жаңа қозғалыс кадрларын жасамайды, ал TikTok бейнені бәрібір қайта өңдеуі мүмкін.',
     fpsInspectUnavailable: 'Кадр жиілігін автоматты түрде тексеру мүмкін болмады. Қозғалыстың тұрақтылығы үшін MP4 H.264 файлын тұрақты 59,94 немесе 60 FPS-пен экспорттаңыз. TikTok бейнені бәрібір қайта өңдеуі мүмкін.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
@@ -687,6 +696,9 @@ function applyLanguage(lang) {
   setText('localNote', pack.localNote);
   setText('exportNote', pack.exportNote);
   setText('fpsPolicyNote', pack.fpsPolicyNote || pack.exportNote);
+  const selectedPatcherMode = document.querySelector('input[name="patcherVersion"]:checked')?.value || 'v1';
+  setText('patcherVersionNote', selectedPatcherMode === 'v2' ? pack.patcherNoteV2 : pack.patcherNoteV1);
+  setText('fpsAdvice', pack.fpsAdvice);
   setText('communityTitle', pack.communityTitle);
   setText('communityBody', pack.communityBody);
   setText('processBtn', pack.process);
@@ -1043,12 +1055,11 @@ const clearBtn = document.getElementById('clearBtn');
   const update = () => {
     const selected = document.querySelector('input[name="patcherVersion"]:checked')?.value || 'v1';
     if (note) {
-      note.textContent = selected === 'v2'
-        ? 'V2 Beta: используйте, если в V1 видео лагает или обработка не работает.'
-        : 'V1 — обычный режим. Если после публикации видео стало 30 FPS, попробуйте FFmpeg: экспорт H.264/AAC с исходной частотой кадров может помочь.';
+      const pack = translations[STATE.lang] || translations.en;
+      note.textContent = selected === 'v2' ? pack.patcherNoteV2 : pack.patcherNoteV1;
       note.classList.toggle('v1-highlight', selected === 'v1');
     }
-    if (fpsAdvice) fpsAdvice.classList.toggle('hidden', selected !== 'v1' || Boolean(picker?.classList.contains('hidden')));
+    if (fpsAdvice) { fpsAdvice.textContent = (translations[STATE.lang] || translations.en).fpsAdvice; fpsAdvice.classList.toggle('hidden', selected !== 'v1' || Boolean(picker?.classList.contains('hidden'))); }
     if (picker) picker.classList.toggle('has-v1-selected', selected === 'v1');
   };
   inputs.forEach((input) => input.addEventListener('change', update));
