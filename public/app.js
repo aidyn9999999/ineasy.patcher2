@@ -1596,20 +1596,24 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
   signal.addEventListener('abort', onAbort, { once: true });
   let coreBlobUrl = null;
   let wasmBlobUrl = null;
+  let workerBlobUrl = null;
   const inputPath = 'ineasy-input.' + ((String(inputName || '').match(/\.([a-z0-9]+)$/i)?.[1] || 'mp4').toLowerCase());
   const outputPath = 'ineasy-cfr-5994.mp4';
   try {
     const coreBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
-    const [coreResponse, wasmResponse] = await Promise.all([
+    const ffmpegBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd';
+    const [workerResponse, coreResponse, wasmResponse] = await Promise.all([
+      fetch(ffmpegBase + '/814.ffmpeg.js', { signal }),
       fetch(coreBase + '/ffmpeg-core.js', { signal }),
       fetch(coreBase + '/ffmpeg-core.wasm', { signal })
     ]);
-    if (!coreResponse.ok || !wasmResponse.ok) throw new Error('fps_encoder_download_failed');
-    const [coreCode, wasmBytes] = await Promise.all([coreResponse.blob(), wasmResponse.blob()]);
+    if (!workerResponse.ok || !coreResponse.ok || !wasmResponse.ok) throw new Error('fps_encoder_download_failed');
+    const [workerCode, coreCode, wasmBytes] = await Promise.all([workerResponse.blob(), coreResponse.blob(), wasmResponse.blob()]);
     signal.throwIfAborted();
+    workerBlobUrl = URL.createObjectURL(workerCode);
     coreBlobUrl = URL.createObjectURL(coreCode);
     wasmBlobUrl = URL.createObjectURL(wasmBytes);
-    await ffmpeg.load({ coreURL: coreBlobUrl, wasmURL: wasmBlobUrl });
+    await ffmpeg.load({ classWorkerURL: workerBlobUrl, coreURL: coreBlobUrl, wasmURL: wasmBlobUrl });
     signal.throwIfAborted();
     ffmpeg.on('progress', ({ progress }) => {
       if (!signal.aborted) onProgress?.(Math.max(0, Math.min(1, Number(progress) || 0)));
@@ -1655,6 +1659,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
   } finally {
     signal.removeEventListener('abort', onAbort);
     try { ffmpeg.terminate(); } catch (_) {}
+    if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl);
     if (coreBlobUrl) URL.revokeObjectURL(coreBlobUrl);
     if (wasmBlobUrl) URL.revokeObjectURL(wasmBlobUrl);
   }
