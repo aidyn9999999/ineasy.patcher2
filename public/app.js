@@ -2612,9 +2612,26 @@ if (processBtn) {
       verifiedOutputInfo = verifiedOutputInfo || result.outputInfo || result.info || null;
       const verifiedOutputFps = Number(verifiedOutputInfo?.averageFps);
       const hdrSourcePreserved = Boolean(preparedInput.report?.hdrSourcePreserved);
-      if (!hdrSourcePreserved &&
+      // For 4K, exact CFR is mandatory even after ADJN. Never publish a 30 FPS output.
+      if ((!hdrSourcePreserved || is4kSource) &&
           (!Number.isFinite(verifiedOutputFps) || Math.abs(verifiedOutputFps - (60000 / 1001)) > 0.03)) {
         throw new Error('fps_output_verification_failed');
+      }
+      if (is4kSource) {
+        const expectedWidth = Number(fpsConversion.info?.width || selectedVideoDimensions?.width);
+        const expectedHeight = Number(fpsConversion.info?.height || selectedVideoDimensions?.height);
+        const finalWidth = Number(verifiedOutputInfo?.width);
+        const finalHeight = Number(verifiedOutputInfo?.height);
+        if (!expectedWidth || !expectedHeight || finalWidth !== expectedWidth || finalHeight !== expectedHeight) {
+          throw new Error('resolution_output_verification_failed');
+        }
+        console.info('[INEASY] Final 4K output verified after ADJN', {
+          resolution: finalWidth + 'x' + finalHeight,
+          outputFps: verifiedOutputFps,
+          expectedFps: '60000/1001',
+          adjnMode: result.mode,
+          adjnPassthrough: Boolean(result.passthrough)
+        });
       }
       if (hdrSourcePreserved || preparedInput.report?.hdrCfrRequired) {
         const outputHdrProfile = result.outputHdr || result.hdr || null;
@@ -2730,6 +2747,7 @@ function localizePatchError(message) {
     return `${text}: ${fpsRetimingFailure[1]}`;
   }
   const knownErrors = [
+    { test: /video_resolution_changed_during_cfr|resolution_output_verification_failed/i, ru: 'После конвертации 4K-разрешение изменилось. Файл не выдан.', kk: '4K түрлендіруден кейін ажыратымдылық өзгерді. Файл шығарылған жоқ.', en: 'The 4K resolution changed during processing. No file was produced.' },
     { test: /ffmpeg_4k_hdr_unsafe/i, ru: 'Для этого 4K-видео обнаружены признаки HDR/10-bit. Запасной FFmpeg-путь не запускался, чтобы не испортить цвета. Нужен отдельный HDR-совместимый кодировщик.', kk: 'Бұл 4K бейнеде HDR/10-bit белгілері табылды. Түстерді бұзбау үшін қосалқы FFmpeg жолы іске қосылмады. HDR қолдайтын бөлек кодтау керек.', en: 'This 4K source appears to use HDR/10-bit. The SDR FFmpeg fallback was stopped to avoid damaging colour; an HDR-capable encoder is required.' },
     { test: /ffmpeg_4k_source_format_unsupported/i, ru: 'Запасной 4K-режим пока поддерживает MP4/MOV с AVC/HEVC SDR. Исходный файл не был выдан в ухудшенном качестве.', kk: 'Қосалқы 4K режимі әзірге SDR AVC/HEVC бар MP4/MOV файлдарын қолдайды. Бейне сапасы нашарлатылып шығарылған жоқ.', en: 'The 4K fallback currently supports SDR AVC/HEVC in MP4/MOV. No downgraded file was produced.' },
     { test: /ffmpeg_4k_asset_download_failed|ffmpeg_4k_fallback_failed|ffmpeg_4k_exec_failed/i, ru: 'Запасной FFmpeg-кодировщик 4K не смог завершить обработку. Проверьте соединение и попробуйте более короткий SDR-файл.', kk: 'Қосалқы FFmpeg 4K кодтауы аяқталмады. Интернетті тексеріп, қысқарақ SDR файлмен қайталап көріңіз.', en: 'The FFmpeg 4K fallback could not finish. Check the connection and try a shorter SDR source.' },
