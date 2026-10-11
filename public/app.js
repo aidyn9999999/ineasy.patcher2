@@ -1555,18 +1555,10 @@ async function readVideoDimensionsForSelection(file) {
   }
 }
 
-let ineasyMediabunnyCfrPromise = null;
+const ineasyMediabunnyCfrPromises = new Map();
 
-async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
-  if (!ineasyMediabunnyCfrPromise) {
-    ineasyMediabunnyCfrPromise = import('https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm')
-      .catch((error) => {
-        ineasyMediabunnyCfrPromise = null;
-        throw error;
-      });
-  }
-
-  return await new Promise((resolve, reject) => {
+function waitForMediabunnyModule(promise, signal, timeoutMs) {
+  return new Promise((resolve, reject) => {
     let settled = false;
     const finish = (callback, value) => {
       if (settled) return;
@@ -1577,19 +1569,62 @@ async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
     };
     const onAbort = () => finish(reject, new Error('processing_cancelled'));
     const timeoutId = setTimeout(
-      () => finish(reject, new Error('mediabunny_load_timeout')),
-      timeoutMs
+      () => finish(reject, new Error('mediabunny_cdn_timeout')),
+      Math.max(1, timeoutMs)
     );
     signal.addEventListener('abort', onAbort, { once: true });
     if (signal.aborted) {
       onAbort();
       return;
     }
-    ineasyMediabunnyCfrPromise.then(
+    promise.then(
       (module) => finish(resolve, module),
       (error) => finish(reject, error)
     );
   });
+}
+
+async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
+  const urls = [
+    'https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm',
+    'https://esm.sh/mediabunny@1.61.3?bundle'
+  ];
+  const deadline = Date.now() + Math.max(1, timeoutMs);
+  let lastError = null;
+
+  for (let index = 0; index < urls.length; index++) {
+    signal.throwIfAborted();
+    const remainingMs = deadline - Date.now();
+    if (remainingMs <= 0) break;
+    const url = urls[index];
+    if (!ineasyMediabunnyCfrPromises.has(url)) {
+      const promise = import(url).catch((error) => {
+        ineasyMediabunnyCfrPromises.delete(url);
+        throw error;
+      });
+      ineasyMediabunnyCfrPromises.set(url, promise);
+    }
+
+    const attemptBudget = index === 0 && urls.length > 1
+      ? Math.min(remainingMs, Math.ceil(timeoutMs * 0.55))
+      : remainingMs;
+    try {
+      return await waitForMediabunnyModule(
+        ineasyMediabunnyCfrPromises.get(url),
+        signal,
+        attemptBudget
+      );
+    } catch (error) {
+      if (signal.aborted || /processing_cancelled/i.test(String(error?.message || ''))) throw error;
+      lastError = error;
+      console.warn('[INEASY] Lightweight media module source failed:', url, error);
+    }
+  }
+
+  if (/mediabunny_cdn_timeout/i.test(String(lastError?.message || '')) || Date.now() >= deadline) {
+    throw new Error('mediabunny_load_timeout');
+  }
+  throw new Error('mediabunny_module_load_failed: ' + String(lastError?.message || 'unknown_error'));
 }
 
 async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress) {
