@@ -393,3 +393,207 @@
   #patchSection .dropzone .dz-title { font-size: 16px; }
   #patchSection .dropzone .dz-sub { font-size: 10px; }
 }
+
+/* 2026 UI polish — retain the existing graphite/silver palette. */
+#patchSection .patch-panel {
+  border-radius: 24px;
+  border-color: rgba(177, 191, 210, .24);
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(180, 195, 215, .085), transparent 48%),
+    linear-gradient(150deg, rgba(17, 23, 31, .985), rgba(7, 10, 15, .99));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .30), inset 0 1px 0 rgba(255,255,255,.045);
+}
+#patchTitle { text-wrap: balance; }
+#patchSub { max-width: 760px; font-size: 14px; }
+#patchSection .dropzone {
+  min-height: 300px;
+  border-style: dashed;
+  border-width: 1.5px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 12px 32px rgba(0,0,0,.12);
+  transition: border-color .22s ease, background .22s ease, box-shadow .22s ease, transform .22s ease;
+}
+#patchSection .dropzone:hover { transform: translateY(-2px); }
+#patchSection .preview-wrap {
+  margin-top: 18px;
+  overflow: hidden;
+  border-radius: 20px;
+  border-color: rgba(177, 191, 210, .22);
+  background: linear-gradient(145deg, rgba(18,23,31,.98), rgba(7,10,15,.99));
+  box-shadow: 0 18px 45px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.035);
+}
+#patchSection #previewVideo {
+  display: block;
+  width: 100%;
+  max-height: min(68vh, 760px);
+  object-fit: contain;
+  background: #030508;
+  transform-origin: center bottom;
+}
+#patchSection .file-row {
+  padding: 14px 16px;
+  border-top: 1px solid rgba(177,191,210,.12);
+}
+.patcher-version-picker { gap: 12px; margin: 18px 0 10px; }
+.patcher-version-option span {
+  min-height: 94px;
+  justify-content: center;
+  padding: 15px 16px;
+  border-radius: 16px;
+  border-color: rgba(177,191,210,.22);
+  background: linear-gradient(145deg, rgba(25,31,40,.82), rgba(10,14,20,.9));
+}
+.patcher-version-option input:checked + span {
+  border-color: rgba(210,222,238,.72);
+  background: linear-gradient(145deg, rgba(148,163,184,.13), rgba(21,27,36,.92));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 8px 24px rgba(0,0,0,.16);
+}
+.patcher-version-option small { line-height: 1.5; }
+.patcher-version-note {
+  margin: 10px 0 16px;
+  padding: 12px 15px;
+  border-radius: 14px;
+  line-height: 1.6;
+  border: 1px solid rgba(177,191,210,.2);
+  background: rgba(144,158,179,.07);
+  color: #c4ccd8;
+}
+.patcher-version-note.v1-highlight {
+  color: #dce3ec;
+  border-color: rgba(177,191,210,.36);
+  background: rgba(144,158,179,.10);
+  box-shadow: none;
+}
+#patchSection .process-btn {
+  min-height: 54px;
+  border-radius: 15px;
+  letter-spacing: .01em;
+  box-shadow: 0 10px 28px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.12);
+}
+#patchSection .processing-state {
+  margin-top: 18px;
+  padding: 17px;
+  border-radius: 16px;
+  border-color: rgba(177,191,210,.2);
+  background: rgba(9,13,19,.86);
+}
+#patchSection .progress-track { overflow: hidden; border-radius: 999px; }
+#patchSection .progress-track > i {
+  border-radius: inherit;
+  will-change: width;
+  transition: width 80ms linear;
+}
+#patchSection .processed-result {
+  margin-top: 20px;
+  padding: 19px;
+  gap: 13px;
+  align-items: center;
+  border-radius: 20px;
+  border: 1px solid rgba(177,191,210,.26);
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(179,195,215,.09), transparent 48%),
+    linear-gradient(145deg, rgba(18,24,32,.99), rgba(8,11,16,.99));
+  box-shadow: 0 22px 55px rgba(0,0,0,.23), inset 0 1px 0 rgba(255,255,255,.035);
+}
+.processed-result-copy { flex: 1 1 180px; display: grid; gap: 5px; min-width: 120px; }
+.processed-result-copy strong { color: #f0f3f7; font-size: 17px; font-weight: 850; }
+.processed-result-copy small { color: #a9b4c2; font-size: 12px; letter-spacing: .04em; }
+#patchSection .publication-actions {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 6px;
+}
+#patchSection .publication-actions.hidden { display: none !important; }
+#patchSection .publication-actions .autopost-hint { flex: 1 1 100%; margin: 0; }
+#patchSection .optimize-another-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1 1 100%;
+  min-height: 48px;
+  border: 1px solid rgba(177,191,210,.32);
+  border-radius: 14px;
+  padding: 12px 16px;
+  color: #e0e6ee;
+  background: linear-gradient(145deg, rgba(142,157,178,.12), rgba(27,34,44,.42));
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+#patchSection .optimize-another-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(210,222,238,.62);
+  background: linear-gradient(145deg, rgba(160,175,197,.2), rgba(27,34,44,.6));
+}
+#patchSection .notice-banner {
+  margin-top: 12px;
+  padding: 13px 15px;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+  border-radius: 14px;
+  border-color: rgba(177,191,210,.2);
+  background: rgba(140,153,174,.06);
+}
+#patchSection .notice-banner p {
+  margin: 0;
+  color: #aeb8c6;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.6;
+}
+#patchSection .notice-banner > svg { margin: 1px 0 0; flex: 0 0 20px; color: #aeb8c6; }
+.mobile-3d-stage { display: none; }
+.mobile-3d-stage model-viewer { display: block; width: 88px; height: 96px; background: transparent; --poster-color: transparent; }
+.mobile-3d-copy { display: grid; gap: 5px; align-content: center; color: #9da9b9; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.mobile-3d-copy strong { color: #dce3ec; font-size: 11px; letter-spacing: .14em; }
+.mobile-3d-copy span { color: #778396; font-size: 9px; letter-spacing: .04em; text-transform: none; }
+.mobile-3d-stage.model-fallback model-viewer { display: none; }
+.mobile-3d-stage.model-fallback::before {
+  content: '';
+  width: 70px;
+  height: 70px;
+  flex: 0 0 70px;
+  border: 1px solid rgba(177,191,210,.38);
+  border-radius: 20px;
+  background:
+    linear-gradient(145deg, rgba(218,227,239,.38), rgba(69,82,101,.18)),
+    repeating-linear-gradient(45deg, transparent 0 10px, rgba(218,227,239,.12) 10px 11px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 10px 12px 24px rgba(0,0,0,.18);
+  transform: perspective(600px) rotateX(18deg) rotateY(-24deg);
+}
+@media (max-width: 700px) {
+  #patchSection .patch-panel { padding: 20px 14px 22px; border-radius: 20px; }
+  #patchTitle { font-size: clamp(27px, 7vw, 34px); line-height: 1.08; }
+  #patchSub { max-width: 520px; font-size: 12px; line-height: 1.6; }
+  #patchSection .dropzone { min-height: 235px; padding: 24px 13px; border-radius: 17px; }
+  #patchSection .preview-wrap { perspective: 1100px; border-radius: 18px; }
+  #patchSection #previewVideo {
+    transform: perspective(1100px) rotateX(.7deg);
+    box-shadow: 0 12px 28px rgba(0,0,0,.24);
+  }
+  #patchSection .mobile-3d-stage {
+    display: flex;
+    min-height: 92px;
+    align-items: center;
+    gap: 12px;
+    margin: 0 12px 12px;
+    padding: 7px 12px;
+    overflow: hidden;
+    border: 1px solid rgba(177,191,210,.14);
+    border-radius: 16px;
+    background: linear-gradient(120deg, rgba(159,174,195,.07), rgba(8,12,18,.18));
+  }
+  #patchSection .processed-result { padding: 15px; border-radius: 17px; }
+  #patchSection .publication-actions { display: grid; grid-template-columns: 1fr; gap: 9px; }
+  #patchSection .publication-actions .tiktok-publish-btn { width: 100%; min-height: 48px; }
+  #patchSection .publication-actions .autopost-hint { margin: 0; }
+  #patchSection .optimize-another-btn { min-height: 50px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #patchSection .dropzone, #patchSection .optimize-another-btn { transition: none; }
+  #patchSection .dropzone:hover, #patchSection .optimize-another-btn:hover { transform: none; }
+}
