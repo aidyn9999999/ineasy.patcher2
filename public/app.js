@@ -1940,11 +1940,18 @@ async function handleFile(file) {
   }
 
   // Show the selected file immediately; metadata validation can be slow on Safari for large MOV/MP4 files.
+  // Clear the previous result/publication controls before the new file's metadata check begins.
+  if (processedResult) processedResult.classList.add('hidden');
+  if (processingState) processingState.classList.add('hidden');
+  if (durationNotice) durationNotice.classList.add('hidden');
+  setPublicationActionsVisible(false);
+  if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
+  patchedDownloadUrl = null;
+  processedVideoBlob = null;
+  if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
   currentObjectUrl = URL.createObjectURL(file);
   initializeMobile3dPreview();
-  setPublicationActionsVisible(true);
-  if (durationNotice) durationNotice.classList.add('hidden');
   if (previewVideo) {
     previewVideo.src = currentObjectUrl;
     previewVideo.preload = 'metadata';
