@@ -896,7 +896,7 @@ function updateFreeBalanceNextAt() {
           : `Next free balance: ${formatted} (Astana time). It refills exactly 7 days after your free videos run out.`;
     }
   }
-  if (inviteLink && tgId && /^\\d+$/.test(String(tgId))) {
+  if (inviteLink && tgId && /^\d+$/.test(String(tgId))) {
     const referralUrl = `https://t.me/${BOT_USERNAME}?start=ref_${encodeURIComponent(tgId)}`;
     const shareText = STATE.lang === 'ru'
       ? 'Приглашаю в INEASY Patcher. Открой ссылку и нажми Start в боте, чтобы приглашение засчиталось.'
