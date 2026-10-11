@@ -299,7 +299,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   const isHdrEncode = options?.hdr === true ||
     (options?.hdr === 'auto' && colorProfile.hdr);
   const hdrType = /HLG/i.test(colorProfile.displayColor) ? 'hlg' : 'pq';
-  const targetVideoBitrate = smartVideoBitrate(inputBlob.size, duration, 160000);
+  let targetVideoBitrate = smartVideoBitrate(inputBlob.size, duration, 160000);
   const targetMaxRate = Math.round(targetVideoBitrate * 1.02);
   const targetBufferSize = Math.max(Math.round(targetVideoBitrate * 0.5), 256000);
   if (colorProfile.hdr && !isHdrEncode) {
@@ -596,11 +596,86 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     }
 
     stage = 'read_output';
-    const outputBytes = await ffmpeg.readFile(outputFileName);
+    let outputBytes = await ffmpeg.readFile(outputFileName);
     if (!(outputBytes instanceof Uint8Array) || outputBytes.byteLength < 64) {
       throw new Error('fps_encoder_empty_output');
     }
     if (outputBytes.byteLength > MAX_INPUT_BYTES) throw new Error('video_file_over_limit');
+
+    // Bitrate estimates alone are not a size guarantee (especially for HDR/HEVC).
+    // Measure the real muxed file and adaptively re-encode until it is within +200 KiB.
+    // Keep audio bitrate fixed and adjust only video bitrate; never silently return an
+    // output that violates the user's strict size ceiling.
+    const maxOutputBytes = inputBlob.size + 200 * 1024;
+    const preferredOutputBytes = inputBlob.size + 150 * 1024;
+    const estimatedAudioBytes = Math.max(0, Math.round(Math.max(0.1, Number(duration) || 0.1) * 160000 / 8));
+    let sizeCorrectionAttempts = 0;
+    while (outputBytes.byteLength > maxOutputBytes && sizeCorrectionAttempts < 3) {
+      throwIfAborted(signal);
+      if (aborted) throw new Error('processing_cancelled');
+      sizeCorrectionAttempts += 1;
+      const currentVideoBytes = Math.max(1, outputBytes.byteLength - estimatedAudioBytes);
+      const targetVideoBytes = Math.max(1, preferredOutputBytes - estimatedAudioBytes);
+      const correctionRatio = Math.min(0.95, (targetVideoBytes / currentVideoBytes) * 0.97);
+      const correctedBitrate = Math.max(250000, Math.floor(targetVideoBitrate * correctionRatio));
+      if (correctedBitrate >= targetVideoBitrate) break;
+      targetVideoBitrate = correctedBitrate;
+      const correctedMaxRate = Math.round(targetVideoBitrate * 1.02);
+      const correctedBufferSize = Math.max(Math.round(targetVideoBitrate * 0.5), 256000);
+      rememberLog('Size correction attempt ' + sizeCorrectionAttempts + ': output=' + outputBytes.byteLength +
+        ' targetMax=' + maxOutputBytes + ' videoBitrate=' + targetVideoBitrate);
+      stage = 'encode_size_correction_' + sizeCorrectionAttempts;
+      try { await ffmpeg.deleteFile(outputFileName); } catch (_) {}
+      const correctionFilter = used1080pFallback
+        ? 'scale=1920:1080:force_original_aspect_ratio=decrease:force_divisible_by=2,fps=' + TARGET_FPS
+        : 'fps=' + TARGET_FPS;
+      const correctionArgs = [
+        '-hide_banner', '-y',
+        '-filter_threads', '1',
+        '-i', inputFileName,
+        '-map', '0:v:0',
+        '-map', '0:a?',
+        '-map_metadata', '0',
+        '-vf', correctionFilter,
+        ...(isHdrEncode ? [] : ['-fps_mode', 'cfr']),
+        '-c:v', isHdrEncode ? 'libx265' : 'libx264',
+        '-preset', 'ultrafast',
+        '-b:v', String(targetVideoBitrate),
+        '-maxrate', String(correctedMaxRate),
+        '-bufsize', String(correctedBufferSize),
+        '-threads', '1',
+        '-pix_fmt', isHdrEncode ? 'yuv420p10le' : 'yuv420p',
+        ...(isHdrEncode ? [
+          '-tag:v', 'hvc1',
+          '-color_primaries', 'bt2020',
+          '-color_trc', hdrType === 'hlg' ? 'arib-std-b67' : 'smpte2084',
+          '-colorspace', 'bt2020nc',
+          '-x265-params', hdrType === 'hlg' ? 'repeat-headers=1' : 'hdr10=1:repeat-headers=1'
+        ] : ['-tag:v', 'avc1']),
+        '-c:a', 'aac',
+        '-b:a', '160k',
+        '-movflags', '+faststart',
+        outputFileName
+      ];
+      const correctionCode = await ffmpeg.exec(correctionArgs);
+      throwIfAborted(signal);
+      if (aborted) throw new Error('processing_cancelled');
+      if (correctionCode !== 0) {
+        throw new Error('ffmpeg_size_correction_failed: attempt=' + sizeCorrectionAttempts +
+          '; detail=' + (diagnosticTail() || 'FFmpeg exited with ' + correctionCode));
+      }
+      outputBytes = await ffmpeg.readFile(outputFileName);
+      if (!(outputBytes instanceof Uint8Array) || outputBytes.byteLength < 64) {
+        throw new Error('fps_encoder_empty_output');
+      }
+      if (outputBytes.byteLength > MAX_INPUT_BYTES) throw new Error('video_file_over_limit');
+      onProgress?.(Math.min(0.96, 0.88 + sizeCorrectionAttempts * 0.025));
+    }
+    if (outputBytes.byteLength > maxOutputBytes) {
+      throw new Error('output_size_target_not_met: source=' + inputBlob.size +
+        '; output=' + outputBytes.byteLength + '; max=' + maxOutputBytes +
+        '; attempts=' + sizeCorrectionAttempts);
+    }
 
     stage = 'verify_output';
     const verified = mediaCore.inspectMediaInfo(outputBytes);
