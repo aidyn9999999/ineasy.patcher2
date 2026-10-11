@@ -1942,13 +1942,34 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
       const outputTransfer = normalizeTransfer(outputColorSpace?.transfer);
       const outputPrimaries = String(outputColorSpace?.primaries || '').toLowerCase();
       const expectedTransfer = sourceTransfer ||
-        (sourceHdrProfile?.hlg ? 'hlg' : (sourceHdrProfile?.hdr10 || sourceHdrProfile?.hdr10plus) ? 'pq' : '');
-      const transferMatches = !expectedTransfer || outputTransfer === expectedTransfer;
-      const primariesMatch = !sourcePrimaries || outputPrimaries === sourcePrimaries;
-      if (sourceIsHdr && (!outputHasHdrRange || !transferMatches || !primariesMatch)) {
+        (sourceHdrProfile?.hlg ? 'hlg' :
+          (sourceHdrProfile?.hdr10 || sourceHdrProfile?.hdr10plus || sourceHdrProfile?.dolbyVision) ? 'pq' : '');
+      // Some browser demuxers do not expose the MP4 colour box through
+      // getColorSpace()/hasHighDynamicRange(), even when the encoded HEVC stream
+      // still carries a recognised HDR profile. Verify using both the parsed
+      // track metadata and the independent bitstream profile detector.
+      const outputProfileSaysHdr = Boolean(
+        outputHdrProfile?.hdr10 || outputHdrProfile?.hdr10plus ||
+        outputHdrProfile?.hlg || outputHdrProfile?.dolbyVision
+      );
+      const outputTransferSaysHdr = outputTransfer === 'pq' || outputTransfer === 'hlg';
+      const outputHdrVerified = outputHasHdrRange || outputTransferSaysHdr || outputProfileSaysHdr;
+      const transferMatches = !expectedTransfer || !outputTransfer || outputTransfer === expectedTransfer;
+      const primariesMatch = !sourcePrimaries || !outputPrimaries || outputPrimaries === sourcePrimaries;
+      console.info('[INEASY] HDR verification signals', {
+        outputHasHdrRange,
+        outputTransfer,
+        outputPrimaries,
+        outputProfile: outputHdrProfile?.label || null,
+        outputProfileSaysHdr,
+        outputMain10
+      });
+      if (sourceIsHdr && (!outputHdrVerified || !transferMatches || !primariesMatch)) {
         throw new Error(
           'hdr_cfr_verification_failed: source=' + (sourcePrimaries || '?') + '/' + (expectedTransfer || '?') +
-          ', output=' + (outputPrimaries || '?') + '/' + (outputTransfer || '?') + ', hdr=' + outputHasHdrRange
+          ', output=' + (outputPrimaries || '?') + '/' + (outputTransfer || '?') +
+          ', hdrTrack=' + outputHasHdrRange + ', hdrProfile=' + outputProfileSaysHdr +
+          ', main10=' + outputMain10
         );
       }
 
