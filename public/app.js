@@ -1750,31 +1750,35 @@ function parseIneasyFfmpegRate(value) {
 async function inspectIneasyFfmpegStream(ffmpeg, path, signal) {
   const recentMessages = [];
   let videoLine = '';
+  let durationSeconds = 0;
   const onInspectLog = (event) => {
     const message = String(event?.message || '');
     if (!message) return;
     if (!videoLine && /Stream #\d+:\d+[^\n]*Video:/i.test(message)) videoLine = message;
+    if (!durationSeconds) {
+      const match = message.match(/Duration:\s*(\d{2,}):(\d{2}):(\d{2}(?:\.\d+)?)/i);
+      if (match) durationSeconds = Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]);
+    }
     recentMessages.push(message);
     if (recentMessages.length > 120) recentMessages.shift();
   };
   ffmpeg.on('log', onInspectLog);
   try {
     signal.throwIfAborted();
+    // Deliberately omit an output. FFmpeg prints container/stream metadata and
+    // exits non-zero with "At least one output file must be specified". This
+    // avoids demuxing every frame/packet to a null muxer just to inspect a file.
     const exitCode = await ffmpeg.exec([
       '-hide_banner',
       '-loglevel', 'info',
-      '-i', path,
-      '-map', '0:v:0',
-      '-c:v', 'copy',
-      '-f', 'null',
-      '-'
-    ], -1, { signal });
+      '-i', path
+    ], 60000, { signal });
     signal.throwIfAborted();
-    if (exitCode !== 0) {
-      throw new Error('hdr_stream_inspection_failed: ' + recentMessages.slice(-8).join(' | ').slice(0, 900));
-    }
+    // Exit code 1 is expected when the only input was provided. Successful
+    // inspection is based on the video stream metadata being present.
     if (!videoLine) {
-      throw new Error('hdr_stream_inspection_failed: video stream details unavailable');
+      throw new Error('hdr_stream_inspection_failed: no video stream details; exit=' + exitCode + '; ' +
+        recentMessages.slice(-8).join(' | ').slice(0, 900));
     }
 
     const codecMatch = videoLine.match(/Video:\s*([^\s,(]+)/i);
@@ -1802,6 +1806,7 @@ async function inspectIneasyFfmpegStream(ffmpeg, path, signal) {
       color_space: colorSpace,
       width: dimensionsMatch ? Number(dimensionsMatch[1]) : null,
       height: dimensionsMatch ? Number(dimensionsMatch[2]) : null,
+      duration: durationSeconds,
       reportLine: videoLine
     };
   } finally {
@@ -1826,16 +1831,28 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
   const inputPath = 'ineasy_hdr_source' + (extensionMatch ? extensionMatch[0].toLowerCase() : '.mp4');
   const outputPath = 'ineasy_hdr_5994.mp4';
   const logTail = [];
+  let sourceDurationSeconds = 0;
+  let lastReportedEncodePercent = -1;
   const onLog = (event) => {
     const message = String(event?.message || '');
-    if (message) {
-      logTail.push(message);
-      if (logTail.length > 80) logTail.shift();
+    if (!message) return;
+    logTail.push(message);
+    if (logTail.length > 80) logTail.shift();
+    const timeMatch = message.match(/time=(\d{2}):(\d{2}):(\d{2}(?:\.\d+)?)/i);
+    if (timeMatch && sourceDurationSeconds > 0) {
+      const elapsed = Number(timeMatch[1]) * 3600 + Number(timeMatch[2]) * 60 + Number(timeMatch[3]);
+      const percent = Math.max(0, Math.min(1, elapsed / sourceDurationSeconds));
+      onProgress?.(0.18 + percent * 0.68);
+      const coarsePercent = Math.floor(percent * 10) * 10;
+      if (coarsePercent > lastReportedEncodePercent) {
+        lastReportedEncodePercent = coarsePercent;
+        console.info('[INEASY] Local FFmpeg HDR transcode progress:', coarsePercent + '%');
+      }
     }
   };
   const onProgressEvent = (event) => {
     const value = Number(event?.progress);
-    if (Number.isFinite(value)) onProgress?.(0.15 + Math.max(0, Math.min(1, value)) * 0.75);
+    if (Number.isFinite(value)) onProgress?.(0.18 + Math.max(0, Math.min(1, value)) * 0.68);
   };
   ffmpeg.on('log', onLog);
   ffmpeg.on('progress', onProgressEvent);
@@ -1848,7 +1865,16 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
 
     // Read source codec and colour tags through FFmpeg's demuxer output.
     // This doesn't rely on WebCodecs being able to decode the original HEVC frames.
+    console.info('[INEASY] Local FFmpeg loaded; reading HDR source metadata');
     const sourceStream = await inspectIneasyFfmpegStream(ffmpeg, inputPath, signal);
+    sourceDurationSeconds = Number(sourceStream.duration) || 0;
+    console.info('[INEASY] HDR source stream inspected', {
+      codec: sourceStream.codec_name,
+      profile: sourceStream.profile,
+      pixelFormat: sourceStream.pix_fmt,
+      durationSeconds: sourceDurationSeconds || null,
+      colorTransfer: sourceStream.color_transfer || null
+    });
     const sourceProbeTransfer = String(sourceStream.color_transfer || '').toLowerCase();
     if (!transfer && sourceProbeTransfer === 'smpte2084') transfer = 'pq';
     if (!transfer && sourceProbeTransfer === 'arib-std-b67') transfer = 'hlg';
@@ -1886,7 +1912,12 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
     args.push('-movflags', '+faststart', outputPath);
 
     onProgress?.(0.18);
-    const exitCode = await ffmpeg.exec(args, -1, { signal });
+    console.info('[INEASY] Local FFmpeg HDR transcode started', {
+      targetFps: '60000/1001',
+      codec: 'HEVC Main10',
+      pixelFormat: 'yuv420p10le'
+    });
+    const exitCode = await ffmpeg.exec(args, 1200000, { signal });
     signal.throwIfAborted();
     if (exitCode !== 0) {
       throw new Error('hdr_ffmpeg_transcode_failed: ' + logTail.slice(-8).join(' | ').slice(0, 1200));
@@ -1896,6 +1927,7 @@ async function convertHdrVideoWithFfmpegWasm(inputBlob, inputName, signal, onPro
     // the actual muxed file while remaining compatible with builds that don't
     // expose a JavaScript ffprobe() method.
     logTail.length = 0;
+    console.info('[INEASY] Local FFmpeg HDR transcode finished; verifying output');
     const stream = await inspectIneasyFfmpegStream(ffmpeg, outputPath, signal);
     const fps = parseIneasyFfmpegRate(stream.avg_frame_rate);
     if (!Number.isFinite(fps) || Math.abs(fps - TARGET_FPS) > 0.03) {
