@@ -782,3 +782,491 @@
   .home-hero-copy > *, .workflow-step { animation: none !important; transition: none !important; }
   .workflow-step:hover, .home-cta:hover { transform: none; }
 }
+
+
+/* Home-only responsive refinement 2026-10.
+   All rules below are scoped to the homepage; no patcher/checker/FAQ styles are changed. */
+#homeSection {
+  min-width: 0;
+  width: 100%;
+}
+#homeSection .home-hero {
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(177, 191, 210, .19);
+  border-radius: 24px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(152, 169, 193, .12), transparent 48%),
+    linear-gradient(145deg, #07090d 0%, #0c1017 52%, #07090d 100%);
+}
+#homeSection .home-hero-shade {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(143, 160, 184, .09), transparent 48%),
+    linear-gradient(180deg, rgba(5, 7, 10, .06), rgba(5, 7, 10, .2));
+}
+#homeSection .home-hero-copy {
+  width: min(100%, 1080px);
+  margin: 0 auto;
+  padding: clamp(56px, 6vw, 82px) clamp(24px, 5vw, 72px) 100px;
+  align-items: center;
+  text-align: center;
+}
+#homeSection .home-hero h1 {
+  max-width: 1050px;
+  font-size: clamp(43px, 5.1vw, 66px);
+  line-height: .99;
+  letter-spacing: -.035em;
+  text-align: center;
+  text-wrap: balance;
+}
+#homeSection .home-intro {
+  max-width: 690px;
+  margin: 20px auto 0;
+  font-size: 15px;
+  line-height: 1.68;
+  text-align: center;
+}
+#homeSection .home-cta {
+  min-height: 52px;
+  min-width: 250px;
+  gap: 18px;
+  margin-top: 26px;
+  border-radius: 13px;
+  padding: 0 18px;
+}
+#homeSection .home-hero-foot {
+  right: 22px;
+  bottom: 17px;
+  left: 22px;
+  gap: 16px;
+  color: #8b97a8;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+#homeSection .home-content-section {
+  min-width: 0;
+  padding: clamp(42px, 5vw, 66px) clamp(2px, 1.5vw, 22px);
+}
+#homeSection .home-section-heading {
+  max-width: 800px;
+  margin: 0 auto 22px;
+}
+#homeSection .home-section-heading h2 {
+  font-size: clamp(28px, 3.1vw, 36px);
+  line-height: 1.12;
+  text-wrap: balance;
+}
+#homeSection .home-section-heading > p:last-child {
+  font-size: 13px;
+  line-height: 1.6;
+}
+#homeSection .quality-comparison {
+  width: min(100%, 1050px);
+  aspect-ratio: 1.88;
+  border-radius: 16px;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+#homeSection .comparison-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+#homeSection .comparison-label {
+  min-width: 78px;
+  min-height: 48px;
+  gap: 4px;
+  padding: 9px 11px;
+  border-radius: 12px;
+}
+#homeSection .comparison-label strong { font-size: 15px; }
+#homeSection .comparison-label span { font-size: 11px; }
+#homeSection .comparison-divider span {
+  width: 42px;
+  height: 42px;
+}
+#homeSection .comparison-range {
+  touch-action: pan-y;
+  cursor: ew-resize;
+}
+#homeSection .comparison-range:focus-visible {
+  outline: 3px solid var(--accent, #c8ff00);
+  outline-offset: -4px;
+}
+#homeSection .comparison-disclaimer {
+  max-width: 780px;
+  margin: 14px auto 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+#homeSection .home-workflow {
+  padding-top: 44px;
+}
+#homeSection .workflow-grid {
+  width: min(100%, 1050px);
+  gap: 16px;
+  margin-top: 26px;
+}
+#homeSection .workflow-step {
+  min-width: 0;
+  padding: 20px 18px;
+  border: 1px solid rgba(156, 170, 189, .2);
+  border-radius: 15px;
+  background: rgba(17, 21, 28, .56);
+}
+#homeSection .workflow-number {
+  display: inline-flex;
+  min-width: 36px;
+  min-height: 27px;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border: 1px solid rgba(177, 191, 210, .22);
+  border-radius: 999px;
+}
+#homeSection .workflow-step h3 {
+  margin: 13px 0 7px;
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+#homeSection .workflow-step p {
+  font-size: 13px;
+  line-height: 1.62;
+  overflow-wrap: anywhere;
+}
+#homeSection .home-local-note {
+  gap: 12px;
+  margin-top: 28px;
+  padding: 16px 0;
+}
+#homeSection .home-local-icon {
+  flex-shrink: 0;
+  border-radius: 9px;
+}
+#homeSection .home-local-note p {
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+#homeSection .home-cta-bottom {
+  width: min(100%, 320px);
+  min-height: 52px;
+  justify-content: space-between;
+  margin: 22px auto 0;
+}
+
+/* The Telegram notice and language switch stay together in the homepage header. */
+.app-main:has(#homeSection.active) > .community-callout {
+  grid-template-columns: minmax(0, 1fr) auto;
+  justify-items: stretch;
+  align-items: center;
+  gap: 6px 12px;
+}
+.app-main:has(#homeSection.active) > .community-callout .news-callout {
+  min-width: 0;
+  padding: 8px 10px;
+}
+.app-main:has(#homeSection.active) > .community-callout .language-dock {
+  justify-self: end;
+  align-self: center;
+  margin: 0;
+  white-space: nowrap;
+}
+.app-main:has(#homeSection.active) > .community-callout .language-dock button {
+  min-width: 30px;
+  min-height: 30px;
+}
+
+/* Compact tablet layout. */
+@media (min-width: 701px) and (max-width: 900px) {
+  .app-main:has(#homeSection.active) {
+    width: 100%;
+    max-width: 100%;
+    padding: 18px 18px calc(116px + env(safe-area-inset-bottom));
+    gap: 14px;
+  }
+  #homeSection .home-hero { border-radius: 20px; }
+  #homeSection .home-hero-copy { padding: 48px 24px 84px; }
+  #homeSection .home-hero h1 { font-size: clamp(42px, 6vw, 54px); }
+  #homeSection .home-intro { max-width: 600px; font-size: 14px; }
+  #homeSection .home-content-section { padding: 38px 2px; }
+  #homeSection .quality-comparison { aspect-ratio: 1.5; }
+  #homeSection .workflow-grid { grid-template-columns: 1fr; gap: 10px; }
+  #homeSection .workflow-step {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: start;
+    padding: 15px;
+  }
+  #homeSection .workflow-number { grid-column: 1; grid-row: 1 / span 2; }
+  #homeSection .workflow-step h3 { grid-column: 2; margin: 2px 0 5px; }
+  #homeSection .workflow-step p { grid-column: 2; }
+}
+
+/* Phone layout: content drives hero height; no oversized empty 3D slot. */
+@media (max-width: 700px) {
+  .app-main:has(#homeSection.active) {
+    width: 100%;
+    max-width: 100%;
+    gap: 12px;
+    padding: 12px 12px calc(116px + env(safe-area-inset-bottom));
+  }
+  .app-shell:has(#homeSection.active) > .topbar {
+    gap: 10px;
+    padding: 11px 14px;
+  }
+  .app-shell:has(#homeSection.active) > .topbar .brand {
+    font-size: 27px !important;
+    line-height: 1;
+  }
+  .app-main:has(#homeSection.active) > .community-callout .news-copy strong {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .app-main:has(#homeSection.active) > .community-callout .news-callout p {
+    font-size: 10px;
+    line-height: 1.42;
+  }
+  #homeSection .home-hero {
+    min-height: 0;
+    height: auto;
+    max-height: none;
+    align-items: stretch;
+    border-radius: 18px;
+  }
+  #homeSection .home-hero-copy {
+    width: 100%;
+    padding: 30px 18px 70px;
+    align-items: flex-start;
+    text-align: left;
+  }
+  #homeSection .home-hero .home-eyebrow {
+    min-height: 30px;
+    max-width: 100%;
+    margin: 0 0 18px;
+    padding: 0 11px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    white-space: normal;
+  }
+  #homeSection .home-hero h1 {
+    width: 100%;
+    max-width: 100%;
+    font-size: clamp(30px, 8.5vw, 39px);
+    line-height: .99;
+    letter-spacing: -.04em;
+    text-align: left;
+    text-wrap: balance;
+    overflow-wrap: anywhere;
+  }
+  #homeSection .home-intro {
+    max-width: 540px;
+    margin: 15px 0 0;
+    font-size: 13px;
+    line-height: 1.62;
+    text-align: left;
+  }
+  #homeSection .home-cta {
+    width: min(100%, 320px);
+    min-width: 0;
+    min-height: 50px;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 20px;
+    padding: 0 15px;
+    font-size: 13px;
+  }
+  #homeSection .home-hero-foot {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    gap: 10px;
+    font-size: 8px;
+    letter-spacing: .45px;
+  }
+  #homeSection .home-content-section {
+    padding: 32px 1px 35px;
+  }
+  #homeSection .home-section-heading {
+    margin-bottom: 17px;
+    padding-inline: 3px;
+  }
+  #homeSection .home-section-heading .home-eyebrow {
+    margin-bottom: 9px;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+  }
+  #homeSection .home-section-heading h2 {
+    font-size: clamp(24px, 6.8vw, 29px);
+    line-height: 1.13;
+    letter-spacing: -.025em;
+  }
+  #homeSection .home-section-heading > p:last-child {
+    margin-top: 9px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  #homeSection .quality-comparison {
+    width: 100%;
+    aspect-ratio: 1.33;
+    border-radius: 14px;
+  }
+  #homeSection .comparison-image { object-position: center 54%; }
+  #homeSection .comparison-label {
+    top: 9px;
+    min-width: 68px;
+    min-height: 44px;
+    gap: 4px;
+    padding: 7px 8px;
+    border-radius: 10px;
+  }
+  #homeSection .comparison-label-before { left: 9px; }
+  #homeSection .comparison-label-after { right: 9px; }
+  #homeSection .comparison-label strong { font-size: 14px; }
+  #homeSection .comparison-label span { font-size: 10px; }
+  #homeSection .comparison-divider span {
+    width: 40px;
+    height: 40px;
+    font-size: 19px;
+  }
+  #homeSection .comparison-disclaimer {
+    margin-top: 11px;
+    padding-inline: 2px;
+    font-size: 12px;
+    line-height: 1.58;
+    text-align: left;
+  }
+  #homeSection .home-workflow {
+    padding-top: 30px;
+  }
+  #homeSection .workflow-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  #homeSection .workflow-step {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    column-gap: 11px;
+    align-items: start;
+    min-height: 0;
+    padding: 14px 13px;
+    border-radius: 13px;
+    box-shadow: none;
+  }
+  #homeSection .workflow-number {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    min-width: 34px;
+    min-height: 27px;
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+  #homeSection .workflow-step h3 {
+    grid-column: 2;
+    margin: 2px 0 5px;
+    font-size: 14px;
+    line-height: 1.42;
+  }
+  #homeSection .workflow-step p {
+    grid-column: 2;
+    font-size: 13px;
+    line-height: 1.58;
+  }
+  #homeSection .home-local-note {
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 13px 0;
+  }
+  #homeSection .home-local-icon {
+    flex-basis: 26px;
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
+  #homeSection .home-local-note p {
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  #homeSection .home-cta-bottom {
+    width: 100%;
+    min-height: 50px;
+    margin-top: 17px;
+  }
+  .app-shell:has(#homeSection.active) .bottom-nav .nav-tab {
+    min-width: 0;
+    min-height: 48px;
+    padding: 6px 3px;
+    gap: 3px;
+    font-size: 9px;
+  }
+  .app-shell:has(#homeSection.active) .bottom-nav .nav-tab > span:last-child {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    text-align: center;
+    line-height: 1.2;
+  }
+  .app-shell:has(#homeSection.active) .site-footer {
+    gap: 15px;
+    padding: 22px 16px calc(112px + env(safe-area-inset-bottom));
+  }
+  .app-shell:has(#homeSection.active) .site-footer nav {
+    gap: 10px 16px;
+  }
+}
+
+/* Very narrow phones: keep the complete balance row and all homepage labels readable. */
+@media (max-width: 360px) {
+  .app-shell:has(#homeSection.active) > .topbar {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 10px 12px;
+  }
+  .app-shell:has(#homeSection.active) > .topbar .balance-pill {
+    order: 3;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    justify-content: space-between;
+    gap: 7px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  .app-main:has(#homeSection.active) > .community-callout {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+  .app-main:has(#homeSection.active) > .community-callout .news-callout {
+    padding: 7px 8px;
+  }
+  .app-main:has(#homeSection.active) > .community-callout .language-dock button {
+    min-width: 27px;
+    padding-inline: 4px;
+  }
+  #homeSection .home-hero-copy { padding: 25px 14px 66px; }
+  #homeSection .home-hero .home-eyebrow {
+    font-size: 8px;
+    letter-spacing: .65px;
+  }
+  #homeSection .home-hero h1 { font-size: 30px; }
+  #homeSection .home-intro { font-size: 13px; }
+  #homeSection .home-hero-foot { font-size: 7px; letter-spacing: .3px; }
+  #homeSection .quality-comparison { aspect-ratio: 1.25; }
+  #homeSection .comparison-label { min-width: 63px; padding-inline: 6px; }
+  #homeSection .comparison-label strong { font-size: 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #homeSection .home-cta,
+  #homeSection .workflow-step { animation: none !important; transition: none !important; }
+  #homeSection .home-cta:hover,
+  #homeSection .workflow-step:hover { transform: none; }
+}
