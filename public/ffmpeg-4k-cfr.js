@@ -39,12 +39,18 @@ function containsHdrSignals(bytes) {
       at = text.indexOf('nclx', at + 4);
     }
 
-    // HEVC Main 10/10-bit profiles are kept off the SDR x264 fallback.
+    // Keep HEVC Main 10 and AVC 10-bit profiles off the SDR 8-bit x264 fallback.
     at = text.indexOf('hvcc');
     while (at >= 0 && at + 6 < chunk.length) {
       const profileIdc = chunk[at + 5] & 0x1f;
       if (profileIdc === 2 || profileIdc === 3) return true;
       at = text.indexOf('hvcc', at + 4);
+    }
+    at = text.indexOf('avcc');
+    while (at >= 0 && at + 6 < chunk.length) {
+      const profileIdc = chunk[at + 5];
+      if ([110, 122, 144, 244].includes(profileIdc)) return true;
+      at = text.indexOf('avcc', at + 4);
     }
   }
   return false;
