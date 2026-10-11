@@ -75,7 +75,7 @@ const translations = {
     exportNote: 'Ready for upload.',
     fpsPolicyNote: 'TikTok may change video quality after upload.',
     patcherNoteV1: 'Standard mode.',
-    patcherNoteV2: 'Alternative mode. No video re-encoding.',
+    patcherNoteV2: 'Alternative patching mode.',
     fpsAdvice: 'Ready to process.',
     fps30Rejected: '30 FPS is not supported. Export as 59.94 FPS and try again.',
     fpsInspectUnavailable: 'FPS could not be checked. Use MP4 H.264 · 59.94 FPS.',
@@ -258,7 +258,7 @@ const translations = {
     exportNote: 'Видео готово к загрузке.',
     fpsPolicyNote: 'TikTok может изменить качество видео после загрузки.',
     patcherNoteV1: 'Стандартный режим.',
-    patcherNoteV2: 'Альтернативный режим. Видео не перекодируется.',
+    patcherNoteV2: 'Альтернативный режим патчинга.',
     fpsAdvice: 'Готово к обработке.',
     fps30Rejected: '30 FPS не поддерживается. Экспортируйте видео в 59,94 FPS и выберите его снова.',
     fpsInspectUnavailable: 'Не удалось проверить FPS. Используйте MP4 H.264 · 59,94 FPS.',
@@ -441,7 +441,7 @@ const translations = {
     exportNote: 'Бейне жүктеуге дайын.',
     fpsPolicyNote: 'TikTok жүктегеннен кейін бейне сапасын өзгертуі мүмкін.',
     patcherNoteV1: 'Стандартты режим.',
-    patcherNoteV2: 'Балама режим. Бейне қайта кодталмайды.',
+    patcherNoteV2: 'Балама патчтау режимі.',
     fpsAdvice: 'Өңдеуге дайын.',
     fps30Rejected: '30 FPS қолдау таппайды. Бейнені 59,94 FPS-пен экспорттап, қайта таңдаңыз.',
     fpsInspectUnavailable: 'FPS тексерілмеді. MP4 H.264 · 59,94 FPS қолданыңыз.',
@@ -1567,23 +1567,46 @@ async function readVideoDimensionsForSelection(file) {
 
 async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress) {
   signal.throwIfAborted();
-  onProgress?.(0.02);
+  onProgress?.(0);
+
+  // The UMD bundle splits its worker into 814.ffmpeg.js. Load the worker
+  // explicitly and pass its blob URL to avoid resolving it against the site URL.
   if (!globalThis.FFmpegWASM?.FFmpeg) {
-    await new Promise((resolve, reject) => {
-      const existing = document.querySelector('script[data-ineasy-ffmpeg]');
-      if (existing && globalThis.FFmpegWASM?.FFmpeg) {
-        resolve();
-        return;
+    const scriptUrls = [
+      'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js',
+      'https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js'
+    ];
+    let lastScriptError = null;
+    for (const src of scriptUrls) {
+      try {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.dataset.ineasyFfmpeg = '1';
+          script.src = src;
+          script.onload = () => globalThis.FFmpegWASM?.FFmpeg
+            ? resolve()
+            : reject(new Error('ffmpeg_global_missing'));
+          script.onerror = () => reject(new Error('fps_encoder_download_failed'));
+          script.onload = ((onload) => function () {
+            onload.call(this);
+            if (!globalThis.FFmpegWASM?.FFmpeg) this.remove();
+          })(script.onload);
+          script.onerror = ((onerror) => function () {
+            onerror.call(this);
+            this.remove();
+          })(script.onerror);
+          document.head.appendChild(script);
+        });
+        if (globalThis.FFmpegWASM?.FFmpeg) break;
+      } catch (error) {
+        lastScriptError = error;
       }
-      if (existing) existing.remove();
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js';
-      script.dataset.ineasyFfmpeg = '1';
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('fps_encoder_download_failed'));
-      document.head.appendChild(script);
-    });
+    }
+    if (!globalThis.FFmpegWASM?.FFmpeg) {
+      throw new Error('fps_encoder_download_failed: ' + String(lastScriptError?.message || 'unable to load ffmpeg.js'));
+    }
   }
+
   signal.throwIfAborted();
   const FFmpeg = globalThis.FFmpegWASM?.FFmpeg;
   if (!FFmpeg) throw new Error('fps_encoder_download_failed');
@@ -1594,68 +1617,119 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     try { ffmpeg.terminate(); } catch (_) {}
   };
   signal.addEventListener('abort', onAbort, { once: true });
+
   let coreBlobUrl = null;
   let wasmBlobUrl = null;
   let workerBlobUrl = null;
   const inputPath = 'ineasy-input.' + ((String(inputName || '').match(/\.([a-z0-9]+)$/i)?.[1] || 'mp4').toLowerCase());
   const outputPath = 'ineasy-cfr-5994.mp4';
+
   try {
-    const coreBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd';
-    const ffmpegBase = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd';
-    const [workerResponse, coreResponse, wasmResponse] = await Promise.all([
-      fetch(ffmpegBase + '/814.ffmpeg.js', { signal }),
-      fetch(coreBase + '/ffmpeg-core.js', { signal }),
-      fetch(coreBase + '/ffmpeg-core.wasm', { signal })
-    ]);
-    if (!workerResponse.ok || !coreResponse.ok || !wasmResponse.ok) throw new Error('fps_encoder_download_failed');
-    const [workerCode, coreCode, wasmBytes] = await Promise.all([workerResponse.blob(), coreResponse.blob(), wasmResponse.blob()]);
-    signal.throwIfAborted();
-    workerBlobUrl = URL.createObjectURL(workerCode);
-    coreBlobUrl = URL.createObjectURL(coreCode);
-    wasmBlobUrl = URL.createObjectURL(wasmBytes);
+    const cdnBases = [
+      {
+        ffmpeg: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd',
+        core: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd'
+      },
+      {
+        ffmpeg: 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd',
+        core: 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd'
+      }
+    ];
+    let assets = null;
+    let lastAssetError = null;
+    for (const base of cdnBases) {
+      try {
+        const responses = await Promise.all([
+          fetch(base.ffmpeg + '/814.ffmpeg.js', { signal }),
+          fetch(base.core + '/ffmpeg-core.js', { signal }),
+          fetch(base.core + '/ffmpeg-core.wasm', { signal })
+        ]);
+        if (responses.some((response) => !response.ok)) {
+          throw new Error('CDN asset returned a non-success status');
+        }
+        assets = await Promise.all(responses.map((response) => response.blob()));
+        break;
+      } catch (error) {
+        if (signal.aborted) throw error;
+        lastAssetError = error;
+      }
+    }
+    if (!assets) {
+      throw new Error('fps_encoder_download_failed: ' + String(lastAssetError?.message || 'unable to download ffmpeg assets'));
+    }
+    const [workerCode, coreCode, wasmBytes] = assets;
+    workerBlobUrl = URL.createObjectURL(new Blob([workerCode], { type: 'text/javascript' }));
+    coreBlobUrl = URL.createObjectURL(new Blob([coreCode], { type: 'text/javascript' }));
+    wasmBlobUrl = URL.createObjectURL(new Blob([wasmBytes], { type: 'application/wasm' }));
+
+    ffmpeg.on('log', ({ message }) => {
+      if (message && /error|failed|encoder|fps/i.test(message)) {
+        console.debug('[INEASY] FFmpeg:', message);
+      }
+    });
     await ffmpeg.load({ classWorkerURL: workerBlobUrl, coreURL: coreBlobUrl, wasmURL: wasmBlobUrl });
     signal.throwIfAborted();
     ffmpeg.on('progress', ({ progress }) => {
       if (!signal.aborted) onProgress?.(Math.max(0, Math.min(1, Number(progress) || 0)));
     });
-    await ffmpeg.writeFile(inputPath, new Uint8Array(await inputBlob.arrayBuffer()));
-    signal.throwIfAborted();
-    const baseArgs = [
-      '-i', inputPath,
-      '-map', '0:v:0', '-map', '0:a?',
-      '-vf', 'fps=60000/1001',
-      '-r', '60000/1001',
-      '-fps_mode', 'cfr',
-      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
-      '-pix_fmt', 'yuv420p',
-      '-movflags', '+faststart'
-    ];
-    try {
-      const copyExitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'copy', outputPath]);
-      if (copyExitCode !== 0) throw new Error('audio_copy_failed');
-    } catch (audioCopyError) {
-      if (signal.aborted) throw audioCopyError;
-      try { await ffmpeg.deleteFile(outputPath); } catch (_) {}
-      const aacExitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'aac', '-b:a', '192k', outputPath]);
-      if (aacExitCode !== 0) throw new Error('fps_encoder_empty_output');
+
+    let inputBytes = new Uint8Array(await inputBlob.arrayBuffer());
+    let sourceFps = null;
+    const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+    if (mediaCore?.inspectMediaInfo) {
+      try {
+        sourceFps = Number(mediaCore.inspectMediaInfo(inputBytes)?.averageFps) || null;
+      } catch (_) {}
     }
     signal.throwIfAborted();
+    await ffmpeg.writeFile(inputPath, inputBytes);
+    inputBytes = null;
+
+    const baseArgs = [
+      '-hide_banner', '-loglevel', 'error', '-y',
+      '-i', inputPath,
+      '-map', '0:v:0', '-map', '0:a?',
+      '-vf', 'fps=60000/1001:round=near',
+      '-fps_mode', 'cfr',
+      '-r', '60000/1001',
+      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
+      '-pix_fmt', 'yuv420p',
+      '-movflags', '+faststart',
+      '-video_track_timescale', '60000'
+    ];
+    let exitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'copy', outputPath]);
+    if (exitCode !== 0) {
+      try { await ffmpeg.deleteFile(outputPath); } catch (_) {}
+      exitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'aac', '-b:a', '192k', outputPath]);
+    }
+    if (exitCode !== 0) throw new Error('fps_encoder_empty_output');
+    signal.throwIfAborted();
+
     const outputData = await ffmpeg.readFile(outputPath);
     const outputBlob = new Blob([outputData], { type: 'video/mp4' });
     if (!outputBlob.size) throw new Error('fps_encoder_empty_output');
-    const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
-    if (core?.inspectMediaInfo) {
-      const verified = core.inspectMediaInfo(new Uint8Array(await outputBlob.arrayBuffer()));
-      const fps = Number(verified?.averageFps);
-      if (!Number.isFinite(fps) || Math.abs(fps - (60000 / 1001)) > 0.03) {
-        throw new Error('fps_encoder_verification_failed');
-      }
-      return { blob: outputBlob, info: verified, fps };
+    if (outputBlob.size > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
+    if (!mediaCore?.inspectMediaInfo) throw new Error('fps_encoder_verification_unavailable');
+
+    const verified = mediaCore.inspectMediaInfo(new Uint8Array(await outputBlob.arrayBuffer()));
+    const fps = Number(verified?.averageFps);
+    if (!Number.isFinite(fps) || Math.abs(fps - (60000 / 1001)) > 0.03) {
+      throw new Error('fps_encoder_verification_failed');
     }
-    throw new Error('fps_encoder_verification_unavailable');
+
+    console.info('[INEASY] CFR conversion verified', {
+      inputFps: sourceFps,
+      outputFps: fps,
+      target: '60000/1001',
+      codec: verified.codec || 'unknown',
+      resolution: verified.width && verified.height ? `${verified.width}x${verified.height}` : 'unknown',
+      bytes: outputBlob.size
+    });
+    onProgress?.(1);
+    return { blob: outputBlob, info: verified, fps, sourceFps };
   } catch (error) {
     if (signal.aborted || aborted) throw new Error('processing_cancelled');
-    console.error('[INEASY] FPS conversion failed:', error);
+    console.error('[INEASY] CFR conversion failed:', error);
     const detail = String(error?.message || error || 'unknown_error').slice(0, 240);
     throw new Error('fps_encoder_failed: ' + detail);
   } finally {
@@ -2114,27 +2188,40 @@ if (processBtn) {
       updateProcessingProgress(3);
 
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
-      // V2 must receive the exact selected source file. The V1 preparation
-      // path may re-encode/normalize media before the patcher ever sees it.
+
+      // Always perform a real CFR transcode on the selected media before patching.
+      // The FPS filter rewrites decoded frames and timestamps; this is not a metadata-only change.
+      const fpsConversion = await convertVideoToExact5994Fps(sourceFile, sourceFile.name, controller.signal, (progress) => {
+        updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
+      });
+      originalInputFps = fpsConversion.sourceFps;
+      const normalizedFile = new File(
+        [fpsConversion.blob],
+        `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`,
+        { type: 'video/mp4', lastModified: Date.now() }
+      );
+
       const preparedInput = isV2SelectedForJob
         ? {
-            blob: sourceFile,
-            sourceFps: null,
+            blob: normalizedFile,
+            sourceFps: fpsConversion.fps,
+            targetFrameRate: 60000 / 1001,
             report: {
-              performed: false,
-              compressionDisabled: true,
-              skippedForV2: true,
-              reason: 'V2 receives the original source file without pre-processing.'
+              performed: true,
+              compressionDisabled: false,
+              frameRateRetimed: true,
+              targetFrameRate: 60000 / 1001,
+              inputWidth: selectedVideoDimensions?.width || null,
+              inputHeight: selectedVideoDimensions?.height || null,
+              outputWidth: fpsConversion.info?.width || selectedVideoDimensions?.width || null,
+              outputHeight: fpsConversion.info?.height || selectedVideoDimensions?.height || null
             }
           }
-        : await prepareVideoForPatcher(sourceFile, selectedVideoDimensions, controller.signal, (progress) => {
-            updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
+        : await prepareVideoForPatcher(normalizedFile, selectedVideoDimensions, controller.signal, (progress) => {
+            updateProcessingProgress(15 + Math.round(Math.max(0, Math.min(1, progress)) * 1));
           });
-      originalInputFps = preparedInput.sourceFps;
       const processingFile = preparedInput.blob;
-      const processingFileName = preparedInput.report?.performed
-        ? `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`
-        : sourceFile.name || 'video.mp4';
+      const processingFileName = `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`;
       const buffer = await processingFile.arrayBuffer();
       controller.signal.throwIfAborted();
       if (buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
@@ -2230,37 +2317,30 @@ if (processBtn) {
       // V2 is a byte-preservation path: do not append even a harmless MP4 free box.
       // This keeps the downloaded file byte-for-byte identical to the selected source.
       const isV2Selected = getSelectedPatcherVersion() === 'v2';
-      const isV2OriginalPassThrough = isV2Selected && Boolean(result.passthrough);
-      // V2 remux output is already a standard MP4: never append extra container padding.
+      const isV2InputPassThrough = isV2Selected && Boolean(result.passthrough);
+      // The normalized MP4 has already been frame-converted before patching. Keep it in
+      // V2 pass-through mode instead of accidentally restoring the unconverted source file.
       const outputBytes = result.passthrough || isV2Selected
         ? result.output
         : (result.outputMime === 'video/mp4' ? appendMp4Padding(result.output) : result.output);
-      // Keep the selected File object only when V2 explicitly reports passthrough.
-      // When the real remux engine succeeds, download/post its remuxed output.
-      let outputBlob = isV2OriginalPassThrough
-        ? sourceFile
+      let outputBlob = isV2InputPassThrough
+        ? processingFile
         : new Blob([outputBytes], { type: result.outputMime || 'video/mp4' });
 
-      setProcessingState('processing', translations[STATE.lang]?.processingVideo || translations.en.processingVideo || 'Processing video…');
-      updateProcessingProgress(84);
-      try {
-        const fpsConversion = await convertVideoToExact5994Fps(outputBlob, sourceFile.name, controller.signal, (p) => {
-          updateProcessingProgress(84 + Math.round(p * 14));
-        });
-        outputBlob = fpsConversion.blob;
-        result.outputInfo = fpsConversion.info;
-        result.outputMime = 'video/mp4';
-        result.passthrough = false;
-        result.mode = (result.mode || 'patched') + '+cfr-5994';
-      } catch (conversionError) {
-        if (controller.signal.aborted || /processing_cancelled/i.test(String(conversionError?.message || ''))) {
-          throw conversionError;
-        }
-        // A failed optional CFR re-encode must not discard a successfully patched video.
-        // Keep the valid patcher output and expose the exact reason in diagnostics.
-        console.warn('[INEASY] Optional frame-rate conversion failed; keeping patcher output:', conversionError);
-        updateProcessingProgress(98);
+      // Inspect the actual patcher output before returning it; never silently skip CFR conversion.
+      const outputMediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+      let verifiedOutputInfo = null;
+      if (outputMediaCore?.inspectMediaInfo) {
+        try { verifiedOutputInfo = outputMediaCore.inspectMediaInfo(outputBytes); } catch (_) {}
       }
+      verifiedOutputInfo = verifiedOutputInfo || result.outputInfo || result.info || null;
+      const verifiedOutputFps = Number(verifiedOutputInfo?.averageFps);
+      if (!Number.isFinite(verifiedOutputFps) || Math.abs(verifiedOutputFps - (60000 / 1001)) > 0.03) {
+        throw new Error('fps_output_verification_failed');
+      }
+      result.outputInfo = verifiedOutputInfo;
+      result.outputMime = 'video/mp4';
+      result.mode = (result.mode || 'patched') + '+cfr-5994-verified';
 
       await consumeProcessedVideo();
       processedVideoBlob = outputBlob;
@@ -2355,6 +2435,7 @@ function localizePatchError(message) {
   const knownErrors = [
     { test: /V2_BETA_ENGINE_NOT_LOADED/i, ru: 'Не удалось загрузить модуль V2. Обновите страницу и попробуйте ещё раз.', kk: 'V2 модулін жүктеу мүмкін болмады. Бетті жаңартып, қайталап көріңіз.', en: 'Could not load the V2 module. Refresh the page and try again.' },
     { test: /fps_encoder_failed/i, ru: 'Не удалось обработать видео. Попробуйте ещё раз или выберите другой файл.', kk: 'Бейнені өңдеу мүмкін болмады. Қайталап көріңіз немесе басқа файл таңдаңыз.', en: 'Could not process the video. Try again or choose another file.' },
+    { test: /fps_output_verification_failed/i, ru: 'Проверка частоты кадров не пройдена. Повторите обработку файла.', kk: 'Кадр жиілігін тексеру өтпеді. Файлды қайта өңдеңіз.', en: 'The output frame-rate check failed. Process the file again.' },
     { test: /fps_encoder_download_failed|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable/i, ru: 'Не удалось преобразовать видео в точные 59,94 FPS. Проверьте соединение и повторите попытку.', kk: 'Бейнені дәл 59,94 FPS-ке түрлендіру мүмкін болмады. Интернетті тексеріп, қайталап көріңіз.', en: 'Could not convert video to exact 59.94 FPS. Check your connection and try again.' },
     { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
