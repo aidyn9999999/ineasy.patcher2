@@ -575,7 +575,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       main10Transcoded: isHdrEncode,
       hdrProfile: isHdrEncode ? {
         label: colorProfile.displayColor || (hdrType === 'hlg' ? 'BT.2020 / HLG' : 'BT.2020 / PQ (HDR10)'),
-        hdr10: colorProfile.hdrType !== 'hlg',
+        hdr10: hdrType !== 'hlg',
         hlg: hdrType === 'hlg',
         main10: true,
         dolbyVision: false
