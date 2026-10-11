@@ -39,7 +39,7 @@ function loadFFmpegRuntime() {
         URL.revokeObjectURL(wasmURL);
         throw new Error('ffmpeg_4k_api_unavailable');
       }
-      ffmpegRuntime = { FFmpeg: module.FFmpeg, coreURL, wasmURL };
+      ffmpegRuntime = { FFmpeg: module.FFmpeg, coreURL, wasmURL, ffmpegInstance: null, ffmpegLoadPromise: null };
       return ffmpegRuntime;
     }).catch((error) => {
       ffmpegRuntimePromise = null;
@@ -52,7 +52,23 @@ function loadFFmpegRuntime() {
 // Warm the FFmpeg module and WASM core while the user prepares a selected 4K video.
 export async function preloadFFmpeg4k() {
   try {
-    await loadFFmpegRuntime();
+    const runtime = await loadFFmpegRuntime();
+    if (!runtime.ffmpegLoadPromise) {
+      const classWorkerURL = new URL('/ffmpeg/worker.js', window.location.origin).href;
+      const instance = new runtime.FFmpeg();
+      runtime.ffmpegInstance = instance;
+      runtime.ffmpegLoadPromise = instance.load({
+        coreURL: runtime.coreURL,
+        wasmURL: runtime.wasmURL,
+        classWorkerURL
+      }).then(() => true).catch((error) => {
+        try { instance.terminate(); } catch (_) {}
+        if (runtime.ffmpegInstance === instance) runtime.ffmpegInstance = null;
+        runtime.ffmpegLoadPromise = null;
+        throw error;
+      });
+    }
+    await runtime.ffmpegLoadPromise;
     return true;
   } catch (error) {
     console.warn('[INEASY] 4K FFmpeg pre-load deferred:', error?.message || error);
@@ -250,9 +266,16 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   const runtime = await runtimePromise;
   throwIfAborted(signal);
   const { FFmpeg, coreURL, wasmURL } = runtime;
-  let ffmpeg = new FFmpeg();
-  const coreBlobUrl = coreURL;
-  const wasmBlobUrl = wasmURL;
+  let ffmpeg = runtime.ffmpegInstance || new FFmpeg();
+  let coreAlreadyLoaded = false;
+  if (runtime.ffmpegLoadPromise) {
+    try {
+      await runtime.ffmpegLoadPromise;
+      coreAlreadyLoaded = runtime.ffmpegInstance === ffmpeg;
+    } catch (_) {
+      ffmpeg = new FFmpeg();
+    }
+  }
   let inputFileName = 'ineasy-source' + extension;
   const outputFileName = 'ineasy-4k-cfr.mp4';
   let aborted = false;
@@ -292,23 +315,34 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   try {
     ffmpeg.on('log', handleLog);
     ffmpeg.on('progress', handleProgress);
-    stage = 'load_core';
-    onProgress?.(0.04);
-    // FFmpeg 0.12 creates a module Worker relative to its CDN import URL by default.
-    // Browsers reject that cross-origin Worker on ineasy.site. Use our same-origin
-    // worker entry point; it imports the pinned official worker module from jsDelivr.
+    stage = coreAlreadyLoaded ? 'core_ready' : 'load_core';
+    onProgress?.(coreAlreadyLoaded ? 0.08 : 0.04);
+    // Preload the worker and WASM core while the user chooses processing options.
+    // Reuse that initialized instance here to remove FFmpeg startup from processing time.
     const classWorkerURL = new URL('/ffmpeg/worker.js', window.location.origin).href;
-    try {
-      await ffmpeg.load({ coreURL: coreBlobUrl, wasmURL: wasmBlobUrl, classWorkerURL });
-    } catch (firstLoadError) {
-      const firstLoadMessage = String(firstLoadError?.message || firstLoadError || '');
-      // Some browsers reject importing a blob-backed FFmpeg core inside a Worker.
-      // Retry once with the pinned official jsDelivr core URLs instead of failing at load_core.
-      if (!/failed to import ffmpeg-core\.js|failed to load ffmpeg-core/i.test(firstLoadMessage)) {
-        throw firstLoadError;
+    if (!coreAlreadyLoaded) {
+      try {
+        await ffmpeg.load({ coreURL, wasmURL, classWorkerURL });
+      } catch (firstLoadError) {
+        const firstLoadMessage = String(firstLoadError?.message || firstLoadError || '');
+        if (!/failed to import ffmpeg-core\\.js|failed to load ffmpeg-core/i.test(firstLoadMessage)) {
+          throw firstLoadError;
+        }
+        try { ffmpeg.terminate(); } catch (_) {}
+        throwIfAborted(signal);
+        rememberLog('Retrying FFmpeg core load with pinned CDN URLs after initial core import failure');
+        stage = 'load_core_cdn_retry';
+        ffmpeg = new FFmpeg();
+        ffmpeg.on('log', handleLog);
+        ffmpeg.on('progress', handleProgress);
+        await ffmpeg.load({
+          coreURL: FFMPEG_CORE_BASE_URL + '/ffmpeg-core.js',
+          wasmURL: FFMPEG_CORE_BASE_URL + '/ffmpeg-core.wasm',
+          classWorkerURL
+        });
       }
-      try { ffmpeg.terminate(); } catch (_) {}
-      throwIfAborted(signal);
+    }
+    throwIfAborted(signal);
       rememberLog('Retrying FFmpeg core load with pinned CDN URLs after blob import failure');
       stage = 'load_core_cdn_retry';
       ffmpeg = new FFmpeg();
@@ -450,6 +484,10 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   } finally {
     signal?.removeEventListener('abort', handleAbort);
     try { ffmpeg.terminate(); } catch (_) {}
+    if (runtime.ffmpegInstance === ffmpeg) {
+      runtime.ffmpegInstance = null;
+      runtime.ffmpegLoadPromise = null;
+    }
     // Runtime URLs are reused by later 4K jobs and released on pagehide.
   }
 }
