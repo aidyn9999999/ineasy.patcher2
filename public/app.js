@@ -1486,6 +1486,13 @@ function updateProcessingProgress(value) {
 }
 
 async function readVideoDuration(file, signal) {
+  if (signal?.aborted) throw new Error('processing_cancelled');
+  if (previewVideo && currentObjectUrl && previewVideo.src === currentObjectUrl &&
+      previewVideo.readyState >= 1 && previewVideo.videoWidth > 0 &&
+      Number.isFinite(previewVideo.duration)) {
+    if (previewVideo.duration > 60) throw new Error('video_over_60_seconds');
+    return previewVideo.duration;
+  }
   try {
     const dur = await new Promise((resolve, reject) => {
       const video = document.createElement('video');
@@ -1583,35 +1590,93 @@ function readVideoDimensions(file) {
 }
 
 
-async function readVideoDimensionsForSelection(file) {
-  try {
-    return await readVideoDimensions(file);
-  } catch (nativeError) {
-    // Prefer the already-loaded local parser before downloading a second parser from a CDN.
-    try {
-      const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
-      if (core?.inspectMediaInfo) {
-        const bytes = new Uint8Array(await file.slice(0, Math.min(file.size, 16 * 1024 * 1024)).arrayBuffer());
-        const info = core.inspectMediaInfo(bytes);
-        const track = (info?.tracks || []).find((item) => item.handler === 'vide');
-        const width = Number(track?.width || track?.displayWidth || info?.width);
-        const height = Number(track?.height || track?.displayHeight || info?.height);
-        if (width > 0 && height > 0) return { width, height };
+function waitForCurrentPreviewMetadata(timeoutMs = 10000) {
+  const video = previewVideo;
+  const expectedUrl = currentObjectUrl;
+  if (!video || !expectedUrl || video.src !== expectedUrl) {
+    return Promise.reject(new Error('video_dimensions_unavailable'));
+  }
+  const getMetadata = () => ({
+    width: Number(video.videoWidth) || 0,
+    height: Number(video.videoHeight) || 0,
+    duration: Number.isFinite(video.duration) ? video.duration : null
+  });
+  const isCurrent = () => currentObjectUrl === expectedUrl && video.src === expectedUrl &&
+    (!video.currentSrc || video.currentSrc === expectedUrl);
+  if (video.readyState >= 1 && isCurrent()) {
+    const value = getMetadata();
+    if (value.width && value.height) return Promise.resolve(value);
+  }
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let timeoutId;
+    const cleanup = () => {
+      clearTimeout(timeoutId);
+      video.removeEventListener('loadedmetadata', onLoadedMetadata);
+      video.removeEventListener('error', onError);
+    };
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      callback(value);
+    };
+    const onLoadedMetadata = () => {
+      if (!isCurrent()) return finish(reject, new Error('video_selection_changed'));
+      const value = getMetadata();
+      if (!value.width || !value.height) {
+        return finish(reject, new Error('video_dimensions_unavailable'));
       }
-    } catch (_) {}
+      finish(resolve, value);
+    };
+    const onError = () => finish(reject, new Error('video_dimensions_unavailable'));
+    video.addEventListener('loadedmetadata', onLoadedMetadata);
+    video.addEventListener('error', onError);
+    timeoutId = setTimeout(() => finish(reject, new Error('video_dimensions_unavailable')), timeoutMs);
+    if (video.readyState >= 1) onLoadedMetadata();
+  });
+}
+
+async function readVideoDimensionsForSelection(file) {
+  // The visible preview is already loading the selected file; reuse its metadata instead
+  // of creating another video element which makes large 4K files load twice.
+  let previewError = null;
+  try {
+    const metadata = await waitForCurrentPreviewMetadata();
+    return { width: metadata.width, height: metadata.height };
+  } catch (error) {
+    previewError = error;
+  }
+
+  // Prefer the local ADJN parser before downloading any additional parsing module.
+  try {
+    const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+    if (core?.inspectMediaInfo) {
+      const bytes = new Uint8Array(await file.slice(0, Math.min(file.size, 16 * 1024 * 1024)).arrayBuffer());
+      const info = core.inspectMediaInfo(bytes);
+      const track = (info?.tracks || []).find((item) => item.handler === 'vide');
+      const width = Number(track?.width || track?.displayWidth || info?.width);
+      const height = Number(track?.height || track?.displayHeight || info?.height);
+      if (width > 0 && height > 0) return { width, height };
+    }
+  } catch (_) {}
+
+  try {
     const mediaModule = await loadMediabunnyForCfr(new AbortController().signal, 18000);
     const { Input, ALL_FORMATS, BlobSource } = mediaModule;
     const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
     try {
       const track = await input.getPrimaryVideoTrack();
-      if (!track) throw nativeError;
+      if (!track) throw previewError || new Error('video_dimensions_unavailable');
       const width = await track.getDisplayWidth();
       const height = await track.getDisplayHeight();
-      if (!width || !height) throw nativeError;
+      if (!width || !height) throw previewError || new Error('video_dimensions_unavailable');
       return { width, height };
     } finally {
       try { input.dispose?.(); } catch (_) {}
     }
+  } catch (_) {
+    throw previewError || new Error('video_dimensions_unavailable');
   }
 }
 
@@ -1921,9 +1986,10 @@ async function handleFile(file) {
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
   currentObjectUrl = URL.createObjectURL(file);
   if (previewVideo) {
-    previewVideo.src = currentObjectUrl;
     previewVideo.preload = 'metadata';
     previewVideo.playsInline = true;
+    previewVideo.src = currentObjectUrl;
+    previewVideo.load();
   }
   if (fileMeta) fileMeta.textContent = `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
   if (previewWrap) previewWrap.classList.add('show');
