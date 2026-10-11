@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261011-60">
-<link rel="stylesheet" href="home.css?v=20261009-1">
+<link rel="stylesheet" href="style.css?v=20261011-61">
+<link rel="stylesheet" href="home.css?v=20261011-2">
 </head>
 <body>
 
@@ -109,10 +109,6 @@
     <div class="patch-panel">
       <h1 class="patch-title" id="patchTitle">Prepare your video for TikTok.</h1>
       <p class="patch-sub" id="patchSub">Patcher adjusts video parameters to help reduce noticeable quality loss after TikTok processing.</p>
-      <div class="notice-banner">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.9945 16H12.0035" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <p id="noticeBannerText">If video duration shows 0:00 after patching, this is normal. The file works fine.</p>
-      </div>
 
       <div class="dropzone" id="dropzone">
         <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.avi,.3gp,.3g2,.ts,.mts,.m2ts,.mpg,.mpeg,.wmv,.flv,.ogv">
@@ -135,7 +131,11 @@
       </div>
 
       <div class="preview-wrap" id="previewWrap">
-        <video id="previewVideo" controls></video>
+        <video id="previewVideo" controls playsinline></video>
+        <div class="mobile-3d-stage" id="mobile3dStage" aria-label="Interactive 3D mobile preview object">
+          <model-viewer id="mobile3dObject" src="https://modelviewer.dev/shared-assets/models/Astronaut.glb" alt="Decorative 3D astronaut" loading="lazy" auto-rotate rotation-per-second="18deg" camera-controls disable-zoom shadow-intensity="1" exposure="1"></model-viewer>
+          <div class="mobile-3d-copy"><strong>INEASY 3D</strong><span>Mobile preview</span></div>
+        </div>
         <div class="file-row">
           <span id="fileMeta">—</span>
           <button class="clear-btn" id="clearBtn" type="button">Remove</button>
@@ -156,7 +156,7 @@
           <span><strong>V2 <em>BETA</em></strong><small>Используйте его, если V1 лагает или не работает</small></span>
         </label>
       </div>
-      <p class="patcher-version-note hidden" id="patcherVersionNote">V1 is the standard mode. If a post becomes 30 FPS, check the source export settings and upload options; this is not a guaranteed fix.</p>
+      <p class="patcher-version-note hidden" id="patcherVersionNote">V1 — обычный режим для повседневной обработки. V2 — тестовый режим, не предназначен для обычного использования.</p>
       <p class="fps-advice hidden" id="fpsAdvice">Ready to process.</p>
       <button class="process-btn" id="processBtn" type="button" disabled>Process video</button>
       <div class="processing-state hidden" id="processingState">
@@ -170,15 +170,22 @@
       </div>
       <div class="processed-result hidden" id="processedResult">
         <span class="result-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5 9.2 16.5 19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        <div>
-          <strong id="resultTitle">Video ready</strong>
-          <small id="resultSub">Download your patched file</small>
+        <div class="processed-result-copy">
+          <strong id="resultTitle">Your video is ready</strong>
+          <small id="resultSub">1080p • 60 FPS</small>
         </div>
         <a id="downloadBtn" href="#" download class="download-link">Download</a>
-        <button id="publishTiktokBtn" class="tiktok-publish-btn" type="button">Publish to TikTok</button>
-        <a id="tiktokStudioBtn" class="tiktok-publish-btn tiktok-studio-btn" href="https://www.tiktok.com/upload" target="_blank" rel="noopener noreferrer">Open TikTok Studio</a>
-        <small class="autopost-hint" id="autopostHint">Quick auto-post with Zernio</small>
-        <small class="autopost-hint tiktok-studio-hint" id="tiktokStudioHint">Official TikTok upload. Posting on site is usually faster.</small>
+        <div class="publication-actions" id="publicationActions">
+          <button id="publishTiktokBtn" class="tiktok-publish-btn" type="button">Publish to TikTok</button>
+          <a id="tiktokStudioBtn" class="tiktok-publish-btn tiktok-studio-btn" href="https://www.tiktok.com/upload" target="_blank" rel="noopener noreferrer">Open TikTok Studio</a>
+          <small class="autopost-hint" id="autopostHint">Quick auto-post with Zernio</small>
+          <small class="autopost-hint tiktok-studio-hint" id="tiktokStudioHint">Official TikTok upload. Posting on site is usually faster.</small>
+        </div>
+        <button id="optimizeAnotherBtn" class="optimize-another-btn" type="button">Optimize another video</button>
+      </div>
+      <div class="notice-banner hidden" id="durationNotice" role="note">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.9945 16H12.0035" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <p id="noticeBannerText">If the duration displays as 0:00, check the downloaded MP4 in a separate video player before publishing.</p>
       </div>
     </div>
     </section>
@@ -353,7 +360,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261011-21"></script>
-<script src="app.js?v=20261011-110"></script>
+<script src="app.js?v=20261011-111"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
