@@ -2057,10 +2057,15 @@ if (processBtn) {
 
       // V2 is a byte-preservation path: do not append even a harmless MP4 free box.
       // This keeps the downloaded file byte-for-byte identical to the selected source.
-      const outputBytes = result.passthrough || getSelectedPatcherVersion() === 'v2'
+      const isV2OriginalPassThrough = getSelectedPatcherVersion() === 'v2';
+      const outputBytes = result.passthrough || isV2OriginalPassThrough
         ? result.output
         : (result.outputMime === 'video/mp4' ? appendMp4Padding(result.output) : result.output);
-      const outputBlob = new Blob([outputBytes], { type: result.outputMime || 'video/mp4' });
+      // For V2, keep the actual selected File object for download and auto-post.
+      // This avoids any extra Blob/container handling in the site after the worker returns.
+      const outputBlob = isV2OriginalPassThrough
+        ? sourceFile
+        : new Blob([outputBytes], { type: result.outputMime || 'video/mp4' });
 
       await consumeProcessedVideo();
       processedVideoBlob = outputBlob;
