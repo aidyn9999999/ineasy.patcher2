@@ -20,6 +20,8 @@ const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : nu
 const ZERNIO_API_BASE = 'https://zernio.com/api/v1';
 const TIKTOK_CAPTION_SUFFIX = '@ineasybot или ineasy.site(веб сайт)\n#ineasybot';
 const WEEKLY_FREE_BALANCE = 2;
+const FREE_BALANCE_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+const ASTANA_TIME_ZONE = 'Asia/Almaty';
 const CARD_INFO = '4400 4300 4955 5771 или 705 542 37 05 (Freedom Bank, Halyk Bank, Kaspi.kz)\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasy.site/app.html';
 const WEBSITE_URL = new URL('/', SITE_URL).toString();
@@ -391,22 +393,29 @@ async function unblockUser(telegramId) {
   await recordUserActivity(telegramId, 'Блокировка снята');
 }
 
-function currentWeekKey() {
-  const now = new Date();
-  const firstJan = new Date(now.getFullYear(), 0, 1);
-  const days = Math.floor((now - firstJan) / (24 * 60 * 60 * 1000));
-  const week = Math.ceil((days + firstJan.getDay() + 1) / 7);
-  return `${now.getFullYear()}-W${week}`;
-}
-
 async function getFreeBalance(telegramId) {
-  const weekKey = currentWeekKey();
+  const now = Date.now();
   const balance = await redis.eval(
-    "local week = redis.call('GET', KEYS[1]); if week ~= ARGV[1] then redis.call('SET', KEYS[1], ARGV[1]); redis.call('SET', KEYS[2], ARGV[2]); return ARGV[2]; end; local balance = redis.call('GET', KEYS[2]); if not balance then redis.call('SET', KEYS[2], ARGV[2]); return ARGV[2]; end; return balance",
-    [`freeWeek:${telegramId}`, `freeBalance:${telegramId}`],
-    [weekKey, String(WEEKLY_FREE_BALANCE)]
+    "local balance = redis.call('GET', KEYS[1]); if not balance then balance = ARGV[1]; redis.call('SET', KEYS[1], balance); end; balance = tonumber(balance); if balance > 0 then return balance; end; local nextAt = tonumber(redis.call('GET', KEYS[2]) or '0'); if nextAt == 0 then nextAt = tonumber(ARGV[2]) + tonumber(ARGV[3]); redis.call('SET', KEYS[2], tostring(nextAt)); return 0; end; if tonumber(ARGV[2]) >= nextAt then redis.call('SET', KEYS[1], ARGV[1]); redis.call('DEL', KEYS[2]); return tonumber(ARGV[1]); end; return 0",
+    [`freeBalance:${telegramId}`, `freeNextAt:${telegramId}`],
+    [String(WEEKLY_FREE_BALANCE), String(now), String(FREE_BALANCE_INTERVAL_MS)]
   );
   return Number(balance);
+}
+
+async function getFreeNextAt(telegramId) {
+  const value = await redis.get(`freeNextAt:${telegramId}`);
+  return value === null || value === undefined ? null : Number(value);
+}
+
+function formatAstanaDateTime(timestamp, lang = 'ru') {
+  if (!Number.isFinite(Number(timestamp)) || Number(timestamp) <= 0) return null;
+  const locale = lang === 'kk' ? 'kk-KZ' : lang === 'en' ? 'en-GB' : 'ru-RU';
+  return new Date(Number(timestamp)).toLocaleString(locale, {
+    timeZone: ASTANA_TIME_ZONE,
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
 }
 
 async function getPurchasedBalance(telegramId) {
@@ -453,9 +462,9 @@ async function getPatchedCount(telegramId) {
 async function consumeOneVideo(telegramId) {
   await Promise.all([getFreeBalance(telegramId), getPurchasedBalance(telegramId)]);
   const consumed = await redis.eval(
-    "local free = tonumber(redis.call('GET', KEYS[1]) or '0'); local purchased = tonumber(redis.call('GET', KEYS[2]) or '0'); if free > 0 then free = redis.call('DECR', KEYS[1]); elseif purchased > 0 then purchased = redis.call('DECR', KEYS[2]); else return 0; end; redis.call('INCR', KEYS[3]); return 1",
-    [`freeBalance:${telegramId}`, `purchased:${telegramId}`, `patched:${telegramId}`],
-    []
+    "local free = tonumber(redis.call('GET', KEYS[1]) or '0'); local purchased = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[1]); if free <= 0 then local nextAt = tonumber(redis.call('GET', KEYS[4]) or '0'); if nextAt > 0 and now >= nextAt then free = tonumber(ARGV[3]); redis.call('SET', KEYS[1], free); redis.call('DEL', KEYS[4]); end; end; if free > 0 then free = redis.call('DECR', KEYS[1]); if tonumber(free) <= 0 then redis.call('SET', KEYS[4], tostring(now + tonumber(ARGV[2]))); end; elseif purchased > 0 then redis.call('DECR', KEYS[2]); else return 0; end; redis.call('INCR', KEYS[3]); return 1",
+    [`freeBalance:${telegramId}`, `purchased:${telegramId}`, `patched:${telegramId}`, `freeNextAt:${telegramId}`],
+    [String(Date.now()), String(FREE_BALANCE_INTERVAL_MS), String(WEEKLY_FREE_BALANCE)]
   );
   if (Number(consumed) !== 1) throw new Error('no_balance');
 }
@@ -905,10 +914,28 @@ async function sendPackagesMenu(ctx, lang) {
   await ctx.reply(TEXTS[lang].packagesTitle, packagesKeyboard(lang));
 }
 
+function balanceEndedKeyboard(lang, telegramId) {
+  const buyLabel = BTN[lang].buy;
+  const inviteLabel = BTN[lang].invite;
+  return Markup.inlineKeyboard([
+    [Markup.button.callback(buyLabel, 'open_buy_menu')],
+    [Markup.button.callback(inviteLabel, 'invite_now')],
+  ]);
+}
+
+async function notifyFreeBalanceEnded(telegramId, lang, nextAt) {
+  if (!nextAt) return;
+  try {
+    await bot.telegram.sendMessage(String(telegramId), TEXTS[lang].freeBalanceEnded(nextAt), balanceEndedKeyboard(lang, telegramId));
+  } catch (error) {
+    console.error('Не удалось отправить сообщение об окончании бесплатного баланса:', error.message);
+  }
+}
+
 async function sendBalance(ctx, lang) {
-  const id = ctx.from.id;
-  const [free, purchased] = await Promise.all([getFreeBalance(id), getPurchasedBalance(id)]);
-  await ctx.reply(TEXTS[lang].balance(free, purchased), mainKeyboard(lang));
+  const id = String(ctx.from.id);
+  const [free, purchased, nextAt] = await Promise.all([getFreeBalance(id), getPurchasedBalance(id), getFreeNextAt(id)]);
+  await ctx.reply(TEXTS[lang].balance(free, purchased, nextAt), mainKeyboard(lang));
 }
 
 async function sendProfile(ctx, lang) {
@@ -1015,6 +1042,47 @@ bot.start(async (ctx) => {
   }
 
   await sendWelcome(ctx, lang);
+});
+
+bot.action('open_buy_menu', async (ctx) => {
+  await ctx.answerCbQuery();
+  await sendPackagesMenu(ctx, await getLang(ctx.from.id));
+});
+bot.action('invite_now', async (ctx) => {
+  await ctx.answerCbQuery();
+  await sendInvite(ctx, await getLang(ctx.from.id));
+});
+
+bot.command('broadcast_balance_update', async (ctx) => {
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
+  await ctx.reply('Запускаю рассылку об обновлении баланса. Текущие балансы пользователей не меняются.');
+  let cursor = '0';
+  let sent = 0;
+  let failed = 0;
+  do {
+    const page = await redis.scan(cursor, { match: 'botStarted:*', count: 100 });
+    cursor = String(page[0]);
+    const keys = page[1] || [];
+    for (const key of keys) {
+      const telegramId = String(key).slice('botStarted:'.length);
+      if (!/^\\d+$/.test(telegramId)) continue;
+      try {
+        const lang = await getLang(telegramId);
+        const message = lang === 'kk'
+          ? '✅ Баланс деректері жаңартылды. Енді тегін видео балансы күн сайын емес, 7 күндік жеке циклмен жұмыс істейді. Қолданыстағы тегін видеоларыңыз сақталды. Тегін баланс 0 болғанда келесі 2 видео дәл 7 күннен кейін Астана уақытымен беріледі.'
+          : lang === 'en'
+            ? '✅ Your balance settings have been updated. Free videos now follow a personal 7-day cycle instead of a daily reset. Your current unused free videos are preserved. When your free balance reaches 0, the next 2 free videos arrive exactly 7 days later, using Astana time.'
+            : '✅ Данные баланса обновлены. Теперь бесплатные видео работают по личному циклу в 7 дней, а не сбрасываются ежедневно. Ваши текущие неиспользованные бесплатные видео сохранены. Когда бесплатный баланс станет 0, следующие 2 видео начислятся ровно через 7 дней по времени Астаны.';
+        await bot.telegram.sendMessage(telegramId, message, balanceEndedKeyboard(lang, telegramId));
+        sent++;
+      } catch (error) {
+        failed++;
+        console.error('Не удалось отправить обновление баланса пользователю:', telegramId, error.message);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    }
+  } while (cursor !== '0');
+  await ctx.reply(`Рассылка завершена. Отправлено: ${sent}. Не доставлено: ${failed}.`);
 });
 
 bot.command('buyvideo', async (ctx) => sendPackagesMenu(ctx, await getLang(ctx.from.id)));
@@ -1908,7 +1976,9 @@ app.get('/api/balance/:telegramId', requireUserToken, async (req, res) => {
     const id = req.params.telegramId;
     if (String(id) !== req.telegramId) return res.status(403).json({ error: 'account_mismatch' });
     const [free, purchased] = await Promise.all([getFreeBalance(id), getPurchasedBalance(id)]);
-    res.json({ free, purchased, balance: free + purchased });
+    const freeNextAt = free === 0 ? await getFreeNextAt(id) : null;
+    res.set('Cache-Control', 'no-store');
+    res.json({ free, purchased, balance: free + purchased, freeNextAt });
   } catch (err) {
     console.error('Ошибка получения баланса:', err);
     res.status(500).json({ error: 'balance_fetch_failed' });
@@ -1921,12 +1991,16 @@ app.post('/api/consume/:telegramId', requireUserToken, async (req, res) => {
     if (telegramId !== req.telegramId) return res.status(403).json({ error: 'account_mismatch' });
     await consumeOneVideo(telegramId);
     await recordUserActivity(telegramId, 'Обработано видео');
-    const [free, purchased, patched] = await Promise.all([
+    const [free, purchased, patched, freeNextAt] = await Promise.all([
       getFreeBalance(telegramId),
       getPurchasedBalance(telegramId),
       getPatchedCount(telegramId),
+      getFreeNextAt(telegramId),
     ]);
-    res.json({ free, purchased, patched });
+    if (free === 0 && freeNextAt) {
+      await notifyFreeBalanceEnded(telegramId, await getLang(telegramId), freeNextAt);
+    }
+    res.json({ free, purchased, patched, freeNextAt });
   } catch (err) {
     if (err.message === 'no_balance') {
       return res.status(402).json({ error: 'no_balance' });
