@@ -2010,7 +2010,8 @@ app.post('/api/consume/:telegramId', requireUserToken, async (req, res) => {
     res.json({ free, purchased, patched, freeNextAt });
   } catch (err) {
     if (err.message === 'no_balance') {
-      return res.status(402).json({ error: 'no_balance' });
+      const freeNextAt = await getFreeNextAt(String(req.params.telegramId)).catch(() => null);
+      return res.status(402).json({ error: 'no_balance', freeNextAt });
     }
     console.error('Ошибка consume:', err);
     res.status(500).json({ error: 'consume_failed' });
