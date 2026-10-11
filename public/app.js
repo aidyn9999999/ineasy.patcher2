@@ -1627,11 +1627,13 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
       '-movflags', '+faststart'
     ];
     try {
-      await ffmpeg.exec([...baseArgs, '-c:a', 'copy', outputPath]);
+      const copyExitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'copy', outputPath]);
+      if (copyExitCode !== 0) throw new Error('audio_copy_failed');
     } catch (audioCopyError) {
       if (signal.aborted) throw audioCopyError;
       try { await ffmpeg.deleteFile(outputPath); } catch (_) {}
-      await ffmpeg.exec([...baseArgs, '-c:a', 'aac', '-b:a', '192k', outputPath]);
+      const aacExitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'aac', '-b:a', '192k', outputPath]);
+      if (aacExitCode !== 0) throw new Error('fps_encoder_empty_output');
     }
     signal.throwIfAborted();
     const outputData = await ffmpeg.readFile(outputPath);
