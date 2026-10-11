@@ -197,7 +197,8 @@ function fileExtension(name) {
  * Actual FFmpeg-wasm frame conversion for 4K SDR AVC/8-bit HEVC sources.
  * It accepts inputs up to 4096x2304, including 4K sources up to 120 fps, and
  * produces a real constant 60000/1001 fps (59.94) MP4 without scaling the frame.
- * HDR/BT.2020/PQ/HLG and HEVC Main10 inputs are intentionally rejected here.
+ * Explicit PQ/HLG/Dolby Vision metadata is rejected by this SDR path. Main10 without
+ * explicit HDR signaling may be converted to 8-bit SDR output (not HDR-preserving).
  */
 export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions, duration, signal, onProgress) {
   throwIfAborted(signal);
