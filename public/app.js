@@ -2100,7 +2100,7 @@ async function handleFile(file) {
   // Warm FFmpeg's JS/WASM assets in the background as soon as a 4K source is selected.
   // Downloading in parallel with the user's preparation removes this wait from conversion.
   if (selectedLongSide >= 3000) {
-    import('./ffmpeg-4k-cfr.js?v=20261012-4')
+    import('./ffmpeg-4k-cfr.js?v=20261012-5')
       .then((module) => module.prepareFFmpeg4kFallback())
       .catch((error) => console.warn('[INEASY] 4K assets will load on demand:', error?.message || error));
   }
@@ -2469,7 +2469,7 @@ if (processBtn) {
 
       // Inspect source color metadata before selecting an encoder. Never send HDR through
       // the browser's generic 8-bit SDR encoder path.
-      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-4');
+      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-5');
       const hdrInspection = await localFfmpeg.inspectHDRVideo(sourceFile, { includeBytes: true });
       controller.signal.throwIfAborted();
       let fpsConversion;
@@ -2482,7 +2482,7 @@ if (processBtn) {
           profile: hdrInspection.label, reason: hdrInspection.reason,
           resolution: hdrInspection.width + 'x' + hdrInspection.height
         });
-        setProcessingState('processing', 'HDR • 10-bit • 59.94 FPS');
+        setProcessingState('processing', 'HDR10 • 10-bit • 59.94 FPS');
         fpsConversion = await localFfmpeg.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile, selectedVideoDimensions, sourceDuration,
           controller.signal, reportCfrProgress, {
