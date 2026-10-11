@@ -2518,7 +2518,7 @@ if (processBtn) {
             const primaryMessage = String(primaryError?.message || primaryError || 'unknown_error');
             if (/ffmpeg_4k_hdr_unsafe|ffmpeg_4k_10bit_unsupported/i.test(ffmpegMessage)) throw ffmpegError;
             throw new Error(
-              'ffmpeg_4k_fallback_failed: FFmpeg=' + ffmpegMessage.slice(0, 220) +
+              'ffmpeg_4k_fallback_failed: FFmpeg=' + ffmpegMessage.slice(0, 1000) +
               '; MediaBunny=' + primaryMessage.slice(0, 220)
             );
           }
@@ -2854,6 +2854,26 @@ function localizePatchError(message) {
       en: 'Could not safely retime this MP4 to 60.04 FPS. Reason'
     }[lang];
     return `${text}: ${fpsRetimingFailure[1]}`;
+  }
+  const rawError = String(message || '');
+  const ffmpegExecFailure = rawError.match(/ffmpeg_4k_exec_failed:\\s*exit=(\\d+);\\s*stage=([^;]+);\\s*detail=([\\s\\S]*?)(?=;\\s*(?:firstAttemptExit|MediaBunny)=|$)/i);
+  if (ffmpegExecFailure) {
+    const exitCode = ffmpegExecFailure[1];
+    const stage = ffmpegExecFailure[2].trim();
+    const detail = ffmpegExecFailure[3].trim().slice(0, 240);
+    return {
+      ru: 'Ошибка FFmpeg при обработке 4K (этап ' + stage + ', код ' + exitCode + '). Причина: ' + (detail || 'подробности смотрите в консоли браузера'),
+      kk: '4K FFmpeg қатесі (кезең ' + stage + ', код ' + exitCode + '). Себебі: ' + (detail || 'толық мәлімет браузер консолінде'),
+      en: 'FFmpeg 4K error (stage ' + stage + ', code ' + exitCode + '). Cause: ' + (detail || 'see browser console')
+    }[lang];
+  }
+  const assetFailure = rawError.match(/ffmpeg_4k_asset_download_failed:\\s*(\\d+)/i);
+  if (assetFailure) {
+    return {
+      ru: 'Не удалось загрузить файл FFmpeg с CDN (HTTP ' + assetFailure[1] + '). Проверьте соединение и повторите попытку.',
+      kk: 'FFmpeg файлын CDN-нен жүктеу мүмкін болмады (HTTP ' + assetFailure[1] + '). Желіні тексеріп, қайталаңыз.',
+      en: 'Could not download the FFmpeg asset from the CDN (HTTP ' + assetFailure[1] + '). Check the connection and retry.'
+    }[lang];
   }
   const knownErrors = [
     { test: /video_resolution_changed_during_cfr|resolution_output_verification_failed/i, ru: 'После конвертации 4K-разрешение изменилось. Файл не выдан.', kk: '4K түрлендіруден кейін ажыратымдылық өзгерді. Файл шығарылған жоқ.', en: 'The 4K resolution changed during processing. No file was produced.' },
