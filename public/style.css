@@ -903,6 +903,19 @@ button:focus-visible, .tg-btn:focus-visible {
   text-align: center;
   overflow-wrap: anywhere;
 }
+
+.fps-policy-note {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.025);
+  font-size: 12px;
+  line-height: 1.55;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
 .news-callout {
   display: flex;
   align-items: center;
