@@ -2029,6 +2029,8 @@ if (processBtn) {
               passthrough: msg.passthrough,
               mode: msg.mode,
               report: msg.report,
+              metadataReport: msg.metadataReport,
+              compatibility: msg.compatibility,
               rateControlReport: msg.rateControlReport,
               inputBytes: msg.inputBytes
             });
@@ -2087,6 +2089,8 @@ if (processBtn) {
         mode: result.mode || 'unknown',
         passthrough: Boolean(result.passthrough),
         rateControl: result.rateControlReport || null,
+        sourceMetadataReport: result.metadataReport || null,
+        sourceCompatibility: result.compatibility || null,
         patcherActive: !result.passthrough && result.mode === 'adjn-core-resolution-codec-safe',
         inputFps: originalInputFps ?? result.inputInfo?.averageFps ?? null,
         outputFps: metaInfo?.averageFps ?? null,
