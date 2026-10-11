@@ -410,9 +410,9 @@
       info = core.inspectMediaInfo(original);
       validateMediaInfo(info);
       hdr = detectHdrProfile(original, info);
-      if (hdr && ['HDR10', 'HDR10+', 'HLG HDR', 'Dolby Vision'].includes(hdr.label)) {
-        throw new Error('TikTok-safe policy: HDR/BT.2020 detected. Convert video to SDR first, then patch again.');
-      }
+      // HDR is allowed. Any unsupported container layout falls back to exact-byte
+      // passthrough below; compatible MP4 files are patched only if the contract check
+      // later confirms that codec, frame timing, and HDR signalling remain intact.
       compat = core.inspectCompatibility(original);
       try {
         smartResolutionReport = globalThis.SmartResolution?.decideResolution(info, { engine: 'none', retimeRequested: false }) || null;
@@ -421,15 +421,15 @@
       }
     } catch (inspectError) {
       hdr = detectHdrProfile(original, info || sniff);
-      if (isHdrProfile(hdr)) throw new Error('hdr_video_not_supported');
+      // Unsupported/complex HDR media is preserved byte-for-byte rather than rejected.
       // Fragmented MP4, WebM/MKV, unusual MOV atoms, and other structures are
       // deliberately preserved byte-for-byte instead of being rejected.
       stage(requestId, 'preparing', 'Universal Safe…', 35, 'Struktur kompleks • seluruh file dipertahankan byte-identical');
       return passthroughResult(original, data, inspectError?.message || 'container/codec tidak memakai jalur patch MP4 klasik', info, hdr, sniff);
     }
 
-    if (isHdrProfile(hdr)) throw new Error('hdr_video_not_supported');
-
+    // HDR is permitted here. verifyMediaContract below enforces that 10-bit/HDR
+    // signalling stays present; otherwise the original file is returned unchanged.
     const limits = validateMediaInfo(info);
 
     const loadText = limits.uhdHighLoad
