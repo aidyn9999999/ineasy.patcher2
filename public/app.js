@@ -1908,6 +1908,95 @@ async function prepareVideoForPatcher(file, dimensions, signal) {
   };
 }
 
+// ADJN's unchanged size guard expects the patched MP4 to be at least as large as its input.
+// Some encoders write a long existing QuickTime ©too item which ADJN replaces with its own
+// encoder marker; that can shrink the output by a few bytes and incorrectly reject the video.
+// Convert only that metadata-item FourCC to a same-sized standard 'free' box before ADJN runs.
+// File length, sample offsets, video/audio bitstreams, timestamps, and resolution do not change.
+function neutralizeAdjnEncoderMetadata(bytes) {
+  if (!(bytes instanceof Uint8Array) || bytes.byteLength < 16) return 0;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+
+  const listBoxes = (start, end) => {
+    if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) ||
+        start < 0 || end > bytes.byteLength || start > end) return null;
+    const boxes = [];
+    let offset = start;
+    while (offset < end) {
+      if (offset + 8 > end) return null;
+      let size = view.getUint32(offset, false);
+      let header = 8;
+      if (size === 1) {
+        if (offset + 16 > end) return null;
+        const hi = view.getUint32(offset + 8, false);
+        const lo = view.getUint32(offset + 12, false);
+        size = hi * 4294967296 + lo;
+        header = 16;
+      } else if (size === 0) {
+        size = end - offset;
+      }
+      if (!Number.isSafeInteger(size) || size < header || offset + size > end) return null;
+      boxes.push({
+        start: offset,
+        end: offset + size,
+        header,
+        type: String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7])
+      });
+      offset += size;
+    }
+    return offset === end ? boxes : null;
+  };
+
+  const top = listBoxes(0, bytes.byteLength);
+  if (!top) return 0;
+  let changed = 0;
+
+  const processMeta = (metaBox) => {
+    const childrenStart = metaBox.start + metaBox.header + 4; // meta is an ISO FullBox
+    if (childrenStart > metaBox.end) return;
+    const metaChildren = listBoxes(childrenStart, metaBox.end);
+    if (!metaChildren) return;
+    for (const ilst of metaChildren) {
+      if (ilst.type !== 'ilst') continue;
+      const items = listBoxes(ilst.start + ilst.header, ilst.end);
+      if (!items) continue;
+      for (const item of items) {
+        // ©too is encoded as byte 0xA9 followed by the ASCII bytes "too".
+        if (bytes[item.start + 4] === 0xA9 &&
+            bytes[item.start + 5] === 0x74 &&
+            bytes[item.start + 6] === 0x6f &&
+            bytes[item.start + 7] === 0x6f &&
+            item.end - item.start >= item.header + 8) {
+          // Replace only the 4-byte item type; keep every size and offset identical.
+          bytes[item.start + 4] = 0x66; // f
+          bytes[item.start + 5] = 0x72; // r
+          bytes[item.start + 6] = 0x65; // e
+          bytes[item.start + 7] = 0x65; // e
+          changed += 1;
+        }
+      }
+    }
+  };
+
+  const processUdta = (udta) => {
+    const children = listBoxes(udta.start + udta.header, udta.end);
+    if (!children) return;
+    for (const child of children) {
+      if (child.type === 'meta') processMeta(child);
+    }
+  };
+
+  for (const moov of top.filter((box) => box.type === 'moov')) {
+    const children = listBoxes(moov.start + moov.header, moov.end);
+    if (!children) continue;
+    for (const child of children) {
+      if (child.type === 'udta') processUdta(child);
+      else if (child.type === 'meta') processMeta(child);
+    }
+  }
+  return changed;
+}
+
 function appendMp4Padding(bytes) {
   const paddingSize = 1024 * 1024;
   if (!(bytes instanceof Uint8Array) || bytes.byteLength + paddingSize > MAX_VIDEO_FILE_SIZE) return bytes;
@@ -2499,6 +2588,19 @@ if (processBtn) {
       const processingFile = preparedInput.blob;
       const processingFileName = processingFile.name || `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`;
       const buffer = await processingFile.arrayBuffer();
+      // Keep ADJN and its SIZE GUARD unchanged. For CFR-transcoded V1 files, neutralize
+      // a pre-existing encoder metadata item that ADJN replaces and that can make the
+      // final container 1-30 bytes shorter. This changes 4 metadata-type bytes only.
+      if (!isV2SelectedForJob && !fpsConversion.preserveOriginal) {
+        const neutralizedItems = neutralizeAdjnEncoderMetadata(new Uint8Array(buffer));
+        if (neutralizedItems > 0) {
+          console.info('[INEASY] Normalized replaceable encoder metadata before ADJN:', {
+            items: neutralizedItems,
+            bytesChanged: neutralizedItems * 4,
+            containerLengthPreserved: true
+          });
+        }
+      }
       controller.signal.throwIfAborted();
       if (buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
       updateProcessingProgress(15);
