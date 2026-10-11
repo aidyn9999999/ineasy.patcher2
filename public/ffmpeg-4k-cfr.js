@@ -204,6 +204,11 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
       if (primaries === 9) result.displayColor = 'BT.2020 / non-HDR transfer';
     }
   }
+  if (isHevc && result.tenBit && !result.hdr && result.displayColor === 'unknown') {
+    result.hdr = true;
+    result.displayColor = 'BT.2020 / PQ (inferred from HEVC Main10; transfer metadata missing)';
+    result.reason = 'HEVC Main10 with missing HDR transfer metadata; preserving 10-bit HDR path';
+  }
   return result;
 }
 
@@ -239,6 +244,17 @@ export async function inspectHDRVideo(inputBlob) {
 function fileExtension(name) {
   const extension = String(name || '').toLowerCase().match(/\.(mp4|m4v|mov)$/)?.[1];
   return extension || '';
+}
+
+// Keep output close to source size instead of letting CRF/ultrafast inflate it.
+// Aim ~1 MiB below source to leave room for muxing variance.
+function smartVideoBitrate(sourceBytes, durationSeconds, audioBitrate = 128000) {
+  const bytes = Math.max(1, Number(sourceBytes) || 1);
+  const seconds = Math.max(0.1, Number(durationSeconds) || 0.1);
+  const safetyBytes = Math.min(1024 * 1024, Math.max(64 * 1024, Math.round(bytes * 0.015)));
+  const targetBytes = Math.max(128 * 1024, bytes - safetyBytes);
+  const totalBitsPerSecond = (targetBytes * 8) / seconds;
+  return Math.max(250000, Math.min(100000000, Math.floor(totalBitsPerSecond - audioBitrate)));
 }
 
 /**
@@ -283,6 +299,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   const isHdrEncode = options?.hdr === true ||
     (options?.hdr === 'auto' && colorProfile.hdr);
   const hdrType = /HLG/i.test(colorProfile.displayColor) ? 'hlg' : 'pq';
+  const targetVideoBitrate = smartVideoBitrate(inputBlob.size, duration, 128000);
+  const targetMaxRate = Math.round(targetVideoBitrate * 1.15);
+  const targetBufferSize = Math.max(targetVideoBitrate * 2, 512000);
   if (colorProfile.hdr && !isHdrEncode) {
     console.warn('[INEASY] Structured HDR colour metadata detected; SDR path refused:', colorProfile);
     throw new Error('ffmpeg_4k_hdr_unsafe: ' + colorProfile.reason);
@@ -410,7 +429,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
         ? [
             '-c:v', 'libx265',
             '-preset', 'ultrafast',
-            '-crf', '22',
+            '-b:v', String(targetVideoBitrate),
+            '-maxrate', String(targetMaxRate),
+            '-bufsize', String(targetBufferSize),
             '-threads', '1',
             '-pix_fmt', 'yuv420p10le',
             '-tag:v', 'hvc1',
@@ -422,7 +443,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
         : [
             '-c:v', 'libx264',
             '-preset', 'ultrafast',
-            '-crf', '20',
+            '-b:v', String(targetVideoBitrate),
+            '-maxrate', String(targetMaxRate),
+            '-bufsize', String(targetBufferSize),
             '-threads', '1',
             '-pix_fmt', 'yuv420p',
             '-tag:v', 'avc1'
@@ -455,7 +478,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
           ? [
               '-c:v', 'libx265',
               '-preset', 'ultrafast',
-              '-crf', '25',
+              '-b:v', String(targetVideoBitrate),
+              '-maxrate', String(targetMaxRate),
+              '-bufsize', String(targetBufferSize),
               '-threads', '1',
               '-pix_fmt', 'yuv420p10le',
               '-tag:v', 'hvc1',
@@ -467,7 +492,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
           : [
               '-c:v', 'libx264',
               '-preset', 'ultrafast',
-              '-crf', '22',
+              '-b:v', String(targetVideoBitrate),
+              '-maxrate', String(targetMaxRate),
+              '-bufsize', String(targetBufferSize),
               '-threads', '1',
               '-pix_fmt', 'yuv420p'
             ]),
@@ -497,7 +524,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
             ? [
                 '-c:v', 'libx265',
                 '-preset', 'ultrafast',
-                '-crf', '27',
+                '-b:v', String(Math.max(250000, Math.round(targetVideoBitrate * 0.8))),
+                '-maxrate', String(Math.round(targetMaxRate * 0.8)),
+                '-bufsize', String(targetBufferSize),
                 '-threads', '1',
                 '-pix_fmt', 'yuv420p10le',
                 '-tag:v', 'hvc1',
@@ -509,7 +538,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
             : [
                 '-c:v', 'libx264',
                 '-preset', 'ultrafast',
-                '-crf', '23',
+                '-b:v', String(Math.max(250000, Math.round(targetVideoBitrate * 0.8))),
+                '-maxrate', String(Math.round(targetMaxRate * 0.8)),
+                '-bufsize', String(targetBufferSize),
                 '-threads', '1',
                 '-pix_fmt', 'yuv420p'
               ]),
@@ -570,6 +601,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       inputResolution: width + 'x' + height,
       outputResolution: verified.width + 'x' + verified.height,
       outputFps: actualFps,
+      inputBytes: inputBlob.size,
+      outputBytes: outputBytes.byteLength,
+      targetVideoBitrate,
       encoder: isHdrEncode ? 'FFmpeg.wasm libx265 Main10' : 'FFmpeg.wasm libx264',
       sourceHdrFallback: false,
       hdrTranscoded: isHdrEncode,
