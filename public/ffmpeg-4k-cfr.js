@@ -5,6 +5,11 @@ const MAX_INPUT_BYTES = 500 * 1024 * 1024;
 const MAX_SIDE = 4096;
 const MAX_SHORT_SIDE = 2304;
 const TARGET_FPS = '60000/1001';
+const FFMPEG_PACKAGE_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@' + FFMPEG_VERSION + '/dist/esm/index.js';
+const FFMPEG_CORE_BASE_URL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@' + FFMPEG_VERSION + '/dist/umd';
+
+let ffmpegRuntime = null;
+let ffmpegRuntimePromise = null;
 
 function throwIfAborted(signal) {
   if (signal?.aborted) throw new Error('processing_cancelled');
@@ -17,6 +22,48 @@ async function fetchBlobAsset(url, mimeType, signal) {
   const bytes = await response.arrayBuffer();
   throwIfAborted(signal);
   return URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+}
+
+function loadFFmpegRuntime() {
+  if (!ffmpegRuntimePromise) {
+    ffmpegRuntimePromise = Promise.all([
+      import(FFMPEG_PACKAGE_URL),
+      fetchBlobAsset(FFMPEG_CORE_BASE_URL + '/ffmpeg-core.js', 'text/javascript'),
+      fetchBlobAsset(FFMPEG_CORE_BASE_URL + '/ffmpeg-core.wasm', 'application/wasm')
+    ]).then(([module, coreURL, wasmURL]) => {
+      if (!module?.FFmpeg) {
+        URL.revokeObjectURL(coreURL);
+        URL.revokeObjectURL(wasmURL);
+        throw new Error('ffmpeg_4k_api_unavailable');
+      }
+      ffmpegRuntime = { FFmpeg: module.FFmpeg, coreURL, wasmURL };
+      return ffmpegRuntime;
+    }).catch((error) => {
+      ffmpegRuntimePromise = null;
+      throw error;
+    });
+  }
+  return ffmpegRuntimePromise;
+}
+
+// Warm the FFmpeg module and WASM core while the user prepares a selected 4K video.
+export async function preloadFFmpeg4k() {
+  try {
+    await loadFFmpegRuntime();
+    return true;
+  } catch (error) {
+    console.warn('[INEASY] 4K FFmpeg pre-load deferred:', error?.message || error);
+    return false;
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', () => {
+    if (ffmpegRuntime?.coreURL) URL.revokeObjectURL(ffmpegRuntime.coreURL);
+    if (ffmpegRuntime?.wasmURL) URL.revokeObjectURL(ffmpegRuntime.wasmURL);
+    ffmpegRuntime = null;
+    ffmpegRuntimePromise = null;
+  }, { once: true });
 }
 
 function containsHdrSignals(bytes) {
@@ -73,7 +120,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   const extension = fileExtension(inputBlob.name);
   if (!extension) throw new Error('ffmpeg_4k_source_format_unsupported');
 
-  // Read and inspect the source before downloading the ~31 MB FFmpeg core.
+  // Start loading FFmpeg while the local 4K file is read and inspected.
+  const runtimePromise = loadFFmpegRuntime();
+  runtimePromise.catch(() => {});
   const inputBytes = new Uint8Array(await inputBlob.arrayBuffer());
   throwIfAborted(signal);
   const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
@@ -98,19 +147,12 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   }
 
   onProgress?.(0.02);
-  const ffmpegPackageUrl = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@' + FFMPEG_VERSION + '/dist/esm/index.js';
-  const coreBaseUrl = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@' + FFMPEG_VERSION + '/dist/umd';
-  const [{ FFmpeg }, coreURL, wasmURL] = await Promise.all([
-    import(ffmpegPackageUrl),
-    fetchBlobAsset(coreBaseUrl + '/ffmpeg-core.js', 'text/javascript', signal),
-    fetchBlobAsset(coreBaseUrl + '/ffmpeg-core.wasm', 'application/wasm', signal)
-  ]);
+  const runtime = await runtimePromise;
   throwIfAborted(signal);
-  if (!FFmpeg) throw new Error('ffmpeg_4k_api_unavailable');
-
+  const { FFmpeg, coreURL, wasmURL } = runtime;
   const ffmpeg = new FFmpeg();
-  let coreBlobUrl = coreURL;
-  let wasmBlobUrl = wasmURL;
+  const coreBlobUrl = coreURL;
+  const wasmBlobUrl = wasmURL;
   let inputFileName = 'ineasy-source' + extension;
   const outputFileName = 'ineasy-4k-cfr.mp4';
   let aborted = false;
@@ -222,7 +264,6 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   } finally {
     signal?.removeEventListener('abort', handleAbort);
     try { ffmpeg.terminate(); } catch (_) {}
-    if (coreBlobUrl) URL.revokeObjectURL(coreBlobUrl);
-    if (wasmBlobUrl) URL.revokeObjectURL(wasmBlobUrl);
+    // Runtime URLs are reused by later 4K jobs and released on pagehide.
   }
 }
