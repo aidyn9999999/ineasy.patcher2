@@ -1,7 +1,9 @@
 /*
- * V2 Beta compatibility + metadata inspection.
- * Preserves the original media bytes exactly; this code does not rewrite MP4
- * metadata or alter container fields to influence a platform's transcoding.
+ * V2 Beta: standard MP4 remux + source metadata inspection.
+ * Uses the site's bundled Mediabunny remux implementation to repackage
+ * compatible MP4 tracks without video/audio re-encoding. It does not modify
+ * metadata to evade platform transcoding. If remux is unsupported, it preserves
+ * the original file and reports the fallback.
  */
 (function installV2BetaProcessor(root) {
   'use strict';
@@ -13,13 +15,11 @@
     throw new Error('V2_INVALID_INPUT_BUFFER');
   }
 
-  function safeInspect(core, original) {
+  function inspect(core, data) {
     if (!core || typeof core.inspectMediaInfo !== 'function') return null;
     try {
-      const info = core.inspectMediaInfo(original);
-      // Keep the metadata report focused on source facts; do not mutate media.
+      const info = core.inspectMediaInfo(data);
       return {
-        container: 'mp4-compatible',
         width: Number(info.width) || null,
         height: Number(info.height) || null,
         codec: info.codec || '',
@@ -43,21 +43,6 @@
         })) : []
       };
     } catch (_) {
-      // Non-MP4 and unusual MP4 variants remain untouched; report that inspection
-      // was unavailable instead of failing or silently rewriting the file.
-      return null;
-    }
-  }
-
-  function safeCompatibility(core, original) {
-    if (!core || typeof core.inspectCompatibility !== 'function') return null;
-    try {
-      const result = core.inspectCompatibility(original);
-      return {
-        needsRefinery: !!result.needsRefinery,
-        reasons: Array.isArray(result.reasons) ? result.reasons.map(String) : []
-      };
-    } catch (_) {
       return null;
     }
   }
@@ -69,42 +54,72 @@
       if (typeof onProgress === 'function') onProgress(label, percent, detail, 'v2-beta');
     };
 
-    progress('Checking video metadata', 15, 'Reading source codec, dimensions, frame rate and tracks');
     const core = root.FRYOriginalMp4Core || root.ADJNOriginalMp4Core;
-    const info = safeInspect(core, original);
-    const compatibility = safeCompatibility(core, original);
+    const inputInfo = inspect(core, original);
+    const isMp4 = /\.mp4$/i.test(data.fileName || '') || /video\/mp4/i.test(data.fileType || '');
+    let output = original.slice();
+    let remuxed = false;
+    let remuxError = '';
+
+    if (isMp4 && inputInfo && /^(avc|hevc)$/i.test(inputInfo.codecFamily || '')) {
+      progress('Checking source metadata', 12, 'Reading codec, dimensions, FPS and audio tracks');
+      try {
+        progress('Preparing MP4 tracks', 25, 'Standard stream remux; no video re-encoding');
+        const { remux } = await import('./remux.mjs');
+        const sourceBlob = new Blob([original], { type: 'video/mp4' });
+        const outputBlob = await remux(sourceBlob);
+        const remuxBytes = new Uint8Array(await outputBlob.arrayBuffer());
+        if (remuxBytes.byteLength < 64) throw new Error('Remux output is empty or incomplete.');
+        output = remuxBytes;
+        remuxed = true;
+      } catch (error) {
+        remuxError = String(error && error.message || error);
+        output = original.slice();
+      }
+    } else {
+      remuxError = isMp4
+        ? 'Source codec or MP4 metadata could not be inspected safely.'
+        : 'Standard remux is limited to compatible MP4 input.';
+    }
+
+    const outputInfo = inspect(core, output);
     const metadataReport = {
       fileName: data.fileName || '',
       mimeType: data.fileType || 'application/octet-stream',
-      byteSize: original.byteLength,
-      inspected: !!info,
-      media: info,
-      compatibility
+      inputBytes: original.byteLength,
+      outputBytes: output.byteLength,
+      inspected: !!inputInfo,
+      input: inputInfo,
+      output: outputInfo,
+      remuxed,
+      reencoded: false,
+      metadataRewritten: false,
+      fallbackReason: remuxed ? '' : remuxError
     };
 
-    progress('Preserving original quality', 90, 'No re-encoding; source bytes and metadata are not rewritten');
-    progress('Ready', 100, 'Original file preserved; metadata report available');
+    progress(remuxed ? 'MP4 remux complete' : 'Original file preserved', 100,
+      remuxed ? 'Compatible streams repackaged without re-encoding' : 'Remux unavailable; source file left unchanged');
+
     return {
-      output: original.slice(),
-      outputMime: data.fileType || 'application/octet-stream',
-      info,
-      outputInfo: info,
+      output,
+      outputMime: remuxed ? 'video/mp4' : (data.fileType || 'application/octet-stream'),
+      info: inputInfo,
+      outputInfo: outputInfo || inputInfo,
       metadataReport,
-      compatibility,
-      passthrough: true,
-      mode: 'v2-beta-original-preservation',
+      passthrough: !remuxed,
+      mode: remuxed ? 'v2-beta-standard-mp4-remux' : 'v2-beta-original-fallback',
       inputBytes: original.byteLength,
       report: {
-        engine: 'V2 Beta compatibility + metadata inspection',
-        passthrough: true,
+        engine: 'V2 Beta standard MP4 remux',
+        remuxed,
+        passthrough: !remuxed,
         reencoded: false,
-        bytesPreserved: true,
-        metadataInspected: !!info,
+        metadataInspected: !!inputInfo,
         metadataRewritten: false,
-        compatibility,
-        note: info
-          ? 'Source metadata was inspected for diagnostics; original video bytes are preserved unchanged.'
-          : 'Metadata inspection was unavailable for this container; original video bytes are preserved unchanged. If TikTok playback stutters, export a standard H.264/AAC MP4.'
+        fallbackReason: remuxed ? null : remuxError,
+        note: remuxed
+          ? 'Compatible MP4 tracks were repackaged without video/audio re-encoding. TikTok may still transcode after upload.'
+          : 'The original source bytes were preserved because standard remux was not available for this file.'
       }
     };
   }
