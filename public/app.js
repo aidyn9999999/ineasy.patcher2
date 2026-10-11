@@ -2243,14 +2243,24 @@ if (processBtn) {
 
       setProcessingState('processing', translations[STATE.lang]?.processingVideo || translations.en.processingVideo || 'Processing video…');
       updateProcessingProgress(84);
-      const fpsConversion = await convertVideoToExact5994Fps(outputBlob, sourceFile.name, controller.signal, (p) => {
-        updateProcessingProgress(84 + Math.round(p * 14));
-      });
-      outputBlob = fpsConversion.blob;
-      result.outputInfo = fpsConversion.info;
-      result.outputMime = 'video/mp4';
-      result.passthrough = false;
-      result.mode = (result.mode || 'patched') + '+cfr-5994';
+      try {
+        const fpsConversion = await convertVideoToExact5994Fps(outputBlob, sourceFile.name, controller.signal, (p) => {
+          updateProcessingProgress(84 + Math.round(p * 14));
+        });
+        outputBlob = fpsConversion.blob;
+        result.outputInfo = fpsConversion.info;
+        result.outputMime = 'video/mp4';
+        result.passthrough = false;
+        result.mode = (result.mode || 'patched') + '+cfr-5994';
+      } catch (conversionError) {
+        if (controller.signal.aborted || /processing_cancelled/i.test(String(conversionError?.message || ''))) {
+          throw conversionError;
+        }
+        // A failed optional CFR re-encode must not discard a successfully patched video.
+        // Keep the valid patcher output and expose the exact reason in diagnostics.
+        console.warn('[INEASY] Optional frame-rate conversion failed; keeping patcher output:', conversionError);
+        updateProcessingProgress(98);
+      }
 
       await consumeProcessedVideo();
       processedVideoBlob = outputBlob;
