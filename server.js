@@ -14,6 +14,7 @@ const { pipeline } = require('stream/promises');
 const FFMPEG_PATH = process.env.FFMPEG_PATH || (() => { try { return require('ffmpeg-static') || 'ffmpeg'; } catch (_) { return 'ffmpeg'; } })();
 const MAX_SERVER_4K_BYTES = 50 * 1024 * 1024;
 let activeServer4kJobs = 0;
+const MAX_SERVER_4K_JOBS = 1;
 let FFPROBE_PATH = 'ffprobe';
 try { FFPROBE_PATH = require('ffprobe-static').path; } catch (e) { /* используем системный ffprobe */ }
 
@@ -1551,7 +1552,7 @@ function ffmpegExec(binary, args, options = {}) {
 function ffprobeVideoInfo(probe) {
   const video = (probe.streams || []).find((stream) => stream.codec_type === 'video');
   if (!video) throw Object.assign(new Error('server_4k_video_stream_missing'), { status: 422 });
-  const duration = Number(video.duration || probe.format?.duration || 0);
+  const duration = Number(video.duration) || Number(probe.format?.duration) || 0;
   const width = Number(video.width || 0);
   const height = Number(video.height || 0);
   if (!width || !height || !duration) throw Object.assign(new Error('server_4k_metadata_unavailable'), { status: 422 });
@@ -1583,7 +1584,7 @@ function x265MasterDisplay(sideData) {
 
 function ffprobeVideoInfoForOutput(probe) {
   const video = (probe.streams || []).find((stream) => stream.codec_type === 'video');
-  const duration = Number(video && video.duration || probe.format?.duration || 0);
+  const duration = Number(video && video.duration) || Number(probe.format?.duration) || 0;
   const width = Number(video && video.width || 0);
   const height = Number(video && video.height || 0);
   if (!video || !width || !height || !duration) {
