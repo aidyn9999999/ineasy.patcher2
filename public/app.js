@@ -2466,9 +2466,8 @@ if (processBtn) {
 
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
 
-      // Always run the established real-frame CFR converter first.
-      // The FFmpeg 4K SDR encoder is only a fallback if WebCodecs cannot encode 4K;
-      // it must not replace the normal 59.94 FPS conversion path.
+      // 4K uses a dedicated FFmpeg CFR path for both SDR and HDR. This avoids the
+      // browser WebCodecs 4K encoder stalls; 1080p SDR keeps the established path.
       const sourceLongSide = Math.max(
         Number(selectedVideoDimensions?.width) || 0,
         Number(selectedVideoDimensions?.height) || 0
@@ -2481,31 +2480,36 @@ if (processBtn) {
       const runPrimaryCfr = () => convertVideoToExact5994Fps(
         sourceFile, sourceFile.name, controller.signal, reportCfrProgress
       );
-      const runFfmpeg4kCfr = async () => {
-        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-16');
+      const runFfmpeg4kCfr = async (hdrMode = false) => {
+        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-17');
         if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
           throw new Error('ffmpeg_4k_api_unavailable');
         }
         return ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg(
-          sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress
+          sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress,
+          { hdr: hdrMode }
         );
       };
 
       let fpsConversion;
       let hdrInspection = null;
-      if (/\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
+      if (!is4kSource && /\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
         try {
-          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-16');
+          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-17');
           hdrInspection = await hdrEncoder.inspectHDRVideo(sourceFile);
         } catch (error) {
           // HDR inspection must never prevent the ordinary SDR converter from running.
           console.warn('[INEASY] HDR inspection module unavailable; continuing with standard CFR path:', error?.message || error);
         }
       }
-      if (hdrInspection?.hdr) {
+      if (is4kSource && ffmpeg4kEligible) {
+        setProcessingState('processing', '4K CFR conversion');
+        console.info('[INEASY] 4K source routed directly to the dedicated FFmpeg CFR path; HDR profile is auto-detected');
+        fpsConversion = await runFfmpeg4kCfr('auto');
+      } else if (hdrInspection?.hdr) {
         setProcessingState('processing', 'HDR 10-bit conversion');
         console.info('[INEASY] HDR source detected; selecting dedicated HEVC Main10 CFR encoder', hdrInspection);
-        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-16');
+        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-17');
         fpsConversion = await hdrEncoder.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress, { hdr: true }
         );
@@ -2699,7 +2703,10 @@ if (processBtn) {
 
           if (msg.type === 'STAGE') {
             if (controller.signal.aborted) return;
-            updateProcessingProgress(Math.min(94, Number(msg.progress) || 0));
+            // Worker progress uses its own 0-100 scale. Keep it above the 15% CFR
+            // handoff marker so users can see the patcher is actively advancing.
+            const workerProgress = Math.max(0, Math.min(100, Number(msg.progress) || 0));
+            updateProcessingProgress(16 + Math.round(workerProgress * 0.78));
             return;
           }
 
