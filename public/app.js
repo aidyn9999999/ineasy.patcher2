@@ -1646,8 +1646,62 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
   signal.addEventListener('abort', abortConversion, { once: true });
 
   try {
-    // Mediabunny uses native browser WebCodecs instead of downloading and
-    // initializing the large FFmpeg WebAssembly runtime.
+    // Fast path: inspect only a small prefix/tail before loading any converter.
+    // Most MP4/MOV files store codec and HDR colour signalling in these areas.
+    // HDR10/HLG/Dolby Vision/Main10 files skip transcoding and preserve source bytes.
+    const hdrDetector = globalThis.ADJNVideoProcessor?.detectHdrProfile;
+    if (typeof hdrDetector === 'function') {
+      const peekSize = 8 * 1024 * 1024;
+      const peekParts = [
+        await inputBlob.slice(0, Math.min(inputBlob.size, peekSize)).arrayBuffer()
+      ];
+      if (inputBlob.size > peekSize * 2) {
+        peekParts.push(await inputBlob.slice(inputBlob.size - peekSize, inputBlob.size).arrayBuffer());
+      }
+      const containsAscii = (bytes, text) => {
+        for (let i = 0; i <= bytes.length - text.length; i++) {
+          let match = true;
+          for (let j = 0; j < text.length; j++) {
+            if (bytes[i + j] !== text.charCodeAt(j)) { match = false; break; }
+          }
+          if (match) return true;
+        }
+        return false;
+      };
+      for (const part of peekParts) {
+        const bytes = new Uint8Array(part);
+        const looksHevc = ['hvcC', 'hvc1', 'hev1', 'dvh1', 'dvhe'].some((tag) => containsAscii(bytes, tag));
+        if (!looksHevc) continue;
+        const profile = hdrDetector(bytes, { codecFamily: 'hevc', codec: 'hvc1' });
+        const detected = Boolean(
+          profile?.main10 ||
+          profile?.hdr10 ||
+          profile?.hdr10plus ||
+          profile?.hlg ||
+          profile?.dolbyVision
+        );
+        if (detected) {
+          const hdrLabel = profile.label && profile.label !== 'SDR / unknown' ? profile.label : 'HDR / 10-bit';
+          console.info('[INEASY] Fast HDR detection; converter download skipped', {
+            profile: hdrLabel,
+            fileBytes: inputBlob.size,
+            preservedOriginal: true
+          });
+          onProgress?.(1);
+          return {
+            blob: inputBlob,
+            info: null,
+            fps: null,
+            sourceFps: null,
+            preserveOriginal: true,
+            hdr: true,
+            hdrProfile: { ...profile, detected: true, label: hdrLabel, codec: 'hevc' }
+          };
+        }
+      }
+    }
+
+    // Non-HDR sources are normalized by Mediabunny/WebCodecs, not a large WASM build.
     const media = await loadMediabunnyForCfr(signal);
     signal.throwIfAborted();
 
