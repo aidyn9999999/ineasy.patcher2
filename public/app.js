@@ -1738,6 +1738,7 @@ async function getIneasyFfmpegWasm(signal, onProgress) {
   if (!ineasyFfmpegWasmLoadPromise) {
     ineasyFfmpegWasmLoadPromise = (async () => {
       onProgress?.(0.04);
+      console.info('[INEASY] Loading local FFmpeg engine for HDR fallback');
       const library = await loadIneasyFfmpegWasmLibrary(signal);
       signal.throwIfAborted();
       const appScript = Array.from(document.scripts).find((script) =>
