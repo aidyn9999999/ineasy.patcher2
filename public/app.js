@@ -2494,8 +2494,13 @@ if (processBtn) {
       let fpsConversion;
       let hdrInspection = null;
       if (/\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
-        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-15');
-        hdrInspection = await hdrEncoder.inspectHDRVideo(sourceFile);
+        try {
+          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-15');
+          hdrInspection = await hdrEncoder.inspectHDRVideo(sourceFile);
+        } catch (error) {
+          // HDR inspection must never prevent the ordinary SDR converter from running.
+          console.warn('[INEASY] HDR inspection module unavailable; continuing with standard CFR path:', error?.message || error);
+        }
       }
       if (hdrInspection?.hdr) {
         setProcessingState('processing', 'HDR 10-bit conversion');
@@ -2669,18 +2674,26 @@ if (processBtn) {
           if (msg.type === 'READY') {
             clearWorkerReadyTimeout();
             // Worker is ready, send the job (transfer buffer ownership — zero copy)
-            worker.postMessage({
-              type: 'PROCESS',
-              requestId,
-              buffer,
-              file: processingFile,
-              duration: sourceDuration,
-              fileName: processingFileName,
-              fileType: processingFile.type || sourceFile.type || 'video/mp4',
-              fileSize: processingFile.size || buffer.byteLength,
-              preparationReport: preparedInput.report || null,
-              engine: getSelectedPatcherVersion() === 'v2' ? 'rein-beta' : '2.1.5'
-            }, [buffer]);
+            try {
+              worker.postMessage({
+                type: 'PROCESS',
+                requestId,
+                buffer,
+                file: processingFile,
+                duration: sourceDuration,
+                fileName: processingFileName,
+                fileType: processingFile.type || sourceFile.type || 'video/mp4',
+                fileSize: processingFile.size || buffer.byteLength,
+                preparationReport: preparedInput.report || null,
+                engine: getSelectedPatcherVersion() === 'v2' ? 'rein-beta' : '2.1.5'
+              }, [buffer]);
+            } catch (error) {
+              clearWorkerReadyTimeout();
+              workerDone = true;
+              controller.signal.removeEventListener('abort', onAbort);
+              worker.terminate();
+              reject(new Error('adjn_worker_post_message_failed: ' + (error?.message || error)));
+            }
             return;
           }
 
