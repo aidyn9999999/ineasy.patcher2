@@ -261,7 +261,7 @@ const translations = {
     patcherNoteV2: 'Альтернативный режим. Видео не перекодируется.',
     fpsAdvice: 'Рекомендуемый экспорт: MP4 H.264 · постоянные 59,94 FPS.',
     fps30Rejected: '30 FPS не поддерживается. Экспортируйте видео в 59,94 FPS и выберите его снова.',
-    fpsInspectUnavailable: 'Не удалось проверить FPS. Используйте MP4 H.264 · 59,94 FPS.'
+    fpsInspectUnavailable: 'Не удалось проверить FPS. Используйте MP4 H.264 · 59,94 FPS.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
     communityTitle: 'Будь в курсе Ineasy',
     communityBody: 'Новые туториалы, обновления проекта и эксклюзивные розыгрыши — в нашем Telegram-канале',
@@ -444,7 +444,7 @@ const translations = {
     patcherNoteV2: 'Балама режим. Бейне қайта кодталмайды.',
     fpsAdvice: 'Ұсынылатын экспорт: MP4 H.264 · тұрақты 59,94 FPS.',
     fps30Rejected: '30 FPS қолдау таппайды. Бейнені 59,94 FPS-пен экспорттап, қайта таңдаңыз.',
-    fpsInspectUnavailable: 'FPS тексерілмеді. MP4 H.264 · 59,94 FPS қолданыңыз.'
+    fpsInspectUnavailable: 'FPS тексерілмеді. MP4 H.264 · 59,94 FPS қолданыңыз.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
     communityTitle: 'Ineasy жаңалықтарынан хабардар болыңыз',
     communityBody: 'Жаңа нұсқаулықтар, жоба жаңалықтары және арнайы ұтыстар Telegram арнамызда',
