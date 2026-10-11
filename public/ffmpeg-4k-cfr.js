@@ -66,41 +66,122 @@ if (typeof window !== 'undefined') {
   }, { once: true });
 }
 
-function containsHdrSignals(bytes) {
-  const decoder = new TextDecoder('latin1');
-  const windowSize = 16 * 1024 * 1024;
-  const ranges = [[0, Math.min(bytes.length, windowSize)]];
-  if (bytes.length > windowSize) ranges.push([Math.max(windowSize, bytes.length - windowSize), bytes.length]);
-
-  for (const [start, end] of ranges) {
-    const chunk = bytes.subarray(start, end);
-    const text = decoder.decode(chunk).toLowerCase();
-    if (/smpte.?2084|arib.?std.?b67|bt.?2020|dolby.?vision|dvh1|dvhe|dvcc|dvvc|hdr10/.test(text)) return true;
-
-    // ISO-BMFF 'colr'/'nclx' stores colour primaries, transfer, and matrix as 16-bit codes.
-    let at = text.indexOf('nclx');
-    while (at >= 0 && at + 10 < chunk.length) {
-      const primaries = (chunk[at + 4] << 8) | chunk[at + 5];
-      const transfer = (chunk[at + 6] << 8) | chunk[at + 7];
-      if (primaries === 9 || transfer === 16 || transfer === 18) return true; // BT.2020, PQ, HLG
-      at = text.indexOf('nclx', at + 4);
+function readTopLevelBoxes(bytes) {
+  const boxes = [];
+  let offset = 0;
+  while (offset + 8 <= bytes.length) {
+    let size = new DataView(bytes.buffer, bytes.byteOffset + offset, 8).getUint32(0, false);
+    let header = 8;
+    if (size === 1) {
+      if (offset + 16 > bytes.length) return [];
+      const view = new DataView(bytes.buffer, bytes.byteOffset + offset, 16);
+      size = view.getUint32(8, false) * 4294967296 + view.getUint32(12, false);
+      header = 16;
+    } else if (size === 0) {
+      size = bytes.length - offset;
     }
+    if (!Number.isSafeInteger(size) || size < header || offset + size > bytes.length) return [];
+    const type = String.fromCharCode(
+      bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]
+    );
+    boxes.push({ type, start: offset, end: offset + size, header });
+    offset += size;
+  }
+  return offset === bytes.length ? boxes : [];
+}
 
-    // Keep HEVC Main 10 and AVC 10-bit profiles off the SDR 8-bit x264 fallback.
-    at = text.indexOf('hvcc');
-    while (at >= 0 && at + 6 < chunk.length) {
-      const profileIdc = chunk[at + 5] & 0x1f;
-      if (profileIdc === 2 || profileIdc === 3) return true;
-      at = text.indexOf('hvcc', at + 4);
+function findValidBoxTypes(bytes, start, end, type) {
+  const found = [];
+  const encoded = [type.charCodeAt(0), type.charCodeAt(1), type.charCodeAt(2), type.charCodeAt(3)];
+  for (let at = start + 4; at + 4 <= end; at++) {
+    if (bytes[at] !== encoded[0] || bytes[at + 1] !== encoded[1] ||
+        bytes[at + 2] !== encoded[2] || bytes[at + 3] !== encoded[3]) continue;
+    const boxStart = at - 4;
+    const available = end - boxStart;
+    if (available < 8) continue;
+    let size = new DataView(bytes.buffer, bytes.byteOffset + boxStart, 8).getUint32(0, false);
+    let header = 8;
+    if (size === 1) {
+      if (available < 16) continue;
+      const view = new DataView(bytes.buffer, bytes.byteOffset + boxStart, 16);
+      size = view.getUint32(8, false) * 4294967296 + view.getUint32(12, false);
+      header = 16;
+    } else if (size === 0) {
+      continue; // A size-to-end pseudo-box is not expected inside moov sample entries.
     }
-    at = text.indexOf('avcc');
-    while (at >= 0 && at + 6 < chunk.length) {
-      const profileIdc = chunk[at + 5];
-      if ([110, 122, 144, 244].includes(profileIdc)) return true;
-      at = text.indexOf('avcc', at + 4);
+    if (!Number.isSafeInteger(size) || size < header || size > available) continue;
+    found.push({ type, start: boxStart, typeOffset: at, payloadStart: boxStart + header, end: boxStart + size, size, header });
+    at += 3;
+  }
+  return found;
+}
+
+// Inspect only structurally valid codec/color boxes within moov. Never scan the
+// compressed mdat payload as text: random encoded pixels frequently contain byte
+// sequences that look like "bt2020", "nclx" or "hvcC" and must not trigger HDR.
+function inspectSourceColorProfile(bytes, sourceInfo) {
+  const boxes = readTopLevelBoxes(bytes);
+  const moov = boxes.find((box) => box.type === 'moov');
+  const result = { hdr: false, tenBit: false, reason: '', displayColor: 'unknown' };
+  if (!moov) return result;
+
+  const moovStart = moov.start + moov.header;
+  const moovEnd = moov.end;
+  const codec = String(sourceInfo?.codecFamily || sourceInfo?.codec || '').toLowerCase();
+  const isHevc = codec === 'hevc' || /^(hvc1|hev1|hvc2|hev2|dvh1|dvhe)$/i.test(String(sourceInfo?.codec || ''));
+  const isAvc = codec === 'avc' || /^(avc1|avc3)$/i.test(String(sourceInfo?.codec || ''));
+
+  if (isHevc) {
+    for (const box of findValidBoxTypes(bytes, moovStart, moovEnd, 'hvcC')) {
+      if (box.end - box.payloadStart < 13 || bytes[box.payloadStart] !== 1) continue;
+      const profileIdc = bytes[box.payloadStart + 1] & 0x1f;
+      if (profileIdc === 2) {
+        result.tenBit = true; // HEVC Main 10 profile, whether HDR or SDR.
+        result.reason = 'HEVC Main 10 profile';
+      }
+    }
+    for (const tag of ['dvcC', 'dvvC']) {
+      if (findValidBoxTypes(bytes, moovStart, moovEnd, tag).length) {
+        result.hdr = true;
+        result.reason = 'Dolby Vision configuration box ' + tag;
+        return result;
+      }
     }
   }
-  return false;
+
+  if (isAvc || isHevc) {
+    for (const box of findValidBoxTypes(bytes, moovStart, moovEnd, 'avcC')) {
+      if (box.end - box.payloadStart < 4 || bytes[box.payloadStart] !== 1) continue;
+      const profileIdc = bytes[box.payloadStart + 1];
+      if ([110, 122, 144, 244].includes(profileIdc)) {
+        result.tenBit = true;
+        result.reason = 'AVC high-bit-depth profile ' + profileIdc;
+      }
+    }
+    for (const box of findValidBoxTypes(bytes, moovStart, moovEnd, 'colr')) {
+      const p = box.payloadStart;
+      if (p + 11 > box.end) continue;
+      const subtype = String.fromCharCode(bytes[p], bytes[p + 1], bytes[p + 2], bytes[p + 3]);
+      if (subtype !== 'nclx' && subtype !== 'nclc') continue;
+      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      const primaries = view.getUint16(p + 4, false);
+      const transfer = view.getUint16(p + 6, false);
+      if (primaries === 9 && transfer === 16) {
+        result.hdr = true;
+        result.displayColor = 'BT.2020 / PQ (HDR10)';
+        result.reason = 'ISO BMFF colr/nclx specifies BT.2020 + PQ';
+        return result;
+      }
+      if (primaries === 9 && transfer === 18) {
+        result.hdr = true;
+        result.displayColor = 'BT.2020 / HLG';
+        result.reason = 'ISO BMFF colr/nclx specifies BT.2020 + HLG';
+        return result;
+      }
+      if (primaries === 9) result.displayColor = 'BT.2020 / non-HDR transfer';
+    }
+  }
+  return result;
 }
 
 function fileExtension(name) {
@@ -134,16 +215,25 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   } catch (_) {
     throw new Error('ffmpeg_4k_source_format_unsupported');
   }
-  const width = Number(sourceInfo.width || dimensions?.width);
-  const height = Number(sourceInfo.height || dimensions?.height);
+  // Browser metadata represents the displayed orientation; ADJN tkhd dimensions can
+  // still represent coded orientation for phone-recorded clips. FFmpeg auto-rotates
+  // to display orientation, so validate against the dimensions shown in the preview.
+  const width = Number(dimensions?.width || sourceInfo.width);
+  const height = Number(dimensions?.height || sourceInfo.height);
   if (!width || !height || Math.max(width, height) > MAX_SIDE || Math.min(width, height) > MAX_SHORT_SIDE) {
-    throw new Error('video_resolution_over_4k');
+    throw new Error('video_resolution_over_4k: requested=' + width + 'x' + height);
   }
   if (!['avc', 'hevc'].includes(String(sourceInfo.codecFamily || '').toLowerCase())) {
     throw new Error('ffmpeg_4k_source_format_unsupported');
   }
-  if (containsHdrSignals(inputBytes)) {
-    throw new Error('ffmpeg_4k_hdr_unsafe');
+  const colorProfile = inspectSourceColorProfile(inputBytes, sourceInfo);
+  if (colorProfile.hdr) {
+    console.warn('[INEASY] Structured HDR colour metadata detected:', colorProfile);
+    throw new Error('ffmpeg_4k_hdr_unsafe: ' + colorProfile.reason);
+  }
+  if (colorProfile.tenBit) {
+    console.warn('[INEASY] 10-bit source detected (not necessarily HDR):', colorProfile);
+    throw new Error('ffmpeg_4k_10bit_unsupported: ' + colorProfile.reason);
   }
 
   onProgress?.(0.02);
