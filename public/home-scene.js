@@ -228,8 +228,8 @@ if (host && hero && 'WebGLRenderingContext' in window) {
     camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h,false);
     const phone=mobile();
     renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,phone?1:1.45));
-    avatar.position.set(phone?.1:3.25,phone?-2.0:-.08,0);
-    avatar.scale.setScalar(phone?.67:.95);
+    avatar.position.set(phone ? 0.1 : 3.25, phone ? -2.0 : -0.08, 0);
+    avatar.scale.setScalar(phone ? 0.67 : 0.95);
     avatar.rotation.set(-.025,-.14,.035);
   };
   const observer=new ResizeObserver(resize);
@@ -246,7 +246,7 @@ if (host && hero && 'WebGLRenderingContext' in window) {
       pointer.y+=(pointer.ty-pointer.y)*.035;
       avatar.rotation.y=-.14+pointer.x+Math.sin(time*.00031)*.055;
       avatar.rotation.x=-.025+pointer.y+Math.sin(time*.00043)*.016;
-      avatar.position.y=(phone?-2.0:-.08)+Math.sin(time*.00047)*(phone?.045:.075);
+      avatar.position.y = (phone ? -2.0 : -0.08) + Math.sin(time * .00047) * (phone ? .045 : .075);
       halo.rotation.z=Math.sin(time*.00017)*.045;
       haloOuter.rotation.y=.05+Math.sin(time*.0003)*.035;
       haloInner.rotation.z=-.34+Math.sin(time*.00024)*.04;
