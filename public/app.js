@@ -2104,7 +2104,7 @@ async function handleFile(file) {
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
   if (selectedLongSide >= 3000 && /\.(mp4|m4v|mov)$/i.test(file.name)) {
     // Download the 4K encoder in the background while the user is choosing the processing mode.
-    import('./ffmpeg-4k-cfr.js?v=20261011-20')
+    import('./ffmpeg-4k-cfr.js?v=20261011-21')
       .then((encoder) => encoder.preloadFFmpeg4k?.())
       .catch((error) => console.warn('[INEASY] 4K runtime pre-load skipped:', error?.message || error));
   }
@@ -2454,14 +2454,14 @@ if (processBtn) {
 
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
 
-      // 4K uses a dedicated FFmpeg CFR path for both SDR and HDR. This avoids the
-      // browser WebCodecs 4K encoder stalls; 1080p SDR keeps the established path.
+      // Supported MP4/MOV/M4V inputs use the bitrate-controlled FFmpeg CFR path for SDR and HDR.
+      // This prevents the generic high-quality browser encoder from shrinking or inflating files unpredictably.
       const sourceLongSide = Math.max(
         Number(selectedVideoDimensions?.width) || 0,
         Number(selectedVideoDimensions?.height) || 0
       );
       const is4kSource = sourceLongSide >= 3000;
-      const ffmpeg4kEligible = is4kSource && /\.(mp4|m4v|mov)$/i.test(sourceFile.name);
+      const ffmpeg4kEligible = /\.(mp4|m4v|mov)$/i.test(sourceFile.name);
       const reportCfrProgress = (progress) => {
         updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
       };
@@ -2502,9 +2502,8 @@ if (processBtn) {
           sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress, { hdr: true }
         );
       } else if (ffmpeg4kEligible) {
-        // Use the bitrate-controlled FFmpeg encoder for supported MP4/MOV/M4V SDR too.
-        // MediaBunny Quality('high') can more than double small source files because it
-        // does not enforce the requested source-relative output-size ceiling.
+        // Use the bitrate-controlled FFmpeg encoder for supported MP4/MOV/M4V SDR at every supported resolution.
+        // The generic MediaBunny path does not enforce the source-relative output-size ceiling.
         setProcessingState('processing', 'CFR conversion with size control');
         fpsConversion = await runFfmpeg4kCfr('auto');
       } else try {
