@@ -2105,12 +2105,9 @@ async function handleFile(file) {
   }
   selectedVideoDimensions = dimensions;
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
-  if (selectedLongSide >= 3000 && /\.(mp4|m4v|mov)$/i.test(file.name)) {
-    // Download the 4K encoder in the background while the user is choosing the processing mode.
-    import('./ffmpeg-4k-cfr.js?v=20261011-26')
-      .then((encoder) => encoder.preloadFFmpeg4k?.())
-      .catch((error) => console.warn('[INEASY] 4K runtime pre-load skipped:', error?.message || error));
-  }
+  // Do not preload FFmpeg/WASM when a file is selected: initializing its large
+  // runtime here can exhaust browser memory and crash the page before processing.
+  // Load the fallback only if browser hardware encoding actually fails.
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
   patchedDownloadUrl = null;
   processedVideoBlob = null;
@@ -2474,49 +2471,9 @@ if (processBtn) {
 
 
       let fpsConversion;
-      let hdrInspection = null;
-      if (/\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
-        try {
-          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-26');
-          hdrInspection = await hdrEncoder.inspectHDRVideo(sourceFile);
-        } catch (error) {
-          console.warn('[INEASY] Structural HDR inspection unavailable:', error?.message || error);
-        }
-      }
-      if (!hdrInspection?.hdr &&
-          (!hdrInspection || ['metadata_inspection_inconclusive', 'media_inspector_unavailable'].includes(hdrInspection.reason)) &&
-          /\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
-        try {
-          const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
-          const fallbackBytes = new Uint8Array(await sourceFile.arrayBuffer());
-          const fallbackInfo = mediaCore?.inspectMediaInfo?.(fallbackBytes);
-          const fallbackHdr = globalThis.ADJNVideoProcessor?.detectHdrProfile?.(fallbackBytes, fallbackInfo);
-          if (fallbackHdr && (fallbackHdr.hdr10 || fallbackHdr.hlg || fallbackHdr.dolbyVision)) {
-            hdrInspection = {
-              hdr: true,
-              tenBit: fallbackHdr.main10,
-              reason: fallbackHdr.reason || fallbackHdr.label,
-              displayColor: fallbackHdr.hlg ? 'BT.2020 / HLG' : 'BT.2020 / PQ (HDR10)',
-              hdrType: fallbackHdr.dolbyVision ? 'dolby-vision' : fallbackHdr.hlg ? 'hlg' : 'pq',
-              label: fallbackHdr.label
-            };
-            console.warn('[INEASY] HDR detected by secondary metadata inspector:', hdrInspection);
-          }
-        } catch (error) {
-          console.warn('[INEASY] Secondary HDR inspection unavailable:', error?.message || error);
-        }
-      }
-      if (hdrInspection?.hdr) {
-        // HDR must use the dedicated 10-bit path to retain PQ/HLG signaling.
-        setProcessingState('processing', is4kSource ? t('uhdWait') : '');
-        console.info('[INEASY] HDR source detected; selecting dedicated HEVC Main10 CFR encoder', hdrInspection);
-        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-26');
-        fpsConversion = await hdrEncoder.convertVideoToExact5994FpsWithFFmpeg(
-          sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress, { hdr: true }
-        );
-      } else try {
-        // Prefer browser/WebCodecs hardware acceleration for SDR at both 1080p and 4K.
-        // Avoid the slower bitrate-controlled FFmpeg path unless 4K conversion fails or HDR requires it.
+      try {
+        // Normal path for both 1080p and 4K: browser WebCodecs with hardware acceleration.
+        // This path does not scale the frame; source dimensions are verified after encoding.
         fpsConversion = await runPrimaryCfr();
       } catch (primaryError) {
         const primaryMessage = String(primaryError?.message || primaryError || '');
@@ -2524,12 +2481,23 @@ if (processBtn) {
             /processing_cancelled|AbortError|video_file_over_limit/i.test(primaryMessage)) {
           throw primaryError;
         }
-        if (is4kSource) {
-          // Never send ordinary SDR 4K through slow FFmpeg wasm as an automatic fallback.
-          console.error('[INEASY] Browser hardware-accelerated 4K CFR failed; no slow SDR FFmpeg fallback:', primaryMessage);
-          throw new Error('hardware_cfr_4k_failed: ' + primaryMessage.slice(0, 700));
-        }
-        throw primaryError;
+        if (!is4kSource) throw primaryError;
+
+        // Only load FFmpeg after hardware encoding fails. The SDR fallback keeps the
+        // original frame dimensions and uses a true 60000/1001 CFR fps filter.
+        // The FFmpeg module refuses explicitly signaled HDR rather than silently
+        // converting it through an SDR encoder; HDR support is intentionally paused.
+        console.warn('[INEASY] Hardware 4K CFR failed; trying full-resolution CFR fallback:', primaryMessage);
+        setProcessingState('processing', t('uhdWait'));
+        const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-27');
+        fpsConversion = await fallbackEncoder.convertVideoToExact5994FpsWithFFmpeg(
+          sourceFile,
+          selectedVideoDimensions,
+          sourceDuration,
+          controller.signal,
+          reportCfrProgress,
+          { hdr: false }
+        );
       }
 
       // Verify the actual converted 4K file BEFORE passing it into ADJN.
