@@ -248,7 +248,7 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   const runtime = await runtimePromise;
   throwIfAborted(signal);
   const { FFmpeg, coreURL, wasmURL } = runtime;
-  const ffmpeg = new FFmpeg();
+  let ffmpeg = new FFmpeg();
   const coreBlobUrl = coreURL;
   const wasmBlobUrl = wasmURL;
   let inputFileName = 'ineasy-source' + extension;
@@ -296,7 +296,28 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     // Browsers reject that cross-origin Worker on ineasy.site. Use our same-origin
     // worker entry point; it imports the pinned official worker module from jsDelivr.
     const classWorkerURL = new URL('/ffmpeg/worker.js', window.location.origin).href;
-    await ffmpeg.load({ coreURL: coreBlobUrl, wasmURL: wasmBlobUrl, classWorkerURL });
+    try {
+      await ffmpeg.load({ coreURL: coreBlobUrl, wasmURL: wasmBlobUrl, classWorkerURL });
+    } catch (firstLoadError) {
+      const firstLoadMessage = String(firstLoadError?.message || firstLoadError || '');
+      // Some browsers reject importing a blob-backed FFmpeg core inside a Worker.
+      // Retry once with the pinned official jsDelivr core URLs instead of failing at load_core.
+      if (!/failed to import ffmpeg-core\.js|failed to load ffmpeg-core/i.test(firstLoadMessage)) {
+        throw firstLoadError;
+      }
+      try { ffmpeg.terminate(); } catch (_) {}
+      throwIfAborted(signal);
+      rememberLog('Retrying FFmpeg core load with pinned CDN URLs after blob import failure');
+      stage = 'load_core_cdn_retry';
+      ffmpeg = new FFmpeg();
+      ffmpeg.on('log', handleLog);
+      ffmpeg.on('progress', handleProgress);
+      await ffmpeg.load({
+        coreURL: FFMPEG_CORE_BASE_URL + '/ffmpeg-core.js',
+        wasmURL: FFMPEG_CORE_BASE_URL + '/ffmpeg-core.wasm',
+        classWorkerURL
+      });
+    }
     throwIfAborted(signal);
     if (aborted) throw new Error('processing_cancelled');
     stage = 'write_input';
