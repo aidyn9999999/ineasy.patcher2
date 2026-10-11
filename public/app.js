@@ -1522,21 +1522,6 @@ function readVideoDimensions(file) {
   });
 }
 
-async function inspectFrameRateForSelection(file) {
-  const isMp4Family = /\.(mp4|mov|m4v)$/i.test(file.name || '') || /^(video\/mp4|video\/quicktime)$/i.test(file.type || '');
-  const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
-  if (!isMp4Family || !core || typeof core.inspectMediaInfo !== 'function') return { status: 'unknown', fps: null };
-  try {
-    // The MP4 inspector needs the complete container to read its sample tables accurately.
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    const info = core.inspectMediaInfo(bytes);
-    const fps = Number(info?.averageFps);
-    if (!Number.isFinite(fps) || fps <= 0) return { status: 'unknown', fps: null };
-    return { status: Math.abs(fps - 30) <= 0.2 ? '30fps' : 'ok', fps };
-  } catch (_) {
-    return { status: 'unknown', fps: null };
-  }
-}
 
 async function readVideoDimensionsForSelection(file) {
   try {
@@ -1554,21 +1539,25 @@ async function readVideoDimensionsForSelection(file) {
         if (width > 0 && height > 0) return { width, height };
       }
     } catch (_) {}
-    const mediaModule = await loadMediabunnyForCfr(new AbortController().signal);
+    const mediaModule = await loadMediabunnyForCfr(new AbortController().signal, 18000);
     const { Input, ALL_FORMATS, BlobSource } = mediaModule;
     const input = new Input({ source: new BlobSource(file), formats: ALL_FORMATS });
-    const track = await input.getPrimaryVideoTrack();
-    if (!track) throw nativeError;
-    const width = await track.getDisplayWidth();
-    const height = await track.getDisplayHeight();
-    if (!width || !height) throw nativeError;
-    return { width, height };
+    try {
+      const track = await input.getPrimaryVideoTrack();
+      if (!track) throw nativeError;
+      const width = await track.getDisplayWidth();
+      const height = await track.getDisplayHeight();
+      if (!width || !height) throw nativeError;
+      return { width, height };
+    } finally {
+      try { input.dispose?.(); } catch (_) {}
+    }
   }
 }
 
 let ineasyMediabunnyCfrPromise = null;
 
-async function loadMediabunnyForCfr(signal) {
+async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
   if (!ineasyMediabunnyCfrPromise) {
     ineasyMediabunnyCfrPromise = import('https://cdn.jsdelivr.net/npm/mediabunny@1.61.3/+esm')
       .catch((error) => {
@@ -1589,7 +1578,7 @@ async function loadMediabunnyForCfr(signal) {
     const onAbort = () => finish(reject, new Error('processing_cancelled'));
     const timeoutId = setTimeout(
       () => finish(reject, new Error('mediabunny_load_timeout')),
-      25000
+      timeoutMs
     );
     signal.addEventListener('abort', onAbort, { once: true });
     if (signal.aborted) {
