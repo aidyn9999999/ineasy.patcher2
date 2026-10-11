@@ -1681,6 +1681,56 @@ async function loadIneasyFfmpegWasmLibrary(signal) {
   return waitForMediabunnyModule(ineasyFfmpegWasmScriptPromise, signal, 36000);
 }
 
+async function downloadIneasyFfmpegCoreWasm(signal, onProgress) {
+  const urls = [
+    'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.wasm',
+    'https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.wasm'
+  ];
+  let lastError = null;
+  for (const url of urls) {
+    signal.throwIfAborted();
+    try {
+      console.info('[INEASY] Downloading local FFmpeg processing module');
+      const response = await fetch(url, { signal, cache: 'force-cache' });
+      if (!response.ok) throw new Error('hdr_ffmpeg_core_http_' + response.status);
+      const chunks = [];
+      let loaded = 0;
+      const declaredSize = Number(response.headers.get('content-length')) || 32 * 1024 * 1024;
+      const reader = response.body?.getReader?.();
+      if (reader) {
+        while (true) {
+          signal.throwIfAborted();
+          const part = await reader.read();
+          if (part.done) break;
+          if (part.value?.byteLength) {
+            chunks.push(part.value);
+            loaded += part.value.byteLength;
+            onProgress?.(0.04 + 0.095 * Math.min(1, loaded / declaredSize));
+          }
+        }
+      } else {
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        chunks.push(bytes);
+        loaded = bytes.byteLength;
+        onProgress?.(0.135);
+      }
+      signal.throwIfAborted();
+      if (!loaded) throw new Error('hdr_ffmpeg_core_empty');
+      const blobUrl = URL.createObjectURL(new Blob(chunks, { type: 'application/wasm' }));
+      onProgress?.(0.135);
+      console.info('[INEASY] Local FFmpeg module downloaded', { bytes: loaded });
+      return blobUrl;
+    } catch (error) {
+      if (signal.aborted || /AbortError|processing_cancelled/i.test(String(error?.name || '') + ' ' + String(error?.message || ''))) {
+        throw new Error('processing_cancelled');
+      }
+      lastError = error;
+      console.warn('[INEASY] FFmpeg core download source failed:', url, error);
+    }
+  }
+  throw new Error('hdr_ffmpeg_core_download_failed: ' + String(lastError?.message || 'unknown_error'));
+}
+
 async function getIneasyFfmpegWasm(signal, onProgress) {
   signal.throwIfAborted();
   if (ineasyFfmpegWasmInstance?.loaded) return ineasyFfmpegWasmInstance;
@@ -1695,11 +1745,18 @@ async function getIneasyFfmpegWasm(signal, onProgress) {
       );
       const classWorkerURL = new URL('ffmpeg-cfr-worker.js', appScript?.src || document.baseURI).href;
       createdInstance = new library.FFmpeg();
-      await createdInstance.load({
-        coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.js',
-        wasmURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.wasm',
-        classWorkerURL
-      }, { signal });
+      // Download the WASM explicitly so the UI can advance while the large
+      // local codec module loads, instead of appearing frozen at a single step.
+      const wasmObjectURL = await downloadIneasyFfmpegCoreWasm(signal, onProgress);
+      try {
+        await createdInstance.load({
+          coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm/ffmpeg-core.js',
+          wasmURL: wasmObjectURL,
+          classWorkerURL
+        }, { signal });
+      } finally {
+        try { URL.revokeObjectURL(wasmObjectURL); } catch (_) {}
+      }
       if (signal.aborted) {
         createdInstance.terminate();
         throw new Error('processing_cancelled');
