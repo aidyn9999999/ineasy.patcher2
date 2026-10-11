@@ -625,31 +625,42 @@ async function analyzeTikTok(url) {
     bytes: v.filesize || v.filesize_approx || null,
   };
 
-  // Реальные данные: скачиваем файл во временную папку, читаем ffprobe, удаляем
+  // Prefer yt-dlp's format metadata for fast checks. Download and ffprobe
+  // only when key fields are missing, rather than downloading every large 4K video.
+  const hasCoreMetadata = Number(meta.width) > 0 && Number(meta.height) > 0 &&
+    Boolean(parseFraction(meta.fps)) && Boolean(meta.codec);
   let real = {};
   let filePath = null;
-  try {
-    filePath = await downloadVideoToTmp(url);
-    real = summarizeProbe(await probeFile(filePath));
-    if (!real.bytes) real.bytes = fs.statSync(filePath).size;
-  } catch (e) {
-    console.error('ffprobe/скачивание не удалось, используем данные TikTok:', e.message);
-  } finally {
-    if (filePath) fs.unlink(filePath, () => {});
+  if (!hasCoreMetadata || !meta.bitrate || !meta.bytes) {
+    try {
+      filePath = await downloadVideoToTmp(url);
+      real = summarizeProbe(await probeFile(filePath));
+      if (!real.bytes) real.bytes = fs.statSync(filePath).size;
+    } catch (e) {
+      console.error('ffprobe/скачивание не удалось, используем данные TikTok:', e.message);
+    } finally {
+      if (filePath) {
+        try { fs.unlinkSync(filePath); } catch (_) {}
+      }
+    }
   }
 
   const width = real.width || meta.width;
   const height = real.height || meta.height;
   const bytes = real.bytes || meta.bytes;
+  const duration = real.duration || info.duration;
+  const fallbackBitrate = (meta.bytes && duration)
+    ? `${Math.round((Number(meta.bytes) * 8 / Number(duration)) / 1000)} kbps`
+    : null;
   const uploadRegion = info.region || info.country || info.uploader_location || info.location;
   return {
     quality: Math.min(width || 0, height || 0) || '—',
     width: width || '—',
     height: height || '—',
-    fps: real.fps || meta.fps || '—',
+    fps: real.fps || formatFps(meta.fps) || '—',
     codec: real.codec || meta.codec || '—',
-    bitrate: real.bitrate || meta.bitrate || '—',
-    duration: fmtDuration(real.duration || info.duration),
+    bitrate: real.bitrate || meta.bitrate || fallbackBitrate || '—',
+    duration: fmtDuration(duration),
     size: bytes ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : '—',
     ext: v.ext || info.ext || '—',
     author: info.uploader ? `@${info.uploader}` : (info.creator || '—'),
