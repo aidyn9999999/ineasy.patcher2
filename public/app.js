@@ -45,9 +45,9 @@ const translations = {
     packageHint: 'Click “Buy” to open @ineasybot and receive payment details.',
     buy: 'Buy',
     nav: ['HOME', 'PATCHER', 'VIDEO CHECK', 'FAQ'],
-    homeKicker: 'INEASY PATCHER  ·  TIKTOK READY',
-    homeTitle: 'TIKTOK VIDEO OPTIMIZER',
-    homeIntro: 'Prepare your video before upload and preserve the original media stream whenever the format is supported.',
+    homeKicker: 'INEASY  ·  VIDEO OPTIMIZATION',
+    homeTitle: 'EVERY FRAME. READY TO SHINE.',
+    homeIntro: 'A polished final step before TikTok: prepare your finished edit in a clean, guided workflow right in your browser.',
     homeCta: 'Go to processing',
     comparisonKicker: 'QUALITY',
     comparisonTitle: 'See the result: patched vs. unpatched',
@@ -55,12 +55,12 @@ const translations = {
     comparisonDisclaimer: 'Visual illustration only, not a preview of a specific processed video. TikTok controls the final published quality.',
     workflowKicker: 'THREE STEPS',
     workflowTitle: 'From edit to post',
-    stepOneTitle: 'Upload your finished edit',
-    stepOneBody: 'Add your video after editing. Prepare music, text, and effects first.',
-    stepTwoTitle: 'Tap “Process video”',
-    stepTwoBody: 'Videos up to 4K (4096×2304) are processed locally. Frame rates up to 120 FPS are supported at 4K.',
-    stepThreeTitle: 'Publish through Zernio',
-    stepThreeBody: 'Tap “Auto-post”, connect your Zernio API key, review the caption, and publish to TikTok.',
+    stepOneTitle: 'Start with your finished edit',
+    stepOneBody: 'Add your final cut after music, captions, and effects are in place.',
+    stepTwoTitle: 'Process in one tap',
+    stepTwoBody: 'INEASY prepares the compatible file in your browser and verifies the finished output.',
+    stepThreeTitle: 'Download. Publish. Done.',
+    stepThreeBody: 'Download your result or open the publishing panel to send it to TikTok.',
     localProcessingCopy: 'Your video stays on your device. The preview displays the target frame rate as 60 FPS. HDR uses a 10-bit path when supported.',
     homeBottomCta: 'Start processing',
     faqLabel: 'FAQ / FREQUENTLY ASKED QUESTIONS',
@@ -230,9 +230,9 @@ const translations = {
     packageHint: 'Нажмите «Купить» — откроется бот @ineasybot, он пришлёт реквизиты для оплаты.',
     buy: 'Купить',
     nav: ['ГЛАВНАЯ', 'ПАТЧЕР', 'ПРОВЕРКА ВИДЕО', 'FAQ'],
-    homeKicker: 'INEASY PATCHER  ·  TIKTOK READY',
-    homeTitle: 'ОПТИМИЗАТОР ВИДЕО ДЛЯ TIKTOK',
-    homeIntro: 'Подготовьте видео перед загрузкой. Совместимые файлы патчатся без повторного сжатия исходного потока.',
+    homeKicker: 'INEASY  ·  ОПТИМИЗАЦИЯ ВИДЕО',
+    homeTitle: 'КАЖДЫЙ КАДР. ПОД КОНТРОЛЕМ.',
+    homeIntro: 'Профессиональный финальный этап перед TikTok: подготовьте готовый ролик в браузере — без сложных настроек и лишних шагов.',
     homeCta: 'Перейти к обработке',
     comparisonKicker: 'КАЧЕСТВО',
     comparisonTitle: 'Смотрите результат: с патчингом и без патчинга',
@@ -240,12 +240,12 @@ const translations = {
     comparisonDisclaimer: 'Визуальный пример, а не предпросмотр результата обработки конкретного видео. Итоговое качество публикации зависит от TikTok.',
     workflowKicker: 'ТРИ ШАГА',
     workflowTitle: 'От монтажа до публикации',
-    stepOneTitle: 'Загрузите готовый монтаж',
-    stepOneBody: 'Добавьте видео после монтажа: музыку, текст и эффекты подготовьте заранее.',
-    stepTwoTitle: 'Нажмите «Обработать видео»',
-    stepTwoBody: 'Локально обрабатываются видео до 4K (4096×2304). Для 4K поддерживается частота до 120 FPS.',
-    stepThreeTitle: 'Опубликуйте через Zernio',
-    stepThreeBody: 'Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и опубликуйте видео в TikTok.',
+    stepOneTitle: 'Загрузите готовый ролик',
+    stepOneBody: 'Сначала завершите монтаж — добавьте звук, подписи и эффекты. Затем выберите итоговый файл.',
+    stepTwoTitle: 'Обработайте одним нажатием',
+    stepTwoBody: 'INEASY подготовит совместимый файл прямо в браузере и проверит результат перед скачиванием.',
+    stepThreeTitle: 'Скачайте и публикуйте',
+    stepThreeBody: 'Сохраните готовый файл или откройте блок публикации, чтобы отправить ролик в TikTok.',
     localProcessingCopy: 'Видео остаётся на устройстве. В предпросмотре целевая частота отображается как 60 FPS. Для HDR используется 10-битный режим, если формат поддерживается.',
     homeBottomCta: 'Начать обработку',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
@@ -415,9 +415,9 @@ const translations = {
     packageHint: '«Сатып алу» түймесін басыңыз — бот @ineasybot сізге төлем реквизиттерін жіберетін болады.',
     buy: 'Сатып алу',
     nav: ['БАСТЫ', 'ПАТЧЕР', 'БЕЙНЕНІ ТЕКСЕРУ', 'FAQ'],
-    homeKicker: 'INEASY PATCHER  ·  TIKTOK READY',
-    homeTitle: 'TIKTOK ҮШІН ВИДЕО ОҢТАЙЛАНДЫРУ',
-    homeIntro: 'Видеоны жүктемес бұрын дайындаңыз. Үйлесімді файлдар бастапқы ағынды қайта қысусыз патчталады.',
+    homeKicker: 'INEASY  ·  БЕЙНЕНІ ОҢТАЙЛАНДЫРУ',
+    homeTitle: 'ӘР КАДР. ТОЛЫҚ БАҚЫЛАУДА.',
+    homeIntro: 'TikTok алдында бейнеңізді браузерде оңтайландырыңыз: қарапайым қадамдар, түсінікті процесс және дайын нәтижені жүктеу.',
     homeCta: 'Өңдеуге өту',
     comparisonKicker: 'САПА',
     comparisonTitle: 'Патчпен және патчсыз нәтижені салыстырыңыз',
@@ -425,12 +425,12 @@ const translations = {
     comparisonDisclaimer: 'Бұл тек көрнекі мысал, нақты өңделген видеоның алдын ала көрінісі емес. Жарияланған видеоны TikTok өзі өңдейді.',
     workflowKicker: 'ҮШ ҚАДАМ',
     workflowTitle: 'Монтаждан жариялауға дейін',
-    stepOneTitle: 'Дайын монтажды жүктеңіз',
-    stepOneBody: 'Видеоны монтаждан кейін қосыңыз. Музыка, мәтін және әсерлерді алдын ала дайындаңыз.',
-    stepTwoTitle: '«Бейнені өңдеу» түймесін басыңыз',
-    stepTwoBody: 'Құрылғыда 4K (4096×2304) дейінгі бейнелер өңделеді. 4K үшін 120 FPS-ке дейін қолдау бар.',
-    stepThreeTitle: 'Zernio арқылы жариялаңыз',
-    stepThreeBody: '«Автожариялау» түймесін басып, Zernio API кілтін қосыңыз, сипаттаманы тексеріп, TikTok-қа жариялаңыз.',
+    stepOneTitle: 'Дайын бейнені жүктеңіз',
+    stepOneBody: 'Алдымен монтажды аяқтаңыз: музыка, жазулар мен әсерлерді қосып, дайын файлды таңдаңыз.',
+    stepTwoTitle: 'Бір рет басып өңдеңіз',
+    stepTwoBody: 'INEASY үйлесімді файлды браузерде дайындап, жүктемес бұрын нәтижені тексереді.',
+    stepThreeTitle: 'Жүктеп, жариялаңыз',
+    stepThreeBody: 'Дайын файлды жүктеңіз немесе TikTok-қа жіберу үшін жариялау бөлімін ашыңыз.',
     localProcessingCopy: 'Бейне құрылғыңызда қалады. Алдын ала көріністе нысаналы жиілік 60 FPS деп көрсетіледі. Қолдау болса, HDR үшін 10-биттік режим қолданылады.',
     homeBottomCta: 'Өңдеуді бастау',
     faqLabel: 'FAQ / ЖИІ ҚОЙЫЛАТЫН СҰРАҚТАР',
@@ -1054,7 +1054,6 @@ const previewWrap = document.getElementById('previewWrap');
 const previewVideo = document.getElementById('previewVideo');
 const fileMeta = document.getElementById('fileMeta');
 const clearBtn = document.getElementById('clearBtn');
-const mobile3dStage = document.getElementById('mobile3dStage');
 (() => {
   const inputs = document.querySelectorAll('input[name="patcherVersion"]');
   const note = document.getElementById('patcherVersionNote');
@@ -1116,29 +1115,6 @@ let processController = null;
 
 function setPublicationActionsVisible(visible) {
   if (publicationActions) publicationActions.classList.toggle('hidden', !visible);
-}
-
-function hidePublicationSection() {
-  setPublicationActionsVisible(false);
-  if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
-}
-
-function initializeMobile3dPreview() {
-  const isMobilePreview = window.matchMedia('(max-width: 700px)').matches;
-  if (!isMobilePreview || !mobile3dStage || mobile3dStage.dataset.libraryRequested === 'true') return;
-  mobile3dStage.dataset.libraryRequested = 'true';
-  const modelViewer = document.getElementById('mobile3dObject');
-  modelViewer?.addEventListener('error', () => mobile3dStage.classList.add('model-fallback'), { once: true });
-  if (window.customElements?.get('model-viewer')) {
-    mobile3dStage.classList.add('model-ready');
-    return;
-  }
-  const script = document.createElement('script');
-  script.type = 'module';
-  script.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.4.0/model-viewer.min.js';
-  script.onload = () => mobile3dStage.classList.add('model-ready');
-  script.onerror = () => mobile3dStage.classList.add('model-fallback');
-  document.head.appendChild(script);
 }
 
 function renderTikTokOptions() {
@@ -1347,14 +1323,12 @@ if (downloadBtn) {
     const isAppleMobile = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     if (!isAppleMobile || !processedVideoBlob) {
-      window.setTimeout(() => hidePublicationSection(), 180);
       return;
     }
     event.preventDefault();
     const openVideoFallback = () => window.open(patchedDownloadUrl || downloadBtn.href, '_blank', 'noopener');
     if (typeof File !== 'function' || typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') {
       openVideoFallback();
-      hidePublicationSection();
       return;
     }
     const file = new File([processedVideoBlob], downloadBtn.download || 'ineasy-video.mp4', { type: 'video/mp4' });
@@ -1362,16 +1336,13 @@ if (downloadBtn) {
     try { canShareFile = navigator.canShare({ files: [file] }); } catch (error) {}
     if (!canShareFile) {
       openVideoFallback();
-      hidePublicationSection();
       return;
     }
     try {
       await navigator.share({ files: [file], title: file.name });
-      hidePublicationSection();
     } catch (error) {
       if (error.name !== 'AbortError') {
         openVideoFallback();
-        hidePublicationSection();
       }
     }
   });
@@ -1442,7 +1413,7 @@ if (tiktokPublishForm) {
             ? t('draftSuccess')
             : publishState === 'published' ? t('publishSuccess') : t('publishPending');
       }
-      setPublicationActionsVisible(false);
+      // Keep publication actions available after publishing; a user may download or post again.
       window.setTimeout(() => {
         if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
       }, 1600);
@@ -1951,7 +1922,6 @@ async function handleFile(file) {
   if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
   if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
   currentObjectUrl = URL.createObjectURL(file);
-  initializeMobile3dPreview();
   if (previewVideo) {
     previewVideo.src = currentObjectUrl;
     previewVideo.preload = 'metadata';
@@ -2230,6 +2200,7 @@ applyProvidedNavIcons();
 // --- Tabs ---
 document.querySelectorAll('.nav-tab').forEach((tab) => {
   tab.addEventListener('click', () => {
+    if (tab.dataset.view !== 'patchSection') setPublicationActionsVisible(false);
     document.querySelectorAll('.nav-tab').forEach((item) => {
       item.classList.remove('active');
       item.removeAttribute('aria-current');
