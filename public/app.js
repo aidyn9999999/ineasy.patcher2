@@ -1569,121 +1569,97 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
   signal.throwIfAborted();
   onProgress?.(0);
 
-  // The UMD bundle splits its worker into 814.ffmpeg.js. Load the worker
-  // explicitly and pass its blob URL to avoid resolving it against the site URL.
-  if (!globalThis.FFmpegWASM?.FFmpeg) {
-    const scriptUrls = [
-      'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js',
-      'https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js'
-    ];
-    let lastScriptError = null;
-    for (const src of scriptUrls) {
-      try {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          script.dataset.ineasyFfmpeg = '1';
-          script.src = src;
-          let settled = false;
-          const finish = (error) => {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timeoutId);
-            signal.removeEventListener('abort', onAbort);
-            if (error) {
-              script.remove();
-              reject(error);
-            } else {
-              resolve();
-            }
-          };
-          const onAbort = () => finish(new Error('processing_cancelled'));
-          const timeoutId = setTimeout(() => finish(new Error('fps_encoder_download_failed: script timeout')), 20000);
-          script.onload = () => globalThis.FFmpegWASM?.FFmpeg
-            ? finish()
-            : finish(new Error('ffmpeg_global_missing'));
-          script.onerror = () => finish(new Error('fps_encoder_download_failed'));
-          signal.addEventListener('abort', onAbort, { once: true });
-          document.head.appendChild(script);
-        });
-        if (globalThis.FFmpegWASM?.FFmpeg) break;
-      } catch (error) {
-        lastScriptError = error;
-      }
+  // Use the official ESM build. The UMD package splits its class worker into a
+  // webpack chunk; using that chunk as classWorkerURL caused the worker's LOAD
+  // handshake to fail. The ESM build resolves its own worker.js and dependencies.
+  const candidates = [
+    {
+      moduleURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js',
+      coreBase: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/esm'
+    },
+    {
+      moduleURL: 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/esm/index.js',
+      coreBase: 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/esm'
     }
-    if (!globalThis.FFmpegWASM?.FFmpeg) {
-      throw new Error('fps_encoder_download_failed: ' + String(lastScriptError?.message || 'unable to load ffmpeg.js'));
-    }
-  }
+  ];
 
-  signal.throwIfAborted();
-  const FFmpeg = globalThis.FFmpegWASM?.FFmpeg;
-  if (!FFmpeg) throw new Error('fps_encoder_download_failed');
-  const ffmpeg = new FFmpeg();
+  let ffmpeg = null;
+  let coreBlobUrl = null;
+  let wasmBlobUrl = null;
   let aborted = false;
+  let lastLoadError = null;
   const onAbort = () => {
     aborted = true;
-    try { ffmpeg.terminate(); } catch (_) {}
+    try { ffmpeg?.terminate(); } catch (_) {}
   };
   signal.addEventListener('abort', onAbort, { once: true });
 
-  let coreBlobUrl = null;
-  let wasmBlobUrl = null;
-  let workerBlobUrl = null;
-  const inputPath = 'ineasy-input.' + ((String(inputName || '').match(/\.([a-z0-9]+)$/i)?.[1] || 'mp4').toLowerCase());
-  const outputPath = 'ineasy-cfr-5994.mp4';
+  const releaseLoadAssets = () => {
+    if (coreBlobUrl) URL.revokeObjectURL(coreBlobUrl);
+    if (wasmBlobUrl) URL.revokeObjectURL(wasmBlobUrl);
+    coreBlobUrl = null;
+    wasmBlobUrl = null;
+  };
 
   try {
-    const cdnBases = [
-      {
-        ffmpeg: 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.15/dist/umd',
-        core: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.10/dist/umd'
-      },
-      {
-        ffmpeg: 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd',
-        core: 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd'
-      }
-    ];
-    let assets = null;
-    let lastAssetError = null;
-    for (const base of cdnBases) {
+    for (const candidate of candidates) {
+      signal.throwIfAborted();
       try {
+        const module = await import(candidate.moduleURL);
+        if (typeof module.FFmpeg !== 'function') {
+          throw new Error('FFmpeg ESM module did not export FFmpeg');
+        }
+
         const responses = await Promise.all([
-          fetch(base.ffmpeg + '/814.ffmpeg.js', { signal }),
-          fetch(base.core + '/ffmpeg-core.js', { signal }),
-          fetch(base.core + '/ffmpeg-core.wasm', { signal })
+          fetch(candidate.coreBase + '/ffmpeg-core.js', { signal }),
+          fetch(candidate.coreBase + '/ffmpeg-core.wasm', { signal })
         ]);
         if (responses.some((response) => !response.ok)) {
-          throw new Error('CDN asset returned a non-success status');
+          throw new Error('FFmpeg core asset download returned HTTP error');
         }
-        assets = await Promise.all(responses.map((response) => response.blob()));
+        const [coreCode, wasmBytes] = await Promise.all(responses.map((response) => response.blob()));
+        signal.throwIfAborted();
+
+        releaseLoadAssets();
+        coreBlobUrl = URL.createObjectURL(new Blob([coreCode], { type: 'text/javascript' }));
+        wasmBlobUrl = URL.createObjectURL(new Blob([wasmBytes], { type: 'application/wasm' }));
+
+        ffmpeg = new module.FFmpeg();
+        ffmpeg.on('log', ({ message }) => {
+          if (message && /error|failed|invalid|not found|unknown encoder/i.test(message)) {
+            console.warn('[INEASY] FFmpeg:', message);
+          }
+        });
+        await ffmpeg.load({ coreURL: coreBlobUrl, wasmURL: wasmBlobUrl }, { signal });
+        if (!ffmpeg.loaded) throw new Error('FFmpeg worker loaded without completing initialization');
+        lastLoadError = null;
         break;
       } catch (error) {
         if (signal.aborted) throw error;
-        lastAssetError = error;
+        lastLoadError = error;
+        try { ffmpeg?.terminate(); } catch (_) {}
+        ffmpeg = null;
+        releaseLoadAssets();
+        console.warn('[INEASY] FFmpeg loader candidate failed:', candidate.moduleURL, error);
       }
     }
-    if (!assets) {
-      throw new Error('fps_encoder_download_failed: ' + String(lastAssetError?.message || 'unable to download ffmpeg assets'));
-    }
-    const [workerCode, coreCode, wasmBytes] = assets;
-    workerBlobUrl = URL.createObjectURL(new Blob([workerCode], { type: 'text/javascript' }));
-    coreBlobUrl = URL.createObjectURL(new Blob([coreCode], { type: 'text/javascript' }));
-    wasmBlobUrl = URL.createObjectURL(new Blob([wasmBytes], { type: 'application/wasm' }));
 
-    ffmpeg.on('log', ({ message }) => {
-      if (message && /error|failed|encoder|fps/i.test(message)) {
-        console.debug('[INEASY] FFmpeg:', message);
-      }
-    });
-    await ffmpeg.load({ classWorkerURL: workerBlobUrl, coreURL: coreBlobUrl, wasmURL: wasmBlobUrl });
+    if (!ffmpeg?.loaded) {
+      throw new Error('fps_encoder_download_failed: ' + String(lastLoadError?.message || 'FFmpeg could not initialize'));
+    }
     signal.throwIfAborted();
+
     ffmpeg.on('progress', ({ progress }) => {
       if (!signal.aborted) onProgress?.(Math.max(0, Math.min(1, Number(progress) || 0)));
     });
 
-    let inputBytes = new Uint8Array(await inputBlob.arrayBuffer());
+    const extension = (String(inputName || '').match(/\\.([a-z0-9]+)$/i)?.[1] || 'mp4').toLowerCase();
+    const inputPath = 'ineasy-input.' + extension;
+    const outputPath = 'ineasy-cfr-5994.mp4';
+
     let sourceFps = null;
     const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+    let inputBytes = new Uint8Array(await inputBlob.arrayBuffer());
     if (mediaCore?.inspectMediaInfo) {
       try {
         sourceFps = Number(mediaCore.inspectMediaInfo(inputBytes)?.averageFps) || null;
@@ -1705,15 +1681,16 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
       '-movflags', '+faststart',
       '-video_track_timescale', '60000'
     ];
-    let exitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'copy', outputPath]);
+
+    let exitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'copy', outputPath], -1, { signal });
     if (exitCode !== 0) {
       try { await ffmpeg.deleteFile(outputPath); } catch (_) {}
-      exitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'aac', '-b:a', '192k', outputPath]);
+      exitCode = await ffmpeg.exec([...baseArgs, '-c:a', 'aac', '-b:a', '192k', outputPath], -1, { signal });
     }
     if (exitCode !== 0) throw new Error('fps_encoder_empty_output');
     signal.throwIfAborted();
 
-    const outputData = await ffmpeg.readFile(outputPath);
+    const outputData = await ffmpeg.readFile(outputPath, 'binary', { signal });
     const outputBlob = new Blob([outputData], { type: 'video/mp4' });
     if (!outputBlob.size) throw new Error('fps_encoder_empty_output');
     if (outputBlob.size > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
@@ -1722,7 +1699,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     const verified = mediaCore.inspectMediaInfo(new Uint8Array(await outputBlob.arrayBuffer()));
     const fps = Number(verified?.averageFps);
     if (!Number.isFinite(fps) || Math.abs(fps - (60000 / 1001)) > 0.03) {
-      throw new Error('fps_encoder_verification_failed');
+      throw new Error('fps_encoder_verification_failed: reported=' + String(fps));
     }
 
     console.info('[INEASY] CFR conversion verified', {
@@ -1738,14 +1715,12 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
   } catch (error) {
     if (signal.aborted || aborted) throw new Error('processing_cancelled');
     console.error('[INEASY] CFR conversion failed:', error);
-    const detail = String(error?.message || error || 'unknown_error').slice(0, 240);
+    const detail = String(error?.message || error || 'unknown_error').slice(0, 400);
     throw new Error('fps_encoder_failed: ' + detail);
   } finally {
     signal.removeEventListener('abort', onAbort);
-    try { ffmpeg.terminate(); } catch (_) {}
-    if (workerBlobUrl) URL.revokeObjectURL(workerBlobUrl);
-    if (coreBlobUrl) URL.revokeObjectURL(coreBlobUrl);
-    if (wasmBlobUrl) URL.revokeObjectURL(wasmBlobUrl);
+    try { ffmpeg?.terminate(); } catch (_) {}
+    releaseLoadAssets();
   }
 }
 
