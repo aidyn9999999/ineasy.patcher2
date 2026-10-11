@@ -189,7 +189,6 @@ const translations = {
     loadingVideoData: 'Preparing video for local processing…',
     analyzingVideo: 'Analyzing video…',
     patchingVideo: 'Applying video patch…',
-    videoResolutionTooHigh: 'This video is above 4K. Export it at 4096×2304 or smaller and select it again.',
     videoDimensionsUnavailable: 'Could not read the video resolution. Try exporting it as MP4.',
     formatConversionFailed: 'This video format or codec is not supported by this browser. Try MP4, MOV, or another H.264 video.',
     cancel: 'Cancel',
@@ -374,7 +373,6 @@ const translations = {
     loadingVideoData: 'Подготавливаем видео к локальной обработке…',
     analyzingVideo: 'Анализируем видео…',
     patchingVideo: 'Применяем патчер…',
-    videoResolutionTooHigh: 'Разрешение видео выше 4K. Экспортируйте его в 4096×2304 или меньше и выберите снова.',
     videoDimensionsUnavailable: 'Не удалось прочитать разрешение видео. Попробуйте экспортировать его в MP4.',
     formatConversionFailed: 'Браузер не поддерживает этот формат или кодек. Попробуйте MP4, MOV или видео H.264.',
     cancel: 'Отмена',
@@ -559,7 +557,6 @@ const translations = {
     loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
     analyzingVideo: 'Бейне талдануда…',
     patchingVideo: 'Патчер қолданылуда…',
-    videoResolutionTooHigh: 'Бейне 4K форматынан жоғары. 4096×2304 немесе одан төмен етіп экспорттап, қайта таңдаңыз.',
     videoDimensionsUnavailable: 'Бейне ажыратымдылығын оқу мүмкін болмады. MP4 форматында экспорттап көріңіз.',
     formatConversionFailed: 'Браузер бұл пішімге немесе кодекке қолдау көрсетпейді. MP4, MOV немесе H.264 бейнесін қолданып көріңіз.',
     cancel: 'Бас тарту',
@@ -2103,7 +2100,7 @@ async function handleFile(file) {
   // Warm FFmpeg's JS/WASM assets in the background as soon as a 4K source is selected.
   // Downloading in parallel with the user's preparation removes this wait from conversion.
   if (selectedLongSide >= 3000) {
-    import('./ffmpeg-4k-cfr.js?v=20261012-3')
+    import('./ffmpeg-4k-cfr.js?v=20261012-4')
       .then((module) => module.prepareFFmpeg4kFallback())
       .catch((error) => console.warn('[INEASY] 4K assets will load on demand:', error?.message || error));
   }
@@ -2428,7 +2425,7 @@ if (processBtn) {
     }
     const controller = new AbortController();
     let processingTimedOut = false;
-    const processingTimeoutId = setTimeout(() => {
+    let processingTimeoutId = setTimeout(() => {
       processingTimedOut = true;
       controller.abort();
     }, 1200000);
@@ -2477,6 +2474,10 @@ if (processBtn) {
       controller.signal.throwIfAborted();
       let fpsConversion;
       if (hdrInspection.hdr) {
+        // HDR jobs have no fixed 20-minute cutoff; large 4K/8K encodes can take longer.
+        // The user can still cancel manually, and all output verification remains active.
+        clearTimeout(processingTimeoutId);
+        processingTimeoutId = null;
         console.info('[INEASY] HDR source detected; using local 10-bit HEVC CFR path', {
           profile: hdrInspection.label, reason: hdrInspection.reason,
           resolution: hdrInspection.width + 'x' + hdrInspection.height
@@ -2636,7 +2637,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261012-2');
+        const worker = new Worker('adjn-worker.js?v=20261012-3');
         let workerReadyTimeoutId = setTimeout(() => {
           if (workerDone) return;
           workerDone = true;
