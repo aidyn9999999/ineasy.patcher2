@@ -14,12 +14,6 @@ const { pipeline } = require('stream/promises');
 const FFMPEG_PATH = process.env.FFMPEG_PATH || (() => { try { return require('ffmpeg-static') || 'ffmpeg'; } catch (_) { return 'ffmpeg'; } })();
 const MAX_SERVER_4K_BYTES = 50 * 1024 * 1024;
 let activeServer4kJobs = 0;
-const { Transform } = require('stream');
-const { pipeline } = require('stream/promises');
-const FFMPEG_PATH = process.env.FFMPEG_PATH || 'ffmpeg';
-const MAX_SERVER_4K_BYTES = 50 * 1024 * 1024;
-const MAX_SERVER_4K_JOBS = 1;
-let activeServer4kJobs = 0;
 let FFPROBE_PATH = 'ffprobe';
 try { FFPROBE_PATH = require('ffprobe-static').path; } catch (e) { /* используем системный ffprobe */ }
 
