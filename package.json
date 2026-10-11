@@ -1,7 +1,7 @@
 {
   "name": "video-patcher-site",
   "version": "1.0.0",
-  "description": "Сайт с авторизацией через Telegram-бота и локальным обработчиком видео",
+  "description": "INEASY video patcher with local 1080p processing and server-side 4K CFR conversion",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -12,6 +12,7 @@
     "express": "^4.19.2",
     "ffprobe-static": "^3.1.0",
     "telegraf": "^4.16.3",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "ffmpeg-static": "^5.2.0"
   }
 }
