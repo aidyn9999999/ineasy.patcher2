@@ -61,7 +61,7 @@ const translations = {
     stepTwoBody: 'INEASY prepares the compatible file in your browser and verifies the finished output.',
     stepThreeTitle: 'Download. Publish. Done.',
     stepThreeBody: 'Download your result or open the publishing panel to send it to TikTok.',
-    localProcessingCopy: 'Your video stays on your device. The preview displays the target frame rate as 60 FPS. HDR uses a 10-bit path when supported.',
+    localProcessingCopy: 'Your video stays on your device. Video is genuinely converted to 59.94 FPS. HDR uses a 10-bit HEVC path and is never silently converted to SDR.',
     homeBottomCta: 'Start processing',
     faqLabel: 'FAQ / FREQUENTLY ASKED QUESTIONS',
     analyzerEyebrow: 'VIDEO ANALYZER',
@@ -185,9 +185,6 @@ const translations = {
     fileName: 'Selected file',
     packageLabel: 'Video package',
     errorInvalidFile: 'Choose a supported video file.',
-    fileTooLarge: '1080p videos must be 500 MB or smaller.',
-    fileTooLarge4k: '4K / high-resolution videos must be 50 MB or smaller for server processing.',
-    server4kWait: 'Uploading 4K video to Railway and converting it to 59.94 FPS…',
     readingVideoMetadata: 'Reading video details…',
     loadingVideoData: 'Preparing video for local processing…',
     analyzingVideo: 'Analyzing video…',
@@ -249,7 +246,7 @@ const translations = {
     stepTwoBody: 'INEASY подготовит совместимый файл прямо в браузере и проверит результат перед скачиванием.',
     stepThreeTitle: 'Скачайте и публикуйте',
     stepThreeBody: 'Сохраните готовый файл или откройте блок публикации, чтобы отправить ролик в TikTok.',
-    localProcessingCopy: 'Видео остаётся на устройстве. В предпросмотре целевая частота отображается как 60 FPS. Для HDR используется 10-битный режим, если формат поддерживается.',
+    localProcessingCopy: 'Видео остаётся на устройстве. Кадры действительно преобразуются в 59,94 FPS. Для HDR используется 10-битный HEVC; HDR не переводится незаметно в SDR.',
     homeBottomCta: 'Начать обработку',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
@@ -373,9 +370,6 @@ const translations = {
     fileName: 'Выбранный файл',
     packageLabel: 'Пакет видео',
     errorInvalidFile: 'Выберите поддерживаемый видеофайл.',
-    fileTooLarge: 'Для локальной обработки 1080p видео должно быть не больше 500 МБ.',
-    fileTooLarge4k: 'Для серверной обработки 4K / высокого разрешения размер видео не должен превышать 50 МБ.',
-    server4kWait: 'Отправляем 4K-видео на Railway и конвертируем в 59,94 FPS…',
     readingVideoMetadata: 'Читаем параметры видео…',
     loadingVideoData: 'Подготавливаем видео к локальной обработке…',
     analyzingVideo: 'Анализируем видео…',
@@ -437,7 +431,7 @@ const translations = {
     stepTwoBody: 'INEASY үйлесімді файлды браузерде дайындап, жүктемес бұрын нәтижені тексереді.',
     stepThreeTitle: 'Жүктеп, жариялаңыз',
     stepThreeBody: 'Дайын файлды жүктеңіз немесе TikTok-қа жіберу үшін жариялау бөлімін ашыңыз.',
-    localProcessingCopy: 'Бейне құрылғыңызда қалады. Алдын ала көріністе нысаналы жиілік 60 FPS деп көрсетіледі. Қолдау болса, HDR үшін 10-биттік режим қолданылады.',
+    localProcessingCopy: 'Бейне құрылғыңызда қалады. Кадрлар нақты 59,94 FPS форматына түрленеді. HDR үшін 10-биттік HEVC қолданылады, HDR үнсіз SDR форматына ауыстырылмайды.',
     homeBottomCta: 'Өңдеуді бастау',
     faqLabel: 'FAQ / ЖИІ ҚОЙЫЛАТЫН СҰРАҚТАР',
     analyzerEyebrow: 'БЕЙНЕ АНАЛИЗАТОРЫ',
@@ -561,9 +555,6 @@ const translations = {
     fileName: 'Таңдалған файл',
     packageLabel: 'Бейне пакеті',
     errorInvalidFile: 'Қолдау көрсетілетін бейне файлын таңдаңыз.',
-    fileTooLarge: '1080p бейнесін жергілікті өңдеу үшін өлшемі 500 МБ-тан аспауы керек.',
-    fileTooLarge4k: '4K / жоғары ажыратымдылықтағы бейне серверде өңделуі үшін 50 МБ-тан аспауы керек.',
-    server4kWait: '4K бейнесі Railway серверіне жіберіліп, 59,94 FPS форматына түрлендірілуде…',
     readingVideoMetadata: 'Бейне параметрлері оқылуда…',
     loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
     analyzingVideo: 'Бейне талдануда…',
@@ -1767,7 +1758,6 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
   const TARGET_FPS = 60000 / 1001;
   signal.throwIfAborted();
   if (!inputBlob || !inputBlob.size) throw new Error('video_file_over_limit');
-  if (inputBlob.size > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
 
   onProgress?.(0.01);
   let input = null;
@@ -1855,7 +1845,6 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     if (!(buffer instanceof ArrayBuffer) || buffer.byteLength === 0) {
       throw new Error('fps_encoder_empty_output');
     }
-    if (buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
 
     const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
     if (!mediaCore?.inspectMediaInfo) throw new Error('fps_encoder_verification_unavailable');
@@ -2019,8 +2008,6 @@ function getPostingDeviceForPlatform() {
   return isPhoneMode ? 'phone' : 'pc';
 }
 
-const MAX_VIDEO_FILE_SIZE = 500 * 1024 * 1024;
-const MAX_SERVER_VIDEO_FILE_SIZE = 50 * 1024 * 1024;
 let fileSelectionVersion = 0;
 let selectedVideoDimensions = null;
 
@@ -2059,10 +2046,6 @@ async function handleFile(file) {
     return;
   }
   const isVideo = file && (file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi|3gp|3g2|ts|mts|m2ts|mpg|mpeg|wmv|flv|ogv)$/i.test(file.name));
-  if (file && file.size > MAX_VIDEO_FILE_SIZE) {
-    rejectFileSelection(t('fileTooLarge'));
-    return;
-  }
   if (!isVideo || file.size < 16) {
     rejectFileSelection(t('errorInvalidFile'));
     return;
@@ -2118,10 +2101,6 @@ async function handleFile(file) {
     return;
   }
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
-  if (selectedLongSide > 1920 && file.size > MAX_SERVER_VIDEO_FILE_SIZE) {
-    rejectFileSelection(t('fileTooLarge4k'));
-    return;
-  }
   selectedVideoDimensions = dimensions;
   // Keep the 4K fallback lazy-loaded: don't download FFmpeg until the browser encoder fails.
   // Load the fallback only if browser hardware encoding actually fails.
@@ -2420,66 +2399,6 @@ if (comparisonRange && qualityComparison) {
 }
 
 
-async function convert4kOnRailway(sourceFile, signal, onProgress, sourceDurationSeconds) {
-  if (sourceFile.size > MAX_SERVER_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
-  signal.throwIfAborted();
-  onProgress?.(0.05);
-  const token = getBrowserValue('tg_auth_token') || '';
-  const response = await fetch('/api/process-4k', {
-    method: 'POST',
-    headers: {
-      Authorization: 'Bearer ' + token,
-      'Content-Type': sourceFile.type || 'application/octet-stream',
-    },
-    body: sourceFile,
-    signal,
-    cache: 'no-store',
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || 'server_4k_failed');
-  }
-  const blob = await response.blob();
-  signal.throwIfAborted();
-  if (!blob.size) throw new Error('server_4k_failed');
-  const width = Number(response.headers.get('X-Video-Width'));
-  const height = Number(response.headers.get('X-Video-Height'));
-  const fps = Number(response.headers.get('X-Video-Fps'));
-  const sourceFps = Number(response.headers.get('X-Video-Source-Fps'));
-  const codec = response.headers.get('X-Video-Codec') || 'unknown';
-  const pixelFormat = response.headers.get('X-Video-Pixel-Format') || '';
-  const transfer = (response.headers.get('X-Video-Color-Transfer') || '').toLowerCase();
-  const primaries = response.headers.get('X-Video-Color-Primaries') || '';
-  const hdr = response.headers.get('X-Video-HDR') === 'true';
-  const hdrLabel = response.headers.get('X-Video-HDR-Profile') || (hdr ? 'HDR / 10-bit' : 'SDR');
-  if (!width || !height || !Number.isFinite(fps) || Math.abs(fps - (60000 / 1001)) > 0.03) {
-    throw new Error('server_4k_output_verification_failed');
-  }
-  if (hdr && (!/10|12|16/.test(pixelFormat) || !['smpte2084', 'arib-std-b67'].includes(transfer))) {
-    throw new Error('hdr_output_verification_failed');
-  }
-  onProgress?.(1);
-  const info = {
-    width, height, averageFps: fps, codec, pixFmt: pixelFormat,
-    colorTransfer: transfer, colorPrimaries: primaries,
-  };
-  const hdrProfile = {
-    label: hdrLabel,
-    hdr10: transfer === 'smpte2084',
-    hlg: transfer === 'arib-std-b67',
-    main10: hdr && /10|12|16/.test(pixelFormat),
-  };
-  console.info('[INEASY] Railway CFR verified', {
-    inputBytes: sourceFile.size, outputBytes: blob.size,
-    resolution: width + 'x' + height, fps, sourceFps,
-    encoder: codec, hdr, hdrProfile: hdrLabel,
-  });
-  return {
-    blob, info, fps, sourceFps: Number.isFinite(sourceFps) ? sourceFps : sourceDurationSeconds,
-    hdr, hdrTranscoded: hdr, main10Transcoded: hdr,
-    hdrProfile, preserveOriginal: false,
-  };
-}
 
 if (processBtn) {
   processBtn.addEventListener('click', async () => {
@@ -2548,24 +2467,33 @@ if (processBtn) {
         sourceFile, sourceFile.name, controller.signal, reportCfrProgress, sourceDuration, is4kSource
       );
 
-
+      // Inspect source color metadata before selecting an encoder. Never send HDR through
+      // the browser's generic 8-bit SDR encoder path.
+      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-2');
+      const hdrInspection = await localFfmpeg.inspectHDRVideo(sourceFile);
+      controller.signal.throwIfAborted();
       let fpsConversion;
-      const useServerProcessing = sourceLongSide > 1920 && !PATCHER_TEST_MODE;
-      if (useServerProcessing) {
-        setProcessingState('processing', t('server4kWait'));
-        fpsConversion = await convert4kOnRailway(sourceFile, controller.signal, reportCfrProgress, sourceDuration);
+      if (hdrInspection.hdr) {
+        console.info('[INEASY] HDR source detected; using local 10-bit HEVC CFR path', {
+          profile: hdrInspection.label, reason: hdrInspection.reason,
+          resolution: hdrInspection.width + 'x' + hdrInspection.height
+        });
+        setProcessingState('processing', 'HDR • 10-bit • 59.94 FPS');
+        fpsConversion = await localFfmpeg.convertVideoToExact5994FpsWithFFmpeg(
+          sourceFile, selectedVideoDimensions, sourceDuration,
+          controller.signal, reportCfrProgress, { hdr: 'auto' }
+        );
       } else {
         try {
-          // Local 1080p path: use browser hardware acceleration and retain the existing settings.
+          // Actual frame decode/re-encode at 60000/1001 FPS; browser hardware preferred.
           fpsConversion = await runPrimaryCfr();
         } catch (primaryError) {
           const primaryMessage = String(primaryError?.message || primaryError || '');
-          if (controller.signal.aborted ||
-              /processing_cancelled|AbortError|video_file_over_limit/i.test(primaryMessage)) {
+          if (controller.signal.aborted || /processing_cancelled|AbortError/i.test(primaryMessage)) {
             throw primaryError;
           }
           if (!is4kSource) {
-            console.warn('[INEASY] Hardware CFR failed; retrying this clip with software encoding:', primaryMessage);
+            console.warn('[INEASY] Browser CFR failed; retrying with software encoding:', primaryMessage);
             try {
               fpsConversion = await convertVideoToExact5994Fps(
                 sourceFile, sourceFile.name, controller.signal, reportCfrProgress,
@@ -2578,12 +2506,10 @@ if (processBtn) {
                 '; software=' + softwareMessage.slice(0, 220));
             }
           } else {
-            // Localhost test mode only; production 4K always uses Railway.
-            console.warn('[INEASY] Test-mode 4K browser fallback:', primaryMessage);
-            const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-30');
-            fpsConversion = await fallbackEncoder.convertVideoToExact5994FpsWithFFmpeg(
+            console.warn('[INEASY] 4K browser CFR failed; retrying with local FFmpeg:', primaryMessage);
+            fpsConversion = await localFfmpeg.convertVideoToExact5994FpsWithFFmpeg(
               sourceFile, selectedVideoDimensions, sourceDuration,
-              controller.signal, reportCfrProgress, { hdr: false }
+              controller.signal, reportCfrProgress, { hdr: 'auto' }
             );
           }
         }
@@ -2678,7 +2604,6 @@ if (processBtn) {
         }
       }
       controller.signal.throwIfAborted();
-      if (buffer.byteLength > MAX_VIDEO_FILE_SIZE) throw new Error('video_file_over_limit');
       updateProcessingProgress(15);
 
       const requestId = `ineasy-${Date.now()}`;
@@ -2921,7 +2846,7 @@ if (processBtn) {
       const resultSubNode = document.getElementById('resultSub');
       const outputLongSide = Math.max(Number(metaInfo?.width) || 0, Number(metaInfo?.height) || 0);
       const outputResolutionLabel = outputLongSide >= 3840 ? '4K' : '1080p';
-      if (resultSubNode) resultSubNode.textContent = `${outputResolutionLabel} • 60 FPS`;
+      if (resultSubNode) resultSubNode.textContent = `${outputResolutionLabel} • 59.94 FPS`;
       if (durationNotice) durationNotice.classList.remove('hidden');
       setPublicationActionsVisible(true);
 
@@ -3017,11 +2942,6 @@ function localizePatchError(message) {
     { test: /ffmpeg_4k_api_unavailable/i, ru: 'Не удалось загрузить API FFmpeg для 4K. Обновите страницу и попробуйте снова.', kk: '4K үшін FFmpeg API жүктелмеді. Бетті жаңартып, қайталап көріңіз.', en: 'Could not load the FFmpeg 4K API. Refresh the page and try again.' },
     { test: /ffmpeg_4k_resolution_verification_failed|video_resolution_over_4k/i, ru: 'Проверка разрешения 4K не пройдена. Файл не выдан.', kk: '4K ажыратымдылығын тексеру өтпеді. Файл шығарылған жоқ.', en: 'The 4K output resolution check failed. No file was produced.' },
     { test: /V2_BETA_ENGINE_NOT_LOADED/i, ru: 'Не удалось загрузить модуль V2. Обновите страницу и попробуйте ещё раз.', kk: 'V2 модулін жүктеу мүмкін болмады. Бетті жаңартып, қайталап көріңіз.', en: 'Could not load the V2 module. Refresh the page and try again.' },
-    { test: /hdr_dynamic_metadata_not_supported/i, ru: 'Это видео содержит Dolby Vision или HDR10+ с динамическими метаданными. Серверный режим пока не может гарантировать их сохранение, поэтому файл не выдан.', kk: 'Бұл видеода Dolby Vision немесе HDR10+ динамикалық метадеректері бар. Сервер оларды сақтауға кепілдік бере алмайды, сондықтан файл берілмеді.', en: 'This video contains Dolby Vision or HDR10+ dynamic metadata. The server cannot guarantee preserving it yet, so no file was produced.' },
-    { test: /server_4k_busy/i, ru: 'Сервер уже обрабатывает другое 4K-видео. Попробуйте ещё раз через минуту.', kk: 'Сервер басқа 4K бейнесін өңдеп жатыр. Бір минуттан кейін қайталап көріңіз.', en: 'The server is processing another 4K video. Please retry in a minute.' },
-    { test: /server_4k_duration_limit/i, ru: 'Для серверной обработки видео должно длиться не больше 60 секунд.', kk: 'Серверде өңдеу үшін бейне ұзақтығы 60 секундтан аспауы керек.', en: 'Server processing supports videos up to 60 seconds.' },
-    { test: /server_4k_output_verification_failed/i, ru: 'Сервер не подтвердил разрешение или частоту 59,94 FPS. Файл не выдан.', kk: 'Сервер ажыратымдылықты немесе 59,94 FPS жиілігін растамады. Файл берілмеді.', en: 'The server could not verify the resolution or 59.94 FPS output. No file was produced.' },
-    { test: /server_4k_failed|server_4k_metadata_unavailable|server_4k_video_stream_missing|server_4k_resolution_not_supported/i, ru: 'Не удалось обработать 4K-видео на Railway. Проверьте формат файла и попробуйте ещё раз.', kk: '4K бейнесін Railway серверінде өңдеу мүмкін болмады. Файл пішімін тексеріп, қайталап көріңіз.', en: 'Railway could not process this 4K video. Check the file format and try again.' },
     { test: /fps_encoder_failed/i, ru: 'Не удалось обработать видео. Попробуйте ещё раз или выберите другой файл.', kk: 'Бейнені өңдеу мүмкін болмады. Қайталап көріңіз немесе басқа файл таңдаңыз.', en: 'Could not process the video. Try again or choose another file.' },
     { test: /mediabunny_load_timeout/i, ru: 'Модуль обработки не загрузился за 25 секунд. Проверьте интернет и обновите страницу.', kk: 'Өңдеу модулі 25 секундта жүктелмеді. Интернетті тексеріп, бетті жаңартыңыз.', en: 'The lightweight processing module did not load within 25 seconds. Check your connection and refresh the page.' },
     { test: /fps_output_verification_failed/i, ru: 'Проверка частоты кадров не пройдена. Повторите обработку файла.', kk: 'Кадр жиілігін тексеру өтпеді. Файлды қайта өңдеңіз.', en: 'The output frame-rate check failed. Process the file again.' },
@@ -3033,7 +2953,7 @@ function localizePatchError(message) {
     { test: /hdr_source_color_unknown/i, ru: 'Не удалось определить цветовой профиль HDR. Конвертация остановлена, чтобы не испортить цвета.', kk: 'HDR түс профилін анықтау мүмкін болмады. Түстерді бұзбау үшін түрлендіру тоқтатылды.', en: 'The HDR colour profile could not be determined. Conversion was stopped to avoid damaging the colours.' },
     { test: /hdr_audio_config_unavailable|hdr_audio_codec_unsupported|hdr_audio_empty/i, ru: 'Не удалось безопасно сохранить звук при HDR-конвертации. Попробуйте MP4/MOV с AAC.', kk: 'HDR түрлендіру кезінде дыбысты сақтау мүмкін болмады. AAC бар MP4/MOV қолданып көріңіз.', en: 'Audio could not be preserved safely during HDR conversion. Try an MP4/MOV with AAC audio.' },
     { test: /fps_encoder_download_failed|fps_encoder_empty_output|fps_encoder_verification_failed|fps_encoder_verification_unavailable/i, ru: 'Не удалось обработать видео. Проверьте соединение и повторите попытку.', kk: 'Бейнені өңдеу мүмкін болмады. Интернетті тексеріп, қайталап көріңіз.', en: 'Could not process the video. Check your connection and try again.' },
-    { test: /video_file_over_limit/i, ru: t('fileTooLarge'), kk: t('fileTooLarge'), en: t('fileTooLarge') },
+    { test: /video_file_over_limit/i, ru: t('errorInvalidFile'), kk: t('errorInvalidFile'), en: t('errorInvalidFile') },
     { test: /video_resolution_over_1080p/i, ru: t('videoResolutionTooHigh'), kk: t('videoResolutionTooHigh'), en: t('videoResolutionTooHigh') },
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
     { test: /hdr_video_not_supported/i, ru: 'HDR-видео нельзя безопасно перекодировать в этом браузере. Исходный поток должен быть сохранён без изменения.', kk: 'Бұл браузерде HDR бейнені қауіпсіз қайта кодтау мүмкін емес. Бастапқы ағын өзгеріссіз сақталуы керек.', en: 'This browser cannot safely transcode this HDR video. The original video stream must be preserved.' },
