@@ -236,8 +236,10 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
     throw new Error('ffmpeg_4k_hdr_unsafe: ' + colorProfile.reason);
   }
   if (colorProfile.tenBit) {
-    console.warn('[INEASY] 10-bit source detected (not necessarily HDR):', colorProfile);
-    throw new Error('ffmpeg_4k_10bit_unsupported: ' + colorProfile.reason);
+    // Main10/10-bit by itself does not mean HDR. Only explicit PQ/HLG/Dolby Vision
+    // metadata above blocks this SDR path. With no such signalling, process the file
+    // as SDR and let the existing yuv420p output perform a normal 8-bit SDR conversion.
+    console.warn('[INEASY] 10-bit profile detected without explicit HDR signalling; using the SDR conversion path:', colorProfile);
   }
 
   onProgress?.(0.02);
