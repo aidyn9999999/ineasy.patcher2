@@ -1421,8 +1421,21 @@ function createUserToken(telegramId) {
   return `${payload}.${signature}`;
 }
 
+function setPersistentAuthCookie(req, res, token) {
+  const secure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  res.setHeader('Set-Cookie', `ineasy_auth=${encodeURIComponent(token)}; Path=/; Max-Age=${30 * 24 * 60 * 60}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
+}
+
+function clearPersistentAuthCookie(req, res) {
+  const secure = req.secure || req.headers['x-forwarded-proto'] === 'https';
+  res.setHeader('Set-Cookie', `ineasy_auth=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`);
+}
+
 async function requireUserToken(req, res, next) {
-  const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  const bearerToken = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  const cookieToken = String(req.headers.cookie || '').split(';').map((part) => part.trim())
+    .find((part) => part.startsWith('ineasy_auth='));
+  const token = bearerToken || (cookieToken ? decodeURIComponent(cookieToken.slice('ineasy_auth='.length)) : '');
   const [payload, signature] = token.split('.');
   if (!payload || !signature) return res.status(401).json({ error: 'authentication_required' });
 
@@ -1577,14 +1590,26 @@ app.get('/api/session/:id', async (req, res) => {
       return res.status(503).json({ error: 'access_check_unavailable' });
     }
   }
+  const authToken = session.authorized ? createUserToken(session.telegramId) : null;
+  if (authToken) setPersistentAuthCookie(req, res, authToken);
   res.json({
     authorized: session.authorized,
     subscriptionRequired: Boolean(session.subscriptionRequired),
     telegramId: session.telegramId || null,
     username: session.username || null,
     firstName: session.firstName || null,
-    authToken: session.authorized ? createUserToken(session.telegramId) : null,
+    authToken,
   });
+});
+
+app.get('/api/auth/session', requireUserToken, (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({ authenticated: true, telegramId: req.telegramId, authToken: createUserToken(req.telegramId) });
+});
+
+app.post('/api/logout', (req, res) => {
+  clearPersistentAuthCookie(req, res);
+  res.status(204).end();
 });
 
 app.post('/api/tiktok/key', requireUserToken, async (req, res) => {
