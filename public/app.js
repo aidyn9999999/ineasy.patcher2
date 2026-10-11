@@ -1413,10 +1413,8 @@ if (tiktokPublishForm) {
             ? t('draftSuccess')
             : publishState === 'published' ? t('publishSuccess') : t('publishPending');
       }
-      // Keep publication actions available after publishing; a user may download or post again.
-      window.setTimeout(() => {
-        if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
-      }, 1600);
+      // Keep the publish form and its status visible after publishing.
+      // It closes when the user switches tabs or clears/changes the video.
     } catch (error) {
       console.warn('[INEASY] TikTok publish request failed', {
         status: error.status || null,
@@ -2200,7 +2198,10 @@ applyProvidedNavIcons();
 // --- Tabs ---
 document.querySelectorAll('.nav-tab').forEach((tab) => {
   tab.addEventListener('click', () => {
-    if (tab.dataset.view !== 'patchSection') setPublicationActionsVisible(false);
+    if (tab.dataset.view !== 'patchSection') {
+      setPublicationActionsVisible(false);
+      if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
+    }
     document.querySelectorAll('.nav-tab').forEach((item) => {
       item.classList.remove('active');
       item.removeAttribute('aria-current');
