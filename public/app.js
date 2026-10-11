@@ -1757,7 +1757,7 @@ async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
 }
 
 
-async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress, sourceDurationSeconds, is4kSource = false) {
+async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress, sourceDurationSeconds, is4kSource = false, encoderPreference = 'prefer-hardware') {
   const TARGET_FPS = 60000 / 1001;
   signal.throwIfAborted();
   if (!inputBlob || !inputBlob.size) throw new Error('video_file_over_limit');
@@ -1823,7 +1823,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
             (inputBlob.size * 8 / Math.max(1, Number(sourceDurationSeconds) || 1)) - 192000
           )
         ),
-        hardwareAcceleration: 'prefer-hardware',
+        hardwareAcceleration: encoderPreference,
         forceTranscode: true
       }
     });
@@ -2487,23 +2487,42 @@ if (processBtn) {
             /processing_cancelled|AbortError|video_file_over_limit/i.test(primaryMessage)) {
           throw primaryError;
         }
-        if (!is4kSource) throw primaryError;
-
-        // Only load FFmpeg after hardware encoding fails. The SDR fallback keeps the
-        // original frame dimensions and uses a true 60000/1001 CFR fps filter.
-        // The FFmpeg module refuses explicitly signaled HDR rather than silently
-        // converting it through an SDR encoder; HDR support is intentionally paused.
-        console.warn('[INEASY] Hardware 4K CFR failed; trying full-resolution CFR fallback:', primaryMessage);
-        setProcessingState('processing', t('uhdWait'));
-        const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-30');
-        fpsConversion = await fallbackEncoder.convertVideoToExact5994FpsWithFFmpeg(
-          sourceFile,
-          selectedVideoDimensions,
-          sourceDuration,
-          controller.signal,
-          reportCfrProgress,
-          { hdr: false }
-        );
+        if (!is4kSource) {
+          // Keep the normal 1080p path and quality settings unchanged. If hardware
+          // encoding rejects a particular clip, retry only that failed clip in software.
+          console.warn('[INEASY] Hardware CFR failed; retrying this clip with software encoding:', primaryMessage);
+          try {
+            fpsConversion = await convertVideoToExact5994Fps(
+              sourceFile,
+              sourceFile.name,
+              controller.signal,
+              reportCfrProgress,
+              sourceDuration,
+              false,
+              'prefer-software'
+            );
+          } catch (softwareError) {
+            const softwareMessage = String(softwareError?.message || softwareError || 'unknown_error');
+            console.error('[INEASY] Software CFR retry also failed:', softwareMessage);
+            throw new Error('fps_encoder_failed: hardware=' + primaryMessage.slice(0, 220) +
+              '; software=' + softwareMessage.slice(0, 220));
+          }
+        } else {
+          // Only load FFmpeg after hardware encoding fails. The SDR fallback keeps the
+          // original frame dimensions and uses a true 60000/1001 CFR fps filter.
+          // HDR is never silently routed through the SDR fallback.
+          console.warn('[INEASY] Hardware 4K CFR failed; trying full-resolution CFR fallback:', primaryMessage);
+          setProcessingState('processing', t('uhdWait'));
+          const fallbackEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-30');
+          fpsConversion = await fallbackEncoder.convertVideoToExact5994FpsWithFFmpeg(
+            sourceFile,
+            selectedVideoDimensions,
+            sourceDuration,
+            controller.signal,
+            reportCfrProgress,
+            { hdr: false }
+          );
+        }
       }
 
       // Verify the actual converted 4K file BEFORE passing it into ADJN.
