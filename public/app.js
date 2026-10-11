@@ -2332,8 +2332,8 @@ if (processBtn) {
 
       if (controller.signal.aborted) throw new Error('processing_cancelled');
 
-      // V2 is a byte-preservation path: do not append even a harmless MP4 free box.
-      // This keeps the downloaded file byte-for-byte identical to the selected source.
+      // V2 avoids extra container padding. Its pass-through output is the already-normalized
+      // CFR MP4, not the unconverted file originally selected by the user.
       const isV2Selected = getSelectedPatcherVersion() === 'v2';
       const isV2InputPassThrough = isV2Selected && Boolean(result.passthrough);
       // The normalized MP4 has already been frame-converted before patching. Keep it in
