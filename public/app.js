@@ -1488,6 +1488,7 @@ function updateProcessingProgress(value) {
 async function readVideoDuration(file, signal) {
   if (signal?.aborted) throw new Error('processing_cancelled');
   if (previewVideo && currentObjectUrl && previewVideo.src === currentObjectUrl &&
+      (!previewVideo.currentSrc || previewVideo.currentSrc === currentObjectUrl) &&
       previewVideo.readyState >= 1 && previewVideo.videoWidth > 0 &&
       Number.isFinite(previewVideo.duration)) {
     if (previewVideo.duration > 60) throw new Error('video_over_60_seconds');
