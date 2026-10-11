@@ -1957,9 +1957,23 @@ if (processBtn) {
       setProcessingState('processing', '');
       updateProcessingProgress(3);
 
-      const preparedInput = await prepareVideoForPatcher(sourceFile, selectedVideoDimensions, controller.signal, (progress) => {
-        updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
-      });
+      const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
+      // V2 must receive the exact selected source file. The V1 preparation
+      // path may re-encode/normalize media before the patcher ever sees it.
+      const preparedInput = isV2SelectedForJob
+        ? {
+            blob: sourceFile,
+            sourceFps: null,
+            report: {
+              performed: false,
+              compressionDisabled: true,
+              skippedForV2: true,
+              reason: 'V2 receives the original source file without pre-processing.'
+            }
+          }
+        : await prepareVideoForPatcher(sourceFile, selectedVideoDimensions, controller.signal, (progress) => {
+            updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
+          });
       originalInputFps = preparedInput.sourceFps;
       const processingFile = preparedInput.blob;
       const processingFileName = preparedInput.report?.performed
@@ -1987,7 +2001,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261010-42');
+        const worker = new Worker('adjn-worker.js?v=20261011-43');
 
         worker.onmessage = (e) => {
           const msg = e.data;
