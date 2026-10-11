@@ -192,7 +192,7 @@ const translations = {
     formatConversionFailed: 'This video format or codec is not supported by this browser. Try MP4, MOV, or another H.264 video.',
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
-    processingTimedOut: 'Processing took longer than 10 minutes. Try a shorter video.',
+    processingTimedOut: 'Processing took longer than 20 minutes. Try a shorter video.',
     videoTooLong: 'Choose a video that is 1 minute or shorter.',
     videoDurationUnavailable: 'Could not read this video duration. Try an MP4 file.',
     noBalance: 'No videos remain in your balance. Add videos to continue.',
@@ -375,7 +375,7 @@ const translations = {
     formatConversionFailed: 'Браузер не поддерживает этот формат или кодек. Попробуйте MP4, MOV или видео H.264.',
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
-    processingTimedOut: 'Обработка длится больше 10 минут. Попробуйте более короткое видео.',
+    processingTimedOut: 'Обработка длится больше 20 минут. Попробуйте более короткое видео.',
     videoTooLong: 'Выберите видео длительностью не более 1 минуты.',
     videoDurationUnavailable: 'Не удалось определить длительность видео. Попробуйте файл MP4.',
     noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
@@ -558,7 +558,7 @@ const translations = {
     formatConversionFailed: 'Браузер бұл пішімге немесе кодекке қолдау көрсетпейді. MP4, MOV немесе H.264 бейнесін қолданып көріңіз.',
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
-    processingTimedOut: 'Өңдеу 10 минуттан ұзақ. Қысқарақ бейне қолданып көріңіз.',
+    processingTimedOut: 'Өңдеу 20 минуттан ұзақ. Қысқарақ бейне қолданып көріңіз.',
     videoTooLong: 'Ұзақтығы 1 минуттан аспайтын бейне таңдаңыз.',
     videoDurationUnavailable: 'Бейне ұзақтығын анықтау мүмкін болмады. MP4 файлын қолданып көріңіз.',
     noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
@@ -1700,7 +1700,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
       '-vf', 'fps=60000/1001:round=near',
       '-fps_mode', 'cfr',
       '-r', '60000/1001',
-      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '18',
+      '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '18',
       '-pix_fmt', 'yuv420p',
       '-movflags', '+faststart',
       '-video_track_timescale', '60000'
@@ -2173,7 +2173,7 @@ if (processBtn) {
     const processingTimeoutId = setTimeout(() => {
       processingTimedOut = true;
       controller.abort();
-    }, 600000);
+    }, 1200000);
     processController = controller;
     processBtn.disabled = true;
     if (cancelProcessBtn) cancelProcessBtn.disabled = false;
