@@ -74,7 +74,7 @@ const translations = {
     localNote: 'Supports source videos up to 4K / 120 FPS • recommended bitrate 15–45 Mbps.',
     exportNote: 'Your video is ready to process — tap “Process video”, then publish it to TikTok.',
     fpsPolicyNote: 'TikTok may change video quality after upload.',
-    patcherNoteV1: 'V1 is the standard mode for everyday use. Choose V1 for regular processing.',
+    patcherNoteV1: 'V1 is the standard mode for everyday use. V2 is for testing only and is not intended for regular processing.',
     patcherNoteV2: 'V2 is for testing only. It is not intended for everyday use.',
     fpsAdvice: 'V1 is the recommended mode for regular processing.',
     fps30Rejected: 'This video cannot be processed. Choose another file.',
@@ -259,7 +259,7 @@ const translations = {
     localNote: 'Поддержка исходников до 4K / 120 FPS • рекомендуемый битрейт 15–45 Мбит/с.',
     exportNote: 'Ваше видео готово к обработке — нажмите «Обработать видео», а затем опубликуйте его в TikTok.',
     fpsPolicyNote: 'TikTok может изменить качество видео после загрузки.',
-    patcherNoteV1: 'V1 — обычный режим для повседневной обработки. Выбирайте его для стандартной работы.',
+    patcherNoteV1: 'V1 — обычный режим, выбирайте его для повседневной обработки. V2 — только для тестирования, не для обычного использования.',
     patcherNoteV2: 'V2 — тестовый режим. Используйте его только для тестирования; для обычного использования он не предназначен.',
     fpsAdvice: 'Для обычной обработки используйте V1.',
     fps30Rejected: 'Не удалось подготовить это видео. Выберите другой файл.',
@@ -444,7 +444,7 @@ const translations = {
     localNote: '4K / 120 FPS дейінгі бастапқы бейнелерге қолдау бар • ұсынылатын битрейт 15–45 Мбит/с.',
     exportNote: 'Бейнеңіз өңдеуге дайын — «Бейнені өңдеу» түймесін басып, TikTok-та жариялаңыз.',
     fpsPolicyNote: 'TikTok жүктегеннен кейін бейне сапасын өзгертуі мүмкін.',
-    patcherNoteV1: 'V1 — күнделікті қолдануға арналған қалыпты режим. Әдеттегі өңдеу үшін оны таңдаңыз.',
+    patcherNoteV1: 'V1 — күнделікті өңдеуге арналған қалыпты режим. V2 — тек сынақ үшін, күнделікті қолдануға арналмаған.',
     patcherNoteV2: 'V2 — тек сынақ режимі. Ол күнделікті қолдануға арналмаған.',
     fpsAdvice: 'Қалыпты өңдеу үшін V1 нұсқасын пайдаланыңыз.',
     fps30Rejected: 'Бұл бейнені өңдеу мүмкін болмады. Басқа файл таңдаңыз.',
@@ -1118,6 +1118,11 @@ function setPublicationActionsVisible(visible) {
   if (publicationActions) publicationActions.classList.toggle('hidden', !visible);
 }
 
+function hidePublicationSection() {
+  setPublicationActionsVisible(false);
+  if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
+}
+
 function initializeMobile3dPreview() {
   const isMobilePreview = window.matchMedia('(max-width: 700px)').matches;
   if (!isMobilePreview || !mobile3dStage || mobile3dStage.dataset.libraryRequested === 'true') return;
@@ -1342,14 +1347,14 @@ if (downloadBtn) {
     const isAppleMobile = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     if (!isAppleMobile || !processedVideoBlob) {
-      window.setTimeout(() => setPublicationActionsVisible(false), 180);
+      window.setTimeout(() => hidePublicationSection(), 180);
       return;
     }
     event.preventDefault();
     const openVideoFallback = () => window.open(patchedDownloadUrl || downloadBtn.href, '_blank', 'noopener');
     if (typeof File !== 'function' || typeof navigator.share !== 'function' || typeof navigator.canShare !== 'function') {
       openVideoFallback();
-      setPublicationActionsVisible(false);
+      hidePublicationSection();
       return;
     }
     const file = new File([processedVideoBlob], downloadBtn.download || 'ineasy-video.mp4', { type: 'video/mp4' });
@@ -1357,15 +1362,16 @@ if (downloadBtn) {
     try { canShareFile = navigator.canShare({ files: [file] }); } catch (error) {}
     if (!canShareFile) {
       openVideoFallback();
+      hidePublicationSection();
       return;
     }
     try {
       await navigator.share({ files: [file], title: file.name });
-      setPublicationActionsVisible(false);
+      hidePublicationSection();
     } catch (error) {
       if (error.name !== 'AbortError') {
         openVideoFallback();
-        setPublicationActionsVisible(false);
+        hidePublicationSection();
       }
     }
   });
