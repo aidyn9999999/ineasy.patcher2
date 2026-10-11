@@ -2116,7 +2116,7 @@ async function handleFile(file) {
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
   if (selectedLongSide >= 3000 && /\.(mp4|m4v|mov)$/i.test(file.name)) {
     // Download the 4K encoder in the background while the user is choosing the processing mode.
-    import('./ffmpeg-4k-cfr.js?v=20261011-17')
+    import('./ffmpeg-4k-cfr.js?v=20261011-18')
       .then((encoder) => encoder.preloadFFmpeg4k?.())
       .catch((error) => console.warn('[INEASY] 4K runtime pre-load skipped:', error?.message || error));
   }
@@ -2481,7 +2481,7 @@ if (processBtn) {
         sourceFile, sourceFile.name, controller.signal, reportCfrProgress
       );
       const runFfmpeg4kCfr = async (hdrMode = false) => {
-        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-17');
+        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-18');
         if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
           throw new Error('ffmpeg_4k_api_unavailable');
         }
@@ -2495,7 +2495,7 @@ if (processBtn) {
       let hdrInspection = null;
       if (!is4kSource && /\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
         try {
-          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-17');
+          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-18');
           hdrInspection = await hdrEncoder.inspectHDRVideo(sourceFile);
         } catch (error) {
           // HDR inspection must never prevent the ordinary SDR converter from running.
@@ -2509,7 +2509,7 @@ if (processBtn) {
       } else if (hdrInspection?.hdr) {
         setProcessingState('processing', 'HDR 10-bit conversion');
         console.info('[INEASY] HDR source detected; selecting dedicated HEVC Main10 CFR encoder', hdrInspection);
-        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-17');
+        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-18');
         fpsConversion = await hdrEncoder.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress, { hdr: true }
         );
