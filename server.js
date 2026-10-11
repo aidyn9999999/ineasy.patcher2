@@ -617,8 +617,8 @@ function downloadVideoToTmp(url) {
   return new Promise((resolve, reject) => {
     execFile(
       YTDLP_PATH,
-      ['--no-warnings', '--no-playlist', '--max-filesize', '100M', '--socket-timeout', '15', '-o', template, url],
-      { timeout: 90000, maxBuffer: 5 * 1024 * 1024 },
+      ['--no-warnings', '--no-playlist', '--max-filesize', '300M', '--socket-timeout', '20', '-o', template, url],
+      { timeout: 120000, maxBuffer: 5 * 1024 * 1024 },
       (err) => {
         const files = fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith(`chk_${id}.`) && !f.endsWith('.part'));
         const full = files.map((f) => path.join(os.tmpdir(), f));
