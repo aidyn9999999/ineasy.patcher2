@@ -110,11 +110,13 @@ const TEXTS = {
     purchaseApproved: (count) => `✅ Оплата подтверждена. На купленный баланс зачислено ${count} видео.`,
     purchaseRejected: '❌ Чек отклонён. Если считаете это ошибкой, ответьте сюда или свяжитесь с администратором.',
     accessBlocked: '⛔ Доступ к боту и сайту заблокирован администратором.',
-    balance: (free, purchased) =>
+    balance: (free, purchased, nextAt) =>
       `💰 Ваш баланс:\n\n` +
-      `🆓 Бесплатный (на этой неделе): ${free} видео\n` +
-      `💎 Купленный: ${purchased} видео\n\n` +
-      `📊 Всего доступно: ${free + purchased} видео`,
+      `🆓 Бесплатные видео: ${free}\n` +
+      `💎 Купленные видео: ${purchased}\n\n` +
+      `📊 Всего доступно: ${free + purchased}` +
+      (free === 0 && nextAt ? `\n\n⏰ Следующий бесплатный баланс: ${formatAstanaDateTime(nextAt, 'ru')} (Астана)` : ''),
+    freeBalanceEnded: (nextAt) => `🆓 Бесплатный баланс закончился.\n\nСледующие ${WEEKLY_FREE_BALANCE} бесплатных видео будут доступны ${formatAstanaDateTime(nextAt, 'ru')} по времени Астаны.\n\nМожно купить видео сейчас или пригласить друга. Бонус засчитывается, когда новый пользователь откроет вашу ссылку и нажмёт Start, а затем выполнит условия бота.`,
     profile: (username, id, patched, free, purchased, purchasedTotal) =>
       `👤 Профиль\n\n` +
       `Ник: ${username}\n` +
@@ -194,11 +196,13 @@ const TEXTS = {
     purchaseApproved: (count) => `✅ Payment confirmed. ${count} videos were added to your purchased balance.`,
     purchaseRejected: '❌ The receipt was declined. If you think this is an error, reply here or contact the administrator.',
     accessBlocked: '⛔ Access to the bot and website has been blocked by an administrator.',
-    balance: (free, purchased) =>
+    balance: (free, purchased, nextAt) =>
       `💰 Your balance:\n\n` +
-      `🆓 Free (this week): ${free} videos\n` +
-      `💎 Purchased: ${purchased} videos\n\n` +
-      `📊 Total available: ${free + purchased} videos`,
+      `🆓 Free videos: ${free}\n` +
+      `💎 Purchased videos: ${purchased}\n\n` +
+      `📊 Total available: ${free + purchased}` +
+      (free === 0 && nextAt ? `\n\n⏰ Next free balance: ${formatAstanaDateTime(nextAt, 'en')} Astana time` : ''),
+    freeBalanceEnded: (nextAt) => `🆓 Your free balance has run out.\n\nYour next ${WEEKLY_FREE_BALANCE} free videos will be available on ${formatAstanaDateTime(nextAt, 'en')} Astana time.\n\nYou can buy videos now or invite a friend. The invite bonus counts after a new user opens your link, presses Start, and completes the bot requirements.`,
     profile: (username, id, patched, free, purchased, purchasedTotal) =>
       `👤 Profile\n\n` +
       `Username: ${username}\n` +
@@ -278,11 +282,13 @@ const TEXTS = {
     purchaseApproved: (count) => `✅ Төлем расталды. Сатып алынған балансыңызға ${count} видео қосылды.`,
     purchaseRejected: '❌ Чек қабылданбады. Қате бар деп ойласаңыз, осы жерге жазыңыз немесе әкімшіге хабарласыңыз.',
     accessBlocked: '⛔ Әкімші бот пен сайтқа кіруді бұғаттады.',
-    balance: (free, purchased) =>
+    balance: (free, purchased, nextAt) =>
       `💰 Сіздің балансыңыз:\n\n` +
-      `🆓 Тегін (осы аптада): ${free} видео\n` +
-      `💎 Сатып алынған: ${purchased} видео\n\n` +
-      `📊 Барлығы қолжетімді: ${free + purchased} видео`,
+      `🆓 Тегін видео: ${free}\n` +
+      `💎 Сатып алынған видео: ${purchased}\n\n` +
+      `📊 Барлығы қолжетімді: ${free + purchased}` +
+      (free === 0 && nextAt ? `\n\n⏰ Келесі тегін баланс: ${formatAstanaDateTime(nextAt, 'kk')} (Астана уақыты)` : ''),
+    freeBalanceEnded: (nextAt) => `🆓 Тегін балансыңыз аяқталды.\n\nКелесі ${WEEKLY_FREE_BALANCE} тегін видео ${formatAstanaDateTime(nextAt, 'kk')} Астана уақытымен қолжетімді болады.\n\nҚазір видео сатып алуға немесе дос шақыруға болады. Бонус жаңа пайдаланушы сілтемені ашып, Start басып, бот талаптарын орындағаннан кейін есептеледі.`,
     profile: (username, id, patched, free, purchased, purchasedTotal) =>
       `👤 Профиль\n\n` +
       `Ник: ${username}\n` +
