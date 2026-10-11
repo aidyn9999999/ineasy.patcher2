@@ -1062,34 +1062,61 @@ bot.action('invite_now', async (ctx) => {
 
 bot.command('broadcast_balance_update', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
-  await ctx.reply('Запускаю рассылку об обновлении баланса. Текущие балансы пользователей не меняются.');
+  if (await redis.get('balanceMigrationBroadcast:v1')) {
+    await ctx.reply('Эта миграция и рассылка уже выполнены. Повторный запуск заблокирован, чтобы не начислять бесплатные видео повторно.');
+    return;
+  }
+  const lock = await redis.set('balanceMigrationBroadcastLock:v1', String(Date.now()), { nx: true, ex: 3600 });
+  if (lock !== 'OK') {
+    await ctx.reply('Миграция баланса уже выполняется. Повторите позже.');
+    return;
+  }
+  await ctx.reply('Запускаю одноразовое обновление: пользователям, которые уже обрабатывали видео и имеют 0 бесплатных видео, начислю 2; ненулевой баланс и аккаунты без обработанных видео не трогаю. Затем отправлю сообщение.');
   let cursor = '0';
   let sent = 0;
   let failed = 0;
-  do {
-    const page = await redis.scan(cursor, { match: 'botStarted:*', count: 100 });
-    cursor = String(page[0]);
-    const keys = page[1] || [];
-    for (const key of keys) {
-      const telegramId = String(key).slice('botStarted:'.length);
-      if (!/^\\d+$/.test(telegramId)) continue;
-      try {
-        const lang = await getLang(telegramId);
-        const message = lang === 'kk'
-          ? '✅ Баланс деректері жаңартылды. Енді тегін видео балансы күн сайын емес, 7 күндік жеке циклмен жұмыс істейді. Қолданыстағы тегін видеоларыңыз сақталды. Тегін баланс 0 болғанда келесі 2 видео дәл 7 күннен кейін Астана уақытымен беріледі.'
-          : lang === 'en'
-            ? '✅ Your balance settings have been updated. Free videos now follow a personal 7-day cycle instead of a daily reset. Your current unused free videos are preserved. When your free balance reaches 0, the next 2 free videos arrive exactly 7 days later, using Astana time.'
-            : '✅ Данные баланса обновлены. Теперь бесплатные видео работают по личному циклу в 7 дней, а не сбрасываются ежедневно. Ваши текущие неиспользованные бесплатные видео сохранены. Когда бесплатный баланс станет 0, следующие 2 видео начислятся ровно через 7 дней по времени Астаны.';
-        await bot.telegram.sendMessage(telegramId, message, balanceEndedKeyboard(lang, telegramId));
-        sent++;
-      } catch (error) {
-        failed++;
-        console.error('Не удалось отправить обновление баланса пользователю:', telegramId, error.message);
+  let repaired = 0;
+  try {
+    do {
+      const page = await redis.scan(cursor, { match: 'botStarted:*', count: 100 });
+      cursor = String(page[0]);
+      const keys = page[1] || [];
+      for (const key of keys) {
+        const telegramId = String(key).slice('botStarted:'.length);
+        if (!/^\d+$/.test(telegramId)) continue;
+        try {
+          const [freeValue, patchedValue] = await Promise.all([
+            redis.get(`freeBalance:${telegramId}`),
+            redis.get(`patched:${telegramId}`),
+          ]);
+          if (Number(patchedValue || 0) > 0 && Number(freeValue || 0) === 0) {
+            await redis.set(`freeBalance:${telegramId}`, String(WEEKLY_FREE_BALANCE));
+            await redis.del(`freeNextAt:${telegramId}`);
+            repaired++;
+          }
+          const lang = await getLang(telegramId);
+          const message = lang === 'kk'
+            ? '✅ Баланс деректері жаңартылды. Тегін видео балансы күн сайын емес, жеке 7 күндік циклмен жұмыс істейді. Бұрын видео өңдемеген аккаунттардың балансы өзгертілмеді. Тегін баланс 0 болғанда келесі 2 видео дәл 7 күннен кейін Астана уақытымен беріледі.'
+            : lang === 'en'
+              ? '✅ Your balance data has been updated. Free videos now follow a personal 7-day cycle instead of a daily reset. Accounts that have never processed a video were left unchanged. When your free balance reaches 0, the next 2 free videos arrive exactly 7 days later, using Astana time.'
+              : '✅ Данные баланса обновлены. Теперь бесплатные видео работают по личному циклу в 7 дней, а не сбрасываются ежедневно. Аккаунты, которые ещё не обрабатывали видео, не изменялись. Когда бесплатный баланс станет 0, следующие 2 видео начислятся ровно через 7 дней по времени Астаны.';
+          await bot.telegram.sendMessage(telegramId, message, balanceEndedKeyboard(lang, telegramId));
+          sent++;
+        } catch (error) {
+          failed++;
+          console.error('Не удалось обновить баланс или отправить сообщение:', telegramId, error.message);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 40));
       }
-      await new Promise((resolve) => setTimeout(resolve, 40));
-    }
-  } while (cursor !== '0');
-  await ctx.reply(`Рассылка завершена. Отправлено: ${sent}. Не доставлено: ${failed}.`);
+    } while (cursor !== '0');
+    await redis.set('balanceMigrationBroadcast:v1', JSON.stringify({ completedAt: new Date().toISOString(), sent, failed, repaired }));
+    await ctx.reply(`Готово. Отправлено: ${sent}; не доставлено: ${failed}; бесплатный баланс восстановлен для активных пользователей: ${repaired}. Повторный запуск отключён.`);
+  } catch (error) {
+    console.error('Миграция/рассылка баланса не завершена:', error.message);
+    await ctx.reply('Ошибка миграции или рассылки. Подробности записаны в журнал сервера; блокировка будет снята автоматически через час.');
+  } finally {
+    await redis.del('balanceMigrationBroadcastLock:v1');
+  }
 });
 
 bot.command('buyvideo', async (ctx) => sendPackagesMenu(ctx, await getLang(ctx.from.id)));
