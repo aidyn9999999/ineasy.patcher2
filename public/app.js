@@ -1697,6 +1697,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     const transferCharacteristic = String(sourceColorSpace?.transfer || '').toLowerCase();
     const hdrTransfer = /smpte2084|arib-std-b67|pq|hlg/.test(transferCharacteristic);
     const dolbyVisionCodec = /dvh1|dvhe|dolby.?vision/i.test(sourceCodec + ' ' + sourceCodecParameters);
+    const main10Codec = /(?:hvc1|hev1)\.2(?:\.|$)|main.?10/i.test(sourceCodec + ' ' + sourceCodecParameters);
     try {
       const headerBytes = new Uint8Array(await inputBlob.slice(0, Math.min(inputBlob.size, 16 * 1024 * 1024)).arrayBuffer());
       const detector = globalThis.ADJNVideoProcessor?.detectHdrProfile;
@@ -1714,6 +1715,7 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
       sourceIsHdr ||
       hdrTransfer ||
       dolbyVisionCodec ||
+      main10Codec ||
       sourceHdrProfile?.main10 ||
       sourceHdrProfile?.hdr10 ||
       sourceHdrProfile?.hdr10plus ||
@@ -1727,7 +1729,8 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
         : (dolbyVisionCodec ? 'Dolby Vision' : hdrTransfer ? 'HDR / wide-gamut' : 'HDR / 10-bit');
       console.info('[INEASY] HDR source detected; preserving original encoded video instead of SDR-prone transcoding', {
         profile: hdrLabel,
-        codec: sourceCodec || 'unknown',
+        codec: sourceCodec || sourceCodecParameters || 'unknown',
+        main10Codec,
         colorSpace: sourceColorSpace || null,
         bytes: inputBlob.size
       });
