@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20261011-61">
-<link rel="stylesheet" href="home.css?v=20261011-2">
+<link rel="stylesheet" href="home.css?v=20261011-3">
 </head>
 <body>
 
@@ -62,11 +62,11 @@
     <section class="view-section home-section active" id="homeSection">
       <section class="home-hero" id="homeHero" aria-labelledby="homeTitle">
         <div class="home-hero-shade" aria-hidden="true"></div>
-        <div class="home-scene-canvas" id="mountainScene" aria-hidden="true"></div>
+        <div class="home-scene-canvas" id="home3dScene" aria-hidden="true"></div>
         <div class="home-hero-copy">
           <p class="home-eyebrow" id="homeKicker">INEASY VIDEO PATCHER</p>
-          <h1 id="homeTitle">Чёткое видео. Без лишних пересохранений.</h1>
-          <p class="home-intro" id="homeIntro">Подготовьте готовый монтаж к публикации. Видео остаётся на устройстве, обработка проходит в браузере.</p>
+          <h1 id="homeTitle">Каждый кадр. Под контролем.</h1>
+          <p class="home-intro" id="homeIntro">Профессиональный финальный этап перед TikTok: подготовьте готовый ролик в браузере — без сложных настроек и лишних шагов.</p>
           <button class="home-cta" type="button" data-open-view="patchSection"><span id="homeCta">Перейти к обработке</span><span aria-hidden="true">↗</span></button>
         </div>
         <div class="home-hero-foot" aria-hidden="true"><span>LOCAL BROWSER PROCESSING</span><span>1080P READY</span></div>
@@ -95,9 +95,9 @@
           <h2 id="workflowTitle">От монтажа до публикации</h2>
         </div>
         <div class="workflow-grid">
-          <article class="workflow-step"><span class="workflow-number">01</span><h3 id="stepOneTitle">Загрузите готовый монтаж</h3><p id="stepOneBody">Добавьте видео после монтажа: музыку, текст и эффекты подготовьте заранее.</p></article>
-          <article class="workflow-step"><span class="workflow-number">02</span><h3 id="stepTwoTitle">Нажмите «Обработать видео»</h3><p id="stepTwoBody">Видео локально подготавливается с сохранением разрешения и FPS. HDR временно отключён.</p></article>
-          <article class="workflow-step"><span class="workflow-number">03</span><h3 id="stepThreeTitle">Опубликуйте через Zernio</h3><p id="stepThreeBody">Нажмите «Автопост», подключите API-ключ Zernio, проверьте описание и отправьте видео в TikTok.</p></article>
+          <article class="workflow-step"><span class="workflow-number">01</span><h3 id="stepOneTitle">Загрузите готовый ролик</h3><p id="stepOneBody">Сначала завершите монтаж — добавьте звук, подписи и эффекты. Затем выберите итоговый файл.</p></article>
+          <article class="workflow-step"><span class="workflow-number">02</span><h3 id="stepTwoTitle">Обработайте одним нажатием</h3><p id="stepTwoBody">INEASY подготовит совместимый файл прямо в браузере и проверит результат перед скачиванием.</p></article>
+          <article class="workflow-step"><span class="workflow-number">03</span><h3 id="stepThreeTitle">Скачайте и публикуйте</h3><p id="stepThreeBody">Сохраните готовый файл или откройте блок публикации, чтобы отправить ролик в TikTok.</p></article>
         </div>
         <div class="home-local-note"><span class="home-local-icon" aria-hidden="true">↗</span><p id="localProcessingCopy">Видео и звук остаются на устройстве. Видео выше 1080p или неподдерживаемого формата может локально подготавливаться в браузере; обычный MP4 не перекодируется патчером.</p></div>
         <button class="home-cta home-cta-bottom" type="button" data-open-view="patchSection"><span id="homeBottomCta">Начать обработку</span><span aria-hidden="true">↗</span></button>
@@ -132,19 +132,13 @@
 
       <div class="preview-wrap" id="previewWrap">
         <video id="previewVideo" controls playsinline></video>
-        <div class="mobile-3d-stage" id="mobile3dStage" aria-label="Interactive 3D mobile preview object">
-          <model-viewer id="mobile3dObject" src="https://modelviewer.dev/shared-assets/models/Astronaut.glb" alt="Decorative 3D astronaut" loading="lazy" auto-rotate rotation-per-second="18deg" camera-controls disable-zoom shadow-intensity="1" exposure="1"></model-viewer>
-          <div class="mobile-3d-copy"><strong>INEASY 3D</strong><span>Mobile preview</span></div>
-        </div>
         <div class="file-row">
           <span id="fileMeta">—</span>
           <button class="clear-btn" id="clearBtn" type="button">Remove</button>
         </div>
       </div>
 
-      <p class="local-note" id="localNote">Поддержка исходников до 4K / 120 FPS • рекомендуемый битрейт 15–45 Мбит/с.</p>
       <p class="export-note" id="exportNote">Ваше видео готово к обработке — нажмите «Обработать видео», а затем опубликуйте его в TikTok.</p>
-      <p class="fps-policy-note" id="fpsPolicyNote">TikTok may change video quality after upload.</p>
       <input id="postingDevice" type="hidden" value="">
       <div class="patcher-version-picker hidden" role="group" aria-label="Patcher version">
         <label class="patcher-version-option">
@@ -360,7 +354,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261011-21"></script>
-<script src="app.js?v=20261011-113"></script>
+<script src="app.js?v=20261011-114"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
