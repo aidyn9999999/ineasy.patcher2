@@ -163,6 +163,19 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
   const isAvc = codec === 'avc' || /^(avc1|avc3)$/i.test(String(sourceInfo?.codec || ''));
 
   if (isHevc) {
+    // HDR10+ dynamic metadata can be carried in HEVC SEI while a remuxed file
+    // lacks complete color-box signalling. Recognize its registered ITU-T T.35
+    // signature without treating every 10-bit HEVC file as HDR.
+    for (let i = 0; i + 5 < bytes.length; i++) {
+      if (bytes[i] === 0xB5 && bytes[i + 1] === 0x00 && bytes[i + 2] === 0x3C &&
+          bytes[i + 3] === 0x00 && bytes[i + 4] === 0x01 && bytes[i + 5] === 0x04) {
+        result.hdr = true;
+        result.tenBit = true;
+        result.displayColor = 'BT.2020 / PQ (HDR10+)';
+        result.reason = 'HDR10+ dynamic metadata signature detected';
+        break;
+      }
+    }
     for (const box of findValidBoxTypes(bytes, moovStart, moovEnd, 'hvcC')) {
       if (box.end - box.payloadStart < 23 || bytes[box.payloadStart] !== 1) continue;
       const profileIdc = bytes[box.payloadStart + 1] & 0x1f;
@@ -221,13 +234,15 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
   return result;
 }
 
-export async function inspectHDRVideo(inputBlob) {
+export async function inspectHDRVideo(inputBlob, options = {}) {
   if (!inputBlob || !inputBlob.size) {
     return { hdr: false, reason: 'file_size_unavailable' };
   }
   const extension = fileExtension(inputBlob.name);
   if (!extension) return { hdr: false, reason: 'unsupported_container' };
   try {
+    // Reuse the full-file read on the HDR path instead of allocating/reading a
+    // second copy when FFmpeg immediately starts processing this 4K source.
     const bytes = new Uint8Array(await inputBlob.arrayBuffer());
     const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
     if (!mediaCore?.inspectMediaInfo) return { hdr: false, reason: 'media_inspector_unavailable' };
@@ -242,7 +257,8 @@ export async function inspectHDRVideo(inputBlob) {
       hdrType: /Dolby Vision/i.test(profile.reason) ? 'dolby-vision' :
         /HLG/i.test(profile.displayColor) ? 'hlg' :
         /PQ|HDR10/i.test(profile.displayColor) ? 'pq' : 'unknown',
-      label: profile.displayColor || 'HDR / 10-bit'
+      label: profile.displayColor || 'HDR / 10-bit',
+      ...(options.includeBytes ? { sourceBytes: bytes } : {})
     };
   } catch (error) {
     console.warn('[INEASY] HDR metadata inspection inconclusive:', error?.message || error);
@@ -281,7 +297,9 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
   // Start loading FFmpeg while the local 4K file is read and inspected.
   const runtimePromise = loadFFmpegRuntime();
   runtimePromise.catch(() => {});
-  const inputBytes = new Uint8Array(await inputBlob.arrayBuffer());
+  const inputBytes = options.sourceBytes instanceof Uint8Array
+    ? options.sourceBytes
+    : new Uint8Array(await inputBlob.arrayBuffer());
   throwIfAborted(signal);
   const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
   if (!mediaCore?.inspectMediaInfo) throw new Error('fps_encoder_verification_unavailable');
@@ -472,9 +490,8 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
         ? [
             '-c:v', 'libx265',
             '-preset', 'ultrafast',
-            '-b:v', String(targetVideoBitrate),
-            '-maxrate', String(targetMaxRate),
-            '-bufsize', String(targetBufferSize),
+              // Quality-based HDR encoding avoids the old source-bitrate ceiling.
+              '-crf', '16',
             '-threads', '2',
             '-pix_fmt', 'yuv420p10le',
             '-tag:v', 'hvc1',
@@ -521,9 +538,8 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
           ? [
               '-c:v', 'libx265',
               '-preset', 'ultrafast',
-              '-b:v', String(targetVideoBitrate),
-              '-maxrate', String(targetMaxRate),
-              '-bufsize', String(targetBufferSize),
+              // Quality-based HDR encoding avoids the old source-bitrate ceiling.
+              '-crf', '16',
               '-threads', '1',
               '-pix_fmt', 'yuv420p10le',
               '-tag:v', 'hvc1',
