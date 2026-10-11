@@ -583,9 +583,9 @@ function probeFile(filePath) {
     execFile(
       FFPROBE_PATH,
       ['-v', 'error', '-select_streams', 'v:0',
-        '-show_entries', 'stream=codec_name,width,height,avg_frame_rate,r_frame_rate,bit_rate:format=bit_rate,duration,size',
+        '-show_entries', 'stream=codec_name,width,height,avg_frame_rate,r_frame_rate,bit_rate,duration,pix_fmt,color_primaries,color_transfer,color_space:format=bit_rate,duration,size',
         '-of', 'json', filePath],
-      { timeout: 20000, maxBuffer: 5 * 1024 * 1024 },
+      { timeout: 30000, maxBuffer: 5 * 1024 * 1024 },
       (err, stdout) => {
         if (err) return reject(err);
         try { resolve(JSON.parse(stdout)); } catch (e) { reject(e); }
@@ -594,19 +594,31 @@ function probeFile(filePath) {
   });
 }
 
+function formatFps(value) {
+  const fps = parseFraction(value);
+  return fps ? String(Number(fps.toFixed(3))) : null;
+}
+
 function summarizeProbe(probe) {
   const st = (probe.streams && probe.streams[0]) || {};
   const fmt = probe.format || {};
   const fpsNum = parseFraction(st.avg_frame_rate) || parseFraction(st.r_frame_rate);
-  const bps = Number(st.bit_rate) || Number(fmt.bit_rate) || 0;
+  const duration = Number(st.duration) || Number(fmt.duration) || null;
+  const bytes = Number(fmt.size) || null;
+  const bps = Number(st.bit_rate) || Number(fmt.bit_rate) ||
+    (bytes && duration ? Math.round((bytes * 8) / duration) : 0);
   return {
-    width: st.width,
-    height: st.height,
-    fps: fpsNum ? String(Math.round(fpsNum * 100) / 100).replace(/\.0+$/, '') : null,
+    width: Number(st.width) || null,
+    height: Number(st.height) || null,
+    fps: formatFps(fpsNum),
     codec: st.codec_name ? prettyCodec(st.codec_name) : null,
     bitrate: bps ? `${Math.round(bps / 1000)} kbps` : null,
-    duration: Number(fmt.duration) || null,
-    bytes: Number(fmt.size) || null,
+    duration,
+    bytes,
+    pixelFormat: st.pix_fmt || null,
+    colorPrimaries: st.color_primaries || null,
+    colorTransfer: st.color_transfer || null,
+    colorSpace: st.color_space || null,
   };
 }
 // ===== FFPROBE END =====
