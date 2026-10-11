@@ -2469,7 +2469,7 @@ if (processBtn) {
         sourceFile, sourceFile.name, controller.signal, reportCfrProgress
       );
       const runFfmpeg4kCfr = async (hdrMode = false) => {
-        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-20');
+        const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-21');
         if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
           throw new Error('ffmpeg_4k_api_unavailable');
         }
@@ -2483,7 +2483,7 @@ if (processBtn) {
       let hdrInspection = null;
       if (!is4kSource && /\.(mp4|m4v|mov)$/i.test(sourceFile.name)) {
         try {
-          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-20');
+          const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-21');
           hdrInspection = await hdrEncoder.inspectHDRVideo(sourceFile);
         } catch (error) {
           // HDR inspection must never prevent the ordinary SDR converter from running.
@@ -2497,7 +2497,7 @@ if (processBtn) {
       } else if (hdrInspection?.hdr) {
         setProcessingState('processing', 'HDR 10-bit conversion');
         console.info('[INEASY] HDR source detected; selecting dedicated HEVC Main10 CFR encoder', hdrInspection);
-        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-20');
+        const hdrEncoder = await import('./ffmpeg-4k-cfr.js?v=20261011-21');
         fpsConversion = await hdrEncoder.convertVideoToExact5994FpsWithFFmpeg(
           sourceFile, selectedVideoDimensions, sourceDuration, controller.signal, reportCfrProgress, { hdr: true }
         );
