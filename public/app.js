@@ -2328,7 +2328,7 @@ if (processBtn) {
 
         console.warn('[INEASY] Native 4K CFR conversion failed; trying isolated FFmpeg fallback:', primaryErrorText);
         try {
-          const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-1');
+          const ffmpegFallback = await import('./ffmpeg-4k-cfr.js?v=20261011-2');
           if (typeof ffmpegFallback.convertVideoToExact5994FpsWithFFmpeg !== 'function') {
             throw new Error('ffmpeg_4k_api_unavailable');
           }
