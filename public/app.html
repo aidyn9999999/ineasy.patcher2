@@ -157,7 +157,7 @@
         </label>
       </div>
       <p class="patcher-version-note hidden" id="patcherVersionNote">V1 is the standard mode. If a post becomes 30 FPS, check the source export settings and upload options; this is not a guaranteed fix.</p>
-      <p class="fps-advice hidden" id="fpsAdvice">For consistent motion, export MP4 H.264 at a constant 59.94 or 60 FPS. TikTok controls final playback and may reprocess the video.</p>
+      <p class="fps-advice hidden" id="fpsAdvice">Recommended export: MP4 H.264 · constant 59.94 FPS.</p>
       <button class="process-btn" id="processBtn" type="button" disabled>Process video</button>
       <div class="processing-state hidden" id="processingState">
         <span class="processing-spinner"></span>
@@ -353,7 +353,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261010-20"></script>
-<script src="app.js?v=20261011-71"></script>
+<script src="app.js?v=20261011-72"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
