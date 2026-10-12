@@ -135,7 +135,7 @@ function findValidBoxTypes(bytes, start, end, type) {
 // Inspect only structurally valid codec/color boxes within moov. Never scan the
 // compressed mdat payload as text: random encoded pixels frequently contain byte
 // sequences that look like "bt2020", "nclx" or "hvcC" and must not trigger HDR.
-function inspectSourceColorProfile(bytes, sourceInfo) {
+async function inspectSourceColorProfile(bytes, sourceInfo, onProgress) {
   const boxes = readTopLevelBoxes(bytes);
   const moov = boxes.find((box) => box.type === 'moov');
   const result = { hdr: false, tenBit: false, reason: '', displayColor: 'unknown' };
@@ -151,15 +151,29 @@ function inspectSourceColorProfile(bytes, sourceInfo) {
     // HDR10+ dynamic metadata can be carried in HEVC SEI while a remuxed file
     // lacks complete color-box signalling. Recognize its registered ITU-T T.35
     // signature without treating every 10-bit HEVC file as HDR.
-    for (let i = 0; i + 5 < bytes.length; i++) {
-      if (bytes[i] === 0xB5 && bytes[i + 1] === 0x00 && bytes[i + 2] === 0x3C &&
-          bytes[i + 3] === 0x00 && bytes[i + 4] === 0x01 && bytes[i + 5] === 0x04) {
-        result.hdr = true;
-        result.tenBit = true;
-        result.displayColor = 'BT.2020 / PQ (HDR10+)';
-        result.reason = 'HDR10+ dynamic metadata signature detected';
-        break;
+    const scanChunkSize = 4 * 1024 * 1024;
+    let foundHdr10Plus = false;
+    for (let start = 0; start < bytes.length; start += scanChunkSize) {
+      const end = Math.min(bytes.length, start + scanChunkSize);
+      // Keep a five-byte overlap so a signature spanning chunk boundaries is found.
+      const scanEnd = Math.min(bytes.length, end + 5);
+      for (let i = start; i + 5 < scanEnd; i++) {
+        if (bytes[i] === 0xB5 && bytes[i + 1] === 0x00 && bytes[i + 2] === 0x3C &&
+            bytes[i + 3] === 0x00 && bytes[i + 4] === 0x01 && bytes[i + 5] === 0x04) {
+          foundHdr10Plus = true;
+          break;
+        }
       }
+      onProgress?.(0.5 + 0.5 * (end / Math.max(1, bytes.length)));
+      if (foundHdr10Plus) break;
+      // Yield so large-file metadata inspection doesn't freeze the page at 4%.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    if (foundHdr10Plus) {
+      result.hdr = true;
+      result.tenBit = true;
+      result.displayColor = 'BT.2020 / PQ (HDR10+)';
+      result.reason = 'HDR10+ dynamic metadata signature detected';
     }
     for (const box of findValidBoxTypes(bytes, moovStart, moovEnd, 'hvcC')) {
       if (box.end - box.payloadStart < 23 || bytes[box.payloadStart] !== 1) continue;
@@ -226,13 +240,22 @@ export async function inspectHDRVideo(inputBlob, options = {}) {
   const extension = fileExtension(inputBlob.name);
   if (!extension) return { hdr: false, reason: 'unsupported_container' };
   try {
-    // Reuse the full-file read on the HDR path instead of allocating/reading a
-    // second copy when FFmpeg immediately starts processing this 4K source.
-    const bytes = new Uint8Array(await inputBlob.arrayBuffer());
+    // Read the file in chunks and report progress instead of waiting at 4% while
+    // arrayBuffer() copies a large 4K/HDR video in one operation.
+    const bytes = new Uint8Array(inputBlob.size);
+    const readChunkSize = 8 * 1024 * 1024;
+    for (let offset = 0; offset < inputBlob.size; offset += readChunkSize) {
+      const end = Math.min(inputBlob.size, offset + readChunkSize);
+      const part = new Uint8Array(await inputBlob.slice(offset, end).arrayBuffer());
+      bytes.set(part, offset);
+      options.onProgress?.(0.5 * (end / inputBlob.size));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
     const mediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
     if (!mediaCore?.inspectMediaInfo) return { hdr: false, reason: 'media_inspector_unavailable' };
     const info = mediaCore.inspectMediaInfo(bytes);
-    const profile = inspectSourceColorProfile(bytes, info);
+    const profile = await inspectSourceColorProfile(bytes, info, options.onProgress);
+    options.onProgress?.(1);
     return {
       ...profile,
       codec: info.codec || '',
