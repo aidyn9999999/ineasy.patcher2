@@ -70,7 +70,7 @@ const translations = {
     patchTitle: 'Optimize video up to 4K • 120 FPS.',
     patchSub: 'Supports source videos up to 4K / 120 FPS. Recommended source bitrate: 15–45 Mbps.',
     choose: 'Drop your video here',
-    chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP and other videos',
+    chooseSub: 'MP4, MOV and M4V videos (up to 4K / 120 FPS)',
     localNote: 'Supports source videos up to 4K / 120 FPS • recommended bitrate 15–45 Mbps.',
     exportNote: 'Your video is ready to process — tap “Process video”, then publish it to TikTok.',
     fpsPolicyNote: 'TikTok may change video quality after upload.',
@@ -256,7 +256,7 @@ const translations = {
     patchTitle: 'Оптимизируйте видео до 4K • 120 FPS.',
     patchSub: 'Поддержка исходников до 4K / 120 FPS. Рекомендуемый исходный битрейт — 15–45 Мбит/с.',
     choose: 'Перетащите видео сюда',
-    chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP и другие видео',
+    chooseSub: 'Видео MP4, MOV и M4V (до 4K / 120 FPS)',
     localNote: 'Поддержка исходников до 4K / 120 FPS • рекомендуемый битрейт 15–45 Мбит/с.',
     exportNote: 'Ваше видео готово к обработке — нажмите «Обработать видео», а затем опубликуйте его в TikTok.',
     fpsPolicyNote: 'TikTok может изменить качество видео после загрузки.',
@@ -433,7 +433,7 @@ const translations = {
     stepTwoBody: 'INEASY үйлесімді файлды браузерде дайындап, жүктемес бұрын нәтижені тексереді.',
     stepThreeTitle: 'Жүктеп, жариялаңыз',
     stepThreeBody: 'Дайын файлды жүктеңіз немесе TikTok-қа жіберу үшін жариялау бөлімін ашыңыз.',
-    localProcessingCopy: 'Бейне құрылғыңызда қалады. Кадрлар нақты 59,94 FPS форматына түрленеді. HDR үшін 10-биттік HEVC қолданылады, HDR үнсіз SDR форматына ауыстырылмайды.',
+    localProcessingCopy: 'Бейне құрылғыңызда қалады. Патчер бастапқы FPS пен ажыратымдылықты сақтайды. HDR/SDR метадеректері қайта кодтаусыз тексеріледі.',
     homeBottomCta: 'Өңдеуді бастау',
     faqLabel: 'FAQ / ЖИІ ҚОЙЫЛАТЫН СҰРАҚТАР',
     analyzerEyebrow: 'БЕЙНЕ АНАЛИЗАТОРЫ',
@@ -442,7 +442,7 @@ const translations = {
     patchTitle: 'Бейнені 4K • 120 FPS дейін оңтайландырыңыз.',
     patchSub: '4K / 120 FPS дейінгі бастапқы бейнелерге қолдау бар. Ұсынылатын бастапқы битрейт: 15–45 Мбит/с.',
     choose: 'Видеоны осында сүйреп әкеліңіз',
-    chooseSub: 'MP4, MOV, WebM, MKV, AVI, 3GP және басқа бейнелер',
+    chooseSub: 'MP4, MOV және M4V бейнелері (4K / 120 FPS дейін)',
     localNote: '4K / 120 FPS дейінгі бастапқы бейнелерге қолдау бар • ұсынылатын битрейт 15–45 Мбит/с.',
     exportNote: 'Бейнеңіз өңдеуге дайын — «Бейнені өңдеу» түймесін басып, TikTok-та жариялаңыз.',
     fpsPolicyNote: 'TikTok жүктегеннен кейін бейне сапасын өзгертуі мүмкін.',
@@ -2732,7 +2732,7 @@ if (processBtn) {
         : new Blob([outputBytes], { type: result.outputMime || 'video/mp4' });
       // Keep the patcher's output-size contract visible in diagnostics.
       if (outputBlob.size > sourceFile.size + 200 * 1024) {
-        console.warn('[INEASY] Output is larger than the source after CFR conversion:', {
+        console.warn('[INEASY] Patcher output is larger than the source:', {
           sourceBytes: sourceFile.size,
           outputBytes: outputBlob.size,
           extraBytes: outputBlob.size - sourceFile.size
@@ -2747,9 +2747,10 @@ if (processBtn) {
       }
       verifiedOutputInfo = verifiedOutputInfo || result.outputInfo || result.info || null;
       const verifiedOutputFps = Number(verifiedOutputInfo?.averageFps);
+      const verifiedHdrProfile = result.outputHdr || result.hdr || null;
       const hdrSourcePreserved = Boolean(
-        result.hdr?.hdr10 || result.hdr?.hdr10plus || result.hdr?.hlg ||
-        result.hdr?.dolbyVision || result.hdr?.main10
+        verifiedHdrProfile?.hdr10 || verifiedHdrProfile?.hdr10plus || verifiedHdrProfile?.hlg ||
+        verifiedHdrProfile?.dolbyVision || verifiedHdrProfile?.main10
       );
       if (is4kSource) {
         const expectedWidth = Number(fpsConversion.info?.width || selectedVideoDimensions?.width);
