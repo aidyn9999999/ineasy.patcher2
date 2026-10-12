@@ -1,3 +1,13 @@
+const giveawayToastClose = document.getElementById('giveawayToastClose');
+const giveawayToast = document.getElementById('giveawayToast');
+if (giveawayToastClose && giveawayToast) {
+  giveawayToastClose.addEventListener('click', (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    giveawayToast.remove();
+  });
+}
+
 // --- Auth + layout ---
 function getBrowserValue(key) {
   try {
