@@ -1062,23 +1062,23 @@ bot.action('invite_now', async (ctx) => {
 });
 
 async function runBalanceMigrationBroadcast(reportCtx = null) {
-  if (await redis.get('balanceMigrationBroadcast:v1')) {
-    const message = 'Эта миграция и рассылка уже выполнены. Повторный запуск заблокирован, чтобы не начислять бесплатные видео повторно.';
+  if (await redis.get('balanceMigrationBroadcast:v2')) {
+    const message = 'Обновление v2 и бонусная рассылка уже выполнены. Повторный запуск заблокирован, чтобы не начислять бонус повторно.';
     if (reportCtx) await reportCtx.reply(message);
     return { alreadyDone: true };
   }
-  const lock = await redis.set('balanceMigrationBroadcastLock:v1', String(Date.now()), { nx: true, ex: 3600 });
+  const lock = await redis.set('balanceMigrationBroadcastLock:v2', String(Date.now()), { nx: true, ex: 3600 });
   if (lock !== 'OK') {
-    if (reportCtx) await reportCtx.reply('Миграция баланса уже выполняется. Повторите позже.');
+    if (reportCtx) await reportCtx.reply('Обновление баланса уже выполняется. Повторите позже.');
     return { busy: true };
   }
   if (reportCtx) {
-    await reportCtx.reply('Запускаю одноразовое обновление: пользователям, которые уже обрабатывали видео и имеют 0 бесплатных видео, начислю 2; ненулевой баланс и аккаунты без обработанных видео не трогаю. Затем отправлю сообщение.');
+    await reportCtx.reply('Начинаю одноразовое обновление: всем пользователям, запускавшим бота, добавлю 2 бесплатных видео и отправлю уведомление. Купленный баланс не изменяется.');
   }
   let cursor = '0';
   let sent = 0;
   let failed = 0;
-  let repaired = 0;
+  let credited = 0;
   try {
     do {
       const page = await redis.scan(cursor, { match: 'botStarted:*', count: 100 });
@@ -1086,43 +1086,43 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
       const keys = page[1] || [];
       for (const key of keys) {
         const telegramId = String(key).slice('botStarted:'.length);
-        if (!/^\d+$/.test(telegramId)) continue;
+        if (!/^\\d+$/.test(telegramId)) continue;
         try {
-          const [freeValue, patchedValue] = await Promise.all([
-            redis.get(`freeBalance:${telegramId}`),
-            redis.get(`patched:${telegramId}`),
-          ]);
-          if (Number(patchedValue || 0) > 0 && Number(freeValue || 0) === 0) {
-            await redis.set(`freeBalance:${telegramId}`, String(WEEKLY_FREE_BALANCE));
-            await redis.del(`freeNextAt:${telegramId}`);
-            repaired++;
+          if (await isUserBlocked(telegramId)) {
+            await new Promise((resolve) => setTimeout(resolve, 40));
+            continue;
           }
+          // One-time bonus for every user who has started the bot.
+          // The v2 guard prevents duplicate credits after a server restart.
+          await redis.incrby(`freeBalance:${telegramId}`, WEEKLY_FREE_BALANCE);
+          await redis.del(`freeNextAt:${telegramId}`);
+          credited++;
           const lang = await getLang(telegramId);
           const message = lang === 'kk'
-            ? '✅ Баланс деректері жаңартылды. Тегін видео балансы күн сайын емес, жеке 7 күндік циклмен жұмыс істейді. Бұрын видео өңдемеген аккаунттардың балансы өзгертілмеді. Тегін баланс 0 болғанда келесі 2 видео дәл 7 күннен кейін Астана уақытымен беріледі.'
+            ? '✅ INEASY PATCHER жаңартылып, тегін апталық видео балансы түзетілді! Сізге қосымша 2 тегін видео берілді. Тегін видео жеке 7 күндік циклмен жаңартылады. Сайт: https://ineasy.site/'
             : lang === 'en'
-              ? '✅ Your balance data has been updated. Free videos now follow a personal 7-day cycle instead of a daily reset. Accounts that have never processed a video were left unchanged. When your free balance reaches 0, the next 2 free videos arrive exactly 7 days later, using Astana time.'
-              : '✅ Данные баланса обновлены. Теперь бесплатные видео работают по личному циклу в 7 дней, а не сбрасываются ежедневно. Аккаунты, которые ещё не обрабатывали видео, не изменялись. Когда бесплатный баланс станет 0, следующие 2 видео начислятся ровно через 7 дней по времени Астаны.';
+              ? '✅ INEASY PATCHER has been fixed and updated! The weekly free-video balance is fixed, and we have added 2 bonus free videos to your account. Free videos follow your personal 7-day cycle. Website: https://ineasy.site/'
+              : '✅ INEASY PATCHER исправлен и обновлён! Мы починили недельный баланс бесплатных видео и начислили вам ещё 2 бесплатных видео. Теперь бесплатные видео работают по личному циклу в 7 дней. Сайт: https://ineasy.site/';
           await bot.telegram.sendMessage(telegramId, message, balanceEndedKeyboard(lang, telegramId));
           sent++;
         } catch (error) {
           failed++;
-          console.error('Не удалось обновить баланс или отправить сообщение:', telegramId, error.message);
+          console.error('Не удалось начислить бонус или отправить сообщение:', telegramId, error.message);
         }
         await new Promise((resolve) => setTimeout(resolve, 40));
       }
     } while (cursor !== '0');
-    await redis.set('balanceMigrationBroadcast:v1', JSON.stringify({ completedAt: new Date().toISOString(), sent, failed, repaired }));
-    const summary = `Готово. Отправлено: ${sent}; не доставлено: ${failed}; бесплатный баланс восстановлен для активных пользователей: ${repaired}. Повторный запуск отключён.`;
+    await redis.set('balanceMigrationBroadcast:v2', JSON.stringify({ completedAt: new Date().toISOString(), sent, failed, credited }));
+    const summary = `Готово. Отправлено: ${sent}; не доставлено: ${failed}; начислено по 2 бесплатных видео пользователям: ${credited}. Повторный запуск отключён.`;
     if (reportCtx) await reportCtx.reply(summary);
     else console.log('[INEASY] ' + summary);
-    return { sent, failed, repaired };
+    return { sent, failed, credited };
   } catch (error) {
-    console.error('Миграция/рассылка баланса не завершена:', error.message);
-    if (reportCtx) await reportCtx.reply('Ошибка миграции или рассылки. Подробности записаны в журнал сервера; блокировка будет снята автоматически через час.');
+    console.error('Обновление баланса/рассылка не завершены:', error.message);
+    if (reportCtx) await reportCtx.reply('Ошибка обновления или рассылки. Подробности записаны в журнал сервера; блокировка будет снята автоматически через час.');
     throw error;
   } finally {
-    await redis.del('balanceMigrationBroadcastLock:v1');
+    await redis.del('balanceMigrationBroadcastLock:v2');
   }
 }
 
