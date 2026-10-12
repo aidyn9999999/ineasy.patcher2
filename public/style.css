@@ -1368,3 +1368,8 @@ button, .tg-btn, .news-link, .download-link, .balance-buy-site, .balance-buy-tel
 .checker-result{border-color:rgba(88,101,242,.36)!important;background:linear-gradient(135deg,rgba(88,101,242,.14),rgba(13,17,31,.96))!important}
 .checker-input-row button,.checker-open-btn{background:#76b900!important;color:#101505!important}
 @media(max-width:600px){.giveaway-toast{right:14px;bottom:14px;width:calc(100vw - 28px)}}
+
+/* Blue publishing area with green action buttons. */
+.publication-actions{border:1px solid rgba(88,101,242,.32);border-radius:14px;background:linear-gradient(135deg,rgba(88,101,242,.12),rgba(8,12,23,.94));padding:14px;}
+.publication-actions .tiktok-publish-btn{background:#76b900;color:#101505;}
+.publication-actions .tiktok-publish-btn:hover{background:#8ae600;box-shadow:0 0 18px rgba(118,185,0,.35);}
