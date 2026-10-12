@@ -1077,7 +1077,7 @@ async function refreshAllWeeklyFreeBalances({ forceRefill = false, reportCtx = n
     cursor = String(page[0]);
     for (const key of (page[1] || [])) {
       const telegramId = String(key).slice('botStarted:'.length);
-      if (!/^\\d+$/.test(telegramId)) continue;
+      if (!/^\d+$/.test(telegramId)) continue;
       try {
         if (await isUserBlocked(telegramId)) continue;
         if (forceRefill) {
