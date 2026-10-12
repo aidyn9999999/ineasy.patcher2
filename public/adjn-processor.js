@@ -173,7 +173,7 @@
     //   - above 4K up to 8K/DCI 8K (8192×4320): max 60 FPS
     const shortSide = Math.min(width, height);
     const longSide = Math.max(width, height);
-    const within4K = longSide <= 4096 && shortSide <= 2304;
+    const within4K = longSide <= 4096 && shortSide <= 2160;
     const within8K = longSide <= 8192 && shortSide <= 4320;
     if (!within8K) {
       throw new Error(`TikTok-safe policy: resolusi ${width}×${height} melebihi batas 8K.`);
