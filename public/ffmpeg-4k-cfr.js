@@ -235,7 +235,6 @@ async function inspectSourceColorProfile(bytes, sourceInfo, onProgress) {
       result.reason = 'HDR10+ dynamic metadata signature detected';
     }
   }
-  }
 
   // Do not infer HDR from HEVC Main 10 alone. 10-bit HEVC is also used for SDR;
   // only explicit PQ/HLG color signaling or Dolby Vision configuration counts as HDR.
