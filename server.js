@@ -399,14 +399,28 @@ async function unblockUser(telegramId) {
   await recordUserActivity(telegramId, 'Блокировка снята');
 }
 
+function nextAstanaDailyRenewalAt(now = Date.now()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: ASTANA_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date(now));
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  // Astana is UTC+5: 14:00 local time is 09:00 UTC.
+  let nextAt = Date.UTC(Number(values.year), Number(values.month) - 1, Number(values.day), 9, 0, 0, 0);
+  if (nextAt <= now) nextAt += FREE_BALANCE_INTERVAL_MS;
+  return nextAt;
+}
+
 async function getFreeBalance(telegramId) {
   const now = Date.now();
-  // Daily free balance is capped at 2. Unused videos remain, and the balance tops up
-  // to 2 at the next 24-hour renewal instead of adding 2 on top.
+  const nextRenewal = nextAstanaDailyRenewalAt(now);
+  // Free allowance is capped at 2 and renews daily at 14:00 Astana time.
   const balance = await redis.eval(
-    "local free = redis.call('GET', KEYS[1]); local nextAt = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[2]); local allowance = tonumber(ARGV[1]); local interval = tonumber(ARGV[3]); if not free then free = allowance; redis.call('SET', KEYS[1], free); if nextAt == 0 then redis.call('SET', KEYS[2], tostring(now + interval)); end; return tonumber(free); end; free = tonumber(free); if nextAt == 0 then nextAt = now + interval; redis.call('SET', KEYS[2], tostring(nextAt)); end; if now >= nextAt then if free < allowance then free = allowance; redis.call('SET', KEYS[1], tostring(free)); end; redis.call('SET', KEYS[2], tostring(now + interval)); end; if free > allowance then free = allowance; redis.call('SET', KEYS[1], tostring(free)); end; return free",
+    "local free = redis.call('GET', KEYS[1]); local nextAt = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[2]); local allowance = tonumber(ARGV[1]); local nextRenewal = tonumber(ARGV[3]); if not free then free = allowance; redis.call('SET', KEYS[1], free); if nextAt == 0 then redis.call('SET', KEYS[2], tostring(nextRenewal)); end; return tonumber(free); end; free = tonumber(free); if nextAt == 0 then nextAt = nextRenewal; redis.call('SET', KEYS[2], tostring(nextAt)); end; if now >= nextAt then if free < allowance then free = allowance; redis.call('SET', KEYS[1], tostring(free)); end; redis.call('SET', KEYS[2], tostring(nextRenewal)); end; if free > allowance then free = allowance; redis.call('SET', KEYS[1], tostring(allowance)); end; return free",
     [`freeBalance:${telegramId}`, `freeNextAt:${telegramId}`],
-    [String(DAILY_FREE_BALANCE), String(now), String(FREE_BALANCE_INTERVAL_MS)]
+    [String(DAILY_FREE_BALANCE), String(now), String(nextRenewal)]
   );
   return Number(balance);
 }
@@ -1086,7 +1100,7 @@ async function refreshAllDailyFreeBalances({ forceRefill = false, reportCtx = nu
           await redis.eval(
             "local freeKey = KEYS[1]; local nextKey = KEYS[2]; local free = tonumber(redis.call('GET', freeKey) or '0'); local cap = tonumber(ARGV[1]); local nextAt = tonumber(ARGV[2]); if free < cap then free = cap; elseif free > cap then free = cap; end; redis.call('SET', freeKey, tostring(free)); redis.call('SET', nextKey, tostring(nextAt)); return free",
             [`freeBalance:${telegramId}`, `freeNextAt:${telegramId}`],
-            [String(DAILY_FREE_BALANCE), String(now + FREE_BALANCE_INTERVAL_MS)]
+            [String(DAILY_FREE_BALANCE), String(nextAstanaDailyRenewalAt(now))]
           );
           renewed++;
         } else {
@@ -1147,7 +1161,7 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
           await redis.eval(
             "redis.call('SET', KEYS[1], ARGV[1]); redis.call('SET', KEYS[2], ARGV[2]); return tonumber(ARGV[1])",
             [`freeBalance:${telegramId}`, `freeNextAt:${telegramId}`],
-            [String(DAILY_FREE_BALANCE), String(Date.now() + FREE_BALANCE_INTERVAL_MS)]
+            [String(DAILY_FREE_BALANCE), String(nextAstanaDailyRenewalAt(Date.now()))]
           );
           normalized++;
           const lang = await getLang(telegramId);
