@@ -207,9 +207,6 @@ async function inspectSourceColorProfile(bytes, sourceInfo, onProgress) {
   // HDR10+ SEI scanning is the expensive fallback: run it only after container
   // metadata failed to identify HDR, and only for confirmed HEVC Main10 sources.
   if (isHevc && result.tenBit && !result.hdr) {
-  // Only scan compressed bytes for HDR10+ SEI after HEVC Main10 is confirmed.
-  // Ordinary 8-bit HEVC videos avoid this expensive full-file pass.
-  if (result.tenBit && !result.hdr) {
     // HDR10+ dynamic metadata can be carried in HEVC SEI while a remuxed file
     // lacks complete color-box signalling. Recognize its registered ITU-T T.35
     // signature without treating every 10-bit HEVC file as HDR.
