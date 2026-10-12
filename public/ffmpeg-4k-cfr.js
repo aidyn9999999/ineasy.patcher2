@@ -275,7 +275,9 @@ export async function inspectHDRVideo(inputBlob, options = {}) {
         /HLG/i.test(profile.displayColor) ? 'hlg' :
         /PQ|HDR10/i.test(profile.displayColor) ? 'pq' : 'unknown',
       label: profile.displayColor || 'HDR / 10-bit',
-      ...(options.includeBytes ? { sourceBytes: bytes } : {})
+      // Retain the full byte buffer only for HDR, where the FFmpeg fallback can reuse it.
+      // SDR jobs release this large allocation immediately after metadata inspection.
+      ...(options.includeBytes && profile.hdr ? { sourceBytes: bytes } : {})
     };
   } catch (error) {
     console.warn('[INEASY] HDR metadata inspection inconclusive:', error?.message || error);
