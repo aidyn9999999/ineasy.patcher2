@@ -1066,7 +1066,7 @@ bot.action('invite_now', async (ctx) => {
 
 // Periodic maintenance: renew due daily free balances even when users do not open the bot.
 // A forced run is reserved for the admin emergency refill command.
-async function refreshAllWeeklyFreeBalances({ forceRefill = false, reportCtx = null } = {}) {
+async function refreshAllDailyFreeBalances({ forceRefill = false, reportCtx = null } = {}) {
   let cursor = '0';
   let checked = 0;
   let renewed = 0;
@@ -1082,7 +1082,7 @@ async function refreshAllWeeklyFreeBalances({ forceRefill = false, reportCtx = n
         if (await isUserBlocked(telegramId)) continue;
         if (forceRefill) {
           // Emergency refill: bring free balance to exactly 2 (never add on top),
-          // preserve purchased credits, and start a fresh 7-day period from now.
+          // preserve purchased credits, and start a fresh 24-hour period from now.
           await redis.eval(
             "local freeKey = KEYS[1]; local nextKey = KEYS[2]; local free = tonumber(redis.call('GET', freeKey) or '0'); local cap = tonumber(ARGV[1]); local nextAt = tonumber(ARGV[2]); if free < cap then free = cap; elseif free > cap then free = cap; end; redis.call('SET', freeKey, tostring(free)); redis.call('SET', nextKey, tostring(nextAt)); return free",
             [`freeBalance:${telegramId}`, `freeNextAt:${telegramId}`],
@@ -1113,7 +1113,7 @@ async function refreshAllWeeklyFreeBalances({ forceRefill = false, reportCtx = n
 
 async function runBalanceMigrationBroadcast(reportCtx = null) {
   if (await redis.get('balanceMigrationBroadcast:v4')) {
-    const message = 'Обновление v3 уже выполнено. Повторный запуск заблокирован.';
+    const message = 'Ежедневное обновление уже выполнено. Повторный запуск заблокирован.';
     if (reportCtx) await reportCtx.reply(message);
     return { alreadyDone: true };
   }
@@ -1123,7 +1123,7 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
     return { busy: true };
   }
   if (reportCtx) {
-    await reportCtx.reply('Начинаю одноразовую проверку бесплатного баланса: лишний баланс ограничу 2 видео, без начисления дополнительных видео. Купленный баланс не изменяется.');
+    await reportCtx.reply('Начинаю обновление: выставлю каждому активному пользователю 2 бесплатных видео и включу ежедневное пополнение через 24 часа. Купленные видео не изменяются.');
   }
   let cursor = '0';
   let sent = 0;
@@ -1152,10 +1152,10 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
           normalized++;
           const lang = await getLang(telegramId);
           const message = lang === 'kk'
-            ? '✅ INEASY PATCHER жаңартылды! Апталық тегін видео балансы түзетілді: пайдаланылмаған видеолар сақталады, ал баланс жаңартылды: енді күн сайын 2 тегін видео қолжетімді. Сайт: https://ineasy.site/'
+            ? '✅ INEASY PATCHER жаңартылды! Тегін баланс жаңартылды: енді күн сайын 2 видео қолжетімді. Сайт: https://ineasy.site/'
             : lang === 'en'
-              ? '✅ INEASY PATCHER has been fixed and updated! Unused free videos remain in your balance, and your free balance refills to 2 videos every day. Website: https://ineasy.site/'
-              : '✅ INEASY PATCHER исправлен и обновлён! Мы исправили дневной баланс: каждый день бесплатный баланс пополняется до 2 видео. Неиспользованные бесплатные видео не накапливаются. Сайт: https://ineasy.site/';
+              ? '✅ INEASY PATCHER has been fixed and updated! Your free balance has been reset to 2 videos and now refills every 24 hours. Website: https://ineasy.site/'
+              : '✅ INEASY PATCHER исправлен и обновлён! Баланс обновлён: теперь доступны 2 бесплатных видео. Они пополняются каждые 24 часа. Сайт: https://ineasy.site/';
           await bot.telegram.sendMessage(telegramId, message, balanceEndedKeyboard(lang, telegramId));
           sent++;
         } catch (error) {
@@ -1220,7 +1220,7 @@ bot.command('test_daily_balance', async (ctx) => {
 bot.command('refill_daily_free_now', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
   await ctx.reply('Начинаю экстренное пополнение бесплатного баланса до 2 видео для всех активных пользователей. Купленные видео не изменяются.');
-  await refreshAllWeeklyFreeBalances({ forceRefill: true, reportCtx: ctx });
+  await refreshAllDailyFreeBalances({ forceRefill: true, reportCtx: ctx });
 });
 
 bot.command('broadcast_balance_update', async (ctx) => {
@@ -2189,9 +2189,9 @@ app.listen(PORT, async () => {
   // One-time production migration + broadcast. Redis guard prevents duplicate sends on restarts.
   runBalanceMigrationBroadcast().catch((error) => console.error('[INEASY] Одноразовое обновление баланса не удалось:', error.message));
   // Catch up overdue daily renewals after deploy/restart, then keep checking hourly.
-  refreshAllWeeklyFreeBalances().catch((error) => console.error('[INEASY] Стартовая проверка дневных балансов не удалась:', error.message));
+  refreshAllDailyFreeBalances().catch((error) => console.error('[INEASY] Стартовая проверка дневных балансов не удалась:', error.message));
   const dailyBalanceMaintenance = setInterval(() => {
-    refreshAllWeeklyFreeBalances().catch((error) => console.error('[INEASY] Плановая проверка дневных балансов не удалась:', error.message));
+    refreshAllDailyFreeBalances().catch((error) => console.error('[INEASY] Плановая проверка дневных балансов не удалась:', error.message));
   }, 60 * 60 * 1000);
   if (typeof dailyBalanceMaintenance.unref === 'function') dailyBalanceMaintenance.unref();
   if (!ADMIN_ID) console.log('⚠️  ADMIN_ID не задан — проверка чеков, админ-команды и модерация отключены.');
