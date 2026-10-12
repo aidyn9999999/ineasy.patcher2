@@ -1086,7 +1086,7 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
       const keys = page[1] || [];
       for (const key of keys) {
         const telegramId = String(key).slice('botStarted:'.length);
-        if (!/^\\d+$/.test(telegramId)) continue;
+        if (!/^\d+$/.test(telegramId)) continue;
         try {
           if (await isUserBlocked(telegramId)) {
             await new Promise((resolve) => setTimeout(resolve, 40));
