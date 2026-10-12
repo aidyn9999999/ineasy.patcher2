@@ -401,8 +401,10 @@ async function unblockUser(telegramId) {
 
 async function getFreeBalance(telegramId) {
   const now = Date.now();
+  // Weekly free balance is capped at 2. Unused videos remain, and the balance tops up
+  // to 2 at the next personal 7-day renewal instead of adding 2 on top.
   const balance = await redis.eval(
-    "local balance = redis.call('GET', KEYS[1]); if not balance then balance = ARGV[1]; redis.call('SET', KEYS[1], balance); end; balance = tonumber(balance); if balance > 0 then return balance; end; local nextAt = tonumber(redis.call('GET', KEYS[2]) or '0'); if nextAt == 0 then nextAt = tonumber(ARGV[2]) + tonumber(ARGV[3]); redis.call('SET', KEYS[2], tostring(nextAt)); return 0; end; if tonumber(ARGV[2]) >= nextAt then redis.call('SET', KEYS[1], ARGV[1]); redis.call('DEL', KEYS[2]); return tonumber(ARGV[1]); end; return 0",
+    "local free = redis.call('GET', KEYS[1]); local nextAt = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[2]); local allowance = tonumber(ARGV[1]); local interval = tonumber(ARGV[3]); if not free then free = allowance; redis.call('SET', KEYS[1], free); if nextAt == 0 then redis.call('SET', KEYS[2], tostring(now + interval)); end; return tonumber(free); end; free = tonumber(free); if nextAt == 0 then nextAt = now + interval; redis.call('SET', KEYS[2], tostring(nextAt)); end; if now >= nextAt then if free < allowance then free = allowance; redis.call('SET', KEYS[1], tostring(free)); end; redis.call('SET', KEYS[2], tostring(now + interval)); end; if free > allowance then free = allowance; redis.call('SET', KEYS[1], tostring(free)); end; return free",
     [`freeBalance:${telegramId}`, `freeNextAt:${telegramId}`],
     [String(WEEKLY_FREE_BALANCE), String(now), String(FREE_BALANCE_INTERVAL_MS)]
   );
@@ -466,11 +468,12 @@ async function getPatchedCount(telegramId) {
 }
 
 async function consumeOneVideo(telegramId) {
+  // Refresh the weekly allowance once, then deduct exactly one video atomically.
   await Promise.all([getFreeBalance(telegramId), getPurchasedBalance(telegramId)]);
   const consumed = await redis.eval(
-    "local free = tonumber(redis.call('GET', KEYS[1]) or '0'); local purchased = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[1]); if free <= 0 then local nextAt = tonumber(redis.call('GET', KEYS[4]) or '0'); if nextAt > 0 and now >= nextAt then free = tonumber(ARGV[3]); redis.call('SET', KEYS[1], free); redis.call('DEL', KEYS[4]); end; end; if free > 0 then free = redis.call('DECR', KEYS[1]); if tonumber(free) <= 0 then redis.call('SET', KEYS[4], tostring(now + tonumber(ARGV[2]))); redis.call('INCR', KEYS[3]); return 2; end; elseif purchased > 0 then redis.call('DECR', KEYS[2]); else return 0; end; redis.call('INCR', KEYS[3]); return 1",
-    [`freeBalance:${telegramId}`, `purchased:${telegramId}`, `patched:${telegramId}`, `freeNextAt:${telegramId}`],
-    [String(Date.now()), String(FREE_BALANCE_INTERVAL_MS), String(WEEKLY_FREE_BALANCE)]
+    "local free = tonumber(redis.call('GET', KEYS[1]) or '0'); local purchased = tonumber(redis.call('GET', KEYS[2]) or '0'); if free > 0 then redis.call('DECR', KEYS[1]); elseif purchased > 0 then redis.call('DECR', KEYS[2]); else return 0; end; redis.call('INCR', KEYS[3]); return 1",
+    [`freeBalance:${telegramId}`, `purchased:${telegramId}`, `patched:${telegramId}`],
+    []
   );
   if (Number(consumed) === 0) throw new Error('no_balance');
   return Number(consumed);
@@ -1062,18 +1065,18 @@ bot.action('invite_now', async (ctx) => {
 });
 
 async function runBalanceMigrationBroadcast(reportCtx = null) {
-  if (await redis.get('balanceMigrationBroadcast:v2')) {
-    const message = 'Обновление v2 и бонусная рассылка уже выполнены. Повторный запуск заблокирован, чтобы не начислять бонус повторно.';
+  if (await redis.get('balanceMigrationBroadcast:v3')) {
+    const message = 'Обновление v3 уже выполнено. Повторный запуск заблокирован.';
     if (reportCtx) await reportCtx.reply(message);
     return { alreadyDone: true };
   }
-  const lock = await redis.set('balanceMigrationBroadcastLock:v2', String(Date.now()), { nx: true, ex: 3600 });
+  const lock = await redis.set('balanceMigrationBroadcastLock:v3', String(Date.now()), { nx: true, ex: 3600 });
   if (lock !== 'OK') {
     if (reportCtx) await reportCtx.reply('Обновление баланса уже выполняется. Повторите позже.');
     return { busy: true };
   }
   if (reportCtx) {
-    await reportCtx.reply('Начинаю одноразовое обновление: всем пользователям, запускавшим бота, добавлю 2 бесплатных видео и отправлю уведомление. Купленный баланс не изменяется.');
+    await reportCtx.reply('Начинаю одноразовую проверку бесплатного баланса: лишний баланс ограничу 2 видео, без начисления дополнительных видео. Купленный баланс не изменяется.');
   }
   let cursor = '0';
   let sent = 0;
@@ -1092,16 +1095,19 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
             await new Promise((resolve) => setTimeout(resolve, 40));
             continue;
           }
-          // One-time bonus for every user who has started the bot.
-          // The v2 guard prevents duplicate credits after a server restart.
-          await redis.incrby(`freeBalance:${telegramId}`, WEEKLY_FREE_BALANCE);
-          await redis.del(`freeNextAt:${telegramId}`);
+          // Normalize the free balance to the weekly cap without granting extra credits.
+          // The v3 guard prevents repeated normalization/broadcast on restarts.
+          await redis.eval(
+            "local key = KEYS[1]; local current = tonumber(redis.call('GET', key) or '0'); local cap = tonumber(ARGV[1]); if current > cap then redis.call('SET', key, cap); return cap; end; return current",
+            [`freeBalance:${telegramId}`],
+            [String(WEEKLY_FREE_BALANCE)]
+          );
           credited++;
           const lang = await getLang(telegramId);
           const message = lang === 'kk'
-            ? '✅ INEASY PATCHER жаңартылып, тегін апталық видео балансы түзетілді! Сізге қосымша 2 тегін видео берілді. Тегін видео жеке 7 күндік циклмен жаңартылады. Сайт: https://ineasy.site/'
+            ? '✅ INEASY PATCHER жаңартылды! Апталық тегін видео балансы түзетілді: пайдаланылмаған видеолар сақталады, ал әр 7 күн сайын баланс 2 видеоға дейін толтырылады. Сайт: https://ineasy.site/'
             : lang === 'en'
-              ? '✅ INEASY PATCHER has been fixed and updated! The weekly free-video balance is fixed, and we have added 2 bonus free videos to your account. Free videos follow your personal 7-day cycle. Website: https://ineasy.site/'
+              ? '✅ INEASY PATCHER has been fixed and updated! Unused free videos remain in your balance, and every 7 days your free balance tops up to a maximum of 2 videos. Website: https://ineasy.site/'
               : '✅ INEASY PATCHER исправлен и обновлён! Мы починили недельный баланс бесплатных видео и начислили вам ещё 2 бесплатных видео. Теперь бесплатные видео работают по личному циклу в 7 дней. Сайт: https://ineasy.site/';
           await bot.telegram.sendMessage(telegramId, message, balanceEndedKeyboard(lang, telegramId));
           sent++;
@@ -1112,7 +1118,7 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
         await new Promise((resolve) => setTimeout(resolve, 40));
       }
     } while (cursor !== '0');
-    await redis.set('balanceMigrationBroadcast:v2', JSON.stringify({ completedAt: new Date().toISOString(), sent, failed, credited }));
+    await redis.set('balanceMigrationBroadcast:v3', JSON.stringify({ completedAt: new Date().toISOString(), sent, failed, credited }));
     const summary = `Готово. Отправлено: ${sent}; не доставлено: ${failed}; начислено по 2 бесплатных видео пользователям: ${credited}. Повторный запуск отключён.`;
     if (reportCtx) await reportCtx.reply(summary);
     else console.log('[INEASY] ' + summary);
@@ -1122,7 +1128,7 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
     if (reportCtx) await reportCtx.reply('Ошибка обновления или рассылки. Подробности записаны в журнал сервера; блокировка будет снята автоматически через час.');
     throw error;
   } finally {
-    await redis.del('balanceMigrationBroadcastLock:v2');
+    await redis.del('balanceMigrationBroadcastLock:v3');
   }
 }
 
