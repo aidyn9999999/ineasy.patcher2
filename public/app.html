@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261011-61">
+<link rel="stylesheet" href="style.css?v=20261012-62">
 <link rel="stylesheet" href="home.css?v=20261011-6">
 </head>
 <body>
@@ -355,10 +355,16 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261011-21"></script>
-<script src="app.js?v=20261012-18"></script>
+<script src="app.js?v=20261012-19"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
 </script>
+
+<a class="giveaway-toast" id="giveawayToast" href="https://t.me/ineasynews" target="_blank" rel="noopener noreferrer" aria-label="Канал с розыгрышами">
+  <span class="giveaway-toast-icon" aria-hidden="true">🎁</span>
+  <span class="giveaway-toast-copy"><strong>Канал с розыгрышами</strong><small>Новости и розыгрыши INEASY</small></span>
+  <button class="giveaway-toast-close" id="giveawayToastClose" type="button" aria-label="Закрыть">×</button>
+</a>
 </body>
 </html>
