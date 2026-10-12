@@ -167,7 +167,8 @@
         <span class="result-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5 9.2 16.5 19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <div class="processed-result-copy">
           <strong id="resultTitle">Your video is ready</strong>
-          <small id="resultSub">1080p • 60 FPS</small>
+          <small id="resultSub">Video processed</small>
+          <small class="compatibility-note" id="compatibilityNote">Совместимый формат для TikTok: 1080p • 60 FPS • H.264 (AVC) или H.265 (HEVC).</small>
         </div>
         <a id="downloadBtn" href="#" download class="download-link">Download</a>
         <div class="publication-actions" id="publicationActions">
@@ -355,7 +356,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261011-21"></script>
-<script src="app.js?v=20261012-23"></script>
+<script src="app.js?v=20261012-24"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
