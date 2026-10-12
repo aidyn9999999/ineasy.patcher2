@@ -1367,7 +1367,20 @@ button, .tg-btn, .news-link, .download-link, .balance-buy-site, .balance-buy-tel
 .giveaway-toast[hidden]{display:none!important}
 @media(max-width:600px){.giveaway-toast{top:10px;right:10px;width:min(235px,calc(100vw - 20px))}.giveaway-toast-link{padding:8px 28px 8px 9px}}
 
-/* Blue publishing area with green action buttons. */
-.publication-actions{border:1px solid rgba(88,101,242,.32);border-radius:14px;background:linear-gradient(135deg,rgba(88,101,242,.12),rgba(8,12,23,.94));padding:14px;}
-.publication-actions .tiktok-publish-btn{background:#76b900;color:#101505;}
-.publication-actions .tiktok-publish-btn:hover{background:#8ae600;box-shadow:0 0 18px rgba(118,185,0,.35);}
+/* Neutral publishing area: keep the post screen independent from the blue theme. */
+.publication-actions{border:1px solid rgba(190,198,210,.22);border-radius:14px;background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(18,21,28,.92));padding:14px;}
+.publication-actions .tiktok-publish-btn,
+.publication-actions .tiktok-studio-btn{background:#f1f3f5;color:#17191d;border:1px solid #f1f3f5;box-shadow:none;}
+.publication-actions .tiktok-publish-btn:hover,
+.publication-actions .tiktok-studio-btn:hover{background:#fff;color:#111318;border-color:#fff;box-shadow:0 3px 12px rgba(0,0,0,.18);transform:translateY(-1px);}
+.publication-actions .tiktok-studio-btn::before{background-image:url('https://cdn.simpleicons.org/tiktok/111111');}
+
+/* Place the invite/giveaway card directly above the bottom section navigation. */
+.giveaway-toast{top:auto;right:auto;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(360px,calc(100vw - 24px));border-color:rgba(190,198,210,.26);background:#171a20;color:#f5f6f8;box-shadow:0 8px 24px rgba(0,0,0,.28);}
+.giveaway-toast-link:hover{background:rgba(255,255,255,.06);}
+.giveaway-toast-icon{background:rgba(255,255,255,.09);}
+.giveaway-toast-copy strong{color:#f7f8fa;}
+.giveaway-toast-copy small{color:#b8bec8;}
+.giveaway-toast-close{color:#c5cbd4;}
+.giveaway-toast-close:hover{background:rgba(255,255,255,.1);color:#fff;}
+@media(max-width:600px){.giveaway-toast{top:auto;right:auto;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));width:calc(100vw - 24px);}.giveaway-toast-link{padding:8px 28px 8px 9px;}}
