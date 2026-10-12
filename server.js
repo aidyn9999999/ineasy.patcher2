@@ -2195,7 +2195,7 @@ app.listen(PORT, async () => {
 
   // Production must use a webhook: polling from multiple replicas causes Telegram 409 conflicts.
   const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN
-    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN.replace(/^https?:\\/\\//i, '').replace(/\\/$/, '')}`
+    ? new URL(`https://${process.env.RAILWAY_PUBLIC_DOMAIN}`).origin
     : null;
   const configuredPublicUrl = process.env.RENDER_EXTERNAL_URL
     || process.env.RAILWAY_PUBLIC_DOMAIN_URL
