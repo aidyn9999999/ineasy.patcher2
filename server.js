@@ -2192,15 +2192,38 @@ app.use(bot.webhookCallback(WEBHOOK_PATH));
 
 app.listen(PORT, async () => {
   console.log(`Сайт запущен: http://localhost:${PORT}`);
-  const publicUrl = process.env.RENDER_EXTERNAL_URL || process.env.RAILWAY_PUBLIC_DOMAIN_URL;
-  if (publicUrl) {
-    await bot.telegram.setWebhook(`${publicUrl}${WEBHOOK_PATH}`);
-    console.log(`Бот слушает через вебхук: ${publicUrl}${WEBHOOK_PATH}`);
-  } else {
-    await bot.telegram.deleteWebhook();
-    bot.launch();
-    console.log('Бот слушает команды (локальный polling)...');
+
+  // Production must use a webhook: polling from multiple replicas causes Telegram 409 conflicts.
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN
+    ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN.replace(/^https?:\\/\\//i, '').replace(/\\/$/, '')}`
+    : null;
+  const configuredPublicUrl = process.env.RENDER_EXTERNAL_URL
+    || process.env.RAILWAY_PUBLIC_DOMAIN_URL
+    || railwayDomain;
+  const isProduction = process.env.NODE_ENV === 'production'
+    || Boolean(process.env.RAILWAY_ENVIRONMENT)
+    || Boolean(process.env.RENDER);
+  const publicUrl = configuredPublicUrl || (isProduction ? new URL('/', SITE_URL).origin : null);
+
+  try {
+    if (publicUrl) {
+      const webhookBase = new URL(publicUrl).origin;
+      await bot.telegram.setWebhook(`${webhookBase}${WEBHOOK_PATH}`);
+      console.log(`Бот слушает через вебхук: ${webhookBase}${WEBHOOK_PATH}`);
+    } else {
+      await bot.telegram.deleteWebhook();
+      await bot.launch().catch((error) => {
+        console.error('[INEASY] Локальный polling не запустился:', error.message);
+        if (error.response?.error_code === 409) {
+          console.error('[INEASY] 409 Conflict: остановите второй экземпляр бота или включите webhook в production.');
+        }
+      });
+      console.log('Бот слушает команды (локальный polling)...');
+    }
+  } catch (error) {
+    console.error('[INEASY] Не удалось настроить Telegram webhook:', error.message);
   }
+
   // One-time production migration + broadcast. Redis guard prevents duplicate sends on restarts.
   runBalanceMigrationBroadcast().catch((error) => console.error('[INEASY] Одноразовое обновление баланса не удалось:', error.message));
   // Catch up overdue daily renewals after deploy/restart, then keep checking hourly.
