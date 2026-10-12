@@ -80,8 +80,8 @@ const translations = {
     fps30Rejected: 'This video cannot be processed. Choose another file.',
     fpsInspectUnavailable: 'Could not read video details. The file will be checked during processing.',
     choosePostingDevice: 'Choose your device before processing.',
-    communityTitle: 'Stay in the loop with Ineasy',
-    communityBody: 'New tutorials, project updates, and exclusive giveaways on our Telegram channel',
+    communityTitle: 'Join our giveaway channel',
+    communityBody: 'News, updates and giveaways in our Telegram channel.',
     newsText: 'Tutorials, updates, and giveaways',
     newsButton: 'View',
     process: 'Process video',
@@ -266,9 +266,9 @@ const translations = {
     fps30Rejected: 'Не удалось подготовить это видео. Выберите другой файл.',
     fpsInspectUnavailable: 'Не удалось прочитать параметры видео. Файл будет проверен при обработке.',
     choosePostingDevice: 'Перед обработкой выберите устройство.',
-    communityTitle: 'Будь в курсе Ineasy',
-    communityBody: 'Новые туториалы, обновления проекта и эксклюзивные розыгрыши — в нашем Telegram-канале',
-    newsText: 'Туториалы, обновления и розыгрыши',
+    communityTitle: 'Канал с розыгрышами',
+    communityBody: 'Подписывайтесь на канал, чтобы не пропускать новости и розыгрыши.',
+    newsText: 'Новости и розыгрыши',
     newsButton: 'Смотреть',
     process: 'Обработать видео',
     progressLabel: 'Загрузка',
@@ -452,8 +452,8 @@ const translations = {
     fps30Rejected: 'Бұл бейнені өңдеу мүмкін болмады. Басқа файл таңдаңыз.',
     fpsInspectUnavailable: 'Бейне параметрлерін оқу мүмкін болмады. Файл өңдеу кезінде тексеріледі.',
     choosePostingDevice: 'Өңдемес бұрын құрылғыны таңдаңыз.',
-    communityTitle: 'Ineasy жаңалықтарынан хабардар болыңыз',
-    communityBody: 'Жаңа нұсқаулықтар, жоба жаңалықтары және арнайы ұтыстар Telegram арнамызда',
+    communityTitle: 'Ұтыс ойындары бар арна',
+    communityBody: 'Жаңалықтар мен ұтыс ойындарын жіберіп алмаңыз.',
     newsText: 'Туториалдар, жаңартулар және ұтыс ойындары',
     newsButton: 'Көру',
     process: 'Бейнені өңдеу',
@@ -893,10 +893,10 @@ function updateFreeBalanceNextAt() {
       }).format(new Date(Number(currentFreeNextAt)));
       label.hidden = false;
       label.textContent = STATE.lang === 'ru'
-        ? `Следующий бесплатный баланс: ${formatted} (время Астаны). Пополнение — ровно через 7 дней после исчерпания бесплатных видео.`
+        ? `Следующий бесплатный баланс: ${formatted} (время Астаны). Бесплатный баланс пополняется до 2 видео каждые 24 часа.`
         : STATE.lang === 'kk'
-          ? `Келесі тегін баланс: ${formatted} (Астана уақыты). Тегін видео таусылғаннан кейін дәл 7 күн өткенде толтырылады.`
-          : `Next free balance: ${formatted} (Astana time). It refills exactly 7 days after your free videos run out.`;
+          ? `Келесі тегін баланс: ${formatted} (Астана уақыты). Тегін баланс әр 24 сағат сайын 2 видеоға дейін толтырылады.`
+          : `Next free balance: ${formatted} (Astana time). It refills to 2 free videos every 24 hours.`;
     }
   }
   if (inviteLink && tgId && /^\d+$/.test(String(tgId))) {
