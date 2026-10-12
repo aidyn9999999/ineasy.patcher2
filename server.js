@@ -1182,14 +1182,25 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
 bot.command('weekly_balance_status', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
   const id = String(ctx.from.id);
-  const [free, purchased, nextAt] = await Promise.all([
-    getFreeBalance(id),
+  // Read raw Redis values so this status command does not itself trigger a renewal.
+  const [rawFree, purchased, nextAt] = await Promise.all([
+    redis.get(`freeBalance:${id}`),
     getPurchasedBalance(id),
     getFreeNextAt(id),
   ]);
+  const free = rawFree === null || rawFree === undefined ? 0 : Number(rawFree);
   await ctx.reply(
     `Проверка недельного баланса (ваш аккаунт):\\n\\nБесплатные видео: ${free}/${WEEKLY_FREE_BALANCE}\\nКупленные видео: ${purchased}\\nСледующее обновление: ${formatAstanaDateTime(nextAt, 'ru') || 'не задано'} (Астана)\\n\\nЭто показывает сохранённое состояние в Redis; фактическую доставку обновления проверяем командой теста.`
   );
+});
+
+bot.command('test_weekly_schedule', async (ctx) => {
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
+  const id = String(ctx.from.id);
+  // Set only the admin's deadline to overdue; do not call getFreeBalance here.
+  // The hourly background job must perform the renewal.
+  await redis.set(`freeNextAt:${id}`, String(Date.now() - 1000));
+  await ctx.reply('Проверка фонового расписания запущена: срок вашего бесплатного баланса выставлен просроченным. Не запускайте /balance и /weekly_balance_status до проверки — они могут обновить баланс сами. Подождите до 65 минут, затем выполните /weekly_balance_status. Успех: баланс доведён до 2, а дата следующего обновления находится примерно через 7 дней.');
 });
 
 bot.command('test_weekly_balance', async (ctx) => {
