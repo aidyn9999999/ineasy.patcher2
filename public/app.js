@@ -101,8 +101,9 @@ const translations = {
     progressLabel: 'Loading',
     uhdWait: '4K video processing can take 1–2 minutes. Please wait.',
     ready: 'Your video is ready',
-    readySub: '1080p • 60 FPS',
-    previewMeta: '1080p • 60 FPS',
+    readySub: 'Video processed',
+    compatibilityNote: 'TikTok-compatible target: 1080p • 60 FPS • H.264 (AVC) or H.265 (HEVC). Actual output details are shown above.',
+    previewMeta: '1080p',
     optimizeAnother: 'Optimize another video',
     download: 'Download',
     publishTikTok: 'Post on site (easy)',
@@ -287,8 +288,9 @@ const translations = {
     progressLabel: 'Загрузка',
     uhdWait: 'Обработка видео 4K может занять 1–2 минуты. Пожалуйста, подождите.',
     ready: 'Ваше видео готово',
-    readySub: '1080p • 60 FPS',
-    previewMeta: '1080p • 60 FPS',
+    readySub: 'Видео обработано',
+    compatibilityNote: 'Совместимый формат для TikTok: 1080p • 60 FPS • H.264 (AVC) или H.265 (HEVC). Фактические параметры результата указаны выше.',
+    previewMeta: '1080p',
     optimizeAnother: 'Оптимизировать другое видео',
     download: 'Скачать',
     publishTikTok: 'Пост в сайте (легкий)',
@@ -1811,6 +1813,41 @@ async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
 }
 
 
+function getExplicitSdr1080pEligibility(file, dimensions) {
+  const width = Number(dimensions?.width) || 0;
+  const height = Number(dimensions?.height) || 0;
+  const is1080p = (width === 1920 && height === 1080) || (width === 1080 && height === 1920);
+  if (!is1080p) return { eligible: false, reason: 'not_1080p' };
+
+  const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
+  if (!core?.inspectMediaInfo) return { eligible: false, reason: 'metadata_inspector_unavailable' };
+  try {
+    const bytes = new Uint8Array(await file.slice(0, Math.min(file.size, 16 * 1024 * 1024)).arrayBuffer());
+    const info = core.inspectMediaInfo(bytes);
+    const track = (info?.tracks || []).find((item) => item.handler === 'vide') || {};
+    const codec = String(track.codec || track.codecName || info?.codec || '').toLowerCase();
+    if (!/(?:avc|h264|hev|hevc|h265)/i.test(codec)) {
+      return { eligible: false, reason: 'unsupported_source_codec' };
+    }
+    const metadata = JSON.stringify({ info, track }).toLowerCase();
+    if (/dolby.?vision|hdr10\+|hdr10|smpte2084|arib-std-b67|bt2020|hlg|\bpq\b/.test(metadata)) {
+      return { eligible: false, reason: 'hdr_detected' };
+    }
+    // Fail closed: only transcode when metadata explicitly identifies an SDR transfer function.
+    const transfer = String(track.transferCharacteristics || track.transfer || info?.transferCharacteristics || info?.transfer || '').toLowerCase();
+    const primaries = String(track.colorPrimaries || track.primaries || info?.colorPrimaries || info?.primaries || '').toLowerCase();
+    const explicitSdrTransfer = /bt709|smpte170m|bt470bg|bt470m|gamma22|gamma28|srgb/.test(transfer);
+    const explicitSdrPrimaries = /bt709|smpte170m|bt470bg|bt470m|srgb/.test(primaries);
+    if (!explicitSdrTransfer && !explicitSdrPrimaries) {
+      return { eligible: false, reason: 'sdr_not_confirmed' };
+    }
+    return { eligible: true, reason: 'confirmed_sdr_1080p', info, codec };
+  } catch (error) {
+    console.warn('[INEASY] Could not confirm SDR metadata; preserving original FPS:', error);
+    return { eligible: false, reason: 'metadata_inspection_failed' };
+  }
+}
+
 async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress, sourceDurationSeconds, is4kSource = false, encoderPreference = 'prefer-hardware') {
   const TARGET_FPS = 60000 / 1001;
   signal.throwIfAborted();
@@ -2544,9 +2581,12 @@ if (processBtn) {
         throw new Error('patcher_requires_mp4_mov');
       }
 
-      // Safe patcher-only path: preserve the original media and avoid all transcoding.
-      // This keeps HDR, SDR, 1080p and 4K processing on the known stable fast path.
-      const fpsConversion = {
+      // Convert only confirmed SDR 1080p with an explicit supported AVC/HEVC codec.
+      // HDR, unknown color metadata, other resolutions and unknown codecs keep original frames.
+      const sdr1080pEligibility = !isV2SelectedForJob
+        ? await getExplicitSdr1080pEligibility(sourceFile, selectedVideoDimensions)
+        : { eligible: false, reason: 'v2_mode' };
+      let fpsConversion = {
         blob: sourceFile,
         info: {
           width: Number(selectedVideoDimensions?.width) || null,
@@ -2562,8 +2602,24 @@ if (processBtn) {
         main10Transcoded: false,
         hdrProfile: null
       };
+      if (sdr1080pEligibility.eligible) {
+        console.info('[INEASY] Converting confirmed SDR 1080p to exact 59.94 FPS', {
+          sourceCodec: sdr1080pEligibility.codec
+        });
+        fpsConversion = await convertVideoToExact5994Fps(
+          sourceFile,
+          sourceFile.name,
+          controller.signal,
+          (progress) => updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 10)),
+          sourceDuration,
+          false,
+          'prefer-hardware'
+        );
+      } else {
+        console.info('[INEASY] Preserving source FPS; CFR conversion not eligible:', sdr1080pEligibility.reason);
+      }
       originalInputFps = null;
-      const normalizedFile = sourceFile;
+      const normalizedFile = fpsConversion.blob || sourceFile;
       const basePreparedInput = {
         blob: normalizedFile,
         report: {
@@ -2838,9 +2894,11 @@ if (processBtn) {
         outputBytes: outputBlob.size,
       });
       const resultSubNode = document.getElementById('resultSub');
+      const compatibilityNoteNode = document.getElementById('compatibilityNote');
       const outputLongSide = Math.max(Number(metaInfo?.width) || 0, Number(metaInfo?.height) || 0);
       const outputResolutionLabel = outputLongSide >= 3840 ? '4K' : '1080p';
-      if (resultSubNode) resultSubNode.textContent = `${outputResolutionLabel} • ${fpsText || 'source FPS preserved'}`;
+      if (resultSubNode) resultSubNode.textContent = `${outputResolutionLabel} • ${resText || 'resolution verified'}`;
+      if (compatibilityNoteNode) compatibilityNoteNode.textContent = t('compatibilityNote');
       if (durationNotice) durationNotice.classList.remove('hidden');
       setPublicationActionsVisible(true);
 
