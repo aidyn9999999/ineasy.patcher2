@@ -46,19 +46,6 @@ function loadFFmpegRuntime() {
   return ffmpegRuntimePromise;
 }
 
-// Download the FFmpeg JS/WASM assets in the background without initializing the
-// WASM encoder. This makes the rare 4K fallback start sooner without the memory
-// spike caused by pre-initializing the encoder while the user selects a file.
-export async function prepareFFmpeg4kFallback() {
-  try {
-    await loadFFmpegRuntime();
-    return true;
-  } catch (error) {
-    console.warn('[INEASY] 4K fallback assets will load on demand:', error?.message || error);
-    return false;
-  }
-}
-
 // Warm the FFmpeg module and WASM core while the user prepares a selected 4K video.
 export async function preloadFFmpeg4k() {
   try {
