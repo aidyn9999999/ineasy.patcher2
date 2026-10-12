@@ -2535,7 +2535,7 @@ if (processBtn) {
 
       // Inspect source color metadata before selecting an encoder. Never send HDR through
       // the browser's generic 8-bit SDR encoder path.
-      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-8');
+      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-9');
       const hdrInspection = await localFfmpeg.inspectHDRVideo(sourceFile, {
         includeBytes: true,
         onProgress: (progress) => updateProcessingProgress(
