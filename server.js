@@ -1064,6 +1064,53 @@ bot.action('invite_now', async (ctx) => {
   await sendInvite(ctx, await getLang(ctx.from.id));
 });
 
+// Periodic maintenance: renew due weekly free balances even when users do not open the bot.
+// A forced run is reserved for the admin emergency refill command.
+async function refreshAllWeeklyFreeBalances({ forceRefill = false, reportCtx = null } = {}) {
+  let cursor = '0';
+  let checked = 0;
+  let renewed = 0;
+  let failed = 0;
+  const now = Date.now();
+  do {
+    const page = await redis.scan(cursor, { match: 'botStarted:*', count: 100 });
+    cursor = String(page[0]);
+    for (const key of (page[1] || [])) {
+      const telegramId = String(key).slice('botStarted:'.length);
+      if (!/^\\d+$/.test(telegramId)) continue;
+      try {
+        if (await isUserBlocked(telegramId)) continue;
+        if (forceRefill) {
+          // Emergency refill: bring free balance to exactly 2 (never add on top),
+          // preserve purchased credits, and start a fresh 7-day period from now.
+          await redis.eval(
+            "local freeKey = KEYS[1]; local nextKey = KEYS[2]; local free = tonumber(redis.call('GET', freeKey) or '0'); local cap = tonumber(ARGV[1]); local nextAt = tonumber(ARGV[2]); if free < cap then free = cap; elseif free > cap then free = cap; end; redis.call('SET', freeKey, tostring(free)); redis.call('SET', nextKey, tostring(nextAt)); return free",
+            [`freeBalance:${telegramId}`, `freeNextAt:${telegramId}`],
+            [String(WEEKLY_FREE_BALANCE), String(now + FREE_BALANCE_INTERVAL_MS)]
+          );
+          renewed++;
+        } else {
+          const before = Number(await redis.get(`freeBalance:${telegramId}`) ?? 0);
+          const after = await getFreeBalance(telegramId);
+          if (after > before) renewed++;
+        }
+        checked++;
+      } catch (error) {
+        failed++;
+        console.error('[INEASY] Не удалось обновить недельный баланс:', telegramId, error.message);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    }
+  } while (cursor !== '0');
+
+  const summary = forceRefill
+    ? `Экстренное пополнение завершено. Балансов проверено: ${checked}; бесплатный баланс выставлен на 2: ${renewed}; ошибок: ${failed}. Купленные видео не изменялись.`
+    : `Автопроверка недельного баланса завершена. Проверено: ${checked}; пополнено: ${renewed}; ошибок: ${failed}.`;
+  console.log('[INEASY] ' + summary);
+  if (reportCtx) await reportCtx.reply(summary);
+  return { checked, renewed, failed };
+}
+
 async function runBalanceMigrationBroadcast(reportCtx = null) {
   if (await redis.get('balanceMigrationBroadcast:v3')) {
     const message = 'Обновление v3 уже выполнено. Повторный запуск заблокирован.';
@@ -1131,6 +1178,12 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
     await redis.del('balanceMigrationBroadcastLock:v3');
   }
 }
+
+bot.command('refill_weekly_free_now', async (ctx) => {
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
+  await ctx.reply('Начинаю экстренное пополнение бесплатного баланса до 2 видео для всех активных пользователей. Купленные видео не изменяются.');
+  await refreshAllWeeklyFreeBalances({ forceRefill: true, reportCtx: ctx });
+});
 
 bot.command('broadcast_balance_update', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
@@ -2097,6 +2150,12 @@ app.listen(PORT, async () => {
   }
   // One-time production migration + broadcast. Redis guard prevents duplicate sends on restarts.
   runBalanceMigrationBroadcast().catch((error) => console.error('[INEASY] Одноразовое обновление баланса не удалось:', error.message));
+  // Catch up overdue weekly renewals after deploy/restart, then keep checking hourly.
+  refreshAllWeeklyFreeBalances().catch((error) => console.error('[INEASY] Стартовая проверка недельных балансов не удалась:', error.message));
+  const weeklyBalanceMaintenance = setInterval(() => {
+    refreshAllWeeklyFreeBalances().catch((error) => console.error('[INEASY] Плановая проверка недельных балансов не удалась:', error.message));
+  }, 60 * 60 * 1000);
+  if (typeof weeklyBalanceMaintenance.unref === 'function') weeklyBalanceMaintenance.unref();
   if (!ADMIN_ID) console.log('⚠️  ADMIN_ID не задан — проверка чеков, админ-команды и модерация отключены.');
   ensureYtDlp().catch((e) => console.error('Не удалось установить yt-dlp:', e.message));
 });
