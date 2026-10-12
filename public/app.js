@@ -185,6 +185,7 @@ const translations = {
     fileName: 'Selected file',
     packageLabel: 'Video package',
     errorInvalidFile: 'Choose a supported video file.',
+    videoTooLarge: 'Video exceeds the 150 MB limit. Choose a smaller file.',
     readingVideoMetadata: 'Reading video details…',
     loadingVideoData: 'Preparing video for local processing…',
     analyzingVideo: 'Analyzing video…',
@@ -370,6 +371,7 @@ const translations = {
     fileName: 'Выбранный файл',
     packageLabel: 'Пакет видео',
     errorInvalidFile: 'Выберите поддерживаемый видеофайл.',
+    videoTooLarge: 'Видео больше лимита 150 МБ. Выберите файл меньшего размера.',
     readingVideoMetadata: 'Читаем параметры видео…',
     loadingVideoData: 'Подготавливаем видео к локальной обработке…',
     analyzingVideo: 'Анализируем видео…',
@@ -555,6 +557,7 @@ const translations = {
     fileName: 'Таңдалған файл',
     packageLabel: 'Бейне пакеті',
     errorInvalidFile: 'Қолдау көрсетілетін бейне файлын таңдаңыз.',
+    videoTooLarge: 'Бейне 150 МБ шегінен асады. Кішірек файл таңдаңыз.',
     readingVideoMetadata: 'Бейне параметрлері оқылуда…',
     loadingVideoData: 'Бейне құрылғыда өңдеуге дайындалуда…',
     analyzingVideo: 'Бейне талдануда…',
@@ -1087,6 +1090,7 @@ if (modalOverlay) {
 
 // --- File upload + patcher ---
 const dropzone = document.getElementById('dropzone');
+const MAX_VIDEO_SIZE_BYTES = 150_000_000; // Strict 150 MB decimal cap, enforced before local processing.
 const fileInput = document.getElementById('fileInput');
 const dropzoneContent = document.getElementById('dropzoneContent');
 const balanceLock = document.getElementById('balanceLock');
@@ -2085,6 +2089,10 @@ async function handleFile(file) {
     updateDropzoneAvailability();
     return;
   }
+  if (file && file.size > MAX_VIDEO_SIZE_BYTES) {
+    rejectFileSelection(t('videoTooLarge'));
+    return;
+  }
   const isVideo = file && (file.type.startsWith('video/') || /\.(mp4|mov|m4v|webm|mkv|avi|3gp|3g2|ts|mts|m2ts|mpg|mpeg|wmv|flv|ogv)$/i.test(file.name));
   if (!isVideo || file.size < 16) {
     rejectFileSelection(t('errorInvalidFile'));
@@ -2446,6 +2454,10 @@ if (comparisonRange && qualityComparison) {
 if (processBtn) {
   processBtn.addEventListener('click', async () => {
     if (!fileInput || !fileInput.files[0] || processBtn.disabled) return;
+    if (fileInput.files[0].size > MAX_VIDEO_SIZE_BYTES) {
+      rejectFileSelection(t('videoTooLarge'));
+      return;
+    }
     processBtn.disabled = true;
     try {
       if (!await refreshBalanceForProcessing()) {
