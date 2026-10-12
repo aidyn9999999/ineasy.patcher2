@@ -123,7 +123,7 @@ const TEXTS = {
       `Telegram ID: ${id}\n\n` +
       `🎬 Обработано видео: ${patched}\n` +
       `🛒 Всего куплено: ${purchasedTotal} видео\n` +
-      `🆓 Бесплатный баланс (неделя): ${free}\n` +
+      `🆓 Бесплатный баланс (за сутки): ${free}\n` +
       `💎 Купленный баланс: ${purchased}\n` +
       `📊 Всего доступно: ${free + purchased}`,
     langSet: '✅ Язык переключён на русский.',
@@ -402,7 +402,7 @@ async function unblockUser(telegramId) {
 async function getFreeBalance(telegramId) {
   const now = Date.now();
   // Daily free balance is capped at 2. Unused videos remain, and the balance tops up
-  // to 2 at the next personal 7-day renewal instead of adding 2 on top.
+  // to 2 at the next 24-hour renewal instead of adding 2 on top.
   const balance = await redis.eval(
     "local free = redis.call('GET', KEYS[1]); local nextAt = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[2]); local allowance = tonumber(ARGV[1]); local interval = tonumber(ARGV[3]); if not free then free = allowance; redis.call('SET', KEYS[1], free); if nextAt == 0 then redis.call('SET', KEYS[2], tostring(now + interval)); end; return tonumber(free); end; free = tonumber(free); if nextAt == 0 then nextAt = now + interval; redis.call('SET', KEYS[2], tostring(nextAt)); end; if now >= nextAt then if free < allowance then free = allowance; redis.call('SET', KEYS[1], tostring(free)); end; redis.call('SET', KEYS[2], tostring(now + interval)); end; if free > allowance then free = allowance; redis.call('SET', KEYS[1], tostring(free)); end; return free",
     [`freeBalance:${telegramId}`, `freeNextAt:${telegramId}`],
@@ -468,7 +468,7 @@ async function getPatchedCount(telegramId) {
 }
 
 async function consumeOneVideo(telegramId) {
-  // Refresh the weekly allowance once, then deduct exactly one video atomically.
+  // Refresh the daily allowance once, then deduct exactly one video atomically.
   await Promise.all([getFreeBalance(telegramId), getPurchasedBalance(telegramId)]);
   const consumed = await redis.eval(
     "local free = tonumber(redis.call('GET', KEYS[1]) or '0'); local purchased = tonumber(redis.call('GET', KEYS[2]) or '0'); if free > 0 then redis.call('DECR', KEYS[1]); elseif purchased > 0 then redis.call('DECR', KEYS[2]); else return 0; end; redis.call('INCR', KEYS[3]); return 1",
@@ -1213,7 +1213,7 @@ bot.command('test_daily_balance', async (ctx) => {
   const after = await getFreeBalance(id);
   const nextAt = await getFreeNextAt(id);
   await ctx.reply(
-    `Тест недельного пополнения завершён.\\nДо теста: ${before} бесплатных видео\\nПосле теста: ${after}/${DAILY_FREE_BALANCE} бесплатных видео\\nСледующее обновление: ${formatAstanaDateTime(nextAt, 'ru')} (Астана)\\n\\n${after === DAILY_FREE_BALANCE && nextAt > Date.now() ? '✅ Логика продления сработала: баланс доведён до лимита, следующий срок установлен на 24 часа.' : '❌ Проверка не пройдена. Посмотрите журнал сервера и Redis.'}\\n\\nТест затронул только ваш бесплатный баланс. Купленный баланс не изменялся.`
+    `Тест ежедневного пополнения завершён.\\nДо теста: ${before} бесплатных видео\\nПосле теста: ${after}/${DAILY_FREE_BALANCE} бесплатных видео\\nСледующее обновление: ${formatAstanaDateTime(nextAt, 'ru')} (Астана)\\n\\n${after === DAILY_FREE_BALANCE && nextAt > Date.now() ? '✅ Логика продления сработала: баланс доведён до лимита, следующий срок установлен на 24 часа.' : '❌ Проверка не пройдена. Посмотрите журнал сервера и Redis.'}\\n\\nТест затронул только ваш бесплатный баланс. Купленный баланс не изменялся.`
   );
 });
 
