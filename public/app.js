@@ -1811,6 +1811,77 @@ async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
 }
 
 
+async function shouldConvert1080pSdrTo5994(file, signal) {
+  const dimensions = selectedVideoDimensions || {};
+  const width = Number(dimensions.width) || 0;
+  const height = Number(dimensions.height) || 0;
+  const isExact1080p = (width === 1920 && height === 1080) ||
+    (width === 1080 && height === 1920);
+  if (!isExact1080p || !file || !file.size) return false;
+  signal?.throwIfAborted();
+
+  // Inspect only small MP4 header/tail windows. Other resolutions never enter
+  // this path, so 4K and HDR videos do not wait for an encoder or extra scan.
+  const windowBytes = 4 * 1024 * 1024;
+  const head = new Uint8Array(await file.slice(0, Math.min(file.size, windowBytes)).arrayBuffer());
+  signal?.throwIfAborted();
+  const tail = file.size > windowBytes
+    ? new Uint8Array(await file.slice(Math.max(windowBytes, file.size - windowBytes), file.size).arrayBuffer())
+    : new Uint8Array(0);
+  signal?.throwIfAborted();
+
+  const bytes = new Uint8Array(head.length + tail.length);
+  bytes.set(head, 0);
+  bytes.set(tail, head.length);
+  const ascii = (value) => {
+    const pattern = Array.from(value, (ch) => ch.charCodeAt(0));
+    outer: for (let i = 0; i <= bytes.length - pattern.length; i++) {
+      for (let j = 0; j < pattern.length; j++) {
+        if (bytes[i + j] !== pattern[j]) continue outer;
+      }
+      return true;
+    }
+    return false;
+  };
+  // Unknown or HDR-marked sources are passed through untouched. Main10 is
+  // conservatively excluded because its HDR state cannot always be inferred
+  // from container metadata alone.
+  if (ascii('dvvC') || ascii('dvcC') ||
+      (bytes.some((value, i) => value === 0xB5 && bytes[i + 1] === 0x00 &&
+        bytes[i + 2] === 0x3C && bytes[i + 3] === 0x00 &&
+        bytes[i + 4] === 0x01 && bytes[i + 5] === 0x04))) return false;
+
+  for (const colorType of ['nclx', 'nclc']) {
+    let pos = 0;
+    while (pos < bytes.length) {
+      let idx = -1;
+      outer: for (let i = pos; i <= bytes.length - 4; i++) {
+        if (bytes[i] === colorType.charCodeAt(0) &&
+            bytes[i + 1] === colorType.charCodeAt(1) &&
+            bytes[i + 2] === colorType.charCodeAt(2) &&
+            bytes[i + 3] === colorType.charCodeAt(3)) { idx = i; break outer; }
+      }
+      if (idx < 0) break;
+      if (idx + 7 < bytes.length) {
+        const primaries = (bytes[idx + 4] << 8) | bytes[idx + 5];
+        const transfer = (bytes[idx + 6] << 8) | bytes[idx + 7];
+        if (primaries === 9 && (transfer === 16 || transfer === 18)) return false;
+      }
+      pos = idx + 4;
+    }
+  }
+
+  const hvcc = (() => {
+    for (let i = 0; i <= bytes.length - 4; i++) {
+      if (bytes[i] === 0x68 && bytes[i + 1] === 0x76 &&
+          bytes[i + 2] === 0x63 && bytes[i + 3] === 0x43) return i;
+    }
+    return -1;
+  })();
+  if (hvcc >= 0 && hvcc + 5 < bytes.length && (bytes[hvcc + 5] & 0x1f) === 2) return false;
+  return true;
+}
+
 async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgress, sourceDurationSeconds, is4kSource = false, encoderPreference = 'prefer-hardware') {
   const TARGET_FPS = 60000 / 1001;
   signal.throwIfAborted();
@@ -2544,9 +2615,9 @@ if (processBtn) {
         throw new Error('patcher_requires_mp4_mov');
       }
 
-      // Preserve original bytes and source FPS. 4K/120 FPS is allowed by the ADJN
-      // media contract; HDR/SDR signaling is checked by the patcher itself.
-      const fpsConversion = {
+      // Convert only standard 1080p SDR input to real 59.94 FPS CFR.
+      // HDR, Main10, 4K and every other resolution stay on the original-byte patcher path.
+      let fpsConversion = {
         blob: sourceFile,
         info: {
           width: Number(selectedVideoDimensions?.width) || null,
@@ -2562,8 +2633,26 @@ if (processBtn) {
         main10Transcoded: false,
         hdrProfile: null
       };
-      originalInputFps = null;
-      const normalizedFile = sourceFile;
+      const shouldRunSdrCfr = await shouldConvert1080pSdrTo5994(sourceFile, controller.signal);
+      controller.signal.throwIfAborted();
+      if (shouldRunSdrCfr) {
+        setProcessingState('processing', '');
+        updateProcessingProgress(4);
+        fpsConversion = await convertVideoToExact5994Fps(
+          sourceFile,
+          sourceFile.name || 'video.mp4',
+          controller.signal,
+          (progress) => updateProcessingProgress(4 + Math.round(progress * 8)),
+          sourceDuration,
+          false,
+          'prefer-hardware'
+        );
+        console.info('[INEASY] Applied 59.94 FPS conversion to 1080p SDR only.');
+      } else {
+        console.info('[INEASY] Skipped FPS conversion: source is not confirmed eligible 1080p SDR.');
+      }
+      originalInputFps = fpsConversion.sourceFps;
+      const normalizedFile = fpsConversion.blob;
       const basePreparedInput = {
         blob: normalizedFile,
         report: {
@@ -2597,7 +2686,7 @@ if (processBtn) {
       const processingFile = preparedInput.blob;
       const processingFileName = processingFile.name || `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`;
       const buffer = await processingFile.arrayBuffer();
-      // Keep ADJN and its SIZE GUARD unchanged. Patcher-only mode does not re-encode media.
+      // Keep ADJN and its SIZE GUARD unchanged; only eligible 1080p SDR is transcoded before patching.
       if (!isV2SelectedForJob && !fpsConversion.preserveOriginal) {
         const neutralizedItems = neutralizeAdjnEncoderMetadata(new Uint8Array(buffer));
         if (neutralizedItems > 0) {
