@@ -2148,13 +2148,8 @@ async function handleFile(file) {
   // remains the practical limit; keep the selected dimensions unchanged.
   const selectedLongSide = Math.max(dimensions.width, dimensions.height);
   selectedVideoDimensions = dimensions;
-  // Warm FFmpeg's JS/WASM assets in the background as soon as a 4K source is selected.
-  // Downloading in parallel with the user's preparation removes this wait from conversion.
-  if (selectedLongSide >= 3000) {
-    import('./ffmpeg-4k-cfr.js?v=20261012-6')
-      .then((module) => module.prepareFFmpeg4kFallback())
-      .catch((error) => console.warn('[INEASY] 4K assets will load on demand:', error?.message || error));
-  }
+  // Keep the large FFmpeg/WASM fallback unloaded while the user selects a file.
+  // It is imported only if HDR inspection or the primary browser encoder needs it.
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
   patchedDownloadUrl = null;
   processedVideoBlob = null;
