@@ -2558,6 +2558,30 @@ if (processBtn) {
             sourceBytes: hdrInspection.sourceBytes
           }
         );
+      } else if (Number.isFinite(Number(hdrInspection.averageFps)) &&
+          Math.abs(Number(hdrInspection.averageFps) - (60000 / 1001)) <= 0.01) {
+        // Already at the target frame rate: preserve the original file byte-for-byte.
+        // This avoids a needless encode, keeps exact dimensions/size, and is much faster.
+        fpsConversion = {
+          blob: sourceFile,
+          info: {
+            width: hdrInspection.width,
+            height: hdrInspection.height,
+            averageFps: hdrInspection.averageFps,
+            codec: hdrInspection.codec
+          },
+          fps: Number(hdrInspection.averageFps),
+          sourceFps: Number(hdrInspection.averageFps),
+          preserveOriginal: true,
+          hdr: false,
+          hdrTranscoded: false,
+          main10Transcoded: false,
+          hdrProfile: null
+        };
+        console.info('[INEASY] Source already matches 59.94 FPS; preserving original video without re-encoding', {
+          fps: hdrInspection.averageFps,
+          resolution: hdrInspection.width + 'x' + hdrInspection.height
+        });
       } else {
         try {
           // Actual frame decode/re-encode at 60000/1001 FPS; browser hardware preferred.
