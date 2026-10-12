@@ -1813,7 +1813,7 @@ async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
 }
 
 
-function getExplicitSdr1080pEligibility(file, dimensions) {
+async function getExplicitSdr1080pEligibility(file, dimensions) {
   const width = Number(dimensions?.width) || 0;
   const height = Number(dimensions?.height) || 0;
   const is1080p = (width === 1920 && height === 1080) || (width === 1080 && height === 1920);
