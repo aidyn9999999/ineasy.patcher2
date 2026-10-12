@@ -2753,8 +2753,10 @@ if (processBtn) {
         verifiedHdrProfile?.dolbyVision || verifiedHdrProfile?.main10
       );
       if (is4kSource) {
-        const expectedWidth = Number(fpsConversion.info?.width || selectedVideoDimensions?.width);
-        const expectedHeight = Number(fpsConversion.info?.height || selectedVideoDimensions?.height);
+        // Compare the patcher's coded dimensions to its own source metadata. The preview
+        // may expose display-rotated dimensions for phone videos, while MP4 tkhd stores coded ones.
+        const expectedWidth = Number(result.inputInfo?.width || selectedVideoDimensions?.width);
+        const expectedHeight = Number(result.inputInfo?.height || selectedVideoDimensions?.height);
         const finalWidth = Number(verifiedOutputInfo?.width);
         const finalHeight = Number(verifiedOutputInfo?.height);
         if (!expectedWidth || !expectedHeight || finalWidth !== expectedWidth || finalHeight !== expectedHeight) {
