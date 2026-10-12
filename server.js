@@ -1179,6 +1179,33 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
   }
 }
 
+bot.command('weekly_balance_status', async (ctx) => {
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
+  const id = String(ctx.from.id);
+  const [free, purchased, nextAt] = await Promise.all([
+    getFreeBalance(id),
+    getPurchasedBalance(id),
+    getFreeNextAt(id),
+  ]);
+  await ctx.reply(
+    `Проверка недельного баланса (ваш аккаунт):\\n\\nБесплатные видео: ${free}/${WEEKLY_FREE_BALANCE}\\nКупленные видео: ${purchased}\\nСледующее обновление: ${formatAstanaDateTime(nextAt, 'ru') || 'не задано'} (Астана)\\n\\nЭто показывает сохранённое состояние в Redis; фактическую доставку обновления проверяем командой теста.`
+  );
+});
+
+bot.command('test_weekly_balance', async (ctx) => {
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
+  const id = String(ctx.from.id);
+  const before = await getFreeBalance(id);
+  // Force only the administrator's renewal deadline into the past, then run the
+  // same production renewal function used by the hourly scheduler.
+  await redis.set(`freeNextAt:${id}`, String(Date.now() - 1000));
+  const after = await getFreeBalance(id);
+  const nextAt = await getFreeNextAt(id);
+  await ctx.reply(
+    `Тест недельного пополнения завершён.\\nДо теста: ${before} бесплатных видео\\nПосле теста: ${after}/${WEEKLY_FREE_BALANCE} бесплатных видео\\nСледующее обновление: ${formatAstanaDateTime(nextAt, 'ru')} (Астана)\\n\\n${after === WEEKLY_FREE_BALANCE && nextAt > Date.now() ? '✅ Логика продления сработала: баланс доведён до лимита, следующий срок установлен на 7 дней.' : '❌ Проверка не пройдена. Посмотрите журнал сервера и Redis.'}\\n\\nТест затронул только ваш бесплатный баланс. Купленный баланс не изменялся.`
+  );
+});
+
 bot.command('refill_weekly_free_now', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
   await ctx.reply('Начинаю экстренное пополнение бесплатного баланса до 2 видео для всех активных пользователей. Купленные видео не изменяются.');
