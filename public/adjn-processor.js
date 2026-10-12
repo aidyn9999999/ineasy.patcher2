@@ -61,7 +61,7 @@
   function detectHdrProfile(bytes, info) {
     const codec = String(info?.codecFamily || info?.codec || '').toLowerCase();
     const result = {
-      hevc: codec.includes('hevc') || /^(hvc1|hev1|hvc2|hev2|dvh1|dvhe)$/i.test(String(info?.codec || '')),
+      hevc: codec.includes('hevc') || codec.includes('hvc1') || codec.includes('hev1'),
       main10: false,
       hdr10: false,
       hdr10plus: false,
@@ -70,79 +70,32 @@
       label: 'SDR / unknown',
       reason: ''
     };
-
-    // Parse top-level ISO-BMFF boxes and inspect codec/color records only inside
-    // moov. This avoids mistaking arbitrary compressed mdat bytes for HDR metadata.
-    const read32 = (o) => ((bytes[o] * 0x1000000) + ((bytes[o + 1] << 16) | (bytes[o + 2] << 8) | bytes[o + 3])) >>> 0;
-    const typeAt = (o) => String.fromCharCode(bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]);
-    let moovStart = -1;
-    let moovEnd = -1;
-    for (let p = 0; p + 8 <= bytes.length;) {
-      let size = read32(p);
-      const type = typeAt(p + 4);
-      let header = 8;
-      if (size === 1) {
-        if (p + 16 > bytes.length) break;
-        size = read32(p + 8) * 0x100000000 + read32(p + 12);
-        header = 16;
-      } else if (size === 0) {
-        size = bytes.length - p;
-      }
-      if (!Number.isSafeInteger(size) || size < header || p + size > bytes.length) break;
-      if (type === 'moov') {
-        moovStart = p + header;
-        moovEnd = p + size;
-        break;
-      }
-      p += size;
-    }
-
-    const findBoxTypes = (type) => {
-      const found = [];
-      if (moovStart < 0 || moovEnd <= moovStart) return found;
-      for (let at = moovStart + 4; at + 4 <= moovEnd; at++) {
-        if (typeAt(at) !== type) continue;
-        const boxStart = at - 4;
-        const available = moovEnd - boxStart;
-        if (available < 8) continue;
-        let size = read32(boxStart);
-        let header = 8;
-        if (size === 1) {
-          if (available < 16) continue;
-          size = read32(boxStart + 8) * 0x100000000 + read32(boxStart + 12);
-          header = 16;
-        } else if (size === 0) {
-          continue;
-        }
-        if (!Number.isSafeInteger(size) || size < header || size > available) continue;
-        found.push({ start: boxStart, payload: boxStart + header, end: boxStart + size });
-        at += 3;
-      }
-      return found;
-    };
-
     if (result.hevc) {
-      for (const box of findBoxTypes('hvcC')) {
-        if (box.end - box.payload < 2 || bytes[box.payload] !== 1) continue;
-        result.main10 = (bytes[box.payload + 1] & 0x1f) === 2;
+      const hvcc = findAscii(bytes, 'hvcC');
+      if (hvcc >= 4 && hvcc + 6 < bytes.length) {
+        const profileIdc = bytes[hvcc + 5] & 0x1f;
+        result.main10 = profileIdc === 2;
       }
-      result.dolbyVision = ['dvvC', 'dvcC'].some((tag) =>
-        findBoxTypes(tag).some((box) => box.end - box.payload >= 2 && bytes[box.payload] === 1)
-      );
-      // HDR10+ dynamic metadata is carried in HEVC SEI and may live in mdat.
+
+      // Use the HDR metadata signatures from the supplied ABIMS extension.
+      result.dolbyVision = findAscii(bytes, 'dvvC') >= 0 || findAscii(bytes, 'dvcC') >= 0;
       result.hdr10plus = hasBytePattern(bytes, [0xB5, 0x00, 0x3C, 0x00, 0x01, 0x04]);
     }
 
-    // Color signaling can exist on AVC or HEVC; only trust valid colr boxes in moov.
-    for (const box of findBoxTypes('colr')) {
-      const p = box.payload;
-      if (p + 11 > box.end) continue;
-      const kind = typeAt(p);
-      if (kind !== 'nclx' && kind !== 'nclc') continue;
-      const primaries = (bytes[p + 4] << 8) | bytes[p + 5];
-      const transfer = (bytes[p + 6] << 8) | bytes[p + 7];
-      if (primaries === 9 && transfer === 16) result.hdr10 = true;
-      if (primaries === 9 && transfer === 18) result.hlg = true;
+    // Match the supplied extension's color signaling checks for nclx/nclc.
+    for (const colorType of ['nclx', 'nclc']) {
+      let pos = 0;
+      while (pos < bytes.length) {
+        const idx = findAscii(bytes, colorType, pos);
+        if (idx < 0) break;
+        if (idx + 10 < bytes.length) {
+          const primaries = (bytes[idx + 4] << 8) | bytes[idx + 5];
+          const transfer = (bytes[idx + 6] << 8) | bytes[idx + 7];
+          if (primaries === 9 && transfer === 16) result.hdr10 = true;
+          if (primaries === 9 && transfer === 18) result.hlg = true;
+        }
+        pos = idx + 4;
+      }
     }
 
     if (result.dolbyVision && result.hlg) { result.label = 'Dolby Vision • HLG'; result.reason = 'Dolby Vision configuration + BT.2020 HLG detected'; }
