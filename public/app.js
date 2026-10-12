@@ -1844,6 +1844,15 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     if (!videoTrack) throw new Error('video_track_missing');
     signal.throwIfAborted();
 
+    // Explicitly lock output dimensions to the source display dimensions.
+    // This prevents the browser encoder from silently choosing a smaller frame.
+    const sourceWidth = Math.round(Number(await videoTrack.getDisplayWidth()));
+    const sourceHeight = Math.round(Number(await videoTrack.getDisplayHeight()));
+    if (!Number.isFinite(sourceWidth) || !Number.isFinite(sourceHeight) ||
+        sourceWidth < 1 || sourceHeight < 1) {
+      throw new Error('video_dimensions_unavailable');
+    }
+
     const target = new BufferTarget();
     const output = new Output({ format: new Mp4OutputFormat(), target });
     activeOutput = output;
@@ -1854,6 +1863,8 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
       tracks: 'primary',
       video: {
         codec: 'avc',
+        width: sourceWidth,
+        height: sourceHeight,
         frameRate: TARGET_FPS,
         // Match the source's average bitrate instead of the browser's unconstrained
         // "high" quality preset, which can nearly double file size at 59.94 fps.
@@ -1896,6 +1907,11 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     const fps = Number(verified?.averageFps);
     if (!Number.isFinite(fps) || Math.abs(fps - TARGET_FPS) > 0.03) {
       throw new Error('fps_encoder_verification_failed: reported=' + String(fps));
+    }
+    if (Number(verified?.width) !== sourceWidth || Number(verified?.height) !== sourceHeight) {
+      throw new Error('video_resolution_changed_during_cfr: expected=' +
+        sourceWidth + 'x' + sourceHeight + '; actual=' +
+        String(verified?.width) + 'x' + String(verified?.height));
     }
 
     const outputBlob = new Blob([buffer], { type: 'video/mp4' });
