@@ -166,37 +166,7 @@ async function inspectSourceColorProfile(bytes, sourceInfo, onProgress) {
     }
 
 
-    // Only scan compressed bytes for HDR10+ SEI after HEVC Main10 is confirmed.
-    // Ordinary 8-bit HEVC videos avoid this expensive full-file pass.
-    if (result.tenBit && !result.hdr) {
-      // HDR10+ dynamic metadata can be carried in HEVC SEI while a remuxed file
-      // lacks complete color-box signalling. Recognize its registered ITU-T T.35
-      // signature without treating every 10-bit HEVC file as HDR.
-      const scanChunkSize = 4 * 1024 * 1024;
-      let foundHdr10Plus = false;
-      for (let start = 0; start < bytes.length; start += scanChunkSize) {
-        const end = Math.min(bytes.length, start + scanChunkSize);
-        // Keep a five-byte overlap so a signature spanning chunk boundaries is found.
-        const scanEnd = Math.min(bytes.length, end + 5);
-        for (let i = start; i + 5 < scanEnd; i++) {
-          if (bytes[i] === 0xB5 && bytes[i + 1] === 0x00 && bytes[i + 2] === 0x3C &&
-              bytes[i + 3] === 0x00 && bytes[i + 4] === 0x01 && bytes[i + 5] === 0x04) {
-            foundHdr10Plus = true;
-            break;
-          }
-        }
-        onProgress?.(0.5 + 0.5 * (end / Math.max(1, bytes.length)));
-        if (foundHdr10Plus) break;
-        // Yield so large-file metadata inspection doesn't freeze the page at 4%.
-        await new Promise((resolve) => setTimeout(resolve, 0));
-      }
-      if (foundHdr10Plus) {
-        result.hdr = true;
-        result.tenBit = true;
-        result.displayColor = 'BT.2020 / PQ (HDR10+)';
-        result.reason = 'HDR10+ dynamic metadata signature detected';
-      }
-    }
+
   }
 
   if (isAvc) {
@@ -234,6 +204,42 @@ async function inspectSourceColorProfile(bytes, sourceInfo, onProgress) {
       if (primaries === 9) result.displayColor = 'BT.2020 / non-HDR transfer';
     }
   }
+  // HDR10+ SEI scanning is the expensive fallback: run it only after container
+  // metadata failed to identify HDR, and only for confirmed HEVC Main10 sources.
+  if (isHevc && result.tenBit && !result.hdr) {
+  // Only scan compressed bytes for HDR10+ SEI after HEVC Main10 is confirmed.
+  // Ordinary 8-bit HEVC videos avoid this expensive full-file pass.
+  if (result.tenBit && !result.hdr) {
+    // HDR10+ dynamic metadata can be carried in HEVC SEI while a remuxed file
+    // lacks complete color-box signalling. Recognize its registered ITU-T T.35
+    // signature without treating every 10-bit HEVC file as HDR.
+    const scanChunkSize = 4 * 1024 * 1024;
+    let foundHdr10Plus = false;
+    for (let start = 0; start < bytes.length; start += scanChunkSize) {
+      const end = Math.min(bytes.length, start + scanChunkSize);
+      // Keep a five-byte overlap so a signature spanning chunk boundaries is found.
+      const scanEnd = Math.min(bytes.length, end + 5);
+      for (let i = start; i + 5 < scanEnd; i++) {
+        if (bytes[i] === 0xB5 && bytes[i + 1] === 0x00 && bytes[i + 2] === 0x3C &&
+            bytes[i + 3] === 0x00 && bytes[i + 4] === 0x01 && bytes[i + 5] === 0x04) {
+          foundHdr10Plus = true;
+          break;
+        }
+      }
+      onProgress?.(0.5 + 0.5 * (end / Math.max(1, bytes.length)));
+      if (foundHdr10Plus) break;
+      // Yield so large-file metadata inspection doesn't freeze the page at 4%.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+    if (foundHdr10Plus) {
+      result.hdr = true;
+      result.tenBit = true;
+      result.displayColor = 'BT.2020 / PQ (HDR10+)';
+      result.reason = 'HDR10+ dynamic metadata signature detected';
+    }
+  }
+  }
+
   // Do not infer HDR from HEVC Main 10 alone. 10-bit HEVC is also used for SDR;
   // only explicit PQ/HLG color signaling or Dolby Vision configuration counts as HDR.
   return result;
