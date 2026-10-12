@@ -416,9 +416,10 @@ function nextAstanaDailyRenewalAt(now = Date.now()) {
 async function getFreeBalance(telegramId) {
   const now = Date.now();
   const nextRenewal = nextAstanaDailyRenewalAt(now);
-  // Free allowance is capped at 2 and renews daily at 07:00 Astana time.
+  // If the user's saved deadline is from the old per-user schedule, migrate it
+  // to the next shared 07:00 Astana renewal, so everyone uses the same clock.
   const balance = await redis.eval(
-    "local free = redis.call('GET', KEYS[1]); local nextAt = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[2]); local allowance = tonumber(ARGV[1]); local nextRenewal = tonumber(ARGV[3]); if not free then free = allowance; redis.call('SET', KEYS[1], free); if nextAt == 0 then redis.call('SET', KEYS[2], tostring(nextRenewal)); end; return tonumber(free); end; free = tonumber(free); if nextAt == 0 then nextAt = nextRenewal; redis.call('SET', KEYS[2], tostring(nextAt)); end; if now >= nextAt then if free < allowance then free = allowance; redis.call('SET', KEYS[1], tostring(free)); end; redis.call('SET', KEYS[2], tostring(nextRenewal)); end; if free > allowance then free = allowance; redis.call('SET', KEYS[1], tostring(allowance)); end; return free",
+    "local free = redis.call('GET', KEYS[1]); local savedAt = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[2]); local allowance = tonumber(ARGV[1]); local nextRenewal = tonumber(ARGV[3]); if not free then free = allowance; redis.call('SET', KEYS[1], tostring(free)); redis.call('SET', KEYS[2], tostring(nextRenewal)); return tonumber(free); end; free = tonumber(free); if savedAt == 0 or savedAt > nextRenewal or savedAt < now - 86400000 then savedAt = nextRenewal; redis.call('SET', KEYS[2], tostring(savedAt)); end; if now >= savedAt then if free < allowance then free = allowance; redis.call('SET', KEYS[1], tostring(free)); end; redis.call('SET', KEYS[2], tostring(nextRenewal)); end; if free > allowance then free = allowance; redis.call('SET', KEYS[1], tostring(allowance)); end; return free",
     [`freeBalance:${telegramId}`, `freeNextAt:${telegramId}`],
     [String(DAILY_FREE_BALANCE), String(now), String(nextRenewal)]
   );
