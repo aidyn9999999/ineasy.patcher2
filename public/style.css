@@ -1352,3 +1352,19 @@ button, .tg-btn, .news-link, .download-link, .balance-buy-site, .balance-buy-tel
   line-height: 1.55;
   font-weight: 700;
 }
+
+
+/* Daily balance update: giveaway toast and blue analyzer surfaces. */
+.giveaway-toast{position:fixed;right:22px;bottom:22px;z-index:9999;display:flex;align-items:center;gap:12px;width:min(340px,calc(100vw - 28px));padding:15px 44px 15px 15px;border:1px solid rgba(88,101,242,.42);border-radius:16px;background:#080a12;color:#f5f5f7;text-decoration:none;box-shadow:0 14px 38px rgba(0,0,0,.42),0 0 24px rgba(88,101,242,.16);}
+.giveaway-toast:hover{border-color:#5865f2;transform:translateY(-2px)}
+.giveaway-toast-icon{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:11px;background:rgba(88,101,242,.18);font-size:20px}
+.giveaway-toast-copy{display:flex;flex-direction:column;gap:3px;min-width:0}
+.giveaway-toast-copy strong{font-size:14px;font-weight:700;color:#fff}
+.giveaway-toast-copy small{font-size:12px;line-height:1.45;color:#aeb5c8}
+.giveaway-toast-close{position:absolute;right:10px;top:8px;border:0;background:transparent;color:#b8bdca;font-size:22px;line-height:1;cursor:pointer}
+/* Match the home page's electric-blue theme in Video Check while preserving green action buttons. */
+.checker-panel{border-color:rgba(88,101,242,.35)!important;background:linear-gradient(135deg,rgba(88,101,242,.13),rgba(13,17,31,.96))!important;box-shadow:0 18px 46px rgba(0,0,0,.2)!important}
+.checker-form{border-color:rgba(88,101,242,.26)!important}
+.checker-result{border-color:rgba(88,101,242,.36)!important;background:linear-gradient(135deg,rgba(88,101,242,.14),rgba(13,17,31,.96))!important}
+.checker-input-row button,.checker-open-btn{background:#76b900!important;color:#101505!important}
+@media(max-width:600px){.giveaway-toast{right:14px;bottom:14px;width:calc(100vw - 28px)}}
