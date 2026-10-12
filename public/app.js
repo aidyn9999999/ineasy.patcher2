@@ -2609,7 +2609,7 @@ if (processBtn) {
             fpsConversion = await localFfmpeg.convertVideoToExact5994FpsWithFFmpeg(
               sourceFile, selectedVideoDimensions, sourceDuration,
               controller.signal, reportCfrProgress, {
-                hdr: true,
+                hdr: hdrInspection.hdr === true,
                 hdrType: hdrInspection.hdrType,
                 hdrProfile: hdrInspection,
                 sourceBytes: hdrInspection.sourceBytes
