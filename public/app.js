@@ -2527,7 +2527,7 @@ if (processBtn) {
       const is4kSource = sourceLongSide >= 3000;
       if (is4kSource) setProcessingState('processing', t('uhdWait'));
       const reportCfrProgress = (progress) => {
-        updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 12));
+        updateProcessingProgress(5 + Math.round(Math.max(0, Math.min(1, progress)) * 10));
       };
       const runPrimaryCfr = () => convertVideoToExact5994Fps(
         sourceFile, sourceFile.name, controller.signal, reportCfrProgress, sourceDuration, is4kSource
@@ -2535,8 +2535,13 @@ if (processBtn) {
 
       // Inspect source color metadata before selecting an encoder. Never send HDR through
       // the browser's generic 8-bit SDR encoder path.
-      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-7');
-      const hdrInspection = await localFfmpeg.inspectHDRVideo(sourceFile, { includeBytes: true });
+      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-8');
+      const hdrInspection = await localFfmpeg.inspectHDRVideo(sourceFile, {
+        includeBytes: true,
+        onProgress: (progress) => updateProcessingProgress(
+          3 + Math.round(Math.max(0, Math.min(1, progress)) * 2)
+        )
+      });
       controller.signal.throwIfAborted();
       let fpsConversion;
       if (hdrInspection.hdr) {
