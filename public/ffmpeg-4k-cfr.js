@@ -239,6 +239,7 @@ export async function inspectHDRVideo(inputBlob, options = {}) {
       codecFamily: info.codecFamily || '',
       width: Number(info.width) || null,
       height: Number(info.height) || null,
+      averageFps: Number(info.averageFps) || null,
       hdrType: /Dolby Vision/i.test(profile.reason) ? 'dolby-vision' :
         /HLG/i.test(profile.displayColor) ? 'hlg' :
         /PQ|HDR10/i.test(profile.displayColor) ? 'pq' : 'unknown',
