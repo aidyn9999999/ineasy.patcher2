@@ -61,7 +61,7 @@ const translations = {
     stepTwoBody: 'INEASY prepares the compatible file in your browser and verifies the finished output.',
     stepThreeTitle: 'Download. Publish. Done.',
     stepThreeBody: 'Download your result or open the publishing panel to send it to TikTok.',
-    localProcessingCopy: 'Your video stays on your device. Video is genuinely converted to 59.94 FPS. HDR uses a 10-bit HEVC path and is never silently converted to SDR.',
+    localProcessingCopy: 'Your video stays on your device. Patcher preserves the source frame rate and resolution. HDR/SDR metadata is validated without re-encoding.',
     homeBottomCta: 'Start processing',
     faqLabel: 'FAQ / FREQUENTLY ASKED QUESTIONS',
     analyzerEyebrow: 'VIDEO ANALYZER',
@@ -247,7 +247,7 @@ const translations = {
     stepTwoBody: 'INEASY подготовит совместимый файл прямо в браузере и проверит результат перед скачиванием.',
     stepThreeTitle: 'Скачайте и публикуйте',
     stepThreeBody: 'Сохраните готовый файл или откройте блок публикации, чтобы отправить ролик в TikTok.',
-    localProcessingCopy: 'Видео остаётся на устройстве. Кадры действительно преобразуются в 59,94 FPS. Для HDR используется 10-битный HEVC; HDR не переводится незаметно в SDR.',
+    localProcessingCopy: 'Видео остаётся на устройстве. Патчер сохраняет исходные FPS и разрешение. Метаданные HDR/SDR проверяются без перекодирования.',
     homeBottomCta: 'Начать обработку',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
@@ -2516,184 +2516,75 @@ if (processBtn) {
       setProcessingState('processing', '');
       updateProcessingProgress(3);
 
+      // Patcher-only mode: do not transcode or change the source frame rate.
+      // Keeping the original media avoids the expensive metadata scan and encoder startup
+      // that previously left large videos stuck near 4%. ADJN performs the patch on the
+      // original MP4/MOV bytes and validates resolution, timing, codec and HDR signaling.
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
-
-      // Supported MP4/MOV/M4V inputs use the bitrate-controlled FFmpeg CFR path for SDR and HDR.
-      // This prevents the generic high-quality browser encoder from shrinking or inflating files unpredictably.
       const sourceLongSide = Math.max(
         Number(selectedVideoDimensions?.width) || 0,
         Number(selectedVideoDimensions?.height) || 0
       );
       const is4kSource = sourceLongSide >= 3000;
-      if (is4kSource) setProcessingState('processing', t('uhdWait'));
-      const reportCfrProgress = (progress) => {
-        updateProcessingProgress(5 + Math.round(Math.max(0, Math.min(1, progress)) * 10));
+      const sourceExtension = String(sourceFile.name || '').toLowerCase().match(/\.([^.]+)$/)?.[1] || '';
+      if (!['mp4', 'mov', 'm4v'].includes(sourceExtension)) {
+        throw new Error('patcher_requires_mp4_mov');
+      }
+
+      // Preserve original bytes and source FPS. 4K/120 FPS is allowed by the ADJN
+      // media contract; HDR/SDR signaling is checked by the patcher itself.
+      const fpsConversion = {
+        blob: sourceFile,
+        info: {
+          width: Number(selectedVideoDimensions?.width) || null,
+          height: Number(selectedVideoDimensions?.height) || null,
+          averageFps: null,
+          codec: ''
+        },
+        fps: null,
+        sourceFps: null,
+        preserveOriginal: true,
+        hdr: false,
+        hdrTranscoded: false,
+        main10Transcoded: false,
+        hdrProfile: null
       };
-      const runPrimaryCfr = () => convertVideoToExact5994Fps(
-        sourceFile, sourceFile.name, controller.signal, reportCfrProgress, sourceDuration, is4kSource
-      );
-
-      // Inspect source color metadata before selecting an encoder. Never send HDR through
-      // the browser's generic 8-bit SDR encoder path.
-      const localFfmpeg = await import('./ffmpeg-4k-cfr.js?v=20261012-11');
-      const hdrInspection = await localFfmpeg.inspectHDRVideo(sourceFile, {
-        includeBytes: true,
-        onProgress: (progress) => updateProcessingProgress(
-          3 + Math.round(Math.max(0, Math.min(1, progress)) * 2)
-        )
-      });
-      controller.signal.throwIfAborted();
-      let fpsConversion;
-      if (hdrInspection.hdr) {
-        // HDR jobs have no fixed 20-minute cutoff; large 4K/8K encodes can take longer.
-        // The user can still cancel manually, and all output verification remains active.
-        clearTimeout(processingTimeoutId);
-        processingTimeoutId = null;
-        console.info('[INEASY] HDR source detected; using local 10-bit HEVC CFR path', {
-          profile: hdrInspection.label, reason: hdrInspection.reason,
-          resolution: hdrInspection.width + 'x' + hdrInspection.height
-        });
-        setProcessingState('processing', 'HDR10 • 10-bit • 59.94 FPS');
-        fpsConversion = await localFfmpeg.convertVideoToExact5994FpsWithFFmpeg(
-          sourceFile, selectedVideoDimensions, sourceDuration,
-          controller.signal, reportCfrProgress, {
-            hdr: true,
-            hdrType: hdrInspection.hdrType,
-            hdrProfile: hdrInspection,
-            sourceBytes: hdrInspection.sourceBytes
-          }
-        );
-      } else if (Number.isFinite(Number(hdrInspection.averageFps)) &&
-          Math.abs(Number(hdrInspection.averageFps) - (60000 / 1001)) <= 0.01) {
-        // Already at the target frame rate: preserve the original file byte-for-byte.
-        // This avoids a needless encode, keeps exact dimensions/size, and is much faster.
-        fpsConversion = {
-          blob: sourceFile,
-          info: {
-            width: hdrInspection.width,
-            height: hdrInspection.height,
-            averageFps: hdrInspection.averageFps,
-            codec: hdrInspection.codec
-          },
-          fps: Number(hdrInspection.averageFps),
-          sourceFps: Number(hdrInspection.averageFps),
-          preserveOriginal: true,
-          hdr: false,
-          hdrTranscoded: false,
-          main10Transcoded: false,
-          hdrProfile: null
-        };
-        console.info('[INEASY] Source already matches 59.94 FPS; preserving original video without re-encoding', {
-          fps: hdrInspection.averageFps,
-          resolution: hdrInspection.width + 'x' + hdrInspection.height
-        });
-      } else {
-        try {
-          // Actual frame decode/re-encode at 60000/1001 FPS; browser hardware preferred.
-          fpsConversion = await runPrimaryCfr();
-        } catch (primaryError) {
-          const primaryMessage = String(primaryError?.message || primaryError || '');
-          if (controller.signal.aborted || /processing_cancelled|AbortError/i.test(primaryMessage)) {
-            throw primaryError;
-          }
-          if (!is4kSource) {
-            console.warn('[INEASY] Browser CFR failed; retrying with software encoding:', primaryMessage);
-            try {
-              fpsConversion = await convertVideoToExact5994Fps(
-                sourceFile, sourceFile.name, controller.signal, reportCfrProgress,
-                sourceDuration, false, 'prefer-software'
-              );
-            } catch (softwareError) {
-              const softwareMessage = String(softwareError?.message || softwareError || 'unknown_error');
-              console.error('[INEASY] Software CFR retry also failed:', softwareMessage);
-              throw new Error('fps_encoder_failed: hardware=' + primaryMessage.slice(0, 220) +
-                '; software=' + softwareMessage.slice(0, 220));
-            }
-          } else {
-            console.warn('[INEASY] 4K browser CFR failed; retrying with local FFmpeg:', primaryMessage);
-            fpsConversion = await localFfmpeg.convertVideoToExact5994FpsWithFFmpeg(
-              sourceFile, selectedVideoDimensions, sourceDuration,
-              controller.signal, reportCfrProgress, {
-                hdr: hdrInspection.hdr === true,
-                hdrType: hdrInspection.hdrType,
-                hdrProfile: hdrInspection,
-                sourceBytes: hdrInspection.sourceBytes
-              }
-            );
-          }
+      originalInputFps = null;
+      const normalizedFile = sourceFile;
+      const basePreparedInput = {
+        blob: normalizedFile,
+        report: {
+          performed: false,
+          compressionDisabled: true,
+          skippedForV2: isV2SelectedForJob
         }
-      }
-      // Verify real CFR and exact source dimensions before passing the file into ADJN.
-      const convertedFps = Number(fpsConversion.fps ?? fpsConversion.info?.averageFps);
-      if (!Number.isFinite(convertedFps) || Math.abs(convertedFps - (60000 / 1001)) > 0.03) {
-        throw new Error('fps_encoder_verification_failed: reported=' + String(convertedFps));
-      }
-      const convertedWidth = Number(fpsConversion.info?.width);
-      const convertedHeight = Number(fpsConversion.info?.height);
-      const expectedWidth = Number(selectedVideoDimensions?.width);
-      const expectedHeight = Number(selectedVideoDimensions?.height);
-      if (!convertedWidth || !convertedHeight || !expectedWidth || !expectedHeight ||
-          convertedWidth !== expectedWidth || convertedHeight !== expectedHeight) {
-        throw new Error('video_resolution_changed_during_cfr: expected=' +
-          expectedWidth + 'x' + expectedHeight + '; actual=' +
-          convertedWidth + 'x' + convertedHeight);
-      }
-      if (is4kSource) {
-        console.info('[INEASY] 4K CFR output verified before ADJN', {
-          sourceResolution: selectedVideoDimensions.width + 'x' + selectedVideoDimensions.height,
-          cfrResolution: convertedWidth + 'x' + convertedHeight,
-          cfrFps: convertedFps,
-          targetFps: '60000/1001'
-        });
-      }
-      originalInputFps = fpsConversion.sourceFps;
-      const normalizedFile = fpsConversion.preserveOriginal
-        ? sourceFile
-        : new File(
-            [fpsConversion.blob],
-            `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`,
-            { type: 'video/mp4', lastModified: Date.now() }
-          );
-
-      const basePreparedInput = isV2SelectedForJob
-        ? {
-            blob: normalizedFile,
-            report: {
-              compressionDisabled: false,
-              skippedForV2: false
-            }
-          }
-        : await prepareVideoForPatcher(normalizedFile, selectedVideoDimensions, controller.signal, (progress) => {
-            updateProcessingProgress(15 + Math.round(Math.max(0, Math.min(1, progress)) * 1));
-          });
+      };
       const preparedInput = {
         ...basePreparedInput,
         blob: normalizedFile,
-        sourceFps: fpsConversion.sourceFps,
-        targetFrameRate: 60000 / 1001,
+        sourceFps: null,
+        targetFrameRate: null,
         report: {
           ...(basePreparedInput.report || {}),
-          performed: !fpsConversion.preserveOriginal,
-          compressionDisabled: Boolean(fpsConversion.preserveOriginal),
-          cfrNormalized: !fpsConversion.preserveOriginal,
-          hdrSourcePreserved: Boolean(fpsConversion.preserveOriginal && fpsConversion.hdr),
-          hdrCfrRequired: Boolean(fpsConversion.hdrTranscoded && fpsConversion.hdr),
-          hdrMain10Encoded: Boolean(fpsConversion.main10Transcoded),
-          hdrProfile: fpsConversion.hdrProfile || null,
-          frameRateRetimed: !fpsConversion.preserveOriginal && Number.isFinite(fpsConversion.sourceFps) && Math.abs(fpsConversion.sourceFps - (60000 / 1001)) > 0.03,
-          targetFrameRate: 60000 / 1001,
+          performed: false,
+          compressionDisabled: true,
+          cfrNormalized: false,
+          hdrSourcePreserved: false,
+          hdrCfrRequired: false,
+          hdrMain10Encoded: false,
+          hdrProfile: null,
+          frameRateRetimed: false,
+          targetFrameRate: null,
           inputWidth: selectedVideoDimensions?.width || null,
           inputHeight: selectedVideoDimensions?.height || null,
-          outputWidth: fpsConversion.info?.width || selectedVideoDimensions?.width || null,
-          outputHeight: fpsConversion.info?.height || selectedVideoDimensions?.height || null
+          outputWidth: selectedVideoDimensions?.width || null,
+          outputHeight: selectedVideoDimensions?.height || null
         }
       };
       const processingFile = preparedInput.blob;
       const processingFileName = processingFile.name || `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`;
       const buffer = await processingFile.arrayBuffer();
-      // Keep ADJN and its SIZE GUARD unchanged. For CFR-transcoded V1 files, neutralize
-      // a pre-existing encoder metadata item that ADJN replaces and that can make the
-      // final container 1-30 bytes shorter. This changes 4 metadata-type bytes only.
+      // Keep ADJN and its SIZE GUARD unchanged. Patcher-only mode does not re-encode media.
       if (!isV2SelectedForJob && !fpsConversion.preserveOriginal) {
         const neutralizedItems = neutralizeAdjnEncoderMetadata(new Uint8Array(buffer));
         if (neutralizedItems > 0) {
@@ -2710,7 +2601,7 @@ if (processBtn) {
       const requestId = `ineasy-${Date.now()}`;
 
       // Run heavy patching in a Web Worker (off main thread) to avoid UI lag.
-      // Mirrors the browser extension's iframe isolation approach.
+      // No CFR conversion or whole-file HDR scan runs before the worker starts.
       const result = await new Promise((resolve, reject) => {
         let workerDone = false;
 
@@ -2770,10 +2661,9 @@ if (processBtn) {
 
           if (msg.type === 'STAGE') {
             if (controller.signal.aborted) return;
-            // Worker progress uses its own 0-100 scale. Keep it above the 15% CFR
-            // handoff marker so users can see the patcher is actively advancing.
+            // Worker progress uses its own 0-100 scale; show patcher work directly.
             const workerProgress = Math.max(0, Math.min(100, Number(msg.progress) || 0));
-            updateProcessingProgress(16 + Math.round(workerProgress * 0.78));
+            updateProcessingProgress(15 + Math.round(workerProgress * 0.83));
             return;
           }
 
@@ -2832,21 +2722,15 @@ if (processBtn) {
 
       if (controller.signal.aborted) throw new Error('processing_cancelled');
 
-      // V2 avoids extra container padding. Its pass-through output is the already-normalized
-      // CFR MP4, not the unconverted file originally selected by the user.
+      // V2 may pass through the source file when no byte-level patch is required.
       const isV2Selected = getSelectedPatcherVersion() === 'v2';
       const isV2InputPassThrough = isV2Selected && Boolean(result.passthrough);
-      // The normalized MP4 has already been frame-converted before patching. Keep it in
-      // V2 pass-through mode instead of accidentally restoring the unconverted source file.
-      // Never append artificial 1 MiB MP4 padding: it violates the strict output-size target.
-      // Metadata FourCC normalization above is used instead of changing the file length.
+      // Never append artificial padding: keep the patcher's output-size contract unchanged.
       const outputBytes = result.output;
       let outputBlob = isV2InputPassThrough
         ? processingFile
         : new Blob([outputBytes], { type: result.outputMime || 'video/mp4' });
-      // Do not crash the job because an encoder/container adds bytes. The CFR encoder
-      // is now bitrate-matched to the source; retain the real output and report any residual
-      // size difference for diagnostics instead of rejecting all 1080p/4K outputs.
+      // Keep the patcher's output-size contract visible in diagnostics.
       if (outputBlob.size > sourceFile.size + 200 * 1024) {
         console.warn('[INEASY] Output is larger than the source after CFR conversion:', {
           sourceBytes: sourceFile.size,
@@ -2855,7 +2739,7 @@ if (processBtn) {
         });
       }
 
-      // Inspect the actual patcher output before returning it; never silently skip CFR conversion.
+      // Inspect the actual patcher output before returning it; FPS is preserved, not normalized.
       const outputMediaCore = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
       let verifiedOutputInfo = null;
       if (outputMediaCore?.inspectMediaInfo) {
@@ -2863,12 +2747,10 @@ if (processBtn) {
       }
       verifiedOutputInfo = verifiedOutputInfo || result.outputInfo || result.info || null;
       const verifiedOutputFps = Number(verifiedOutputInfo?.averageFps);
-      const hdrSourcePreserved = Boolean(preparedInput.report?.hdrSourcePreserved);
-      // For 4K, exact CFR is mandatory even after ADJN. Never publish a 30 FPS output.
-      if ((!hdrSourcePreserved || is4kSource) &&
-          (!Number.isFinite(verifiedOutputFps) || Math.abs(verifiedOutputFps - (60000 / 1001)) > 0.03)) {
-        throw new Error('fps_output_verification_failed');
-      }
+      const hdrSourcePreserved = Boolean(
+        result.hdr?.hdr10 || result.hdr?.hdr10plus || result.hdr?.hlg ||
+        result.hdr?.dolbyVision || result.hdr?.main10
+      );
       if (is4kSource) {
         const expectedWidth = Number(fpsConversion.info?.width || selectedVideoDimensions?.width);
         const expectedHeight = Number(fpsConversion.info?.height || selectedVideoDimensions?.height);
@@ -2879,8 +2761,7 @@ if (processBtn) {
         }
         console.info('[INEASY] Final 4K output verified after ADJN', {
           resolution: finalWidth + 'x' + finalHeight,
-          outputFps: verifiedOutputFps,
-          expectedFps: '60000/1001',
+          sourceFpsPreserved: verifiedOutputFps,
           adjnMode: result.mode,
           adjnPassthrough: Boolean(result.passthrough)
         });
@@ -2895,10 +2776,6 @@ if (processBtn) {
           outputHdrProfile?.main10
         );
         if (!outputHasHdrSignaling) throw new Error('hdr_output_verification_failed');
-        if (preparedInput.report?.hdrCfrRequired &&
-            (!Number.isFinite(verifiedOutputFps) || Math.abs(verifiedOutputFps - (60000 / 1001)) > 0.03)) {
-          throw new Error('fps_output_verification_failed');
-        }
         console.info('[INEASY] HDR output verified after CFR processing', {
           profile: outputHdrProfile?.label || preparedInput.report?.hdrProfile?.label || 'HDR / 10-bit',
           cfrTranscoded: Boolean(preparedInput.report?.hdrCfrRequired),
@@ -2907,7 +2784,7 @@ if (processBtn) {
       }
       result.outputInfo = verifiedOutputInfo;
       result.outputMime = 'video/mp4';
-      result.mode = (result.mode || 'patched') + '+cfr-5994-verified';
+      result.mode = (result.mode || 'patched') + '+source-fps-preserved';
 
       await consumeProcessedVideo();
       processedVideoBlob = outputBlob;
@@ -2947,7 +2824,7 @@ if (processBtn) {
       const resultSubNode = document.getElementById('resultSub');
       const outputLongSide = Math.max(Number(metaInfo?.width) || 0, Number(metaInfo?.height) || 0);
       const outputResolutionLabel = outputLongSide >= 3840 ? '4K' : '1080p';
-      if (resultSubNode) resultSubNode.textContent = `${outputResolutionLabel} • 59.94 FPS`;
+      if (resultSubNode) resultSubNode.textContent = `${outputResolutionLabel} • ${fpsText || 'source FPS preserved'}`;
       if (durationNotice) durationNotice.classList.remove('hidden');
       setPublicationActionsVisible(true);
 
