@@ -355,16 +355,18 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261011-21"></script>
-<script src="app.js?v=20261012-20"></script>
+<script src="app.js?v=20261012-21"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
 </script>
 
-<a class="giveaway-toast" id="giveawayToast" href="https://t.me/ineasynews" target="_blank" rel="noopener noreferrer" aria-label="Канал с розыгрышами">
-  <span class="giveaway-toast-icon" aria-hidden="true">🎁</span>
-  <span class="giveaway-toast-copy"><strong>Канал с розыгрышами</strong><small>Новости и розыгрыши INEASY</small></span>
+<div class="giveaway-toast" id="giveawayToast">
+  <a class="giveaway-toast-link" href="https://t.me/ineasynews" target="_blank" rel="noopener noreferrer" aria-label="Открыть канал с розыгрышами">
+    <span class="giveaway-toast-icon" aria-hidden="true">🎁</span>
+    <span class="giveaway-toast-copy"><strong>Канал с розыгрышами</strong><small>Новости и розыгрыши INEASY</small></span>
+  </a>
   <button class="giveaway-toast-close" id="giveawayToastClose" type="button" aria-label="Закрыть">×</button>
-</a>
+</div>
 </body>
 </html>
