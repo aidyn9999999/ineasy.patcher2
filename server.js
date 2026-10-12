@@ -19,8 +19,8 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_ID = process.env.ADMIN_ID ? String(process.env.ADMIN_ID).trim() : null;
 const ZERNIO_API_BASE = 'https://zernio.com/api/v1';
 const TIKTOK_CAPTION_SUFFIX = '@ineasybot или ineasy.site(веб сайт)\n#ineasybot';
-const WEEKLY_FREE_BALANCE = 2;
-const FREE_BALANCE_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+const DAILY_FREE_BALANCE = 2;
+const FREE_BALANCE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const ASTANA_TIME_ZONE = 'Asia/Almaty';
 const CARD_INFO = '4400 4300 4955 5771 или 705 542 37 05 (Freedom Bank, Halyk Bank, Kaspi.kz)\nИмя: Айдынбек Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasy.site/app.html';
@@ -116,7 +116,7 @@ const TEXTS = {
       `💎 Купленные видео: ${purchased}\n\n` +
       `📊 Всего доступно: ${free + purchased}` +
       (free === 0 && nextAt ? `\n\n⏰ Следующий бесплатный баланс: ${formatAstanaDateTime(nextAt, 'ru')} (Астана)` : ''),
-    freeBalanceEnded: (nextAt) => `🆓 Бесплатный баланс закончился.\n\nСледующие ${WEEKLY_FREE_BALANCE} бесплатных видео будут доступны ${formatAstanaDateTime(nextAt, 'ru')} по времени Астаны.\n\nМожно купить видео сейчас или пригласить друга. Бонус засчитывается, когда новый пользователь откроет вашу ссылку и нажмёт Start, а затем выполнит условия бота.`,
+    freeBalanceEnded: (nextAt) => `🆓 Бесплатный баланс закончился.\n\nСледующие ${DAILY_FREE_BALANCE} бесплатных видео будут доступны ${formatAstanaDateTime(nextAt, 'ru')} по времени Астаны.\n\nМожно купить видео сейчас или пригласить друга. Бонус засчитывается, когда новый пользователь откроет вашу ссылку и нажмёт Start, а затем выполнит условия бота.`,
     profile: (username, id, patched, free, purchased, purchasedTotal) =>
       `👤 Профиль\n\n` +
       `Ник: ${username}\n` +
@@ -202,7 +202,7 @@ const TEXTS = {
       `💎 Purchased videos: ${purchased}\n\n` +
       `📊 Total available: ${free + purchased}` +
       (free === 0 && nextAt ? `\n\n⏰ Next free balance: ${formatAstanaDateTime(nextAt, 'en')} Astana time` : ''),
-    freeBalanceEnded: (nextAt) => `🆓 Your free balance has run out.\n\nYour next ${WEEKLY_FREE_BALANCE} free videos will be available on ${formatAstanaDateTime(nextAt, 'en')} Astana time.\n\nYou can buy videos now or invite a friend. The invite bonus counts after a new user opens your link, presses Start, and completes the bot requirements.`,
+    freeBalanceEnded: (nextAt) => `🆓 Your free balance has run out.\n\nYour next ${DAILY_FREE_BALANCE} free videos will be available on ${formatAstanaDateTime(nextAt, 'en')} Astana time.\n\nYou can buy videos now or invite a friend. The invite bonus counts after a new user opens your link, presses Start, and completes the bot requirements.`,
     profile: (username, id, patched, free, purchased, purchasedTotal) =>
       `👤 Profile\n\n` +
       `Username: ${username}\n` +
@@ -288,7 +288,7 @@ const TEXTS = {
       `💎 Сатып алынған видео: ${purchased}\n\n` +
       `📊 Барлығы қолжетімді: ${free + purchased}` +
       (free === 0 && nextAt ? `\n\n⏰ Келесі тегін баланс: ${formatAstanaDateTime(nextAt, 'kk')} (Астана уақыты)` : ''),
-    freeBalanceEnded: (nextAt) => `🆓 Тегін балансыңыз аяқталды.\n\nКелесі ${WEEKLY_FREE_BALANCE} тегін видео ${formatAstanaDateTime(nextAt, 'kk')} Астана уақытымен қолжетімді болады.\n\nҚазір видео сатып алуға немесе дос шақыруға болады. Бонус жаңа пайдаланушы сілтемені ашып, Start басып, бот талаптарын орындағаннан кейін есептеледі.`,
+    freeBalanceEnded: (nextAt) => `🆓 Тегін балансыңыз аяқталды.\n\nКелесі ${DAILY_FREE_BALANCE} тегін видео ${formatAstanaDateTime(nextAt, 'kk')} Астана уақытымен қолжетімді болады.\n\nҚазір видео сатып алуға немесе дос шақыруға болады. Бонус жаңа пайдаланушы сілтемені ашып, Start басып, бот талаптарын орындағаннан кейін есептеледі.`,
     profile: (username, id, patched, free, purchased, purchasedTotal) =>
       `👤 Профиль\n\n` +
       `Ник: ${username}\n` +
@@ -401,12 +401,12 @@ async function unblockUser(telegramId) {
 
 async function getFreeBalance(telegramId) {
   const now = Date.now();
-  // Weekly free balance is capped at 2. Unused videos remain, and the balance tops up
+  // Daily free balance is capped at 2. Unused videos remain, and the balance tops up
   // to 2 at the next personal 7-day renewal instead of adding 2 on top.
   const balance = await redis.eval(
     "local free = redis.call('GET', KEYS[1]); local nextAt = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[2]); local allowance = tonumber(ARGV[1]); local interval = tonumber(ARGV[3]); if not free then free = allowance; redis.call('SET', KEYS[1], free); if nextAt == 0 then redis.call('SET', KEYS[2], tostring(now + interval)); end; return tonumber(free); end; free = tonumber(free); if nextAt == 0 then nextAt = now + interval; redis.call('SET', KEYS[2], tostring(nextAt)); end; if now >= nextAt then if free < allowance then free = allowance; redis.call('SET', KEYS[1], tostring(free)); end; redis.call('SET', KEYS[2], tostring(now + interval)); end; if free > allowance then free = allowance; redis.call('SET', KEYS[1], tostring(free)); end; return free",
     [`freeBalance:${telegramId}`, `freeNextAt:${telegramId}`],
-    [String(WEEKLY_FREE_BALANCE), String(now), String(FREE_BALANCE_INTERVAL_MS)]
+    [String(DAILY_FREE_BALANCE), String(now), String(FREE_BALANCE_INTERVAL_MS)]
   );
   return Number(balance);
 }
@@ -1064,7 +1064,7 @@ bot.action('invite_now', async (ctx) => {
   await sendInvite(ctx, await getLang(ctx.from.id));
 });
 
-// Periodic maintenance: renew due weekly free balances even when users do not open the bot.
+// Periodic maintenance: renew due daily free balances even when users do not open the bot.
 // A forced run is reserved for the admin emergency refill command.
 async function refreshAllWeeklyFreeBalances({ forceRefill = false, reportCtx = null } = {}) {
   let cursor = '0';
@@ -1086,7 +1086,7 @@ async function refreshAllWeeklyFreeBalances({ forceRefill = false, reportCtx = n
           await redis.eval(
             "local freeKey = KEYS[1]; local nextKey = KEYS[2]; local free = tonumber(redis.call('GET', freeKey) or '0'); local cap = tonumber(ARGV[1]); local nextAt = tonumber(ARGV[2]); if free < cap then free = cap; elseif free > cap then free = cap; end; redis.call('SET', freeKey, tostring(free)); redis.call('SET', nextKey, tostring(nextAt)); return free",
             [`freeBalance:${telegramId}`, `freeNextAt:${telegramId}`],
-            [String(WEEKLY_FREE_BALANCE), String(now + FREE_BALANCE_INTERVAL_MS)]
+            [String(DAILY_FREE_BALANCE), String(now + FREE_BALANCE_INTERVAL_MS)]
           );
           renewed++;
         } else {
@@ -1112,12 +1112,12 @@ async function refreshAllWeeklyFreeBalances({ forceRefill = false, reportCtx = n
 }
 
 async function runBalanceMigrationBroadcast(reportCtx = null) {
-  if (await redis.get('balanceMigrationBroadcast:v3')) {
+  if (await redis.get('balanceMigrationBroadcast:v4')) {
     const message = 'Обновление v3 уже выполнено. Повторный запуск заблокирован.';
     if (reportCtx) await reportCtx.reply(message);
     return { alreadyDone: true };
   }
-  const lock = await redis.set('balanceMigrationBroadcastLock:v3', String(Date.now()), { nx: true, ex: 3600 });
+  const lock = await redis.set('balanceMigrationBroadcastLock:v4', String(Date.now()), { nx: true, ex: 3600 });
   if (lock !== 'OK') {
     if (reportCtx) await reportCtx.reply('Обновление баланса уже выполняется. Повторите позже.');
     return { busy: true };
@@ -1142,20 +1142,20 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
             await new Promise((resolve) => setTimeout(resolve, 40));
             continue;
           }
-          // Normalize the free balance to the weekly cap without granting extra credits.
+          // Normalize the free balance to the daily cap without granting extra credits.
           // The v3 guard prevents repeated normalization/broadcast on restarts.
           await redis.eval(
             "local key = KEYS[1]; local current = tonumber(redis.call('GET', key) or '0'); local cap = tonumber(ARGV[1]); if current > cap then redis.call('SET', key, cap); return cap; end; return current",
             [`freeBalance:${telegramId}`],
-            [String(WEEKLY_FREE_BALANCE)]
+            [String(DAILY_FREE_BALANCE)]
           );
           normalized++;
           const lang = await getLang(telegramId);
           const message = lang === 'kk'
-            ? '✅ INEASY PATCHER жаңартылды! Апталық тегін видео балансы түзетілді: пайдаланылмаған видеолар сақталады, ал әр 7 күн сайын баланс 2 видеоға дейін толтырылады. Сайт: https://ineasy.site/'
+            ? '✅ INEASY PATCHER жаңартылды! Апталық тегін видео балансы түзетілді: пайдаланылмаған видеолар сақталады, ал күн сайын тегін баланс 2 видеоға дейін толтырылады. Сайт: https://ineasy.site/'
             : lang === 'en'
-              ? '✅ INEASY PATCHER has been fixed and updated! Unused free videos remain in your balance, and every 7 days your free balance tops up to a maximum of 2 videos. Website: https://ineasy.site/'
-              : '✅ INEASY PATCHER исправлен и обновлён! Мы исправили недельный баланс: неиспользованные бесплатные видео сохраняются, а раз в 7 дней баланс пополняется до 2 видео, не выше. Сайт: https://ineasy.site/';
+              ? '✅ INEASY PATCHER has been fixed and updated! Unused free videos remain in your balance, and your free balance refills to 2 videos every day. Website: https://ineasy.site/'
+              : '✅ INEASY PATCHER исправлен и обновлён! Мы исправили недельный баланс: каждый день бесплатный баланс пополняется до 2 видео. Неиспользованные бесплатные видео не накапливаются. Сайт: https://ineasy.site/';
           await bot.telegram.sendMessage(telegramId, message, balanceEndedKeyboard(lang, telegramId));
           sent++;
         } catch (error) {
@@ -1165,7 +1165,7 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
         await new Promise((resolve) => setTimeout(resolve, 40));
       }
     } while (cursor !== '0');
-    await redis.set('balanceMigrationBroadcast:v3', JSON.stringify({ completedAt: new Date().toISOString(), sent, failed, normalized }));
+    await redis.set('balanceMigrationBroadcast:v4', JSON.stringify({ completedAt: new Date().toISOString(), sent, failed, normalized }));
     const summary = `Готово. Отправлено: ${sent}; не доставлено: ${failed}; проверено балансов: ${normalized}. Дополнительные бесплатные видео не начислялись. Повторный запуск отключён.`;
     if (reportCtx) await reportCtx.reply(summary);
     else console.log('[INEASY] ' + summary);
@@ -1175,11 +1175,11 @@ async function runBalanceMigrationBroadcast(reportCtx = null) {
     if (reportCtx) await reportCtx.reply('Ошибка обновления или рассылки. Подробности записаны в журнал сервера; блокировка будет снята автоматически через час.');
     throw error;
   } finally {
-    await redis.del('balanceMigrationBroadcastLock:v3');
+    await redis.del('balanceMigrationBroadcastLock:v4');
   }
 }
 
-bot.command('weekly_balance_status', async (ctx) => {
+bot.command('daily_balance_status', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
   const id = String(ctx.from.id);
   // Read raw Redis values so this status command does not itself trigger a renewal.
@@ -1190,20 +1190,20 @@ bot.command('weekly_balance_status', async (ctx) => {
   ]);
   const free = rawFree === null || rawFree === undefined ? 0 : Number(rawFree);
   await ctx.reply(
-    `Проверка недельного баланса (ваш аккаунт):\\n\\nБесплатные видео: ${free}/${WEEKLY_FREE_BALANCE}\\nКупленные видео: ${purchased}\\nСледующее обновление: ${formatAstanaDateTime(nextAt, 'ru') || 'не задано'} (Астана)\\n\\nЭто показывает сохранённое состояние в Redis; фактическую доставку обновления проверяем командой теста.`
+    `Проверка недельного баланса (ваш аккаунт):\\n\\nБесплатные видео: ${free}/${DAILY_FREE_BALANCE}\\nКупленные видео: ${purchased}\\nСледующее обновление: ${formatAstanaDateTime(nextAt, 'ru') || 'не задано'} (Астана)\\n\\nЭто показывает сохранённое состояние в Redis; фактическую доставку обновления проверяем командой теста.`
   );
 });
 
-bot.command('test_weekly_schedule', async (ctx) => {
+bot.command('test_daily_schedule', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
   const id = String(ctx.from.id);
   // Set only the admin's deadline to overdue; do not call getFreeBalance here.
   // The hourly background job must perform the renewal.
   await redis.set(`freeNextAt:${id}`, String(Date.now() - 1000));
-  await ctx.reply('Проверка фонового расписания запущена: срок вашего бесплатного баланса выставлен просроченным. Не запускайте /balance и /weekly_balance_status до проверки — они могут обновить баланс сами. Подождите до 65 минут, затем выполните /weekly_balance_status. Успех: баланс доведён до 2, а дата следующего обновления находится примерно через 7 дней.');
+  await ctx.reply('Проверка фонового расписания запущена: срок вашего бесплатного баланса выставлен просроченным. Не запускайте /balance и /daily_balance_status до проверки — они могут обновить баланс сами. Подождите до 65 минут, затем выполните /daily_balance_status. Успех: баланс доведён до 2, а дата следующего обновления находится примерно через 24 часа.');
 });
 
-bot.command('test_weekly_balance', async (ctx) => {
+bot.command('test_daily_balance', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
   const id = String(ctx.from.id);
   const before = await getFreeBalance(id);
@@ -1213,11 +1213,11 @@ bot.command('test_weekly_balance', async (ctx) => {
   const after = await getFreeBalance(id);
   const nextAt = await getFreeNextAt(id);
   await ctx.reply(
-    `Тест недельного пополнения завершён.\\nДо теста: ${before} бесплатных видео\\nПосле теста: ${after}/${WEEKLY_FREE_BALANCE} бесплатных видео\\nСледующее обновление: ${formatAstanaDateTime(nextAt, 'ru')} (Астана)\\n\\n${after === WEEKLY_FREE_BALANCE && nextAt > Date.now() ? '✅ Логика продления сработала: баланс доведён до лимита, следующий срок установлен на 7 дней.' : '❌ Проверка не пройдена. Посмотрите журнал сервера и Redis.'}\\n\\nТест затронул только ваш бесплатный баланс. Купленный баланс не изменялся.`
+    `Тест недельного пополнения завершён.\\nДо теста: ${before} бесплатных видео\\nПосле теста: ${after}/${DAILY_FREE_BALANCE} бесплатных видео\\nСледующее обновление: ${formatAstanaDateTime(nextAt, 'ru')} (Астана)\\n\\n${after === DAILY_FREE_BALANCE && nextAt > Date.now() ? '✅ Логика продления сработала: баланс доведён до лимита, следующий срок установлен на 24 часа.' : '❌ Проверка не пройдена. Посмотрите журнал сервера и Redis.'}\\n\\nТест затронул только ваш бесплатный баланс. Купленный баланс не изменялся.`
   );
 });
 
-bot.command('refill_weekly_free_now', async (ctx) => {
+bot.command('refill_daily_free_now', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
   await ctx.reply('Начинаю экстренное пополнение бесплатного баланса до 2 видео для всех активных пользователей. Купленные видео не изменяются.');
   await refreshAllWeeklyFreeBalances({ forceRefill: true, reportCtx: ctx });
@@ -2188,7 +2188,7 @@ app.listen(PORT, async () => {
   }
   // One-time production migration + broadcast. Redis guard prevents duplicate sends on restarts.
   runBalanceMigrationBroadcast().catch((error) => console.error('[INEASY] Одноразовое обновление баланса не удалось:', error.message));
-  // Catch up overdue weekly renewals after deploy/restart, then keep checking hourly.
+  // Catch up overdue daily renewals after deploy/restart, then keep checking hourly.
   refreshAllWeeklyFreeBalances().catch((error) => console.error('[INEASY] Стартовая проверка недельных балансов не удалась:', error.message));
   const weeklyBalanceMaintenance = setInterval(() => {
     refreshAllWeeklyFreeBalances().catch((error) => console.error('[INEASY] Плановая проверка недельных балансов не удалась:', error.message));
