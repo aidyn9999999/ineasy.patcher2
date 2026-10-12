@@ -2594,30 +2594,22 @@ if (processBtn) {
           }
         }
       }
-      // Verify the actual converted 4K file BEFORE passing it into ADJN.
+      // Verify real CFR and exact source dimensions before passing the file into ADJN.
       const convertedFps = Number(fpsConversion.fps ?? fpsConversion.info?.averageFps);
       if (!Number.isFinite(convertedFps) || Math.abs(convertedFps - (60000 / 1001)) > 0.03) {
         throw new Error('fps_encoder_verification_failed: reported=' + String(convertedFps));
       }
+      const convertedWidth = Number(fpsConversion.info?.width);
+      const convertedHeight = Number(fpsConversion.info?.height);
+      const expectedWidth = Number(selectedVideoDimensions?.width);
+      const expectedHeight = Number(selectedVideoDimensions?.height);
+      if (!convertedWidth || !convertedHeight || !expectedWidth || !expectedHeight ||
+          convertedWidth !== expectedWidth || convertedHeight !== expectedHeight) {
+        throw new Error('video_resolution_changed_during_cfr: expected=' +
+          expectedWidth + 'x' + expectedHeight + '; actual=' +
+          convertedWidth + 'x' + convertedHeight);
+      }
       if (is4kSource) {
-        const convertedWidth = Number(fpsConversion.info?.width);
-        const convertedHeight = Number(fpsConversion.info?.height);
-        const expectedWidth = Number(selectedVideoDimensions?.width);
-        const expectedHeight = Number(selectedVideoDimensions?.height);
-        const accepted1080pFallback = fpsConversion.downscaledFallback === true &&
-          Math.max(convertedWidth, convertedHeight) <= 1920 &&
-          Math.abs((convertedWidth / convertedHeight) - (expectedWidth / expectedHeight)) <= 0.015;
-        if (!convertedWidth || !convertedHeight ||
-            (!accepted1080pFallback &&
-             (convertedWidth !== expectedWidth || convertedHeight !== expectedHeight))) {
-          throw new Error('video_resolution_changed_during_cfr');
-        }
-        if (accepted1080pFallback) {
-          console.warn('[INEASY] Full-resolution 4K encoding failed; accepted verified 1080p compatibility fallback', {
-            sourceResolution: expectedWidth + 'x' + expectedHeight,
-            outputResolution: convertedWidth + 'x' + convertedHeight
-          });
-        }
         console.info('[INEASY] 4K CFR output verified before ADJN', {
           sourceResolution: selectedVideoDimensions.width + 'x' + selectedVideoDimensions.height,
           cfrResolution: convertedWidth + 'x' + convertedHeight,
