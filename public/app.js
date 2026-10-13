@@ -2462,7 +2462,7 @@ const SECTION_PATHS = {
   faqSection: '/app.html',
 };
 function syncSectionFromPath() {
-  const path = window.location.pathname.replace(/\\/+$/, '') || '/';
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
   const view = path === '/patcher' ? 'patchSection'
     : path === '/checker' ? 'checkerSection'
     : 'homeSection';
