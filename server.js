@@ -11,6 +11,8 @@ const os = require('os');
 const crypto = require('crypto');
 let FFPROBE_PATH = 'ffprobe';
 try { FFPROBE_PATH = require('ffprobe-static').path; } catch (e) { /* используем системный ffprobe */ }
+let FFMPEG_PATH = null;
+try { FFMPEG_PATH = require('ffmpeg-static'); } catch (e) { /* endpoint reports engine unavailable */ }
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const BOT_USERNAME = process.env.BOT_USERNAME || 'ineasybot';
@@ -1847,6 +1849,104 @@ async function requireUserToken(req, res, next) {
   }
   return next();
 }
+
+// V2-only CFR conversion: lossless video re-encode at 59.94 FPS before ADJN.
+// Dynamic HDR profiles are rejected rather than silently stripped.
+app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'application/octet-stream', limit: '512mb' }), async (req, res) => {
+  if (!FFMPEG_PATH) return res.status(503).json({ error: 'ffmpeg_engine_unavailable' });
+  if (!Buffer.isBuffer(req.body) || req.body.length < 16) return res.status(400).json({ error: 'video_body_missing' });
+  const jobDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'ineasy-v2-cfr-'));
+  const inputPath = path.join(jobDir, 'input.mp4');
+  const outputPath = path.join(jobDir, 'output.mp4');
+  const run = (bin, args, options = {}) => new Promise((resolve, reject) => {
+    execFile(bin, args, { ...options, maxBuffer: 8 * 1024 * 1024, timeout: 15 * 60 * 1000 }, (error, stdout, stderr) => {
+      if (error) {
+        error.stderr = stderr;
+        reject(error);
+      } else resolve({ stdout, stderr });
+    });
+  });
+  try {
+    await fs.promises.writeFile(inputPath, req.body);
+    const probe = async (file) => {
+      const result = await run(FFPROBE_PATH, [
+        '-v', 'error', '-select_streams', 'v:0', '-show_streams', '-show_format', '-of', 'json', file
+      ]);
+      return JSON.parse(result.stdout);
+    };
+    const inputMeta = await probe(inputPath);
+    const inputVideo = (inputMeta.streams || []).find((stream) => stream.codec_type === 'video');
+    if (!inputVideo) return res.status(422).json({ error: 'video_track_missing' });
+    const inputWidth = Number(inputVideo.width);
+    const inputHeight = Number(inputVideo.height);
+    const pixFmt = String(inputVideo.pix_fmt || '').toLowerCase();
+    const transfer = String(inputVideo.color_transfer || '').toLowerCase();
+    const primaries = String(inputVideo.color_primaries || '').toLowerCase();
+    const matrix = String(inputVideo.color_space || '').toLowerCase();
+    const sideDataText = JSON.stringify(inputVideo.side_data_list || []).toLowerCase();
+    const tagsText = JSON.stringify(inputVideo.tags || {}).toLowerCase();
+    const hdr = /smpte2084|arib-std-b67/.test(transfer) || /bt2020/.test(primaries);
+    const dynamicHdr = /dolby.?vision|dovi|hdr10.?plus|hdr10plus|dynamic.?hdr/.test(sideDataText + tagsText);
+    if (dynamicHdr) return res.status(422).json({ error: 'dynamic_hdr_not_supported_without_metadata_loss' });
+    if (!Number.isInteger(inputWidth) || !Number.isInteger(inputHeight) || inputWidth < 1 || inputHeight < 1) {
+      return res.status(422).json({ error: 'video_dimensions_unavailable' });
+    }
+    // Restrict the first V2 rollout to common 4:2:0 sources so we never silently downsample chroma.
+    if (!/^yuv420p(?:10le|12le|16le)?$/.test(pixFmt)) {
+      return res.status(422).json({ error: 'unsupported_pixel_format_for_lossless_cfr', pixelFormat: pixFmt });
+    }
+    if (hdr && !/(?:10|12|16)le$/.test(pixFmt)) {
+      return res.status(422).json({ error: 'hdr_requires_high_bit_depth_source', pixelFormat: pixFmt });
+    }
+    const isHighBitDepth = /(?:10|12|16)le$/.test(pixFmt);
+    const videoEncoder = isHighBitDepth ? 'libx265' : 'libx264';
+    const outputPixFmt = pixFmt;
+    const args = [
+      '-hide_banner', '-loglevel', 'error', '-y', '-i', inputPath,
+      '-map', '0:v:0', '-map', '0:a:0?', '-map_metadata', '0',
+      '-vf', 'fps=60000/1001',
+      '-c:v', videoEncoder, '-preset', 'ultrafast',
+      ...(isHighBitDepth ? ['-x265-params', 'lossless=1'] : ['-crf', '0']),
+      '-pix_fmt', outputPixFmt,
+      ...(primaries && primaries !== 'unknown' ? ['-color_primaries', primaries] : []),
+      ...(transfer && transfer !== 'unknown' ? ['-color_trc', transfer] : []),
+      ...(matrix && matrix !== 'unknown' ? ['-colorspace', matrix] : []),
+      '-c:a', 'copy', '-movflags', '+faststart', outputPath
+    ];
+    await run(FFMPEG_PATH, args);
+    const outputMeta = await probe(outputPath);
+    const outputVideo = (outputMeta.streams || []).find((stream) => stream.codec_type === 'video');
+    if (!outputVideo ||
+        Number(outputVideo.width) !== inputWidth ||
+        Number(outputVideo.height) !== inputHeight ||
+        String(outputVideo.avg_frame_rate || '') !== '60000/1001' ||
+        String(outputVideo.pix_fmt || '') !== outputPixFmt) {
+      return res.status(422).json({ error: 'cfr_output_verification_failed' });
+    }
+    const outputHdr = /smpte2084|arib-std-b67/.test(String(outputVideo.color_transfer || '').toLowerCase()) ||
+      /bt2020/.test(String(outputVideo.color_primaries || '').toLowerCase());
+    if (hdr && (!outputHdr ||
+        String(outputVideo.color_transfer || '').toLowerCase() !== transfer ||
+        String(outputVideo.color_primaries || '').toLowerCase() !== primaries)) {
+      return res.status(422).json({ error: 'hdr_metadata_verification_failed' });
+    }
+    const stat = await fs.promises.stat(outputPath);
+    res.set('Content-Type', 'video/mp4');
+    res.set('Content-Length', String(stat.size));
+    res.set('X-INEASY-CFR', '60000/1001');
+    res.set('X-INEASY-WIDTH', String(inputWidth));
+    res.set('X-INEASY-HEIGHT', String(inputHeight));
+    res.set('X-INEASY-HDR', outputHdr ? 'preserved' : 'sdr');
+    res.sendFile(outputPath, (error) => {
+      fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
+      if (error && !res.headersSent) res.status(500).end();
+    });
+  } catch (error) {
+    console.error('[INEASY V2] FFmpeg CFR conversion failed:', error.message, error.stderr || '');
+    if (!res.headersSent) res.status(422).json({ error: 'ffmpeg_cfr_conversion_failed' });
+    fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
+  }
+});
 
 // INEASY_RAILWAY_4K_ENDPOINT
 function zernioEncryptionKey() {
