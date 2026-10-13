@@ -2641,7 +2641,7 @@ if (processBtn) {
       originalInputFps = null;
       const normalizedFile = fpsConversion.blob || sourceFile;
       const basePreparedInput = {
-        blob: sourceFile,
+        blob: normalizedFile,
         report: {
           performed: false,
           compressionDisabled: true,
@@ -2650,7 +2650,7 @@ if (processBtn) {
       };
       const preparedInput = {
         ...basePreparedInput,
-        blob: sourceFile,
+        blob: normalizedFile,
         sourceFps: null,
         targetFrameRate: null,
         report: {
