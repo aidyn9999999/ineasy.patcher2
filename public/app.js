@@ -1816,9 +1816,13 @@ async function loadMediabunnyForCfr(signal, timeoutMs = 25000) {
 async function getExplicitSdr1080pEligibility(file, dimensions) {
   const width = Number(dimensions?.width) || 0;
   const height = Number(dimensions?.height) || 0;
-  const is1080p = (width === 1920 && height === 1080) || (width === 1080 && height === 1920);
-  if (!is1080p) return { eligible: false, reason: 'not_1080p' };
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) {
+    return { eligible: false, reason: 'source_dimensions_unavailable' };
+  }
 
+  // The CFR encoder below explicitly locks output dimensions to the source.
+  // Permit confirmed SDR sources at their native resolution instead of restricting
+  // conversion to 1080p or using the extension's separate 720p scaling preset.
   const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
   if (!core?.inspectMediaInfo) return { eligible: false, reason: 'metadata_inspector_unavailable' };
   try {
@@ -1841,7 +1845,7 @@ async function getExplicitSdr1080pEligibility(file, dimensions) {
     if (!explicitSdrTransfer && !explicitSdrPrimaries) {
       return { eligible: false, reason: 'sdr_not_confirmed' };
     }
-    return { eligible: true, reason: 'confirmed_sdr_1080p', info, codec };
+    return { eligible: true, reason: 'confirmed_sdr_native_resolution', info, codec };
   } catch (error) {
     console.warn('[INEASY] Could not confirm SDR metadata; preserving original FPS:', error);
     return { eligible: false, reason: 'metadata_inspection_failed' };
@@ -2601,8 +2605,9 @@ if (processBtn) {
         throw new Error('patcher_requires_mp4_mov');
       }
 
-      // Convert only confirmed SDR 1080p with an explicit supported AVC/HEVC codec.
-      // HDR, unknown color metadata, other resolutions and unknown codecs keep original frames.
+      // Convert confirmed SDR AVC/HEVC sources at their native resolution to CFR 59.94.
+      // No 720p scaling is used. HDR and uncertain color metadata remain untouched because
+      // this browser AVC encoder does not guarantee HDR/Main10 preservation.
       const sdr1080pEligibility = !isV2SelectedForJob
         ? await getExplicitSdr1080pEligibility(sourceFile, selectedVideoDimensions)
         : { eligible: false, reason: 'v2_mode' };
@@ -2623,7 +2628,7 @@ if (processBtn) {
         hdrProfile: null
       };
       if (sdr1080pEligibility.eligible) {
-        console.info('[INEASY] Converting confirmed SDR 1080p to exact 59.94 FPS', {
+        console.info('[INEASY] Converting confirmed SDR source at native resolution to exact 59.94 FPS', {
           sourceCodec: sdr1080pEligibility.codec
         });
         fpsConversion = await convertVideoToExact5994Fps(
