@@ -39,7 +39,7 @@ const tgId = getBrowserValue('tg_id') || (PATCHER_TEST_MODE ? 'LOCAL-TEST' : '')
 const tgAuthToken = getBrowserValue('tg_auth_token');
 
 if ((!tgId || !tgAuthToken) && !PATCHER_TEST_MODE) {
-  window.location.href = '/';
+  window.location.href = '/login';
 }
 
 const STATE = {
@@ -629,7 +629,7 @@ async function tiktokApi(url, options = {}) {
       removeBrowserValue('tg_id');
       removeBrowserValue('tg_auth_token');
       // Return to the sign-in page so a stale site session can be renewed.
-      window.location.replace('/');
+      window.location.replace('/login');
       const error = new Error('authentication_expired');
       error.status = 401;
       throw error;
@@ -861,7 +861,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
     const response = await fetch('/api/logout', { method: 'POST', cache: 'no-store' });
     if (!response.ok) throw new Error('Could not clear the login session.');
     ['tg_id', 'tg_username', 'tg_first_name', 'tg_auth_token'].forEach(removeBrowserValue);
-    window.location.replace('/');
+    window.location.replace('/login');
   } catch (error) {
     button.disabled = false;
     console.error('Не удалось завершить сессию:', error);
@@ -967,7 +967,7 @@ async function loadBalance() {
     if (res.status === 401 || res.status === 403) {
       removeBrowserValue('tg_id');
       removeBrowserValue('tg_auth_token');
-      window.location.replace('/');
+      window.location.replace('/login');
       return;
     }
     if (!res.ok) throw new Error('balance_fetch_failed');
@@ -997,7 +997,7 @@ async function refreshBalanceForProcessing() {
   if (response.status === 401 || response.status === 403) {
     removeBrowserValue('tg_id');
     removeBrowserValue('tg_auth_token');
-    window.location.replace('/');
+    window.location.replace('/login');
     return false;
   }
   if (!response.ok) throw new Error('balance_fetch_failed');
@@ -2456,10 +2456,10 @@ applyProvidedNavIcons();
 
 // --- Tabs and clean section URLs ---
 const SECTION_PATHS = {
-  homeSection: '/app.html',
+  homeSection: '/',
   patchSection: '/patcher',
   checkerSection: '/checker',
-  faqSection: '/app.html',
+  faqSection: '/',
 };
 function syncSectionFromPath() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
