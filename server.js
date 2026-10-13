@@ -1126,6 +1126,83 @@ async function refreshAllDailyFreeBalances({ forceRefill = false, reportCtx = nu
   return { checked, renewed, failed };
 }
 
+async function runUserBroadcast(message, reportCtx) {
+  const messageHash = crypto.createHash('sha256').update(message).digest('hex').slice(0, 24);
+  const lockKey = `userBroadcastLock:${messageHash}`;
+  const lock = await redis.set(lockKey, String(Date.now()), { nx: true, ex: 6 * 60 * 60 });
+  if (lock !== 'OK') {
+    await reportCtx.reply('Эта рассылка уже выполняется. Подождите завершения; повторная параллельная отправка заблокирована.');
+    return;
+  }
+
+  let scanned = 0;
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+  let cursor = '0';
+  await reportCtx.reply('Начинаю рассылку всем пользователям, которые запускали бота. Балансы не изменяются. Буду учитывать успешные отправки и повторять временные ошибки.');
+
+  try {
+    do {
+      const page = await redis.scan(cursor, { match: 'botStarted:*', count: 100 });
+      cursor = String(page[0]);
+      for (const key of (page[1] || [])) {
+        const telegramId = String(key).slice('botStarted:'.length);
+        if (!/^\d+$/.test(telegramId)) continue;
+        scanned++;
+        const sentKey = `userBroadcast:${messageHash}:sent:${telegramId}`;
+        try {
+          if (await redis.get(sentKey)) {
+            skipped++;
+            continue;
+          }
+          if (await isUserBlocked(telegramId)) {
+            skipped++;
+            continue;
+          }
+
+          let delivered = false;
+          let lastError = null;
+          for (let attempt = 0; attempt < 4 && !delivered; attempt++) {
+            try {
+              await bot.telegram.sendMessage(telegramId, message, { disable_web_page_preview: true });
+              await redis.set(sentKey, '1', { ex: 30 * 24 * 60 * 60 });
+              delivered = true;
+              sent++;
+            } catch (error) {
+              lastError = error;
+              const status = Number(error?.response?.error_code || error?.response?.statusCode || 0);
+              const retryAfter = Number(error?.response?.parameters?.retry_after || error?.parameters?.retry_after || 0);
+              const transient = status === 429 || status >= 500 || !status;
+              if (!transient || attempt === 3) break;
+              const waitMs = retryAfter > 0 ? retryAfter * 1000 + 250 : 1000 * (attempt + 1);
+              await new Promise((resolve) => setTimeout(resolve, Math.min(waitMs, 60000)));
+            }
+          }
+          if (!delivered) {
+            failed++;
+            console.error('[INEASY] Broadcast failed for', telegramId, lastError?.message || lastError);
+          }
+        } catch (error) {
+          failed++;
+          console.error('[INEASY] Broadcast processing failed for', telegramId, error.message);
+        }
+        // Stay below Telegram's approximate free broadcast limit.
+        await new Promise((resolve) => setTimeout(resolve, 40));
+      }
+    } while (cursor !== '0');
+
+    const summary = `Рассылка завершена. Найдено пользователей: ${scanned}; успешно отправлено сейчас: ${sent}; уже отправлено/пропущено: ${skipped}; ошибок доставки: ${failed}. Балансы не менялись.`;
+    await reportCtx.reply(summary + (failed ? '\\n\\nЧтобы повторить попытки для неудачных получателей, снова выполните /broadcast с точно таким же текстом.' : ''));
+    console.log('[INEASY] ' + summary);
+  } catch (error) {
+    console.error('[INEASY] Broadcast interrupted:', error.message);
+    await reportCtx.reply('Рассылка прервана из-за ошибки сервера. Уже отправленные сообщения сохранены; запустите /broadcast с точно таким же текстом, чтобы продолжить без повторной отправки тем, кто уже получил сообщение.');
+  } finally {
+    await redis.del(lockKey);
+  }
+}
+
 async function runBalanceMigrationBroadcast(reportCtx = null) {
   if (await redis.get('balanceMigrationBroadcast:v4')) {
     const message = 'Ежедневное обновление уже выполнено. Повторный запуск заблокирован.';
@@ -1241,6 +1318,20 @@ bot.command('refill_daily_free_now', async (ctx) => {
 bot.command('broadcast_balance_update', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
   await runBalanceMigrationBroadcast(ctx);
+});
+
+bot.command('broadcast', async (ctx) => {
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
+  const message = String(ctx.message?.text || '').replace(/^\/broadcast(?:@\w+)?\s*/i, '').trim();
+  if (!message) {
+    await ctx.reply('Укажите текст рассылки после команды. Пример:\n/broadcast 🎉 INEASY PATCHER обновлён! Теперь вам доступны 2 бесплатных видео каждый день. Баланс обновляется автоматически. Сайт: https://ineasy.site/');
+    return;
+  }
+  if (message.length > 4000) {
+    await ctx.reply('Сообщение слишком длинное. Максимум — 4000 символов.');
+    return;
+  }
+  await runUserBroadcast(message, ctx);
 });
 
 bot.command('buyvideo', async (ctx) => sendPackagesMenu(ctx, await getLang(ctx.from.id)));
