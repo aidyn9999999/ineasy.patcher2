@@ -1912,7 +1912,14 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
       '-map', '0:v:0', '-map', '0:a:0?', '-map_metadata', '0',
       '-vf', 'fps=60000/1001',
       '-c:v', videoEncoder, '-preset', 'ultrafast',
-      ...(isHighBitDepth ? ['-x265-params', (hdr && transfer === 'smpte2084' ? 'lossless=1:hdr10=1' : 'lossless=1')] : ['-crf', '0']),
+      // Bound x265 parallelism: unrestricted pools can exhaust small hosted instances
+      // while encoding high-resolution 10-bit HDR. Keep lossless/Main10 settings.
+      ...(isHighBitDepth ? [
+        '-threads', '4',
+        '-x265-params', (hdr && transfer === 'smpte2084'
+          ? 'lossless=1:hdr10=1:pools=4:frame-threads=2'
+          : 'lossless=1:pools=4:frame-threads=2')
+      ] : ['-threads', '4', '-crf', '0']),
       '-pix_fmt', outputPixFmt,
       ...(primaries && primaries !== 'unknown' ? ['-color_primaries', primaries] : []),
       ...(transfer && transfer !== 'unknown' ? ['-color_trc', transfer] : []),
@@ -1957,10 +1964,12 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
       if (error && !res.headersSent) res.status(500).end();
     });
   } catch (error) {
+    // FFmpeg/x265 writes the most useful failure reason at the END of stderr.
+    // Preserve the tail so the API does not return only the encoder startup banner.
     const detail = String(error.stderr || error.message || 'unknown_error')
       .replace(/\\s+/g, ' ')
       .trim()
-      .slice(0, 900);
+      .slice(-900);
     console.error('[INEASY V2] FFmpeg CFR conversion failed:', {
       stage: ffmpegStage,
       code: error.code || null,
