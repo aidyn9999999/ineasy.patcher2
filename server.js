@@ -1773,7 +1773,16 @@ bot.on('text', async (ctx, next) => {
 
 const app = express();
 app.use(express.json());
+
+// The bare domain opens the authenticated app home. The login page lives at /login.
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+});
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 app.use(express.static(path.join(__dirname, 'public')));
+
 
 // Clean URLs for authenticated single-page app sections.
 app.get('/patcher', (req, res) => {
