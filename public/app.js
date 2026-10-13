@@ -2641,7 +2641,7 @@ if (processBtn) {
             errorCode = failure.error || errorCode;
             if (failure.stage || failure.detail) {
               errorCode += ': stage=' + String(failure.stage || 'unknown') +
-                '; detail=' + String(failure.detail || 'no diagnostic detail').slice(0, 500);
+                '; detail=' + String(failure.detail || 'no diagnostic detail').slice(-900);
             }
           } catch (_) {}
           throw new Error(errorCode);
