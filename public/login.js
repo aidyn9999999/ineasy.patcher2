@@ -159,7 +159,7 @@ async function pollSessionOnce() {
         showStage(stageError);
         return;
       }
-      window.location.replace('/app.html');
+      window.location.replace('/');
     } else if (data.subscriptionRequired) {
       showStage(stageSubscription);
     }
@@ -214,7 +214,7 @@ applyLoginLanguage(savedLoginLanguage);
     const storedId = localStorage.getItem('tg_id') || sessionStorage.getItem('tg_id');
     const storedToken = localStorage.getItem('tg_auth_token') || sessionStorage.getItem('tg_auth_token');
     if (storedId && storedToken) {
-      window.location.replace('/app.html');
+      window.location.replace('/');
       return;
     }
   } catch (error) {}
@@ -242,7 +242,7 @@ applyLoginLanguage(savedLoginLanguage);
       }
       if (!saved) return;
     }
-    window.location.replace('/app.html');
+    window.location.replace('/');
   } catch (error) {
     // Keep the login form usable if the session cannot be checked.
   }
