@@ -1271,3 +1271,67 @@
   #homeSection .home-cta:hover,
   #homeSection .workflow-step:hover { transform: none; }
 }
+
+
+/* Navy glow theme, scoped to existing Home and Patcher presentation. */
+#homeSection .home-hero, #patchSection .patch-panel {
+  background: var(--bg-2); border-color: var(--card-border); box-shadow: var(--shadow-depth);
+}
+#homeSection .home-hero { box-shadow: inset 0 1px 0 var(--accent-dim), 0 0 32px var(--accent-dim); }
+#homeSection .home-hero-shade { background: none; }
+#homeSection .home-hero h1 {
+  color: var(--text); background: none; -webkit-text-fill-color: currentColor;
+  font-weight: 400; letter-spacing: 0; line-height: 1.12;
+  font-size: 60px; text-shadow: 0 0 32px var(--accent-glow);
+}
+#homeSection .home-hero .home-eyebrow {
+  background: var(--accent-dim); color: var(--accent); border-color: var(--card-border);
+  font-weight: 500; letter-spacing: 0;
+}
+#homeSection .home-hero .home-eyebrow::before { background: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+#homeSection .home-cta, .comparison-divider span {
+  background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+  box-shadow: var(--shadow-glow); font-weight: 500;
+}
+#homeSection .home-cta:hover { background: var(--accent-hover); box-shadow: var(--shadow-glow); }
+#homeSection .home-section-heading h2, #patchTitle { color: var(--text); font-weight: 400; letter-spacing: 0; line-height: 1.2; }
+#homeSection .home-intro, #homeSection .home-section-heading > p:last-child,
+#homeSection .workflow-step p, #homeSection .home-local-note p,
+#homeSection .comparison-disclaimer, #homeSection .home-hero-foot,
+#patchSub, #patchSection .dropzone .dz-sub, #patchSection .notice-banner p { color: var(--muted); letter-spacing: 0; }
+#homeSection .home-section-heading .home-eyebrow, #homeSection .workflow-number,
+#homeSection .home-local-icon { color: var(--accent); font-weight: 500; letter-spacing: 0; }
+#homeSection .quality-comparison { border-color: var(--card-border); background: var(--bg-2); }
+#homeSection .comparison-label { background: var(--surface-glass); border-color: var(--card-border); color: var(--text); }
+#homeSection .comparison-divider { background: var(--accent); box-shadow: 0 0 14px var(--accent-glow); }
+#homeSection .workflow-step, #homeSection .workflow-step:hover { background: var(--card); border-color: var(--card-border); box-shadow: none; }
+#homeSection .workflow-step h3 { color: var(--text); font-weight: 500; }
+#homeSection .workflow-number { background: var(--accent-dim); border-color: var(--card-border); }
+#homeSection .home-workflow, #homeSection .home-local-note, #homeSection .home-local-icon { border-color: var(--card-border); }
+#patchSection .dropzone, #patchSection .dropzone.locked {
+  background: var(--bg); border-color: var(--card-border); box-shadow: none;
+}
+#patchSection .dropzone:hover, #patchSection .dropzone.drag {
+  background: var(--surface-soft); border-color: var(--accent); box-shadow: var(--shadow-glow);
+}
+#patchSection .dropzone svg { color: var(--accent); filter: drop-shadow(0 0 8px var(--accent-glow)); }
+#patchSection .dropzone .dz-title { color: var(--text); font-weight: 500; }
+#patchSection .preview-wrap, #patchSection .processing-state, #patchSection .processed-result,
+#patchSection .notice-banner, .patcher-version-option span {
+  background: var(--card); border-color: var(--card-border); box-shadow: none;
+}
+#patchSection #previewVideo { background: var(--bg); }
+#patchSection .file-row { border-color: var(--card-border); }
+.patcher-version-option input:checked + span, .patcher-version-note, .patcher-version-note.v1-highlight {
+  background: var(--accent-dim); color: var(--text); border-color: var(--accent); box-shadow: none;
+}
+#patchSection .optimize-another-btn, #patchSection .optimize-another-btn:hover {
+  background: var(--bg-2); color: var(--accent); border-color: var(--card-border); font-weight: 500;
+}
+#patchSection .notice-banner p, #patchSection .notice-banner > svg { color: var(--muted) !important; }
+#patchSection .process-btn { box-shadow: var(--shadow-glow); letter-spacing: 0; }
+#patchSection .process-btn:disabled { box-shadow: none; }
+@media (min-width: 701px) and (max-width: 900px) { #homeSection .home-hero h1 { font-size: 48px; } }
+@media (max-width: 700px) { #homeSection .home-hero h1 { font-size: 36px; line-height: 1.15; } }
+@media (max-width: 360px) { #homeSection .home-hero h1 { font-size: 30px; } }
+
