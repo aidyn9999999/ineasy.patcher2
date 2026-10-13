@@ -2603,11 +2603,10 @@ if (processBtn) {
 
       // Convert only confirmed SDR 1080p with an explicit supported AVC/HEVC codec.
       // HDR, unknown color metadata, other resolutions and unknown codecs keep original frames.
-      // Preserve source bytes for every resolution, FPS and color profile.
-      // Never run automatic CFR conversion: it can lower quality, resolution, frame rate,
-      // or strip HDR on high-resolution/high-FPS sources.
-      const sdr1080pEligibility = { eligible: false, reason: 'source_preservation_mode' };
-      const fpsConversion = {
+      const sdr1080pEligibility = !isV2SelectedForJob
+        ? await getExplicitSdr1080pEligibility(sourceFile, selectedVideoDimensions)
+        : { eligible: false, reason: 'v2_mode' };
+      let fpsConversion = {
         blob: sourceFile,
         info: {
           width: Number(selectedVideoDimensions?.width) || null,
@@ -2623,11 +2622,24 @@ if (processBtn) {
         main10Transcoded: false,
         hdrProfile: null
       };
-      console.info('[INEASY] Automatic frame-rate conversion disabled; preserving source video:', {
-        resolution: selectedVideoDimensions?.width && selectedVideoDimensions?.height
-          ? selectedVideoDimensions.width + 'x' + selectedVideoDimensions.height : 'unknown',
-        reason: sdr1080pEligibility.reason
-      });
+      if (sdr1080pEligibility.eligible) {
+        console.info('[INEASY] Converting confirmed SDR 1080p to exact 59.94 FPS', {
+          sourceCodec: sdr1080pEligibility.codec
+        });
+        fpsConversion = await convertVideoToExact5994Fps(
+          sourceFile,
+          sourceFile.name,
+          controller.signal,
+          (progress) => updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 10)),
+          sourceDuration,
+          false,
+          'prefer-hardware'
+        );
+      } else {
+        console.info('[INEASY] Preserving source FPS; CFR conversion not eligible:', sdr1080pEligibility.reason);
+      }
+      originalInputFps = null;
+      const normalizedFile = fpsConversion.blob || sourceFile;
       const basePreparedInput = {
         blob: sourceFile,
         report: {
