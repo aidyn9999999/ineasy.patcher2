@@ -1858,6 +1858,10 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
   const jobDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'ineasy-v2-cfr-'));
   const inputPath = path.join(jobDir, 'input.mp4');
   const outputPath = path.join(jobDir, 'output.mp4');
+  const rejectJob = async (status, payload) => {
+    await fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
+    return res.status(status).json(payload);
+  };
   const run = (bin, args, options = {}) => new Promise((resolve, reject) => {
     execFile(bin, args, { ...options, maxBuffer: 8 * 1024 * 1024, timeout: 15 * 60 * 1000 }, (error, stdout, stderr) => {
       if (error) {
@@ -1876,7 +1880,7 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
     };
     const inputMeta = await probe(inputPath);
     const inputVideo = (inputMeta.streams || []).find((stream) => stream.codec_type === 'video');
-    if (!inputVideo) return res.status(422).json({ error: 'video_track_missing' });
+    if (!inputVideo) return await rejectJob(422, { error: 'video_track_missing' });
     const inputWidth = Number(inputVideo.width);
     const inputHeight = Number(inputVideo.height);
     const pixFmt = String(inputVideo.pix_fmt || '').toLowerCase();
@@ -1887,16 +1891,16 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
     const tagsText = JSON.stringify(inputVideo.tags || {}).toLowerCase();
     const hdr = /smpte2084|arib-std-b67/.test(transfer) || /bt2020/.test(primaries);
     const dynamicHdr = /dolby.?vision|dovi|hdr10.?plus|hdr10plus|dynamic.?hdr|smpte.?2094/.test(sideDataText + tagsText);
-    if (dynamicHdr) return res.status(422).json({ error: 'dynamic_hdr_not_supported_without_metadata_loss' });
+    if (dynamicHdr) return await rejectJob(422, { error: 'dynamic_hdr_not_supported_without_metadata_loss' });
     if (!Number.isInteger(inputWidth) || !Number.isInteger(inputHeight) || inputWidth < 1 || inputHeight < 1) {
-      return res.status(422).json({ error: 'video_dimensions_unavailable' });
+      return await rejectJob(422, { error: 'video_dimensions_unavailable' });
     }
     // Restrict the first V2 rollout to common 4:2:0 sources so we never silently downsample chroma.
     if (!/^yuv420p(?:10le|12le|16le)?$/.test(pixFmt)) {
-      return res.status(422).json({ error: 'unsupported_pixel_format_for_lossless_cfr', pixelFormat: pixFmt });
+      return await rejectJob(422, { error: 'unsupported_pixel_format_for_lossless_cfr', pixelFormat: pixFmt });
     }
     if (hdr && !/(?:10|12|16)le$/.test(pixFmt)) {
-      return res.status(422).json({ error: 'hdr_requires_high_bit_depth_source', pixelFormat: pixFmt });
+      return await rejectJob(422, { error: 'hdr_requires_high_bit_depth_source', pixelFormat: pixFmt });
     }
     const isHighBitDepth = /(?:10|12|16)le$/.test(pixFmt);
     const videoEncoder = isHighBitDepth ? 'libx265' : 'libx264';
@@ -1921,7 +1925,7 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
         Number(outputVideo.height) !== inputHeight ||
         String(outputVideo.avg_frame_rate || '') !== '60000/1001' ||
         String(outputVideo.pix_fmt || '') !== outputPixFmt) {
-      return res.status(422).json({ error: 'cfr_output_verification_failed' });
+      return await rejectJob(422, { error: 'cfr_output_verification_failed' });
     }
     const outputHdr = /smpte2084|arib-std-b67/.test(String(outputVideo.color_transfer || '').toLowerCase()) ||
       /bt2020/.test(String(outputVideo.color_primaries || '').toLowerCase());
@@ -1930,12 +1934,12 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
     const requiredHdrSideData = inputSideData.filter((name) => /mastering display|content light level/.test(name));
     const missingHdrSideData = requiredHdrSideData.filter((name) => !outputSideData.some((outName) => outName === name));
     if (hdr && missingHdrSideData.length) {
-      return res.status(422).json({ error: 'hdr_dynamic_or_mastering_metadata_not_preserved' });
+      return await rejectJob(422, { error: 'hdr_dynamic_or_mastering_metadata_not_preserved' });
     }
     if (hdr && (!outputHdr ||
         String(outputVideo.color_transfer || '').toLowerCase() !== transfer ||
         String(outputVideo.color_primaries || '').toLowerCase() !== primaries)) {
-      return res.status(422).json({ error: 'hdr_metadata_verification_failed' });
+      return await rejectJob(422, { error: 'hdr_metadata_verification_failed' });
     }
     const stat = await fs.promises.stat(outputPath);
     res.set('Content-Type', 'video/mp4');
