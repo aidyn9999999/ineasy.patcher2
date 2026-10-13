@@ -2704,7 +2704,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261012-3');
+        const worker = new Worker('adjn-worker.js?v=20261013-4');
         let workerReadyTimeoutId = setTimeout(() => {
           if (workerDone) return;
           workerDone = true;
@@ -2836,6 +2836,14 @@ if (processBtn) {
       }
       verifiedOutputInfo = verifiedOutputInfo || result.outputInfo || result.info || null;
       const verifiedOutputFps = Number(verifiedOutputInfo?.averageFps);
+      if (is4kSource) {
+        const sourceFpsFor4k = Number(result.inputInfo?.averageFps);
+        if (Number.isFinite(sourceFpsFor4k) && sourceFpsFor4k >= 50 &&
+            Number.isFinite(verifiedOutputFps) && verifiedOutputFps < 50) {
+          throw new Error('4k_fps_downgrade_blocked: source=' +
+            sourceFpsFor4k.toFixed(3) + '; output=' + verifiedOutputFps.toFixed(3));
+        }
+      }
       const verifiedHdrProfile = result.outputHdr || result.hdr || null;
       const hdrSourcePreserved = Boolean(
         verifiedHdrProfile?.hdr10 || verifiedHdrProfile?.hdr10plus || verifiedHdrProfile?.hlg ||
