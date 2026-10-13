@@ -2629,7 +2629,7 @@ if (processBtn) {
         reason: sdr1080pEligibility.reason
       });
       const basePreparedInput = {
-        blob: normalizedFile,
+        blob: sourceFile,
         report: {
           performed: false,
           compressionDisabled: true,
@@ -2638,7 +2638,7 @@ if (processBtn) {
       };
       const preparedInput = {
         ...basePreparedInput,
-        blob: normalizedFile,
+        blob: sourceFile,
         sourceFps: null,
         targetFrameRate: null,
         report: {
