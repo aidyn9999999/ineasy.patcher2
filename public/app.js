@@ -2774,7 +2774,7 @@ if (processBtn) {
                 fileType: processingFile.type || sourceFile.type || 'video/mp4',
                 fileSize: processingFile.size || buffer.byteLength,
                 preparationReport: preparedInput.report || null,
-                engine: isV2SelectedForJob ? 'rein-beta' : '2.1.5'
+                engine: '2.1.5'
               }, [buffer]);
             } catch (error) {
               clearWorkerReadyTimeout();
