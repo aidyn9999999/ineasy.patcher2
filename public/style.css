@@ -1384,3 +1384,101 @@ button, .tg-btn, .news-link, .download-link, .balance-buy-site, .balance-buy-tel
 .giveaway-toast-close{color:#c5cbd4;}
 .giveaway-toast-close:hover{background:rgba(255,255,255,.1);color:#fff;}
 @media(max-width:600px){.giveaway-toast{top:auto;right:auto;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));width:calc(100vw - 24px);}.giveaway-toast-link{padding:8px 28px 8px 9px;}}
+
+
+/* INEASY navy glow theme — presentation only; no behavioral changes. */
+:root {
+  --bg: oklch(0.15 0.035 260);
+  --bg-2: oklch(0.19 0.045 260);
+  --card: oklch(0.22 0.05 260);
+  --card-border: oklch(0.38 0.075 255);
+  --text: oklch(0.96 0.015 245);
+  --muted: oklch(0.75 0.045 250);
+  --accent: oklch(0.78 0.14 230);
+  --accent-hover: oklch(0.87 0.1 225);
+  --accent-dim: oklch(0.7 0.16 245 / 0.12);
+  --accent-glow: oklch(0.72 0.17 245 / 0.3);
+  --success: oklch(0.8 0.15 170);
+  --danger: oklch(0.76 0.17 15);
+  --on-accent: oklch(0.17 0.04 260);
+  --surface-soft: oklch(0.25 0.065 260);
+  --surface-glass: oklch(0.19 0.045 260 / 0.95);
+  --shadow-depth: 0 18px 48px oklch(0.1 0.03 260 / 0.4);
+  --shadow-glow: 0 0 24px var(--accent-glow), 0 8px 24px oklch(0.1 0.03 260 / 0.35);
+  --radius: 8px;
+}
+body, .scene, .app-shell { background: var(--bg); color: var(--text); }
+body, button, input, select, textarea { font-weight: 400; letter-spacing: 0; }
+h1, h2, h3, .card h1, .patch-title, .topbar .brand,
+.checker-copy h2, .faq-section h2, .tiktok-composer .modal-head h2 {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--text);
+}
+.card h1 { line-height: 1.12; font-size: 64px; }
+.card h1 span { color: var(--text); text-shadow: 0 0 32px var(--accent-glow); }
+.topbar { background: var(--surface-glass); border-color: var(--card-border); box-shadow: 0 1px 22px var(--accent-dim); }
+.topbar .brand { color: var(--accent); text-shadow: 0 0 20px var(--accent-glow); }
+.grid-lines { background-image: linear-gradient(to right, var(--accent-dim) 1px, transparent 1px), linear-gradient(to bottom, var(--accent-dim) 1px, transparent 1px); }
+.hero-kicker, .lede, .hint, .waiting-text, .patch-sub, .local-note,
+.faq-section details p, .checker-input-row input::placeholder, .zernio-key-row input::placeholder { color: var(--muted); }
+.login-language-dock, .language-dock, .balance-pill, .user-pill,
+.patch-panel, .checker-panel, .faq-section, .modal, .tiktok-composer,
+.preview-wrap, .processing-state, .checker-result, .pkg-row,
+.post-options-group, .privacy-choice, .schedule-choice, .tiktok-consent,
+.tiktok-upload-notice, .tiktok-draft-note, .posting-device-options button,
+.result-meta > div, .result-grid > div, .checker-source, .giveaway-toast {
+  background: var(--card);
+  border-color: var(--card-border);
+  color: var(--text);
+}
+.patch-panel, .checker-panel, .faq-section, .modal, .tiktok-composer { box-shadow: var(--shadow-depth); }
+.dropzone, .dropzone.locked, .checker-input-row input,
+.tiktok-publish-form textarea, .tiktok-publish-form select, .schedule-time-field input,
+.zernio-key-row input, .preview-wrap video { background: var(--bg-2); border-color: var(--card-border); color: var(--text); }
+.dropzone:hover, .dropzone.drag { background: var(--surface-soft); border-color: var(--accent); box-shadow: var(--shadow-glow); }
+.checker-panel { background-image: none; }
+.checker-input-row input:focus, .tiktok-publish-form textarea:focus,
+.tiktok-publish-form select:focus, .schedule-time-field input:focus, .zernio-key-row input:focus {
+  border-color: var(--accent); outline: 2px solid var(--accent-dim); box-shadow: 0 0 18px var(--accent-dim);
+}
+.tg-btn, .checker-open-btn, .checker-input-row button, .pkg-buy,
+.process-btn, .processed-result a, .tiktok-publish-btn, .tiktok-connect-btn,
+.tiktok-submit-btn, .balance-buy-site, .news-link,
+.publication-actions .tiktok-publish-btn, .publication-actions .tiktok-studio-btn,
+.zernio-key-panel .tiktok-connect-btn {
+  background: var(--accent); color: var(--on-accent); border-color: var(--accent);
+  box-shadow: var(--shadow-glow); font-weight: 500;
+}
+.tg-btn:hover, .checker-open-btn:hover, .checker-input-row button:hover, .pkg-buy:hover,
+.process-btn:not(:disabled):hover, .processed-result a:hover, .tiktok-publish-btn:hover,
+.tiktok-connect-btn:hover, .tiktok-submit-btn:hover, .balance-buy-site:hover, .news-link:hover,
+.publication-actions .tiktok-publish-btn:hover, .publication-actions .tiktok-studio-btn:hover,
+.zernio-key-panel .tiktok-connect-btn:hover {
+  background: var(--accent-hover); color: var(--on-accent); border-color: var(--accent-hover); box-shadow: var(--shadow-glow);
+}
+.process-btn:disabled { background: var(--surface-soft); color: var(--muted); box-shadow: none; }
+.login-language-dock button.active, .language-dock button.active, .language-dock button:hover,
+.plus-btn:hover, .result-mark, .result-heading > span { background: var(--accent); color: var(--on-accent); }
+.plus-btn, .giveaway-toast-icon { background: var(--accent-dim); color: var(--accent); border-color: var(--card-border); }
+.bottom-nav { background: var(--surface-glass); border-color: var(--card-border); box-shadow: 0 -1px 24px var(--accent-dim); }
+.bottom-nav .nav-tab { font-weight: 500; color: var(--muted); }
+.bottom-nav .nav-tab.active, .bottom-nav .nav-tab:hover { background: var(--accent-dim); color: var(--accent); }
+.bottom-nav .nav-tab.active .nav-icon { filter: drop-shadow(0 0 6px var(--accent-glow)); }
+.community-callout .news-copy strong, .processed-result-copy strong,
+.giveaway-toast-copy strong, .site-footer strong, .faq-section summary { color: var(--text); font-weight: 500; }
+.export-note, .eyebrow, .red-eyebrow, .news-callout b { color: var(--accent); font-weight: 500; }
+.notice-banner, .fps-advice, .patcher-version-note.v1-highlight,
+.privacy-choice.selected, .schedule-choice:has(input:checked) {
+  background: var(--accent-dim); border-color: var(--card-border); color: var(--text); font-weight: 400; box-shadow: none;
+}
+.publication-actions { background: var(--bg-2); border-color: var(--card-border); }
+.zernio-key-link, .zernio-key-link:hover, .tiktok-change-key-btn, .balance-buy-telegram { color: var(--accent); border-color: var(--card-border); }
+.giveaway-toast-copy small, .giveaway-toast-close { color: var(--muted); }
+.giveaway-toast-link:hover, .giveaway-toast-close:hover { background: var(--accent-dim); }
+.site-footer, .faq-section details { border-color: var(--card-border); }
+button:not(:disabled):hover { box-shadow: 0 0 18px var(--accent-dim); }
+@media (max-width: 600px) { .card h1 { font-size: 38px; line-height: 1.15; } }
+@media (prefers-reduced-motion: reduce) { button, a { animation: none; transition: none; } }
+
