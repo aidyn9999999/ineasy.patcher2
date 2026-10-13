@@ -1334,3 +1334,15 @@
 @media (min-width: 701px) and (max-width: 900px) { #homeSection .home-hero h1 { font-size: 48px; } }
 @media (max-width: 700px) { #homeSection .home-hero h1 { font-size: 36px; line-height: 1.15; } }
 @media (max-width: 360px) { #homeSection .home-hero h1 { font-size: 30px; } }
+
+
+/* Preserve the V1 layout and colors; increase type and button weight only. */
+#homeSection .home-hero h1, #homeSection .home-section-heading h2, #patchTitle { font-weight: 700; }
+#homeSection .home-cta, #patchSection .process-btn,
+#patchSection .optimize-another-btn, #patchSection .optimize-another-btn:hover { font-weight: 700; }
+#homeSection .home-cta { border-width: 2px; }
+#homeSection .workflow-step h3, #homeSection .home-hero .home-eyebrow,
+#homeSection .home-section-heading .home-eyebrow, #homeSection .workflow-number,
+#patchSection .dropzone .dz-title { font-weight: 600; }
+#homeSection .home-intro, #homeSection .workflow-step p,
+#homeSection .home-local-note p, #patchSub { font-weight: 500; }
