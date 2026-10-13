@@ -2836,6 +2836,25 @@ if (processBtn) {
       }
       verifiedOutputInfo = verifiedOutputInfo || result.outputInfo || result.info || null;
       const verifiedOutputFps = Number(verifiedOutputInfo?.averageFps);
+      // Never accept an output that silently drops a source to 720p or reduces FPS.
+      // ADJN is a metadata/MP4 patcher; output geometry and cadence must remain intact.
+      const sourceWidthForGuard = Number(result.inputInfo?.width || selectedVideoDimensions?.width);
+      const sourceHeightForGuard = Number(result.inputInfo?.height || selectedVideoDimensions?.height);
+      const outputWidthForGuard = Number(verifiedOutputInfo?.width);
+      const outputHeightForGuard = Number(verifiedOutputInfo?.height);
+      if (sourceWidthForGuard >= 1280 && sourceHeightForGuard >= 720 &&
+          Number.isFinite(outputWidthForGuard) && Number.isFinite(outputHeightForGuard) &&
+          (outputWidthForGuard < sourceWidthForGuard || outputHeightForGuard < sourceHeightForGuard)) {
+        throw new Error('resolution_downgrade_blocked: source=' +
+          sourceWidthForGuard + 'x' + sourceHeightForGuard + '; output=' +
+          outputWidthForGuard + 'x' + outputHeightForGuard);
+      }
+      const sourceFpsForGuard = Number(result.inputInfo?.averageFps);
+      if (Number.isFinite(sourceFpsForGuard) && sourceFpsForGuard >= 29 &&
+          Number.isFinite(verifiedOutputFps) && verifiedOutputFps < sourceFpsForGuard - 1) {
+        throw new Error('fps_downgrade_blocked: source=' +
+          sourceFpsForGuard.toFixed(3) + '; output=' + verifiedOutputFps.toFixed(3));
+      }
       if (is4kSource) {
         const sourceFpsFor4k = Number(result.inputInfo?.averageFps);
         if (Number.isFinite(sourceFpsFor4k) && sourceFpsFor4k >= 50 &&
