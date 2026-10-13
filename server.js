@@ -1886,7 +1886,7 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
     const sideDataText = JSON.stringify(inputVideo.side_data_list || []).toLowerCase();
     const tagsText = JSON.stringify(inputVideo.tags || {}).toLowerCase();
     const hdr = /smpte2084|arib-std-b67/.test(transfer) || /bt2020/.test(primaries);
-    const dynamicHdr = /dolby.?vision|dovi|hdr10.?plus|hdr10plus|dynamic.?hdr/.test(sideDataText + tagsText);
+    const dynamicHdr = /dolby.?vision|dovi|hdr10.?plus|hdr10plus|dynamic.?hdr|smpte.?2094/.test(sideDataText + tagsText);
     if (dynamicHdr) return res.status(422).json({ error: 'dynamic_hdr_not_supported_without_metadata_loss' });
     if (!Number.isInteger(inputWidth) || !Number.isInteger(inputHeight) || inputWidth < 1 || inputHeight < 1) {
       return res.status(422).json({ error: 'video_dimensions_unavailable' });
@@ -1906,7 +1906,7 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
       '-map', '0:v:0', '-map', '0:a:0?', '-map_metadata', '0',
       '-vf', 'fps=60000/1001',
       '-c:v', videoEncoder, '-preset', 'ultrafast',
-      ...(isHighBitDepth ? ['-x265-params', 'lossless=1'] : ['-crf', '0']),
+      ...(isHighBitDepth ? ['-x265-params', (hdr && transfer === 'smpte2084' ? 'lossless=1:hdr10=1' : 'lossless=1')] : ['-crf', '0']),
       '-pix_fmt', outputPixFmt,
       ...(primaries && primaries !== 'unknown' ? ['-color_primaries', primaries] : []),
       ...(transfer && transfer !== 'unknown' ? ['-color_trc', transfer] : []),
@@ -1925,6 +1925,13 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
     }
     const outputHdr = /smpte2084|arib-std-b67/.test(String(outputVideo.color_transfer || '').toLowerCase()) ||
       /bt2020/.test(String(outputVideo.color_primaries || '').toLowerCase());
+    const inputSideData = (inputVideo.side_data_list || []).map((item) => String(item.side_data_type || '').toLowerCase());
+    const outputSideData = (outputVideo.side_data_list || []).map((item) => String(item.side_data_type || '').toLowerCase());
+    const requiredHdrSideData = inputSideData.filter((name) => /mastering display|content light level/.test(name));
+    const missingHdrSideData = requiredHdrSideData.filter((name) => !outputSideData.some((outName) => outName === name));
+    if (hdr && missingHdrSideData.length) {
+      return res.status(422).json({ error: 'hdr_dynamic_or_mastering_metadata_not_preserved' });
+    }
     if (hdr && (!outputHdr ||
         String(outputVideo.color_transfer || '').toLowerCase() !== transfer ||
         String(outputVideo.color_primaries || '').toLowerCase() !== primaries)) {
