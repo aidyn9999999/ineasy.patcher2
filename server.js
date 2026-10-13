@@ -1775,6 +1775,14 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Clean URLs for authenticated single-page app sections.
+app.get('/patcher', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+});
+app.get('/checker', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'app.html'));
+});
+
 function createUserToken(telegramId) {
   const payload = Buffer.from(JSON.stringify({
     telegramId: String(telegramId),
