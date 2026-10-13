@@ -2590,10 +2590,8 @@ if (processBtn) {
       setProcessingState('processing', '');
       updateProcessingProgress(3);
 
-      // Patcher-only mode: do not transcode or change the source frame rate.
-      // Keeping the original media avoids the expensive metadata scan and encoder startup
-      // that previously left large videos stuck near 4%. ADJN performs the patch on the
-      // original MP4/MOV bytes and validates resolution, timing, codec and HDR signaling.
+      // V2 uses server FFmpeg for verified, lossless 59.94 FPS CFR conversion.
+      // V1 keeps its existing SDR-only MediaBunny path and is otherwise untouched.
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
       const sourceLongSide = Math.max(
         Number(selectedVideoDimensions?.width) || 0,
@@ -2605,12 +2603,9 @@ if (processBtn) {
         throw new Error('patcher_requires_mp4_mov');
       }
 
-      // Convert confirmed SDR AVC/HEVC sources at their native resolution to CFR 59.94.
-      // No 720p scaling is used. HDR and uncertain color metadata remain untouched because
-      // this browser AVC encoder does not guarantee HDR/Main10 preservation.
-      const sdr1080pEligibility = !isV2SelectedForJob
-        ? await getExplicitSdr1080pEligibility(sourceFile, selectedVideoDimensions)
-        : { eligible: false, reason: 'v2_mode' };
+      const sdr1080pEligibility = isV2SelectedForJob
+        ? { eligible: false, reason: 'v2_uses_ffmpeg_server_cfr' }
+        : await getExplicitSdr1080pEligibility(sourceFile, selectedVideoDimensions);
       let fpsConversion = {
         blob: sourceFile,
         info: {
@@ -2627,7 +2622,45 @@ if (processBtn) {
         main10Transcoded: false,
         hdrProfile: null
       };
-      if (sdr1080pEligibility.eligible) {
+
+      if (isV2SelectedForJob) {
+        updateProcessingProgress(4);
+        const cfrResponse = await fetch('/api/v2/ffmpeg-cfr', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            ...(tgAuthToken ? { Authorization: 'Bearer ' + tgAuthToken } : {})
+          },
+          body: sourceFile,
+          signal: controller.signal
+        });
+        if (!cfrResponse.ok) {
+          let errorCode = 'ffmpeg_cfr_conversion_failed';
+          try { errorCode = (await cfrResponse.json()).error || errorCode; } catch (_) {}
+          throw new Error(errorCode);
+        }
+        const cfrBlob = await cfrResponse.blob();
+        if (!cfrBlob.size || cfrResponse.headers.get('X-INEASY-CFR') !== '60000/1001') {
+          throw new Error('cfr_output_verification_failed');
+        }
+        fpsConversion = {
+          blob: cfrBlob,
+          info: {
+            width: Number(cfrResponse.headers.get('X-INEASY-WIDTH')) || null,
+            height: Number(cfrResponse.headers.get('X-INEASY-HEIGHT')) || null,
+            averageFps: 60000 / 1001,
+            codec: 'ffmpeg-lossless'
+          },
+          fps: 60000 / 1001,
+          sourceFps: null,
+          preserveOriginal: false,
+          hdr: cfrResponse.headers.get('X-INEASY-HDR') === 'preserved',
+          hdrTranscoded: cfrResponse.headers.get('X-INEASY-HDR') === 'preserved',
+          main10Transcoded: cfrResponse.headers.get('X-INEASY-HDR') === 'preserved',
+          hdrProfile: cfrResponse.headers.get('X-INEASY-HDR') === 'preserved' ? 'verified-static-hdr' : null
+        };
+        updateProcessingProgress(13);
+      } else if (sdr1080pEligibility.eligible) {
         console.info('[INEASY] Converting confirmed SDR source at native resolution to exact 59.94 FPS', {
           sourceCodec: sdr1080pEligibility.codec
         });
@@ -2660,15 +2693,15 @@ if (processBtn) {
         targetFrameRate: null,
         report: {
           ...(basePreparedInput.report || {}),
-          performed: false,
+          performed: !!fpsConversion.fps,
           compressionDisabled: true,
-          cfrNormalized: false,
-          hdrSourcePreserved: false,
-          hdrCfrRequired: false,
-          hdrMain10Encoded: false,
-          hdrProfile: null,
-          frameRateRetimed: false,
-          targetFrameRate: null,
+          cfrNormalized: !!fpsConversion.fps,
+          hdrSourcePreserved: !!fpsConversion.hdr,
+          hdrCfrRequired: isV2SelectedForJob,
+          hdrMain10Encoded: !!fpsConversion.main10Transcoded,
+          hdrProfile: fpsConversion.hdrProfile || null,
+          frameRateRetimed: !!fpsConversion.fps,
+          targetFrameRate: fpsConversion.fps || null,
           inputWidth: selectedVideoDimensions?.width || null,
           inputHeight: selectedVideoDimensions?.height || null,
           outputWidth: selectedVideoDimensions?.width || null,
@@ -2741,7 +2774,7 @@ if (processBtn) {
                 fileType: processingFile.type || sourceFile.type || 'video/mp4',
                 fileSize: processingFile.size || buffer.byteLength,
                 preparationReport: preparedInput.report || null,
-                engine: '2.1.5'
+                engine: isV2SelectedForJob ? 'rein-beta' : '2.1.5'
               }, [buffer]);
             } catch (error) {
               clearWorkerReadyTimeout();
