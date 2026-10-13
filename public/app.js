@@ -2454,9 +2454,27 @@ function applyProvidedNavIcons() {
 
 applyProvidedNavIcons();
 
-// --- Tabs ---
+// --- Tabs and clean section URLs ---
+const SECTION_PATHS = {
+  homeSection: '/app.html',
+  patchSection: '/patcher',
+  checkerSection: '/checker',
+  faqSection: '/app.html',
+};
+function syncSectionFromPath() {
+  const path = window.location.pathname.replace(/\\/+$/, '') || '/';
+  const view = path === '/patcher' ? 'patchSection'
+    : path === '/checker' ? 'checkerSection'
+    : 'homeSection';
+  const tab = document.querySelector(`.nav-tab[data-view="${view}"]`);
+  if (tab) tab.click();
+}
 document.querySelectorAll('.nav-tab').forEach((tab) => {
   tab.addEventListener('click', () => {
+    const nextPath = SECTION_PATHS[tab.dataset.view] || '/app.html';
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({ ineasyView: tab.dataset.view }, '', nextPath);
+    }
     if (tab.dataset.view !== 'patchSection') {
       setPublicationActionsVisible(false);
       if (tiktokComposerOverlay) tiktokComposerOverlay.classList.add('hidden');
@@ -2490,6 +2508,8 @@ document.querySelectorAll('[data-open-view]').forEach((button) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 });
+window.addEventListener('popstate', syncSectionFromPath);
+if (!PATCHER_TEST_MODE) syncSectionFromPath();
 
 if (PATCHER_TEST_MODE) {
   document.querySelectorAll('.nav-tab').forEach((tab) => {
