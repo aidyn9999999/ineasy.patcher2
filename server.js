@@ -1870,8 +1870,10 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
       } else resolve({ stdout, stderr });
     });
   });
+  let ffmpegStage = 'write_input';
   try {
     await fs.promises.writeFile(inputPath, req.body);
+    ffmpegStage = 'probe_input';
     const probe = async (file) => {
       const result = await run(FFPROBE_PATH, [
         '-v', 'error', '-select_streams', 'v:0', '-show_streams', '-show_format', '-of', 'json', file
@@ -1917,7 +1919,9 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
       ...(matrix && matrix !== 'unknown' ? ['-colorspace', matrix] : []),
       '-c:a', 'copy', '-movflags', '+faststart', outputPath
     ];
+    ffmpegStage = 'encode_cfr_5994';
     await run(FFMPEG_PATH, args);
+    ffmpegStage = 'probe_output';
     const outputMeta = await probe(outputPath);
     const outputVideo = (outputMeta.streams || []).find((stream) => stream.codec_type === 'video');
     if (!outputVideo ||
@@ -1953,8 +1957,24 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
       if (error && !res.headersSent) res.status(500).end();
     });
   } catch (error) {
-    console.error('[INEASY V2] FFmpeg CFR conversion failed:', error.message, error.stderr || '');
-    if (!res.headersSent) res.status(422).json({ error: 'ffmpeg_cfr_conversion_failed' });
+    const detail = String(error.stderr || error.message || 'unknown_error')
+      .replace(/\\s+/g, ' ')
+      .trim()
+      .slice(0, 900);
+    console.error('[INEASY V2] FFmpeg CFR conversion failed:', {
+      stage: ffmpegStage,
+      code: error.code || null,
+      signal: error.signal || null,
+      message: error.message || '',
+      stderr: detail
+    });
+    if (!res.headersSent) {
+      res.status(422).json({
+        error: 'ffmpeg_cfr_conversion_failed',
+        stage: ffmpegStage,
+        detail: detail || String(error.message || 'unknown_error').slice(0, 300)
+      });
+    }
     fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
   }
 });
