@@ -1193,7 +1193,7 @@ async function runUserBroadcast(message, reportCtx) {
     } while (cursor !== '0');
 
     const summary = `Рассылка завершена. Найдено пользователей: ${scanned}; успешно отправлено сейчас: ${sent}; уже отправлено/пропущено: ${skipped}; ошибок доставки: ${failed}. Балансы не менялись.`;
-    await reportCtx.reply(summary + (failed ? '\\n\\nЧтобы повторить попытки для неудачных получателей, снова выполните /broadcast с точно таким же текстом.' : ''));
+    await reportCtx.reply(summary + (failed ? '\n\nЧтобы повторить попытки для неудачных получателей, снова выполните /broadcast с точно таким же текстом.' : ''));
     console.log('[INEASY] ' + summary);
   } catch (error) {
     console.error('[INEASY] Broadcast interrupted:', error.message);
