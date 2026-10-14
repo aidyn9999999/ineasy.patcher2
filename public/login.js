@@ -10,8 +10,8 @@ const checkSubscriptionBtn = document.getElementById('checkSubscriptionBtn');
 const telegramFallbackLink = document.getElementById('telegramFallbackLink');
 const loginTranslations = {
   ru: {
-    title: 'Патчите своё видео прямо сейчас.',
-    lede: 'Публикуйте в высоком качестве.',
+    title: 'Подготовьте видео к публикации в TikTok',
+    lede: 'Войдите в INEASY, чтобы подготовить видео и проверить параметры опубликованного ролика.',
     login: 'Войти через Telegram',
     botHint: 'Откроется бот @ineasybot — нажмите «Запустить» в чате.',
     browserWarning: 'Если вход не проходит, откройте сайт в Chrome или другом браузере. Safari и встроенный браузер Telegram могут не завершить подтверждение.',
