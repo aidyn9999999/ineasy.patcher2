@@ -533,3 +533,28 @@ html, body, body *, button, input, textarea, select, option, summary, label {
 #patchSection .dz-sub{font-weight:600!important}
 #patchSection .process-btn,#patchSection button{font-weight:700}
 #patchSection .file-meta,#patchSection .notice-banner p{font-weight:500}
+
+
+/* 2026-10-15: deep navy, vivid blue actions, compact patcher, lowercase wordmark. */
+:root{--bg:#030817;--bg-2:#050D20;--card:#071329;--card-border:#172B4D;--accent:#3478F6;--accent-hover:#4B8BFF;--accent-dim:rgba(52,120,246,.16);--accent-glow:rgba(52,120,246,.22);--panel-bg:#071329}
+html,body,.app-shell{background:#030817!important}
+.topbar{background:rgba(5,13,32,.97)!important;border-color:#172B4D}
+.topbar .brand{display:flex;gap:0;letter-spacing:-.065em;font-size:clamp(22px,2.5vw,30px);font-weight:600}
+.topbar .brand-in{color:#4B8BFF!important}.topbar .brand-easy{color:#F8FAFC!important}
+.app-main{width:min(960px,100%);padding-top:14px;padding-bottom:80px}
+.community-callout .news-callout{background:#071329;border-color:#172B4D;border-left-color:#3478F6}
+.community-callout .news-link,.plus-btn,.home-cta{background:#2868D9!important;border-color:#4386FF!important;color:#fff!important}
+.community-callout .news-link:hover,.plus-btn:hover,.home-cta:hover{background:#4386FF!important}
+#patchSection .patch-panel{background:#050D20!important;border-color:#172B4D!important;border-radius:16px;padding:clamp(12px,2vw,20px);box-shadow:0 12px 34px rgba(0,0,0,.22)}
+#patchSection .patch-title{font-size:clamp(22px,2.3vw,29px)!important;line-height:1.18;font-weight:800!important;letter-spacing:-.035em}
+#patchSection .patch-sub{font-size:13px;line-height:1.45;color:#B8C7DF;font-weight:600!important;margin:6px auto 12px}
+#patchSection .dropzone{min-height:clamp(160px,22vw,210px);background:#071329!important;border-color:#28549A!important;border-radius:14px}
+#patchSection .dropzone:hover,#patchSection .dropzone.drag{background:#0A1B38!important;border-color:#4386FF!important}
+#patchSection .dz-title{font-size:clamp(15px,1.8vw,19px);font-weight:800!important}
+#patchSection .dz-sub{font-size:12px;line-height:1.45;color:#B8C7DF;font-weight:600!important}
+#patchSection .process-btn,#patchSection button:not(.clear-btn){background-color:#2868D9;border-color:#4386FF;color:#fff}
+#patchSection .process-btn{min-height:46px;font-weight:700}
+#patchSection .export-note,#patchSection #durationNotice{display:none!important}
+#archiveSection,.archive-card,.video-archive{background:#050D20!important;border-color:#172B4D!important}
+.site-footer{background:#030817!important;border-color:#172B4D!important}
+@media(max-width:700px){.app-main{padding:12px 10px 86px}#patchSection .patch-panel{padding:12px 10px 14px}#patchSection .patch-title{font-size:clamp(21px,5.7vw,27px)!important}#patchSection .patch-sub{font-size:12px;margin-bottom:10px}#patchSection .dropzone{min-height:165px;padding:18px 9px}#patchSection .dz-title{font-size:15px}#patchSection .dz-sub{font-size:11px}}
