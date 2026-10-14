@@ -262,7 +262,7 @@ const translations = {
     stepThreeTitle: 'Проверьте публикацию',
     stepThreeBody: 'Проверьте опубликованное видео в TikTok и наслаждайтесь результатом!',
     localProcessingCopy: 'Видео остаётся на устройстве. Патчер сохраняет исходные FPS и разрешение. Метаданные HDR/SDR проверяются без перекодирования.',
-    homeBottomCta: 'Начать обработку',
+    homeBottomCta: 'Обработать видео',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
     videos: 'видео',
