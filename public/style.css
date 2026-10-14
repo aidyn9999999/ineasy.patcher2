@@ -1510,3 +1510,140 @@ button, .tg-btn, .checker-open-btn, .checker-input-row button, .pkg-buy,
 .giveaway-toast-close .ui-icon { width: 18px; height: 18px; }
 .home-local-icon, .comparison-divider span { display: grid; place-items: center; }
 .tiktok-publish-btn::before { width: 20px; height: 20px; flex-basis: 20px; }
+
+
+/* INEASY unified design system — global component pass */
+:root {
+  --bg: #080b10;
+  --bg-2: #0d1118;
+  --card: #111720;
+  --card-border: rgba(164, 180, 201, .18);
+  --text: #eef2f7;
+  --muted: #9aa6b6;
+  --accent: #c8d2e0;
+  --accent-hover: #edf2f8;
+  --accent-dim: rgba(185, 200, 219, .10);
+  --accent-glow: rgba(165, 184, 209, .18);
+  --success: #55d6a3;
+  --danger: #ff7e91;
+  --radius: 18px;
+  color-scheme: dark;
+}
+:where(button, input, select, textarea) { font: inherit; }
+:where(button, a, input, select, textarea, .dropzone, .quality-comparison, .modal, .patch-panel) {
+  -webkit-tap-highlight-color: transparent;
+}
+:where(button, .tg-btn, .link-btn, .home-cta, .news-link, .copy-id-btn, .plus-btn, .logout-btn,
+       .modal-close, .balance-buy-site, .balance-buy-telegram, .language-dock button,
+       .login-language-dock button, .pkg-list button, .publish-panel button, .publish-panel a,
+       .patch-panel button, .patch-panel a, .view-nav button, .tab-btn, .faq-item button) {
+  transition: color .18s ease, background .18s ease, border-color .18s ease,
+              box-shadow .18s ease, transform .18s ease, opacity .18s ease;
+}
+:where(button, .tg-btn, .home-cta, .balance-buy-site, .balance-buy-telegram,
+       .publish-panel button, .patch-panel button, .pkg-list button) {
+  border-radius: 12px;
+}
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid #d8e3f1;
+  outline-offset: 3px;
+}
+:where(input:not([type="file"]):not([type="range"]), select, textarea) {
+  border: 1px solid rgba(164, 180, 201, .24);
+  border-radius: 12px;
+  background: #0a0f16;
+  color: var(--text);
+}
+:where(input:not([type="file"]):not([type="range"]), select, textarea):hover {
+  border-color: rgba(190, 205, 224, .42);
+}
+:where(button:disabled, input:disabled, select:disabled, textarea:disabled) {
+  cursor: not-allowed;
+  opacity: .52;
+}
+.topbar {
+  position: relative;
+  gap: 16px;
+  background: rgba(11, 15, 22, .94);
+  border-bottom-color: rgba(164, 180, 201, .14);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, .16);
+  backdrop-filter: blur(18px);
+}
+.topbar .brand { color: #e5ebf4; letter-spacing: .12em; font-weight: 800; }
+.balance-pill, .user-pill, .language-dock, .login-language-dock {
+  border-color: rgba(164, 180, 201, .20);
+  background: rgba(17, 23, 32, .88);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+.copy-id-btn, .plus-btn, .logout-btn, .modal-close, .news-link {
+  border: 1px solid rgba(164, 180, 201, .18);
+  background: rgba(193, 207, 225, .06);
+  color: #cbd5e2;
+  border-radius: 10px;
+}
+.copy-id-btn:hover, .plus-btn:hover, .logout-btn:hover, .modal-close:hover, .news-link:hover {
+  border-color: rgba(203, 216, 233, .48);
+  background: rgba(193, 207, 225, .13);
+  color: #fff;
+  transform: translateY(-1px);
+}
+.tg-btn, .home-cta, .balance-buy-site, .patch-panel button:not(.modal-close),
+.publish-panel button, .pkg-list button {
+  border: 1px solid rgba(224, 233, 245, .38);
+  background: linear-gradient(180deg, #dce4ee 0%, #b5c1d1 100%);
+  color: #0b1017;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 8px 24px rgba(0,0,0,.20);
+}
+.tg-btn:hover, .home-cta:hover, .balance-buy-site:hover, .patch-panel button:not(.modal-close):hover,
+.publish-panel button:hover, .pkg-list button:hover {
+  background: linear-gradient(180deg, #f1f5fa 0%, #cbd6e4 100%);
+  border-color: rgba(240, 246, 253, .72);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.82), 0 12px 28px rgba(0,0,0,.28);
+  transform: translateY(-1px);
+}
+.tg-btn:active, .home-cta:active, .balance-buy-site:active, .patch-panel button:active { transform: translateY(0) scale(.99); }
+.link-btn { color: #c6d2e1; border-radius: 8px; }
+.link-btn:hover { color: #fff; background: rgba(190, 205, 224, .08); }
+.balance-buy-telegram, .subscription-channel {
+  border-radius: 12px;
+  border: 1px solid rgba(164, 180, 201, .22);
+}
+.modal-overlay { background: rgba(2, 5, 9, .76); backdrop-filter: blur(10px); }
+.modal {
+  border: 1px solid rgba(164, 180, 201, .22);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #151c27, #0c1119);
+  box-shadow: 0 30px 100px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.035);
+}
+.modal-head { border-bottom-color: rgba(164, 180, 201, .14); }
+.pkg-list li, .pkg-item, .faq-item, .result-card, .preview-card, .publish-panel,
+.analyzer-panel, .workflow-step {
+  border-color: rgba(164, 180, 201, .17);
+}
+:where(.pkg-list li, .pkg-item, .faq-item, .result-card, .preview-card, .publish-panel, .analyzer-panel) {
+  border-radius: 14px;
+}
+.dropzone {
+  border-radius: 20px;
+  border-color: rgba(164, 180, 201, .38);
+  background: radial-gradient(ellipse at 50% 0%, rgba(173,190,214,.08), transparent 55%), #0b1017;
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+.dropzone:hover, .dropzone.drag {
+  border-color: rgba(211, 224, 241, .78);
+  box-shadow: 0 0 0 3px rgba(180, 198, 220, .06), 0 18px 44px rgba(0,0,0,.22);
+}
+.preview-wrap video, video, .video-preview { border-radius: 14px; }
+:where(.progress, .progress-bar, .progress-track, progress) { border-radius: 999px; overflow: hidden; }
+:where(.toast, .notice, .status-message) { border-radius: 12px; }
+:where(a) { text-underline-offset: 3px; }
+@media (max-width: 700px) {
+  .topbar { padding: 12px 14px; flex-wrap: wrap; }
+  .balance-pill { max-width: 100%; flex-wrap: wrap; justify-content: center; }
+  .modal { border-radius: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
