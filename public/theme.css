@@ -269,3 +269,41 @@ details p { color: #94A3B8; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Login page follows the same blue visual system. */
+.scene {
+  background: radial-gradient(ellipse at 50% 0%, #112342 0%, #070D19 62%);
+}
+.grid-lines {
+  background-image: linear-gradient(to right, rgba(91,143,255,.055) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(91,143,255,.055) 1px, transparent 1px);
+}
+.card {
+  max-width: 720px; border: 1px solid #1E304B; border-radius: 22px;
+  padding: clamp(28px,5vw,54px); background: rgba(13,23,40,.88);
+  box-shadow: 0 28px 90px rgba(0,0,0,.26), inset 0 1px 0 rgba(255,255,255,.025);
+  backdrop-filter: blur(16px);
+}
+.card h1 {
+  color: #E8EEF8; font-family: 'Manrope',sans-serif; font-size: clamp(34px,6vw,54px);
+  font-weight: 500 !important; line-height: 1.12; letter-spacing: -.04em;
+}
+.card h1 span { color: #E8EEF8; }
+.mark { border-color: #263B5A; border-radius: 14px; background: rgba(37,99,235,.12); }
+.hero-kicker { color: #8FB4FF; font-weight: 500; letter-spacing: 1.6px; }
+.lede { color: #A8B6CA; font-size: 14px; line-height: 1.7; }
+.tg-btn {
+  border: 1px solid #3567B8; background: #1C4DAA; color: #F3F7FF;
+  box-shadow: none; font-weight: 500;
+}
+.tg-btn:hover { border-color: #5B8FFF; background: #2563EB; box-shadow: 0 8px 24px rgba(37,99,235,.18); }
+.tg-btn:active { transform: scale(.985); }
+.tg-btn .telegram-login-icon { filter: grayscale(.2); }
+.hint, .waiting-text { color: #94A3B8; }
+.hint b { color: #D7E5FB; font-weight: 500; }
+.browser-warning { color: #A9BDE0; text-shadow: none; }
+.spinner { border-color: #263B5A; border-top-color: #5B8FFF; }
+.link-btn { color: #8FB4FF; }
+.link-btn:hover { color: #C7DBFF; }
+.error-text { color: #F08B96; }
+.subscription-channel { text-decoration: none; }
