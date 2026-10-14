@@ -1443,3 +1443,26 @@
     radial-gradient(circle at 50% 42%, rgba(157, 181, 210, .12), transparent 42%),
     linear-gradient(180deg, rgba(49, 63, 80, .96), rgba(36, 48, 64, .98));
 }
+
+
+/* Dark navy site background — restrained blue at roughly 50% brightness. */
+body,
+.app-shell {
+  background-color: #071a33;
+}
+.app-main,
+.view-section,
+.home-section,
+.home-content-section,
+.home-workflow {
+  background-color: #071a33;
+}
+.home-hero {
+  background:
+    radial-gradient(ellipse at 70% 35%, rgba(25, 70, 125, .42), transparent 58%),
+    linear-gradient(135deg, #0b2342 0%, #071a33 72%, #06152b 100%);
+}
+.home-hero-shade {
+  background: linear-gradient(90deg, rgba(4, 15, 31, .34), rgba(4, 15, 31, .12));
+}
+.quality-comparison { background-color: #0b2342; }
