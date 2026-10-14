@@ -2544,9 +2544,37 @@ if (PATCHER_TEST_MODE) {
 const comparisonRange = document.getElementById('comparisonRange');
 const qualityComparison = document.getElementById('qualityComparison');
 if (comparisonRange && qualityComparison) {
-  const updateComparison = () => qualityComparison.style.setProperty('--compare-split', `${comparisonRange.value}%`);
-  comparisonRange.addEventListener('input', updateComparison);
-  updateComparison();
+  let comparisonTouched = false;
+  let comparisonTimer = null;
+  const setComparison = (value) => {
+    comparisonRange.value = String(value);
+    qualityComparison.style.setProperty('--compare-split', `${value}%`);
+  };
+  const stopComparisonDemo = () => {
+    comparisonTouched = true;
+    if (comparisonTimer) window.clearTimeout(comparisonTimer);
+  };
+  comparisonRange.addEventListener('input', () => {
+    stopComparisonDemo();
+    qualityComparison.classList.add('comparison-user-adjusted');
+    qualityComparison.style.setProperty('--compare-split', `${comparisonRange.value}%`);
+  });
+  qualityComparison.addEventListener('pointerdown', stopComparisonDemo, { once: true });
+  qualityComparison.addEventListener('touchstart', stopComparisonDemo, { once: true, passive: true });
+  setComparison(8);
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    comparisonTimer = window.setTimeout(() => {
+      if (comparisonTouched) return;
+      setComparison(50);
+      comparisonTimer = window.setTimeout(() => {
+        if (comparisonTouched) return;
+        setComparison(8);
+        comparisonTimer = window.setTimeout(() => {
+          if (!comparisonTouched) setComparison(50);
+        }, 4200);
+      }, 3000);
+    }, 900);
+  }
 }
 
 
