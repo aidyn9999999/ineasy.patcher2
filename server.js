@@ -1915,11 +1915,13 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
       // Bound x265 parallelism: unrestricted pools can exhaust small hosted instances
       // while encoding high-resolution 10-bit HDR. Keep lossless/Main10 settings.
       ...(isHighBitDepth ? [
-        '-threads', '4',
+        // Keep lossless Main10/HDR encoding but cap x265 worker and frame-thread
+        // memory usage for constrained hosted instances. V1 does not use this route.
+        '-threads', '2',
         '-x265-params', (hdr && transfer === 'smpte2084'
-          ? 'lossless=1:hdr10=1:pools=4:frame-threads=2'
-          : 'lossless=1:pools=4:frame-threads=2')
-      ] : ['-threads', '4', '-crf', '0']),
+          ? 'lossless=1:hdr10=1:pools=2:frame-threads=1:wpp=0'
+          : 'lossless=1:pools=2:frame-threads=1:wpp=0')
+      ] : ['-threads', '2', '-crf', '0']),
       '-pix_fmt', outputPixFmt,
       ...(primaries && primaries !== 'unknown' ? ['-color_primaries', primaries] : []),
       ...(transfer && transfer !== 'unknown' ? ['-color_trc', transfer] : []),
@@ -1966,10 +1968,11 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
   } catch (error) {
     // FFmpeg/x265 writes the most useful failure reason at the END of stderr.
     // Preserve the tail so the API does not return only the encoder startup banner.
-    const detail = String(error.stderr || error.message || 'unknown_error')
-      .replace(/\\s+/g, ' ')
+    const stderrTail = String(error.stderr || error.message || 'unknown_error')
+      .replace(/\s+/g, ' ')
       .trim()
-      .slice(-900);
+      .slice(-700);
+    const detail = `exit=${error.code ?? 'unknown'} signal=${error.signal || 'none'}; ${stderrTail}`.slice(-900);
     console.error('[INEASY V2] FFmpeg CFR conversion failed:', {
       stage: ffmpegStage,
       code: error.code || null,
@@ -1981,7 +1984,9 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
       res.status(422).json({
         error: 'ffmpeg_cfr_conversion_failed',
         stage: ffmpegStage,
-        detail: detail || String(error.message || 'unknown_error').slice(0, 300)
+        detail: detail || String(error.message || 'unknown_error').slice(0, 300),
+        exitCode: error.code ?? null,
+        signal: error.signal || null
       });
     }
     fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
