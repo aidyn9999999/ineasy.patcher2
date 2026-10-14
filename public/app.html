@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>INEASY — обработка видео</title>
+<title>INEASY — подготовка видео для TikTok</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261014-1">
 <link rel="apple-touch-icon" href="/favicon.svg?v=20261014-1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -67,8 +67,8 @@
         <div class="home-hero-shade" aria-hidden="true"></div>
         <div class="home-hero-copy">
           <p class="home-eyebrow" id="homeKicker">INEASY VIDEO PATCHER</p>
-          <h1 id="homeTitle">INEASY — обработка видео</h1>
-          <p class="home-intro" id="homeIntro">Загрузите готовый ролик, обработайте его в браузере и скачайте файл для публикации в TikTok.</p>
+          <h1 id="homeTitle">Подготовьте видео для публикации в TikTok</h1>
+          <p class="home-intro" id="homeIntro">INEASY подготавливает видео к публикации, обновляя необходимые метаданные без повторного кодирования совместимого исходного файла. После загрузки TikTok может обработать видео повторно.</p>
           <button class="home-cta" type="button" data-open-view="patchSection"><span id="homeCta">Перейти к обработке</span><span aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right ui-icon" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg></span></button>
         </div>
         <div class="home-hero-foot" aria-hidden="true"><span>LOCAL BROWSER PROCESSING</span><span>1080P READY</span></div>
@@ -77,14 +77,14 @@
       <section class="home-content-section" aria-labelledby="comparisonTitle">
         <div class="home-section-heading">
           <p class="home-eyebrow" id="comparisonKicker">КАЧЕСТВО</p>
-          <h2 id="comparisonTitle">Пример сравнения качества</h2>
-          <p id="comparisonIntro">Потяните разделитель, чтобы увидеть разницу.</p>
+          <h2 id="comparisonTitle">Сравнение видео</h2>
+          <p id="comparisonIntro">Переместите ползунок, чтобы просмотреть демонстрацию.</p>
         </div>
         <div class="quality-comparison" id="qualityComparison" style="--compare-split: 50%">
           <video class="comparison-image comparison-after" src="ineasy-preview-1080p60-muted.mp4" autoplay muted loop playsinline preload="metadata" aria-label="Видео в оригинальном качестве 1080p 60 FPS"></video>
           <div class="comparison-before-wrap"><video class="comparison-image comparison-before" src="ineasy-preview-1080p60-muted.mp4" autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video></div>
-          <div class="comparison-label comparison-label-before"><strong>540p</strong><span>30 FPS</span></div>
-          <div class="comparison-label comparison-label-after"><strong>1080p</strong><span>60 FPS</span></div>
+          <div class="comparison-label comparison-label-before"><strong>ПРИМЕР</strong><span>Видео</span></div>
+          <div class="comparison-label comparison-label-after"><strong>INEASY</strong><span>Демонстрация</span></div>
           <div class="comparison-divider" aria-hidden="true"><span>↔</span></div>
           <input class="comparison-range" id="comparisonRange" type="range" min="8" max="92" value="50" aria-label="Сравнить качество видео до и после патчинга">
         </div>
@@ -101,7 +101,7 @@
           <article class="workflow-step"><span class="workflow-number">02</span><h3 id="stepTwoTitle">Обработайте одним нажатием</h3><p id="stepTwoBody">INEASY подготовит совместимый файл прямо в браузере и проверит результат перед скачиванием.</p></article>
           <article class="workflow-step"><span class="workflow-number">03</span><h3 id="stepThreeTitle">Скачайте и публикуйте</h3><p id="stepThreeBody">Сохраните готовый файл или откройте блок публикации, чтобы отправить ролик в TikTok.</p></article>
         </div>
-        <div class="home-local-note"><span class="home-local-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right ui-icon" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg></span><p id="localProcessingCopy">Видео и звук остаются на устройстве. Видео выше 1080p или неподдерживаемого формата может локально подготавливаться в браузере; обычный MP4 не перекодируется патчером.</p></div>
+        <div class="home-local-note"><span class="home-local-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right ui-icon" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg></span><p id="localProcessingCopy">Обработка выполняется в браузере: видео и звук не загружаются на сервер INEASY. Для совместимых файлов патчер обновляет необходимые метаданные без повторного кодирования. Фактические параметры результата зависят от исходного файла.</p></div>
         <button class="home-cta home-cta-bottom" type="button" data-open-view="patchSection"><span id="homeBottomCta">Начать обработку</span><span aria-hidden="true">↗</span></button>
       </section>
     </section>
@@ -109,8 +109,8 @@
     <!-- PATCHER SECTION -->
     <section class="view-section hidden" id="patchSection">
     <div class="patch-panel">
-      <h1 class="patch-title" id="patchTitle">Обработка видео</h1>
-      <p class="patch-sub" id="patchSub">Поддержка исходников до 4K / 120 FPS. Рекомендуемый исходный битрейт — 15–45 Мбит/с.</p>
+      <h1 class="patch-title" id="patchTitle">Подготовка видео для TikTok</h1>
+      <p class="patch-sub" id="patchSub">Загрузите готовый ролик, чтобы подготовить его к публикации. Для совместимых файлов INEASY обновляет метаданные без повторного кодирования; TikTok может обработать видео после загрузки.</p>
 
       <div class="dropzone" id="dropzone">
         <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.avi,.3gp,.3g2,.ts,.mts,.m2ts,.mpg,.mpeg,.wmv,.flv,.ogv">
@@ -357,7 +357,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261013-4"></script>
-<script src="app.js?v=20261014-home-video-preview-v1"></script>
+<script src="app.js?v=20261014-professional-copy-v1"></script>
 <script src="local-video-archive.js?v=20261014-1"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
