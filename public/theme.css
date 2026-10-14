@@ -494,3 +494,10 @@ strong, b, .topbar .brand, .nav-tab, .balance-pill b, .user-pill b,
 .checker-copy p, .faq-section p, .site-footer, .nav-label {
   font-weight: 400 !important;
 }
+
+
+/* Further reduce icon dimensions while preserving the existing icon designs. */
+.nav-icon .ui-icon { width: 18px !important; height: 18px !important; }
+.icon-action-btn .ui-icon { width: 16px !important; height: 16px !important; }
+.logout-btn .logout-icon { width: 18px !important; height: 18px !important; flex-basis: 18px !important; }
+#patchSection .dropzone-content > .ui-icon { width: 30px !important; height: 30px !important; }
