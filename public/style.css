@@ -1750,3 +1750,152 @@ button, .tg-btn, .checker-open-btn, .checker-input-row button, .pkg-buy,
   cursor: not-allowed;
   box-shadow: none;
 }
+
+
+/* 2026-10-14: compact midnight-navy patcher, restrained controls, tactile corner glow */
+:root {
+  --bg: #07111f;
+  --bg-2: #0a1728;
+  --card: #0e1b2d;
+  --card-border: rgba(120, 157, 202, .24);
+  --text: #eaf2ff;
+  --muted: #9bacc4;
+  --accent: #72aaff;
+  --accent-hover: #9bc4ff;
+  --accent-dim: rgba(93, 153, 255, .12);
+  --accent-glow: rgba(74, 139, 255, .28);
+}
+body {
+  background:
+    radial-gradient(ellipse at 50% -18%, rgba(46, 99, 174, .18), transparent 48%),
+    linear-gradient(180deg, #07111f 0%, #050b14 100%);
+}
+.patch-panel {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(110, 157, 221, .24);
+  border-radius: 22px;
+  background: linear-gradient(155deg, rgba(15, 31, 52, .98), rgba(7, 17, 31, .99));
+  box-shadow: 0 22px 60px rgba(0, 0, 0, .26), inset 0 1px 0 rgba(220, 236, 255, .035);
+}
+.patch-panel::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 0% 0%, rgba(80, 145, 255, .09), transparent 38%);
+}
+.dropzone {
+  background: radial-gradient(ellipse at 50% 0%, rgba(89, 151, 255, .11), transparent 60%), #081321;
+  border-color: rgba(130, 170, 225, .34);
+}
+:where(.patch-panel button, .patch-panel a, .nav-tab, .home-cta, .dropzone, .ineasy-archive-action) {
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+  transition: color .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+:where(.patch-panel button, .patch-panel a, .nav-tab, .home-cta, .ineasy-archive-action)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(circle at 0 0, rgba(133, 185, 255, .42), transparent 28%),
+    radial-gradient(circle at 100% 100%, rgba(92, 151, 255, .26), transparent 28%);
+  transition: opacity .18s ease;
+}
+:where(.patch-panel button, .patch-panel a, .nav-tab, .home-cta, .ineasy-archive-action):hover::after,
+:where(.patch-panel button, .patch-panel a, .nav-tab, .home-cta, .ineasy-archive-action):focus-visible::after {
+  opacity: .9;
+}
+:where(.patch-panel button, .patch-panel a, .nav-tab, .home-cta, .ineasy-archive-action):active {
+  transform: scale(.985);
+  box-shadow: 0 0 0 1px rgba(119, 174, 255, .38), 0 0 22px rgba(69, 133, 255, .2);
+}
+:where(.patch-panel button, .patch-panel a, .nav-tab, .home-cta, .ineasy-archive-action):active::after {
+  opacity: 1;
+}
+:where(.home-cta, .process-btn, .download-link, .optimize-another-btn,
+.balance-buy-site, .balance-buy-telegram, .tiktok-publish-btn,
+.tiktok-connect-btn, .tiktok-submit-btn, .analyze-btn, #analyzeBtn,
+#buyOnSiteBtn, #publishTiktokBtn, #zernioSaveKeyBtn, #tiktokSubmitBtn, .tg-btn) {
+  border: 1px solid rgba(135, 180, 245, .44) !important;
+  background: linear-gradient(180deg, #1a3150, #10223a) !important;
+  color: #eaf3ff !important;
+  box-shadow: inset 0 1px 0 rgba(228, 240, 255, .07), 0 5px 18px rgba(0, 0, 0, .2) !important;
+}
+:where(.home-cta, .process-btn, .download-link, .optimize-another-btn,
+.balance-buy-site, .balance-buy-telegram, .tiktok-publish-btn,
+.tiktok-connect-btn, .tiktok-submit-btn, .analyze-btn, #analyzeBtn,
+#buyOnSiteBtn, #publishTiktokBtn, #zernioSaveKeyBtn, #tiktokSubmitBtn, .tg-btn):hover:not(:disabled) {
+  border-color: rgba(146, 191, 255, .82) !important;
+  background: linear-gradient(180deg, #23436d, #153052) !important;
+  box-shadow: 0 0 0 1px rgba(91, 154, 255, .1), 0 0 24px rgba(64, 132, 255, .16) !important;
+}
+:where(.home-cta, .process-btn, .download-link, .optimize-another-btn,
+.balance-buy-site, .balance-buy-telegram, .tiktok-publish-btn,
+.tiktok-connect-btn, .tiktok-submit-btn, .analyze-btn, #analyzeBtn,
+#buyOnSiteBtn, #publishTiktokBtn, #zernioSaveKeyBtn, #tiktokSubmitBtn, .tg-btn):disabled {
+  filter: saturate(.55);
+}
+.bottom-nav {
+  background: rgba(7, 17, 31, .94);
+  border-top-color: rgba(120, 157, 202, .22);
+  backdrop-filter: blur(18px);
+}
+.bottom-nav .nav-tab.active {
+  color: #a9ccff;
+  background: rgba(93, 153, 255, .12);
+}
+#ineasyLocalArchive {
+  max-width: 760px !important;
+  margin: 16px auto !important;
+  padding: 13px 15px !important;
+  border: 1px solid rgba(120, 157, 202, .2) !important;
+  border-radius: 15px !important;
+  background: linear-gradient(145deg, rgba(14, 27, 45, .96), rgba(7, 17, 31, .98)) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .16);
+}
+#ineasyLocalArchive h2 { font-size: 14px !important; letter-spacing: -.02em; }
+#ineasyLocalArchive p { font-size: 11px !important; line-height: 1.4; }
+#ineasyLocalArchive #ineasyArchiveCount {
+  font-size: 10px;
+  color: #b6d2ff;
+  border: 1px solid rgba(120, 169, 238, .25);
+  border-radius: 999px;
+  padding: 4px 8px;
+  background: rgba(73, 129, 215, .1);
+}
+#ineasyLocalArchive #ineasyArchiveItems { gap: 7px !important; margin-top: 11px !important; }
+#ineasyLocalArchive #ineasyArchiveItems > div {
+  gap: 8px !important;
+  padding: 9px 10px !important;
+  border-color: rgba(120, 157, 202, .18) !important;
+  border-radius: 11px !important;
+  background: rgba(255, 255, 255, .018);
+}
+#ineasyLocalArchive #ineasyArchiveItems strong { font-size: 11px; font-weight: 650; }
+#ineasyLocalArchive #ineasyArchiveItems small { font-size: 10px; }
+#ineasyLocalArchive #ineasyArchiveItems > div > div:last-child { gap: 5px !important; }
+#ineasyLocalArchive #ineasyArchiveItems button {
+  position: relative;
+  padding: 6px 9px !important;
+  border: 1px solid rgba(130, 170, 225, .28) !important;
+  border-radius: 8px !important;
+  background: rgba(47, 83, 130, .18) !important;
+  color: #d9e8ff !important;
+  font-size: 10px;
+}
+#ineasyLocalArchive #ineasyArchiveItems button:hover {
+  border-color: rgba(137, 184, 255, .7) !important;
+  box-shadow: 0 0 18px rgba(69, 133, 255, .14);
+}
+@media (max-width: 600px) {
+  #ineasyLocalArchive { margin: 12px 10px !important; padding: 11px !important; }
+  #ineasyLocalArchive #ineasyArchiveItems > div { align-items: flex-start !important; }
+  #ineasyLocalArchive #ineasyArchiveItems > div > div:last-child { width: 100%; }
+}
