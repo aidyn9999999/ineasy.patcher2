@@ -1,35 +1,30 @@
-/* INEASY UX pass: accessibility, touch targets, readability. Loaded last; overrides only. */
-:root { --ux-focus: #7BA5FF; --ux-text-muted: #A9B6CB; }
-html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; scroll-behavior: smooth; }
-body { line-height: 1.6; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
-p, .lede, .hint, .patch-sub, .home-intro { max-width: 68ch; text-wrap: pretty; }
-h1, h2, h3 { text-wrap: balance; line-height: 1.15; }
-.hint, .dz-sub, .comparison-disclaimer, .browser-warning { color: var(--ux-text-muted); font-size: max(.875rem, 13px); line-height: 1.55; }
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible,
-select:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
-  outline: 3px solid var(--ux-focus); outline-offset: 3px; border-radius: 8px;
-}
-button, .tg-btn, .link-btn, .home-cta, .news-link, .download-link, .pkg-buy,
-.copy-id-btn, .plus-btn, .logout-btn, .modal-close, .language-dock button, .login-language-dock button {
-  min-height: 44px; min-width: 44px; cursor: pointer; touch-action: manipulation;
-}
-.dropzone:focus-within { outline: 3px solid var(--ux-focus); outline-offset: 4px; }
-.dropzone:hover { border-color: var(--accent-hover); }
-input[type="file"] { cursor: pointer; }
-input, textarea, select { font-size: 16px; }
-.error-text { color: #FFA3AC; line-height: 1.5; }
-.modal-overlay { overscroll-behavior: contain; }
-.app-main, .card { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
-img, video, svg { max-width: 100%; }
-@media (max-width: 640px) {
-  .topbar { flex-wrap: wrap; gap: 8px; }
-  .balance-pill { flex-wrap: wrap; row-gap: 6px; }
-  .workflow-grid { grid-template-columns: 1fr !important; }
-  .patch-panel, .card { padding: 20px 16px; }
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important;
-    transition-duration: .01ms !important; scroll-behavior: auto !important; }
-  video[autoplay] { animation: none; }
-}
-@media (forced-colors: active) { button, .tg-btn, .link-btn { border: 1px solid ButtonText; } }
+/* INEASY visual pass v2: forest palette, Onest + Playfair Display, nature backdrop, calm motion. Overrides only. */
+:root{--bg:#0A1A17;--card:#112822;--card-border:#24453B;--text:#EAF2EC;--muted:#B3C5BB;--accent:#2B8266;--accent-hover:#247157;
+--accent-dim:rgba(43,130,102,.16);--accent-glow:rgba(43,130,102,.3);--sun:#F0B35A;--danger:#FFA3AC;--radius:16px;--panel-bg:#112822;--border-color:#24453B}
+html{background:#0A1A17;scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:'Onest',system-ui,sans-serif;font-size:17px;line-height:1.65;color:var(--text);background:transparent!important;-webkit-font-smoothing:antialiased}
+.scene,.app-shell{position:relative;z-index:1;background:transparent!important}
+.nature{position:fixed;inset:0;z-index:0;pointer-events:none;background:url(hero-nature.jpg) center/cover no-repeat,url(nature-hero.svg) center/cover no-repeat;animation:drift 48s ease-in-out infinite alternate}
+.nature::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,26,23,.55),rgba(10,26,23,.82))}
+@keyframes drift{from{transform:scale(1) translate3d(0,0,0)}to{transform:scale(1.07) translate3d(-1.2%,-1%,0)}}
+h1,h2,h3,.brand,.patch-title{font-family:'Playfair Display',Georgia,serif!important;font-weight:700!important;letter-spacing:-.01em;line-height:1.15;text-wrap:balance}
+h1{font-size:clamp(34px,6vw,56px)}
+.lede,.patch-sub,.home-intro,#homeSection .home-intro{font-size:18px!important;line-height:1.7;color:var(--muted)}
+.hint,.dz-sub,#patchSection .dropzone .dz-sub,.comparison-disclaimer,.news-copy p{font-size:15px!important;line-height:1.6;color:var(--muted)}
+.browser-warning{font-size:14px!important;line-height:1.55;max-width:420px!important}
+button,.tg-btn,.link-btn,.home-cta,.news-link,.download-link,.pkg-buy{font-family:'Onest',sans-serif;font-size:16px;font-weight:600;min-height:48px;cursor:pointer;touch-action:manipulation;position:relative;overflow:hidden}
+.tg-btn,.home-cta,.download-link,.pkg-buy{background:linear-gradient(135deg,#2B8266,#34906F)!important;color:#fff!important;border:1px solid rgba(240,179,90,.45)!important;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.tg-btn::after,.home-cta::after,.download-link::after,.pkg-buy::after{content:"";position:absolute;top:0;left:-70%;width:45%;height:100%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.28),transparent);transform:skewX(-20deg);transition:left .6s ease}
+.tg-btn:hover::after,.home-cta:hover::after,.download-link:hover::after,.pkg-buy:hover::after{left:130%}
+.tg-btn:hover,.home-cta:hover,.download-link:hover,.pkg-buy:hover{transform:translateY(-2px);box-shadow:0 14px 32px rgba(0,0,0,.45),0 0 0 3px rgba(240,179,90,.25)}
+.link-btn{color:var(--sun)}
+button:active:not(:disabled){transform:translateY(0) scale(.98)}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--sun)!important;outline-offset:3px}
+.card,.patch-panel,.modal{background:rgba(17,40,34,.82)!important;backdrop-filter:blur(10px);border-color:var(--card-border)!important}
+.dropzone{border-color:rgba(240,179,90,.5)!important;transition:border-color .2s,background-color .2s}
+.dropzone:hover,.dropzone:focus-within{border-color:var(--sun)!important;background:rgba(240,179,90,.07)!important}
+input,textarea,select{font-size:16px}
+.card{animation:rise .9s cubic-bezier(.2,.7,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@media(max-width:640px){.topbar{flex-wrap:wrap;gap:8px}.workflow-grid{grid-template-columns:1fr!important}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
