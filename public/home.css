@@ -1539,3 +1539,17 @@ body, .app-shell, .app-main, .view-section, #patchSection {
   #homeSection .comparison-before-wrap,
   #homeSection .comparison-divider { transition: none !important; }
 }
+
+
+/* Show the vertical TikTok preview in its native 9:16 shape. */
+#homeSection .quality-comparison {
+  width: min(100%, 460px);
+  aspect-ratio: 9 / 16;
+  margin-inline: auto;
+  background: #07152b;
+}
+#homeSection .quality-comparison video.comparison-image {
+  display: block;
+  object-fit: contain;
+  background: #07152b;
+}
