@@ -458,3 +458,39 @@ strong, b, .topbar .brand, .nav-tab, .balance-pill b, .user-pill b, .dz-title,
   .plus-btn.icon-action-btn { width: 28px; height: 28px; }
   .copy-id-btn.icon-action-btn { width: 25px; height: 25px; }
 }
+
+
+/* Refinement: lighter outline icons and slimmer typography. */
+.icon-action-btn .ui-icon,
+.logout-btn .logout-icon,
+#patchSection .dropzone-content > .ui-icon,
+.nav-icon .ui-icon {
+  stroke-width: 1.7 !important;
+}
+/* Keep the requested icon shapes, but use a lighter line weight throughout. */
+.icon-action-btn .ui-icon { stroke-width: 1.65 !important; }
+.logout-btn .logout-icon { stroke-width: 1.7 !important; }
+#patchSection .dropzone-content > .ui-icon { stroke-width: 1.65 !important; }
+.nav-icon .ui-icon { stroke-width: 1.7 !important; }
+html, body, button, input, textarea, select, option, summary, label,
+.app-shell, .scene, .card, .topbar, .app-main, .patch-title, .patch-sub,
+.home-hero, .home-hero h1, .home-intro, .home-cta, .checker-panel,
+.faq-section, .site-footer, .bottom-nav, .modal, .modal-head h3,
+.pkg-row, .pkg-buy, .tg-btn, .process-btn, .checker-open-btn,
+.checker-form button, .nav-tab, .balance-pill, .user-pill {
+  font-weight: 400 !important;
+}
+.home-hero h1, #patchSection .patch-title, .home-section-heading h2,
+.checker-copy h2, .faq-section h2 {
+  font-weight: 600 !important;
+}
+.home-cta, #patchSection .process-btn, .process-btn, .checker-form button,
+.checker-open-btn, .tg-btn { font-weight: 500 !important; }
+strong, b, .topbar .brand, .nav-tab, .balance-pill b, .user-pill b,
+.dz-title, .processed-result-copy strong, .pkg-text b, .site-footer strong {
+  font-weight: 500 !important;
+}
+#patchSection .patch-sub, .home-intro, .home-section-heading p,
+.checker-copy p, .faq-section p, .site-footer, .nav-label {
+  font-weight: 400 !important;
+}
