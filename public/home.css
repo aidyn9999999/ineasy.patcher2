@@ -1346,3 +1346,43 @@
 #patchSection .dropzone .dz-title { font-weight: 600; }
 #homeSection .home-intro, #homeSection .workflow-step p,
 #homeSection .home-local-note p, #patchSub { font-weight: 500; }
+
+
+/* INEASY unified design system — landing + processor surface */
+.home-hero, #patchSection .patch-panel {
+  border-radius: 24px;
+  border-color: rgba(164, 180, 201, .20);
+  box-shadow: 0 24px 80px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.025);
+}
+.home-hero { background-color: #080c13; }
+.home-hero-shade {
+  background: radial-gradient(ellipse at 50% 42%, rgba(118, 143, 174, .12), transparent 56%),
+              linear-gradient(180deg, rgba(5,8,13,.12), rgba(5,8,13,.60));
+}
+.home-hero .home-eyebrow {
+  border-radius: 999px;
+  border-color: rgba(180, 196, 218, .25);
+  background: rgba(13, 18, 27, .78);
+  color: #bdc9d9;
+}
+.home-hero h1 { letter-spacing: -.035em; text-transform: none; }
+.home-cta { border-radius: 14px; }
+.home-section-heading h2 { letter-spacing: -.025em; }
+.quality-comparison { border-radius: 20px; }
+.comparison-label { border-radius: 12px; }
+.workflow-step { padding: 20px; border: 1px solid rgba(164,180,201,.16); border-radius: 16px; background: rgba(17,23,32,.42); }
+.home-local-note { border: 1px solid rgba(150,165,185,.14); border-radius: 16px; padding: 18px; }
+#patchSection .patch-panel { background: radial-gradient(circle at 50% 0%, rgba(117,136,163,.10), transparent 42%), linear-gradient(180deg,#111721,#090d14); }
+#patchSection .dropzone { border-radius: 20px; }
+#patchSection .preview-wrap, #patchSection .result-card, #patchSection .output-panel,
+#patchSection .publish-panel, #patchSection .analyzer-panel { border-radius: 16px; }
+#patchSection button, #patchSection select, #patchSection input:not([type=file]):not([type=range]), #patchSection textarea {
+  border-radius: 12px;
+}
+.community-callout .news-callout { border-radius: 16px; }
+.language-dock button { border-radius: 10px; }
+@media (max-width: 700px) {
+  .home-hero, #patchSection .patch-panel { border-radius: 18px; }
+  .workflow-step { padding: 16px; }
+}
+
