@@ -307,3 +307,98 @@ details p { color: #94A3B8; }
 .link-btn:hover { color: #C7DBFF; }
 .error-text { color: #F08B96; }
 .subscription-channel { text-decoration: none; }
+
+
+/* UI/UX Pro Max-inspired polish: midnight navy, restrained blue accents, clear hierarchy. */
+:root {
+  --surface-raised: #111F35;
+  --surface-hover: #142744;
+  --line-subtle: rgba(135, 164, 207, .16);
+  --focus-ring: #8AB4FF;
+}
+body {
+  background:
+    radial-gradient(ellipse at 50% -18%, rgba(37, 99, 235, .10), transparent 48%),
+    #070D19;
+}
+.app-shell { min-height: 100dvh; }
+.topbar {
+  border-bottom-color: var(--line-subtle);
+  background: rgba(7, 13, 25, .88);
+  backdrop-filter: blur(18px) saturate(130%);
+}
+.balance-pill, .user-pill, .language-dock, .login-language-dock {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+.community-callout .news-callout,
+.quality-comparison,
+.workflow-step,
+.home-local-note,
+#patchSection .preview-wrap,
+#patchSection .processed-result,
+.modal {
+  box-shadow: 0 14px 38px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(255,255,255,.025);
+}
+.home-hero {
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 76% 12%, rgba(37,99,235,.17), transparent 42%),
+    linear-gradient(145deg, #101F37 0%, #0A1221 62%, #070D19 100%);
+}
+.home-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(115deg, rgba(255,255,255,.025), transparent 42%);
+}
+.home-hero-copy { max-width: 760px; }
+.home-intro { max-width: 58ch; }
+.home-cta, #patchSection .process-btn, .process-btn, .checker-form button, .checker-open-btn {
+  min-height: 46px;
+  box-shadow: 0 6px 18px rgba(37,99,235,.12) !important;
+}
+.home-cta:hover, #patchSection .process-btn:hover:not(:disabled), .process-btn:hover:not(:disabled) {
+  box-shadow: 0 10px 26px rgba(37,99,235,.2) !important;
+}
+#patchSection .dropzone {
+  outline: none;
+}
+#patchSection .dropzone:focus-within {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 3px rgba(91,143,255,.14);
+}
+#patchSection .patcher-version-option span {
+  transition: border-color .18s ease, background-color .18s ease, transform .18s ease;
+}
+#patchSection .patcher-version-option:hover span {
+  border-color: #385783;
+  background-color: #0D1B31;
+}
+input, textarea, select {
+  accent-color: #4F83F1;
+}
+button, a, input, select, textarea, summary {
+  -webkit-tap-highlight-color: rgba(91,143,255,.14);
+}
+@media (max-width: 680px) {
+  .app-main { padding-top: 14px; }
+  .topbar { padding-top: max(12px, env(safe-area-inset-top)); }
+  .home-hero { min-height: 430px; height: auto; }
+  .home-hero-copy { width: 100%; padding: 52px 22px 86px; }
+  .home-hero h1 { font-size: clamp(32px, 9vw, 44px); }
+  .home-intro { font-size: 15px; line-height: 1.65; }
+  .home-cta { width: 100%; min-height: 48px; }
+  #patchSection .patch-panel { padding: 18px 14px; }
+  #patchSection .dropzone { min-height: 220px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
