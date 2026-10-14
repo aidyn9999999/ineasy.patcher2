@@ -1386,3 +1386,42 @@
   .workflow-step { padding: 16px; }
 }
 
+
+
+/* Brighter, calmer slate background refresh — keeps the existing layout intact. */
+.app-shell {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(104, 132, 166, .18), transparent 52%),
+    linear-gradient(180deg, #202a36 0%, #1b2430 100%);
+}
+.home-hero {
+  border-color: rgba(183, 201, 223, .28);
+  background:
+    radial-gradient(circle at 50% 100%, rgba(161, 187, 219, .18), transparent 48%),
+    linear-gradient(180deg, #263445 0%, #202c3a 54%, #1d2835 100%);
+}
+.home-hero-shade {
+  background:
+    radial-gradient(ellipse at 50% 82%, rgba(160, 188, 221, .16), transparent 48%),
+    linear-gradient(180deg, rgba(30, 42, 57, .03), rgba(21, 31, 44, .16));
+}
+.home-hero .home-eyebrow {
+  border-color: rgba(185, 204, 229, .38);
+  background: linear-gradient(180deg, rgba(58, 76, 98, .88), rgba(39, 54, 73, .9));
+  color: #e1eaf6;
+}
+.home-hero h1 {
+  background: linear-gradient(180deg, #ffffff 0%, #edf4fc 52%, #b9cbe1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.home-intro { color: #d2dce8; }
+.home-hero-foot { color: rgba(231, 239, 249, .82); }
+.home-section-heading h2, .workflow-step h3 { color: #eef4fb; }
+.home-section-heading > p:last-child,
+.workflow-step p,
+.home-local-note p { color: #c0cbd8; }
+.quality-comparison { border-color: rgba(186, 204, 225, .32); }
+.home-workflow,
+.home-local-note { border-color: rgba(186, 204, 225, .22); }
