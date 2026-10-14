@@ -252,7 +252,7 @@ const translations = {
     comparisonKicker: 'КАЧЕСТВО',
     comparisonTitle: 'Сравните видео до патчинга и с патчингом',
     comparisonIntro: 'Сравните текстуру и качество до и после патчинга.',
-    comparisonDisclaimer: 'TikTok может повторно обработать опубликованный файл, поэтому итоговое качество зависит и от настроек платформы.',
+    comparisonDisclaimer: 'Это пока визуальная демонстрация, а не предпросмотр вашего MP4. TikTok может повторно обработать видео после загрузки.',
     workflowKicker: 'ТРИ ШАГА',
     workflowTitle: 'От монтажа до публикации',
     stepOneTitle: 'Подготовьте видео в редакторе',
@@ -2569,9 +2569,6 @@ if (comparisonRange && qualityComparison) {
       comparisonTimer = window.setTimeout(() => {
         if (comparisonTouched) return;
         setComparison(8);
-        comparisonTimer = window.setTimeout(() => {
-          if (!comparisonTouched) setComparison(50);
-        }, 4200);
       }, 3000);
     }, 900);
   }
