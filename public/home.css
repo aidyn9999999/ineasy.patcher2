@@ -1525,3 +1525,17 @@ body, .app-shell, .app-main, .view-section, #patchSection {
 #patchSection .balance-buy-telegram {
   accent-color: #4f8cff;
 }
+
+
+/* Animated, responsive quality-comparison slider. */
+#homeSection .comparison-before-wrap,
+#homeSection .comparison-divider {
+  transition: clip-path 1.25s cubic-bezier(.22,.8,.25,1), left 1.25s cubic-bezier(.22,.8,.25,1);
+}
+#homeSection .comparison-range { cursor: ew-resize; }
+#homeSection .comparison-divider span { transition: transform .2s ease, box-shadow .2s ease; }
+#homeSection .comparison-range:active ~ .comparison-divider span { transform: translate(-50%, -50%) scale(1.08); }
+@media (prefers-reduced-motion: reduce) {
+  #homeSection .comparison-before-wrap,
+  #homeSection .comparison-divider { transition: none !important; }
+}
