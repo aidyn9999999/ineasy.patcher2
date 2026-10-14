@@ -11,7 +11,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20261014-blue-v3">
-<link rel="stylesheet" href="home.css?v=20261014-slider-v1">
+<link rel="stylesheet" href="home.css?v=20261014-home-video-preview-v1">
 <link rel="stylesheet" href="theme.css?v=20261014-home-copy-slider-v1">
 </head>
 <body>
@@ -81,12 +81,12 @@
           <p id="comparisonIntro">Потяните разделитель, чтобы увидеть разницу.</p>
         </div>
         <div class="quality-comparison" id="qualityComparison" style="--compare-split: 50%">
-          <img class="comparison-image comparison-after" src="https://images.unsplash.com/photo-1782970474271-f2807da2c799?auto=format&amp;fit=crop&amp;w=1600&amp;q=88" alt="Домик у бирюзового альпийского озера среди гор" loading="lazy">
-          <div class="comparison-before-wrap"><img class="comparison-image comparison-before" src="https://images.unsplash.com/photo-1782970474271-f2807da2c799?auto=format&amp;fit=crop&amp;w=1600&amp;q=88" alt="" loading="lazy"></div>
+          <video class="comparison-image comparison-after" src="ineasy-preview-1080p60-muted.mp4" autoplay muted loop playsinline preload="metadata" aria-label="Видео в оригинальном качестве 1080p 60 FPS"></video>
+          <div class="comparison-before-wrap"><video class="comparison-image comparison-before" src="ineasy-preview-1080p60-muted.mp4" autoplay muted loop playsinline preload="metadata" aria-hidden="true"></video></div>
           <div class="comparison-label comparison-label-before"><strong>540p</strong><span>30 FPS</span></div>
           <div class="comparison-label comparison-label-after"><strong>1080p</strong><span>60 FPS</span></div>
           <div class="comparison-divider" aria-hidden="true"><span>↔</span></div>
-          <input class="comparison-range" id="comparisonRange" type="range" min="8" max="92" value="50" aria-label="Сравнить изображение до и после">
+          <input class="comparison-range" id="comparisonRange" type="range" min="8" max="92" value="50" aria-label="Сравнить качество видео до и после патчинга">
         </div>
         <p class="comparison-disclaimer" id="comparisonDisclaimer">Визуальный пример, а не предпросмотр результата обработки конкретного видео. Итоговое качество публикации зависит от TikTok.</p>
       </section>
@@ -357,7 +357,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261013-4"></script>
-<script src="app.js?v=20261014-home-copy-slider-v1"></script>
+<script src="app.js?v=20261014-home-video-preview-v1"></script>
 <script src="local-video-archive.js?v=20261014-1"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
