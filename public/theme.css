@@ -505,5 +505,5 @@ strong, b, .topbar .brand, .nav-tab, .balance-pill b, .user-pill b,
 
 /* Typography refresh: switch the interface from Rubik to clean, modern Inter. */
 html, body, body *, button, input, textarea, select, option, summary, label {
-  font-family: 'Inter', sans-serif !important;
+  font-family: 'Manrope', sans-serif !important;
 }
