@@ -1172,6 +1172,21 @@ let currentObjectUrl = null;
 let patchedDownloadUrl = null;
 let processController = null;
 
+// Allow a saved local-archive item to reuse the existing publisher without uploading it to the archive.
+window.addEventListener('ineasy:use-archive-video', (event) => {
+  const detail = event.detail || {};
+  if (!(detail.blob instanceof Blob)) return;
+  processedVideoBlob = detail.blob;
+  if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
+  patchedDownloadUrl = URL.createObjectURL(processedVideoBlob);
+  if (downloadBtn) {
+    downloadBtn.href = patchedDownloadUrl;
+    downloadBtn.download = String(detail.name || 'ineasy-video.mp4');
+  }
+  setPublicationActionsVisible(true);
+  publishTiktokBtn?.click();
+});
+
 function setPublicationActionsVisible(visible) {
   if (publicationActions) publicationActions.classList.toggle('hidden', !visible);
 }
@@ -2599,7 +2614,9 @@ if (processBtn) {
       );
       const is4kSource = sourceLongSide >= 3000;
       const sourceExtension = String(sourceFile.name || '').toLowerCase().match(/\.([^.]+)$/)?.[1] || '';
-      if (!['mp4', 'mov', 'm4v'].includes(sourceExtension)) {
+      // V2 sends the original bytes to FFmpeg, which detects the actual container from content.
+      // Keep V1's existing browser compatibility restriction unchanged.
+      if (!isV2SelectedForJob && !['mp4', 'mov', 'm4v'].includes(sourceExtension)) {
         throw new Error('patcher_requires_mp4_mov');
       }
 
@@ -2959,6 +2976,12 @@ if (processBtn) {
         const outputExtension = result.outputMime === 'video/mp4' ? 'mp4' : originalExtension;
         downloadBtn.download = `${sourceFile.name.replace(/\.[^.]+$/, '')}-ineasy.${outputExtension}`;
       }
+      window.dispatchEvent(new CustomEvent('ineasy:processed-video', {
+        detail: {
+          blob: outputBlob,
+          name: downloadBtn?.download || `${sourceFile.name.replace(/\.[^.]+$/, '')}-ineasy.mp4`
+        }
+      }));
 
       const metaInfo = result.outputInfo || result.info;
       const hdrInfo = result.outputHdr || result.hdr;
