@@ -402,3 +402,59 @@ button, a, input, select, textarea, summary {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* Final request: deeper navy-blue palette, original Lucide action icons, bold Rubik typography. */
+:root {
+  --bg: #040916;
+  --bg-2: #071329;
+  --card: #0A1730;
+  --card-border: #1B3154;
+  --text: #F0F5FF;
+  --muted: #9BAECC;
+  --accent: #3478F6;
+  --accent-hover: #4A8BFF;
+  --accent-dim: rgba(52,120,246,.15);
+  --accent-glow: rgba(52,120,246,.22);
+  --border-color: #1B3154;
+  --panel-bg: #0A1730;
+}
+html, body, button, input, textarea, select, option, summary, label,
+.app-shell, .scene, .card, .topbar, .app-main, .patch-title, .patch-sub,
+.home-hero, .home-hero h1, .home-intro, .home-cta, .checker-panel,
+.faq-section, .site-footer, .bottom-nav, .modal, .modal-head h3,
+.pkg-row, .pkg-buy, .tg-btn, .process-btn, .checker-open-btn,
+.checker-form button, .nav-tab, .balance-pill, .user-pill {
+  font-family: 'Rubik', sans-serif !important;
+}
+body, .app-shell { background-color: #040916; }
+.topbar, .bottom-nav { background: rgba(7, 17, 37, .97); border-color: #1B3154; }
+#patchSection .patch-panel, .checker-panel, .faq-section, .modal {
+  background-color: #0A1730;
+  border-color: #1B3154;
+}
+#patchSection .dropzone { background-color: #071329; border-color: #294774; }
+#patchSection .dropzone:hover, #patchSection .dropzone.drag { background-color: #0B1C3B; border-color: #5B91FF; }
+.home-hero { background-color: #071329; border-color: #1B3154; }
+.home-cta, #patchSection .process-btn, .process-btn, .checker-form button, .checker-open-btn, .tg-btn {
+  background: #174DAA !important; border-color: #326AC4 !important; color: #F4F7FF !important;
+  font-weight: 700 !important;
+}
+.home-cta:hover, #patchSection .process-btn:hover:not(:disabled), .process-btn:hover:not(:disabled), .checker-form button:hover, .checker-open-btn:hover, .tg-btn:hover {
+  background: #2563D9 !important; border-color: #5B91FF !important;
+}
+#patchSection .patch-title, .home-hero h1, .home-section-heading h2, .checker-copy h2, .faq-section h2 { font-weight: 800 !important; }
+strong, b, .topbar .brand, .nav-tab, .balance-pill b, .user-pill b, .dz-title,
+.processed-result-copy strong, .pkg-text b, .site-footer strong { font-weight: 700 !important; }
+.icon-action-btn { display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.icon-action-btn .ui-icon { display: block; flex: 0 0 auto; }
+.plus-btn.icon-action-btn { width: 30px; height: 30px; }
+.copy-id-btn.icon-action-btn { width: 28px; height: 28px; border-radius: 8px !important; }
+.logout-btn .logout-icon { width: 22px; height: 22px; flex: 0 0 22px; }
+#patchSection .dropzone-content > .ui-icon { margin-bottom: 14px; color: #8FB4FF; }
+.nav-icon .ui-icon { width: 21px; height: 21px; }
+@media (max-width: 700px) {
+  .balance-pill { gap: 6px; }
+  .plus-btn.icon-action-btn { width: 28px; height: 28px; }
+  .copy-id-btn.icon-action-btn { width: 25px; height: 25px; }
+}
