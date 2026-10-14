@@ -1,8 +1,8 @@
 :root {
-  --bg: #202a36;
-  --bg-2: #293544;
-  --card: #303c4b;
-  --card-border: #526174;
+  --bg: #071a33;
+  --bg-2: #0b2342;
+  --card: #102b4d;
+  --card-border: #294b72;
   --text: #f5f8fc;
   --muted: #c1cbd8;
   --accent: #ff6b00;
@@ -41,7 +41,7 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
   padding: 24px;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 50% 5%, #28170c 0%, var(--bg) 58%);
+    radial-gradient(ellipse at 50% 5%, #102d55 0%, var(--bg) 58%);
 }
 
 .grid-lines {
@@ -66,7 +66,7 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
   box-shadow: none;
 }
 
-.login-language-dock { display: inline-flex; gap: 3px; margin: 0 auto 20px; padding: 3px; border: 1px solid var(--card-border); border-radius: 12px; background: rgba(27, 20, 15, .72); }
+.login-language-dock { display: inline-flex; gap: 3px; margin: 0 auto 20px; padding: 3px; border: 1px solid var(--card-border); border-radius: 12px; background: rgba(7, 26, 51, .88); }
 .login-language-dock button { min-width: 42px; border: 0; border-radius: 10px; padding: 6px 9px; background: transparent; color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; }
 .login-language-dock button.active { background: var(--accent); color: #1a0d05; box-shadow: 0 0 14px var(--accent-glow); }
 .login-language-dock button:hover:not(.active) { color: var(--text); }
