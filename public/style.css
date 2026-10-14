@@ -1647,3 +1647,106 @@ button, .tg-btn, .checker-open-btn, .checker-input-row button, .pkg-buy,
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
 
+
+
+/* 2026-10-14: stronger, brighter primary controls */
+:root {
+  --control-light: #f5f7fb;
+  --control-light-hover: #ffffff;
+  --control-ink: #101722;
+  --control-outline: rgba(235, 242, 252, .78);
+}
+:where(
+  .home-cta,
+  .process-btn,
+  .download-link,
+  .optimize-another-btn,
+  .balance-buy-site,
+  .balance-buy-telegram,
+  .tiktok-publish-btn,
+  .tiktok-connect-btn,
+  .tiktok-submit-btn,
+  .analyze-btn,
+  #analyzeBtn,
+  #buyOnSiteBtn,
+  #publishTiktokBtn,
+  #zernioSaveKeyBtn,
+  #tiktokSubmitBtn,
+  .tg-btn
+) {
+  min-height: 50px;
+  padding: 13px 22px;
+  border: 2px solid var(--control-outline);
+  border-radius: 12px;
+  background: var(--control-light);
+  color: var(--control-ink);
+  font-weight: 800;
+  letter-spacing: .005em;
+  box-shadow: 0 5px 0 rgba(0, 0, 0, .22), 0 10px 26px rgba(230, 239, 250, .09);
+  transition: background .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+:where(
+  .home-cta,
+  .process-btn,
+  .download-link,
+  .optimize-another-btn,
+  .balance-buy-site,
+  .balance-buy-telegram,
+  .tiktok-publish-btn,
+  .tiktok-connect-btn,
+  .tiktok-submit-btn,
+  .analyze-btn,
+  #analyzeBtn,
+  #buyOnSiteBtn,
+  #publishTiktokBtn,
+  #zernioSaveKeyBtn,
+  #tiktokSubmitBtn,
+  .tg-btn
+):hover:not(:disabled) {
+  background: var(--control-light-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .2), 0 14px 30px rgba(230, 239, 250, .14);
+}
+:where(
+  .home-cta,
+  .process-btn,
+  .download-link,
+  .optimize-another-btn,
+  .balance-buy-site,
+  .balance-buy-telegram,
+  .tiktok-publish-btn,
+  .tiktok-connect-btn,
+  .tiktok-submit-btn,
+  .analyze-btn,
+  #analyzeBtn,
+  #buyOnSiteBtn,
+  #publishTiktokBtn,
+  #zernioSaveKeyBtn,
+  #tiktokSubmitBtn,
+  .tg-btn
+):active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .2);
+}
+:where(
+  .home-cta,
+  .process-btn,
+  .download-link,
+  .optimize-another-btn,
+  .balance-buy-site,
+  .balance-buy-telegram,
+  .tiktok-publish-btn,
+  .tiktok-connect-btn,
+  .tiktok-submit-btn,
+  .analyze-btn,
+  #analyzeBtn,
+  #buyOnSiteBtn,
+  #publishTiktokBtn,
+  #zernioSaveKeyBtn,
+  #tiktokSubmitBtn,
+  .tg-btn
+):disabled {
+  opacity: .58;
+  cursor: not-allowed;
+  box-shadow: none;
+}
