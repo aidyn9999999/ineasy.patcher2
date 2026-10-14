@@ -12,13 +12,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20261014-original-look-v1">
 <link rel="stylesheet" href="home.css?v=20261014-home-video-preview-v1">
-<link rel="stylesheet" href="theme.css?v=20261014-original-look-v1">
+<link rel="stylesheet" href="theme.css?v=20261015-deep-navy-v2">
 </head>
 <body>
 
 <div class="app-shell">
   <header class="topbar">
-    <div class="brand"><span class="brand-in">IN</span><span class="brand-easy">EASY</span></div>
+    <div class="brand"><span class="brand-in">in</span><span class="brand-easy">easy</span></div>
     <div class="balance-pill" id="balancePill">
       <span class="id-part"><span id="idCaption">ID:</span> <b id="tgIdLabel">—</b></span>
       <button class="copy-id-btn icon-action-btn" id="copyIdBtn" type="button" aria-label="Copy Telegram ID" title="Copy Telegram ID"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy ui-icon" aria-hidden="true"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg></button>
@@ -51,8 +51,8 @@
     <aside class="community-callout" aria-label="Telegram">
       <div class="news-callout">
         <div class="news-copy">
-          <strong id="communityTitle">Новости и обновления INEASY</strong>
-          <p><span id="communityBody">Присоединяйтесь к каналу: рассказываем об обновлениях, исправлениях ошибок, новых функциях и проводим розыгрыши.</span> <b>@ineasynews</b></p>
+          <strong id="communityTitle">Новости, розыгрыши и туториалы</strong>
+          <p><span id="communityBody">Новости, розыгрыши и туториалы — присоединяйтесь к каналу.</span> <b>@ineasynews</b></p>
         </div>
         <a class="news-link" id="newsButton" href="https://t.me/ineasynews" target="_blank" rel="noopener" aria-label="@ineasynews"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right ui-icon" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg></a>
       </div>
@@ -110,14 +110,14 @@
     <section class="view-section hidden" id="patchSection">
     <div class="patch-panel">
       <h1 class="patch-title" id="patchTitle">Обработайте видео для TikTok</h1>
-      <p class="patch-sub" id="patchSub">Обработайте видео до 4K • 120 FPS и опубликуйте его в TikTok.</p>
+      <p class="patch-sub" id="patchSub">Загрузите видео до 4K • 120 FPS</p>
 
       <div class="dropzone" id="dropzone">
         <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.avi,.3gp,.3g2,.ts,.mts,.m2ts,.mpg,.mpeg,.wmv,.flv,.ogv">
         <div class="dropzone-content" id="dropzoneContent">
           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload ui-icon" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
-          <p class="dz-title" id="dzTitle">Загрузите видео в патчер</p>
-          <p class="dz-sub" id="dzSub">Выберите видео в формате MP4 или MOV.</p>
+          <p class="dz-title" id="dzTitle">Нажмите здесь или вставьте видео</p>
+          <p class="dz-sub" id="dzSub">Форматы: MP4, MOV</p>
         </div>
         <div class="balance-lock hidden" id="balanceLock">
           <svg class="balance-lock-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 14v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -357,7 +357,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261013-4"></script>
-<script src="app.js?v=20261014-professional-copy-v1"></script>
+<script src="app.js?v=20261015-patcher-copy-v2"></script>
 <script src="local-video-archive.js?v=20261014-1"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
