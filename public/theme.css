@@ -515,3 +515,21 @@ html, body, body *, button, input, textarea, select, option, summary, label {
 #patchSection .export-note,#patchSection #durationNotice{display:none!important}
 #patchSection .dropzone{min-height:clamp(190px,28vw,250px)}
 @media(max-width:700px){#patchSection .patch-panel{padding:14px 12px 16px;border-radius:16px}#patchSection .patch-title{font-size:clamp(23px,6vw,29px);line-height:1.2}#patchSection .patch-sub{margin:0 auto 14px;font-size:12px;line-height:1.5}#patchSection .dropzone{min-height:190px;padding:20px 10px;border-radius:14px}#patchSection .dz-title{font-size:16px;line-height:1.35}#patchSection .dz-sub{font-size:12px;line-height:1.5}#patchSection .process-btn{min-height:48px;font-size:14px}}
+
+
+/* Typography refinement: light navigation/footer, bold patcher workspace. */
+.topbar .brand{display:flex;align-items:baseline;gap:0;font-weight:600;letter-spacing:-.055em}
+.topbar .brand-in{color:#3B82F6}
+.topbar .brand-easy{color:#F8FAFC}
+/* Keep bottom navigation and footer labels light and unobtrusive. */
+.bottom-nav .nav-tab,.bottom-nav .nav-tab span,.site-footer,.site-footer a,.site-footer span,.site-footer strong{font-weight:300!important}
+.bottom-nav .nav-tab{letter-spacing:-.015em}
+.site-footer{color:#94A3B8}
+.site-footer strong{color:#E8EEF8}
+/* Stronger typography only inside the patcher. */
+#patchSection .patch-title{font-weight:800!important}
+#patchSection .patch-sub{font-weight:600!important}
+#patchSection .dz-title{font-weight:800!important}
+#patchSection .dz-sub{font-weight:600!important}
+#patchSection .process-btn,#patchSection button{font-weight:700}
+#patchSection .file-meta,#patchSection .notice-banner p{font-weight:500}
