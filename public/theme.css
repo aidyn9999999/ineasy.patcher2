@@ -507,3 +507,18 @@ strong, b, .topbar .brand, .nav-tab, .balance-pill b, .user-pill b,
 html, body, body *, button, input, textarea, select, option, summary, label {
   font-family: 'Inter', sans-serif !important;
 }
+
+
+/* Minimal header and compact Telegram ID copy control */
+.balance-pill { gap: 7px; padding: 6px 8px 6px 11px; font-size: 12px; }
+.balance-pill .id-part { display: inline-flex; align-items: center; gap: 4px; }
+.copy-id-btn { display: inline-grid; place-items: center; width: 20px; height: 20px; min-width: 20px; padding: 0 !important; border: 0 !important; border-radius: 5px !important; background: transparent !important; color: #7F91AA; }
+.copy-id-btn .ui-icon { display: block; width: 13px; height: 13px; stroke-width: 1.6; }
+.copy-id-btn:hover { color: #A9C7FF; }
+.balance-pill .pill-sep { margin-inline: 1px; }
+.home-intro { max-width: 460px; font-size: 13px; line-height: 1.55; }
+.home-section-heading > p:last-child { max-width: 480px; font-size: 12px; line-height: 1.45; }
+.workflow-step p, .home-local-note p { font-size: 12px; line-height: 1.5; }
+#patchTitle { font-size: clamp(24px, 3vw, 30px); }
+#patchSub { font-size: 12px; line-height: 1.5; }
+@media (max-width: 700px) { .balance-pill { gap: 5px; font-size: 10px; } .copy-id-btn { width: 18px; height: 18px; min-width: 18px; } .copy-id-btn .ui-icon { width: 12px; height: 12px; } }
