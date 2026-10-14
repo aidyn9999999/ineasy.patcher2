@@ -1425,3 +1425,21 @@
 .quality-comparison { border-color: rgba(186, 204, 225, .32); }
 .home-workflow,
 .home-local-note { border-color: rgba(186, 204, 225, .22); }
+
+
+/* Extend the brighter background to the actual patching workspace as well. */
+#patchSection .patch-panel {
+  border-color: rgba(177, 197, 221, .28);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(130, 158, 193, .17), transparent 42%),
+    linear-gradient(180deg, #2b3746 0%, #222e3c 100%);
+  box-shadow: 0 24px 70px rgba(8, 15, 25, .18), inset 0 1px 0 rgba(255,255,255,.06);
+}
+#patchTitle { color: #f3f7fc; }
+#patchSub { color: #c6d1df; }
+#patchSection .dropzone {
+  border-color: rgba(177, 197, 221, .42);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(157, 181, 210, .12), transparent 42%),
+    linear-gradient(180deg, rgba(49, 63, 80, .96), rgba(36, 48, 64, .98));
+}
