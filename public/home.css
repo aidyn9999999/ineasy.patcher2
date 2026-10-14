@@ -1466,3 +1466,62 @@ body,
   background: linear-gradient(90deg, rgba(4, 15, 31, .34), rgba(4, 15, 31, .12));
 }
 .quality-comparison { background-color: #0b2342; }
+
+
+/* INEASY blue patcher theme: override legacy light workspace styles. */
+:root {
+  --bg: #061329;
+  --bg-2: #091d3b;
+  --card: #0d2344;
+  --card-border: #234775;
+  --text: #f2f7ff;
+  --muted: #b4c5df;
+  --accent: #4f8cff;
+  --accent-hover: #79aaff;
+  --accent-dim: rgba(79, 140, 255, .16);
+  --accent-glow: rgba(79, 140, 255, .3);
+}
+body, .app-shell, .app-main, .view-section, #patchSection {
+  background-color: #061329 !important;
+  color: #f2f7ff;
+}
+#patchSection .patch-panel {
+  border: 1px solid rgba(90, 148, 236, .28) !important;
+  border-radius: 22px;
+  padding: clamp(18px, 3vw, 30px);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(40, 105, 210, .2), transparent 48%),
+    linear-gradient(180deg, #0b2040 0%, #081832 100%) !important;
+  box-shadow: 0 24px 70px rgba(0, 5, 18, .42), inset 0 1px 0 rgba(180, 210, 255, .06) !important;
+}
+#patchSection .patch-title { color: #f2f7ff !important; }
+#patchSection .patch-sub,
+#patchSection .export-note,
+#patchSection .local-note { color: #b4c5df !important; }
+#patchSection .dropzone {
+  border: 1.5px dashed rgba(91, 151, 245, .56) !important;
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(49, 111, 210, .15), transparent 55%),
+    linear-gradient(180deg, #0c2345 0%, #091a34 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(183, 211, 255, .04);
+}
+#patchSection .dropzone.drag {
+  border-color: #79aaff !important;
+  background: rgba(49, 111, 210, .18) !important;
+}
+#patchSection .dropzone svg,
+#patchSection .dropzone .balance-lock-icon { color: #79aaff !important; }
+#patchSection .dz-title { color: #f2f7ff !important; }
+#patchSection .dz-sub { color: #a9bddb !important; }
+#patchSection .preview-wrap,
+#patchSection .file-row,
+#patchSection .progress-wrap,
+#patchSection .result-card {
+  border-color: #234775;
+  background-color: #0b2040;
+}
+#patchSection button:not(.clear-btn),
+#patchSection .balance-buy-telegram {
+  accent-color: #4f8cff;
+}
