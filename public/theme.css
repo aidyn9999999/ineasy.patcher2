@@ -501,3 +501,9 @@ strong, b, .topbar .brand, .nav-tab, .balance-pill b, .user-pill b,
 .icon-action-btn .ui-icon { width: 16px !important; height: 16px !important; }
 .logout-btn .logout-icon { width: 18px !important; height: 18px !important; flex-basis: 18px !important; }
 #patchSection .dropzone-content > .ui-icon { width: 30px !important; height: 30px !important; }
+
+
+/* Typography refresh: switch the interface from Rubik to clean, modern Inter. */
+html, body, body *, button, input, textarea, select, option, summary, label {
+  font-family: 'Inter', sans-serif !important;
+}
