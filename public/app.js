@@ -2732,76 +2732,11 @@ if (processBtn) {
       controller.signal.throwIfAborted();
       updateProcessingProgress(15);
 
-      async function runPublicV2Patcher(inputFile) {
-        const scripts = [
-          'v2-experiment/method/item/binary.js',
-          'v2-experiment/method/item/fish.js',
-          'v2-experiment/method/item/fps.js',
-          'v2-experiment/method/item/wmv.js',
-          'v2-experiment/method/normalize.js',
-          'v2-experiment/method/compress.js',
-          'v2-experiment/method/finalize.js',
-          'v2-experiment/tiktok-quality-tool.js'
-        ];
-        const loadScript = (src) => new Promise((resolve, reject) => {
-          const existing = document.querySelector('script[data-ineasy-v2-source="' + src + '"]');
-          if (existing) {
-            if (existing.dataset.loaded === 'true') return resolve();
-            existing.addEventListener('load', resolve, { once: true });
-            existing.addEventListener('error', () => reject(new Error('v2_source_script_failed:' + src)), { once: true });
-            return;
-          }
-          const script = document.createElement('script');
-          script.src = src;
-          script.async = false;
-          script.dataset.ineasyV2Source = src;
-          script.onload = () => { script.dataset.loaded = 'true'; resolve(); };
-          script.onerror = () => reject(new Error('v2_source_script_failed:' + src));
-          document.head.appendChild(script);
-        });
-        for (const src of scripts) {
-          controller.signal.throwIfAborted();
-          await loadScript(src);
-        }
-        const tool = window.QualityMethodTool;
-        if (!tool || typeof tool.run !== 'function') throw new Error('v2_public_patcher_not_loaded');
-        const methodInput = tool.schema?.inputs?.find((item) => item.id === 'method');
-        const methodId = methodInput?.default || methodInput?.options?.[0]?.value;
-        if (!methodId) throw new Error('v2_public_patcher_method_not_found');
-        const input = typeof File === 'function'
-          ? new File([inputFile], inputFile.name || 'input.mp4', { type: inputFile.type || 'video/mp4', lastModified: Date.now() })
-          : inputFile;
-        const output = await tool.run({ videoFile: input, method: methodId, compress: 'off' }, {
-          onProgress: (percent, status) => {
-            if (controller.signal.aborted) return;
-            updateProcessingProgress(15 + Math.round(Math.max(0, Math.min(100, Number(percent) || 0)) * 0.83));
-            if (status) setProcessingState('processing', String(status));
-          },
-          onLog: (message) => console.info('[INEASY V2 public patcher]', message)
-        });
-        controller.signal.throwIfAborted();
-        if (!output || !output.data || typeof output.data.arrayBuffer !== 'function') {
-          throw new Error('v2_public_patcher_empty_output');
-        }
-        const bytes = new Uint8Array(await output.data.arrayBuffer());
-        if (!bytes.byteLength) throw new Error('v2_public_patcher_empty_output');
-        return {
-          output: bytes,
-          outputMime: output.data.type || 'video/mp4',
-          passthrough: false,
-          mode: 'public-v2-patcher',
-          report: { engine: 'openfishtools-web-tools', method: methodId },
-          inputBytes: inputFile.size
-        };
-      }
-
       const requestId = `ineasy-${Date.now()}`;
 
-      // V2 runs the imported public patcher. V1 continues to use the existing ADJN worker.
+      // Run heavy patching in a Web Worker (off main thread) to avoid UI lag.
       // No CFR conversion or whole-file HDR scan runs before the worker starts.
-      const result = isV2SelectedForJob
-        ? await runPublicV2Patcher(processingFile)
-        : await new Promise((resolve, reject) => {
+      const result = await new Promise((resolve, reject) => {
         let workerDone = false;
 
         // Abort support
