@@ -1915,14 +1915,15 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
       // Bound x265 parallelism: unrestricted pools can exhaust small hosted instances
       // while encoding high-resolution 10-bit HDR. Keep lossless/Main10 settings.
       ...(isHighBitDepth ? [
-        // Faster high-quality Main10/HDR CFR encode for V2 on constrained hosted instances.
-        // Keep the source bit depth and HDR signaling; use visually high-quality CRF
-        // instead of lossless mode, which can leave conversion apparently stuck for a long time.
+        // Faster Main10/HDR CFR encode for V2 on constrained hosted instances.
+        // Enable x265 wavefront parallel processing and two frame threads; wpp=0 plus
+        // one frame thread serialized too much work and made 4K conversion appear stuck.
+        // Keep source bit depth and HDR signaling; CRF 16 is high quality, not mathematically lossless.
         '-threads', '2',
         '-crf', '16',
         '-x265-params', (hdr && transfer === 'smpte2084'
-          ? 'hdr10=1:pools=2:frame-threads=1:wpp=0'
-          : 'pools=2:frame-threads=1:wpp=0')
+          ? 'hdr10=1:pools=2:frame-threads=2:wpp=1'
+          : 'pools=2:frame-threads=2:wpp=1')
       ] : ['-threads', '2', '-crf', '18']),
       '-pix_fmt', outputPixFmt,
       ...(primaries && primaries !== 'unknown' ? ['-color_primaries', primaries] : []),
