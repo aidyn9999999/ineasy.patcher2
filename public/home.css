@@ -2183,3 +2183,34 @@ body, .app-shell, .app-main, .view-section, #patchSection {
   }
 }
 
+/* Keep the comparison draggable, but hide the browser's native horizontal range track. */
+#homeSection input#comparisonRange.comparison-range {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+#homeSection input#comparisonRange.comparison-range::-webkit-slider-runnable-track {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  height: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+#homeSection input#comparisonRange.comparison-range::-webkit-slider-thumb {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  opacity: 0 !important;
+}
+#homeSection input#comparisonRange.comparison-range::-moz-range-track {
+  height: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+#homeSection input#comparisonRange.comparison-range::-moz-range-thumb {
+  opacity: 0 !important;
+  border: 0 !important;
+}
+
