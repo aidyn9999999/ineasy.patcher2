@@ -2183,9 +2183,3 @@ body, .app-shell, .app-main, .view-section, #patchSection {
   }
 }
 
-
-/* Comparison is an automatic visual preview, not an interactive slider. */
-#homeSection .comparison-divider,
-#homeSection .comparison-range {
-  display: none !important;
-}
