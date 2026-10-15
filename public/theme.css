@@ -558,3 +558,17 @@ html,body,.app-shell{background:#030817!important}
 #archiveSection,.archive-card,.video-archive{background:#050D20!important;border-color:#172B4D!important}
 .site-footer{background:#030817!important;border-color:#172B4D!important}
 @media(max-width:700px){.app-main{padding:12px 10px 86px}#patchSection .patch-panel{padding:12px 10px 14px}#patchSection .patch-title{font-size:clamp(21px,5.7vw,27px)!important}#patchSection .patch-sub{font-size:12px;margin-bottom:10px}#patchSection .dropzone{min-height:165px;padding:18px 9px}#patchSection .dz-title{font-size:15px}#patchSection .dz-sub{font-size:11px}}
+
+
+/* Keep theme effects available in Safari without expensive stacked blur filters. */
+.safari-browser .glow,
+.safari-browser .glow-effect,
+.safari-browser .ambient-glow {
+  filter: none;
+}
+.safari-browser .glass,
+.safari-browser .glass-panel,
+.safari-browser .glass-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
