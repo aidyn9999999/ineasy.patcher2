@@ -2085,3 +2085,100 @@ body, .app-shell, .app-main, .view-section, #patchSection {
   transition-duration: 2.2s;
   -webkit-transition-duration: 2.2s;
 }
+
+
+/* Final layout correction: preserve homepage objects and keep the greeting compact. */
+#homeSection .home-hero {
+  min-height: 0;
+  height: auto;
+  min-height: clamp(330px, 42vw, 470px);
+}
+#homeSection .home-hero-copy {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 900px;
+  padding: clamp(30px, 4.5vw, 54px) 24px 68px;
+  margin-inline: auto;
+}
+#homeSection .home-hero .home-eyebrow {
+  margin-bottom: 18px;
+}
+#homeSection .home-hero h1 {
+  max-width: 780px;
+  margin: 0 auto;
+  font-size: clamp(30px, 4.2vw, 48px);
+  line-height: 1.08;
+  text-wrap: balance;
+}
+#homeSection .home-intro {
+  max-width: 620px;
+  margin: 14px auto 0;
+  font-size: 14px;
+  line-height: 1.55;
+}
+#homeSection .home-hero-foot {
+  bottom: 14px;
+}
+#homeSection .home-stats,
+#homeSection .home-stat,
+#homeSection .home-hero-shade,
+#homeSection .home-hero-foot,
+#homeSection .home-section-heading,
+#homeSection .quality-comparison,
+#homeSection .comparison-label,
+#homeSection .comparison-divider,
+#homeSection .comparison-range,
+#homeSection .workflow-grid,
+#homeSection .workflow-step,
+#homeSection .home-local-note,
+#homeSection .home-cta-bottom {
+  visibility: visible;
+  opacity: 1;
+}
+#homeSection .home-stat {
+  display: flex;
+}
+#homeSection .home-cta-bottom {
+  display: inline-flex;
+}
+@media (max-width: 700px) {
+  #homeSection .home-hero {
+    min-height: 0;
+    height: auto;
+  }
+  #homeSection .home-hero-copy {
+    padding: 30px 18px 64px;
+  }
+  #homeSection .home-hero .home-eyebrow {
+    min-height: 30px;
+    margin-bottom: 16px;
+    padding-inline: 13px;
+    font-size: 9px;
+  }
+  #homeSection .home-hero h1 {
+    max-width: 520px;
+    font-size: clamp(29px, 7.4vw, 38px);
+    line-height: 1.08;
+  }
+  #homeSection .home-intro {
+    max-width: 36ch;
+    margin-top: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  #homeSection .home-hero-foot {
+    right: 14px;
+    bottom: 12px;
+    left: 14px;
+    font-size: 8px;
+  }
+  #homeSection .home-stats {
+    display: grid;
+  }
+  #homeSection .home-stat {
+    display: flex;
+  }
+  #homeSection .home-cta-bottom {
+    display: inline-flex;
+  }
+}
