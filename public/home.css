@@ -1696,3 +1696,24 @@ body, .app-shell, .app-main, .view-section, #patchSection {
   #homeSection .home-section-heading h2 { font-size: 23px !important; }
   #homeSection .home-stat strong { font-size: 19px !important; }
 }
+
+
+/* Compact status chips with restrained live indicators and line icons. */
+.home-stats { gap:12px; }
+.home-stat { position:relative; min-width:0; padding:18px 20px; gap:7px; overflow:hidden; }
+.home-stat::before { content:""; position:absolute; inset:0 auto 0 0; width:2px; background:linear-gradient(180deg,rgba(96,165,250,.65),rgba(56,189,248,.08)); }
+.home-stat-label { display:flex; align-items:center; gap:7px; color:#91a5c7; font-size:11px; line-height:1.2; font-weight:430; letter-spacing:.025em; }
+.status-dot { width:7px; height:7px; flex:0 0 7px; border-radius:50%; background:#34d399; box-shadow:0 0 9px rgba(52,211,153,.55); }
+.status-dot-blue { background:#60a5fa; box-shadow:0 0 9px rgba(96,165,250,.5); }
+.status-icon { width:15px; height:15px; fill:none; stroke:#60a5fa; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.home-stat strong { display:flex; align-items:center; gap:6px; font-size:23px !important; font-weight:430 !important; letter-spacing:-.035em; }
+.home-stat > span:last-child { font-size:11px; line-height:1.35; color:#91a5c7; }
+.mode-divider { color:#49658f; font-weight:400; }
+@media(max-width:700px) {
+ .home-stats { gap:8px; }
+ .home-stat { padding:14px 11px; gap:6px; }
+ .home-stat-label { font-size:10px; gap:5px; }
+ .home-stat strong { font-size:19px !important; }
+ .home-stat > span:last-child { font-size:10px; }
+ .status-icon { width:13px; height:13px; }
+}
