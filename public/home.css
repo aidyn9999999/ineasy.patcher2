@@ -2053,3 +2053,35 @@ body, .app-shell, .app-main, .view-section, #patchSection {
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   #homeSection .comparison-before-wrap { background: rgba(8, 20, 38, .18); }
 }
+
+
+/* Cross-browser fallback: WebKit prefixes and low-cost rendering for Safari/iOS. */
+.quality-comparison .comparison-before-wrap {
+  -webkit-clip-path: inset(0 calc(100% - var(--compare-split)) 0 0);
+  clip-path: inset(0 calc(100% - var(--compare-split)) 0 0);
+}
+#homeSection .quality-comparison.demo-running .comparison-before-wrap {
+  -webkit-transition: -webkit-clip-path 2.6s cubic-bezier(.22,.72,.2,1);
+}
+#homeSection .home-hero {
+  min-height: 500px;
+  min-height: min(620px, calc(100vh - 190px));
+}
+.safari-browser #homeSection .comparison-label,
+.safari-browser #homeSection .home-cta,
+.safari-browser .home-hero .home-eyebrow {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.safari-browser #homeSection .comparison-before-wrap {
+  -webkit-backdrop-filter: blur(.4px);
+  backdrop-filter: blur(.4px);
+}
+.safari-browser .home-scene-canvas {
+  opacity: .24;
+}
+.safari-browser #homeSection .quality-comparison.demo-running .comparison-before-wrap,
+.safari-browser #homeSection .quality-comparison.demo-running .comparison-divider {
+  transition-duration: 2.2s;
+  -webkit-transition-duration: 2.2s;
+}
