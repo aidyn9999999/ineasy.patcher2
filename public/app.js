@@ -2847,7 +2847,7 @@ if (processBtn) {
           throw new Error(errorCode);
         }
         const cfrBlob = await cfrResponse.blob();
-        if (!cfrBlob.size || cfrResponse.headers.get('X-INEASY-CFR') !== '60000/1001') {
+        if (!cfrBlob.size || cfrResponse.headers.get('X-INEASY-CFR') !== '60/1') {
           throw new Error('cfr_output_verification_failed');
         }
         fpsConversion = {
@@ -2855,10 +2855,10 @@ if (processBtn) {
           info: {
             width: Number(cfrResponse.headers.get('X-INEASY-WIDTH')) || null,
             height: Number(cfrResponse.headers.get('X-INEASY-HEIGHT')) || null,
-            averageFps: 60000 / 1001,
+            averageFps: 60,
             codec: 'ffmpeg-lossless'
           },
-          fps: 60000 / 1001,
+          fps: 60,
           sourceFps: null,
           preserveOriginal: false,
           hdr: cfrResponse.headers.get('X-INEASY-HDR') === 'preserved',
@@ -2868,7 +2868,7 @@ if (processBtn) {
         };
         updateProcessingProgress(13);
       } else if (sdr1080pEligibility.eligible) {
-        console.info('[INEASY] Converting confirmed SDR source at native resolution to exact 59.94 FPS', {
+        console.info('[INEASY] Converting confirmed SDR source at native resolution to exact 60 FPS', {
           sourceCodec: sdr1080pEligibility.codec
         });
         fpsConversion = await convertVideoToExact5994Fps(
