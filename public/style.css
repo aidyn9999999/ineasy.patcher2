@@ -2164,3 +2164,16 @@ body {
   font-size: inherit !important;
   font-weight: 750 !important;
 }
+
+
+/* Restore readable text sizes everywhere; keep only the channel invitation compact */
+.topbar .brand { font-size: 25px !important; }
+.community-callout .news-copy strong { font-size: 14px !important; }
+.community-callout .news-callout p { font-size: 10px !important; line-height: 1.45 !important; }
+.community-callout .news-link { min-width: 25px !important; min-height: 25px !important; }
+.community-callout .news-link svg { width: 16px !important; height: 16px !important; }
+.community-callout .language-dock button { padding: 4px 6px !important; font-size: 9px !important; }
+#patchSection .dropzone .dz-title { font-size: clamp(20px, 2.5vw, 27px) !important; }
+#patchSection .dropzone .dz-sub { font-size: 13px !important; }
+#patchSection .dropzone .patch-format-note { font-size: 12px !important; font-weight: 700 !important; }
+#patchSection .patch-quality-heading { font-size: 15px !important; }
