@@ -120,7 +120,22 @@
   inset: 0;
   clip-path: inset(0 calc(100% - var(--compare-split)) 0 0);
 }
-.comparison-before { filter: blur(.8px) saturate(.48) contrast(.64) brightness(.7); transform: scale(1.015); }
+.comparison-before {
+  /* 540p side: retain the source colors, but soften detail and add visible compression-like grain. */
+  filter: blur(.35px) contrast(.94);
+  image-rendering: pixelated;
+  transform: scale(1.015);
+}
+#homeSection .quality-comparison.demo-running .comparison-divider {
+  transition: left 2.6s cubic-bezier(.22,.72,.2,1);
+}
+#homeSection .quality-comparison.demo-running .comparison-before-wrap {
+  transition: clip-path 2.6s cubic-bezier(.22,.72,.2,1);
+}
+#homeSection .quality-comparison.demo-running .comparison-before-wrap::after {
+  opacity: .72;
+  mix-blend-mode: overlay;
+}
 .comparison-before-wrap::after {
   position: absolute;
   z-index: 2;
@@ -1995,4 +2010,28 @@ body, .app-shell, .app-main, .view-section, #patchSection {
     grid-column: auto !important;
     text-align: center !important;
   }
+}
+
+
+/* Make the comparison handle easy to grab on touch screens. */
+#homeSection .quality-comparison {
+  --compare-split: 50%;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#homeSection .comparison-range {
+  cursor: ew-resize;
+  touch-action: pan-y;
+  -webkit-tap-highlight-color: transparent;
+}
+#homeSection .comparison-divider span {
+  width: 48px;
+  height: 48px;
+  border-width: 2px;
+  box-shadow: 0 0 0 5px rgba(255,255,255,.09), 0 5px 22px rgba(0,0,0,.34);
+}
+@media(max-width:700px) {
+  #homeSection .comparison-divider span { width: 50px; height: 50px; }
+  #homeSection .comparison-range { min-height: 44px; }
 }
