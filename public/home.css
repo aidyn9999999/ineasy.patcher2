@@ -1791,3 +1791,102 @@ body, .app-shell, .app-main, .view-section, #patchSection {
   height:1px;
   background:linear-gradient(90deg,transparent,rgba(34,197,94,.7),transparent);
 }
+
+
+/* Align status metrics higher and make workflow steps share one precise grid. */
+#homeSection .home-stats {
+  align-items:stretch;
+}
+#homeSection .home-stat {
+  justify-content:flex-start;
+  align-items:flex-start;
+  text-align:left;
+  padding-top:16px;
+  padding-bottom:18px;
+}
+#homeSection .home-stat-label {
+  min-height:18px;
+  margin:0 0 1px;
+  justify-content:flex-start;
+}
+#homeSection .home-stat strong {
+  display:block;
+  margin:0;
+  line-height:1.15;
+}
+#homeSection .home-stat > span:last-child {
+  display:block;
+  margin:0;
+  line-height:1.35;
+}
+#homeSection .home-workflow .workflow-grid {
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  align-items:stretch;
+  gap:16px;
+}
+#homeSection .workflow-step {
+  display:grid !important;
+  grid-template-rows:42px auto 1fr;
+  align-content:start;
+  justify-items:start;
+  text-align:left;
+  gap:0 !important;
+  min-width:0;
+  padding:22px !important;
+}
+#homeSection .workflow-number {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:38px;
+  height:38px;
+  min-width:38px;
+  margin:0 0 16px !important;
+  border:1px solid rgba(34,197,94,.48);
+  border-radius:11px;
+  background:rgba(34,197,94,.11);
+  color:#4ade80 !important;
+  font-size:15px !important;
+  font-weight:650 !important;
+  line-height:1;
+  box-shadow:0 0 18px rgba(34,197,94,.15),inset 0 0 12px rgba(34,197,94,.06);
+}
+#homeSection .workflow-step h3 {
+  width:100%;
+  margin:0 0 9px !important;
+  min-height:2.5em;
+  text-align:left;
+  font-size:16px !important;
+  line-height:1.35 !important;
+}
+#homeSection .workflow-step p {
+  width:100%;
+  margin:0 !important;
+  text-align:left;
+  font-size:13px !important;
+  line-height:1.55 !important;
+}
+@media(max-width:700px) {
+  #homeSection .home-stat { padding:14px 11px 15px; }
+  #homeSection .home-stat-label { font-size:9px; gap:5px; }
+  #homeSection .home-stat strong { font-size:19px !important; }
+  #homeSection .home-workflow .workflow-grid { grid-template-columns:1fr; gap:12px; }
+  #homeSection .workflow-step {
+    grid-template-columns:42px minmax(0,1fr);
+    grid-template-rows:auto auto;
+    column-gap:12px;
+    padding:17px !important;
+  }
+  #homeSection .workflow-number {
+    grid-column:1;
+    grid-row:1 / span 2;
+    margin:0 !important;
+  }
+  #homeSection .workflow-step h3 {
+    grid-column:2;
+    min-height:0;
+    margin:0 0 6px !important;
+  }
+  #homeSection .workflow-step p { grid-column:2; }
+}
