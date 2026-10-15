@@ -2585,6 +2585,7 @@ const comparisonRange = document.getElementById('comparisonRange');
 const qualityComparison = document.getElementById('qualityComparison');
 if (comparisonRange && qualityComparison) {
   let comparisonTouched = false;
+  let comparisonStarted = false;
   let comparisonTimer = null;
   const setComparison = (value) => {
     comparisonRange.value = String(value);
@@ -2592,8 +2593,13 @@ if (comparisonRange && qualityComparison) {
   };
   const stopComparisonDemo = () => {
     comparisonTouched = true;
+    qualityComparison.classList.remove('demo-running');
     if (comparisonTimer) window.clearTimeout(comparisonTimer);
+    comparisonTimer = null;
   };
+  comparisonRange.min = '0';
+  comparisonRange.max = '100';
+  comparisonRange.step = '1';
   comparisonRange.addEventListener('input', () => {
     stopComparisonDemo();
     qualityComparison.classList.add('comparison-user-adjusted');
@@ -2601,16 +2607,33 @@ if (comparisonRange && qualityComparison) {
   });
   qualityComparison.addEventListener('pointerdown', stopComparisonDemo, { once: true });
   qualityComparison.addEventListener('touchstart', stopComparisonDemo, { once: true, passive: true });
-  setComparison(8);
-  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+
+  const startComparisonDemo = () => {
+    if (comparisonStarted || comparisonTouched || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    comparisonStarted = true;
+    // Begin with the low-quality 540p side covering the full preview, then glide to 50%.
+    setComparison(100);
+    qualityComparison.classList.add('demo-running');
     comparisonTimer = window.setTimeout(() => {
       if (comparisonTouched) return;
       setComparison(50);
       comparisonTimer = window.setTimeout(() => {
-        if (comparisonTouched) return;
-        setComparison(8);
-      }, 3000);
-    }, 900);
+        qualityComparison.classList.remove('demo-running');
+        comparisonTimer = null;
+      }, 2700);
+    }, 350);
+  };
+  setComparison(100);
+  if ('IntersectionObserver' in window) {
+    const comparisonObserver = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        startComparisonDemo();
+        comparisonObserver.disconnect();
+      }
+    }, { threshold: 0.3 });
+    comparisonObserver.observe(qualityComparison);
+  } else {
+    window.addEventListener('load', () => window.setTimeout(startComparisonDemo, 500), { once: true });
   }
 }
 
