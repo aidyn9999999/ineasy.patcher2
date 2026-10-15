@@ -2177,3 +2177,45 @@ body {
 #patchSection .dropzone .dz-sub { font-size: 13px !important; }
 #patchSection .dropzone .patch-format-note { font-size: 12px !important; font-weight: 700 !important; }
 #patchSection .patch-quality-heading { font-size: 15px !important; }
+
+
+/* Compact account controls: ID, balance, add and text-only logout */
+.topbar .balance-pill {
+  padding: 6px 8px !important;
+  gap: 7px !important;
+  min-height: 0 !important;
+  border-radius: 10px !important;
+}
+.topbar .balance-pill .id-part,
+.topbar .balance-pill > span {
+  font-size: 12px !important;
+  line-height: 1.2 !important;
+}
+.topbar .copy-id-btn {
+  min-width: 23px !important;
+  min-height: 23px !important;
+  width: 23px !important;
+  height: 23px !important;
+  padding: 2px !important;
+  border-radius: 6px !important;
+}
+.topbar .copy-id-btn svg { width: 13px !important; height: 13px !important; }
+.topbar .plus-btn {
+  min-width: 29px !important;
+  min-height: 29px !important;
+  width: 29px !important;
+  height: 29px !important;
+}
+.topbar .plus-btn svg { width: 17px !important; height: 17px !important; }
+.topbar .logout-btn {
+  min-height: 29px !important;
+  padding: 4px 8px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #9aa6b8 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+.topbar .logout-btn:hover { background: rgba(148,163,184,.08) !important; color: #d5dce7 !important; }
