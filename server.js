@@ -1850,7 +1850,7 @@ async function requireUserToken(req, res, next) {
   return next();
 }
 
-// V2-only CFR conversion: lossless video re-encode at 59.94 FPS before ADJN.
+// V2-only CFR conversion: encode at exact 60 FPS with a size-conscious bitrate/quality target.
 // Dynamic HDR profiles are rejected rather than silently stripped.
 app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'application/octet-stream', limit: '512mb' }), async (req, res) => {
   if (!FFMPEG_PATH) return res.status(503).json({ error: 'ffmpeg_engine_unavailable' });
@@ -1910,7 +1910,7 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
     const args = [
       '-hide_banner', '-loglevel', 'error', '-y', '-i', inputPath,
       '-map', '0:v:0', '-map', '0:a:0?', '-map_metadata', '0',
-      '-vf', 'fps=60000/1001',
+      '-vf', 'fps=60',
       '-c:v', videoEncoder, '-preset', 'ultrafast',
       // Bound x265 parallelism: unrestricted pools can exhaust small hosted instances
       // while encoding high-resolution 10-bit HDR. Keep lossless/Main10 settings.
@@ -1918,20 +1918,20 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
         // Faster Main10/HDR CFR encode for V2 on constrained hosted instances.
         // Enable x265 wavefront parallel processing and two frame threads; wpp=0 plus
         // one frame thread serialized too much work and made 4K conversion appear stuck.
-        // Keep source bit depth and HDR signaling; CRF 16 is high quality, not mathematically lossless.
+        // Keep source bit depth and HDR signaling while reducing output size; CRF 20 is lossy.
         '-threads', '2',
-        '-crf', '16',
+        '-crf', '20',
         '-x265-params', (hdr && transfer === 'smpte2084'
           ? 'hdr10=1:pools=2:frame-threads=2:wpp=1'
           : 'pools=2:frame-threads=2:wpp=1')
-      ] : ['-threads', '2', '-crf', '18']),
+      ] : ['-threads', '2', '-crf', '23']),
       '-pix_fmt', outputPixFmt,
       ...(primaries && primaries !== 'unknown' ? ['-color_primaries', primaries] : []),
       ...(transfer && transfer !== 'unknown' ? ['-color_trc', transfer] : []),
       ...(matrix && matrix !== 'unknown' ? ['-colorspace', matrix] : []),
       '-c:a', 'copy', '-movflags', '+faststart', outputPath
     ];
-    ffmpegStage = 'encode_cfr_5994';
+    ffmpegStage = 'encode_cfr_60';
     await run(FFMPEG_PATH, args);
     ffmpegStage = 'probe_output';
     const outputMeta = await probe(outputPath);
@@ -1939,7 +1939,7 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
     if (!outputVideo ||
         Number(outputVideo.width) !== inputWidth ||
         Number(outputVideo.height) !== inputHeight ||
-        String(outputVideo.avg_frame_rate || '') !== '60000/1001' ||
+        String(outputVideo.avg_frame_rate || '') !== '60/1' ||
         String(outputVideo.pix_fmt || '') !== outputPixFmt) {
       return await rejectJob(422, { error: 'cfr_output_verification_failed' });
     }
@@ -1960,7 +1960,7 @@ app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'applicatio
     const stat = await fs.promises.stat(outputPath);
     res.set('Content-Type', 'video/mp4');
     res.set('Content-Length', String(stat.size));
-    res.set('X-INEASY-CFR', '60000/1001');
+    res.set('X-INEASY-CFR', '60/1');
     res.set('X-INEASY-WIDTH', String(inputWidth));
     res.set('X-INEASY-HEIGHT', String(inputHeight));
     res.set('X-INEASY-HDR', outputHdr ? 'preserved' : 'sdr');
