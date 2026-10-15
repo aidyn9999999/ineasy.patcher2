@@ -2078,3 +2078,18 @@ body {
   margin-top: 5px;
 }
 #patchSection .dropzone .patch-quality-note { display: none !important; }
+
+
+/* Compact, bold INEASY wordmark */
+.topbar .brand {
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  letter-spacing: .025em !important;
+  line-height: 1;
+}
+.topbar .brand .brand-in,
+.topbar .brand .brand-easy {
+  font-size: inherit !important;
+  font-weight: 900 !important;
+  letter-spacing: inherit !important;
+}
