@@ -2150,3 +2150,17 @@ body {
 .community-callout .news-callout p { font-size: 8px !important; line-height: 1.25 !important; margin-top: 1px !important; }
 .community-callout .news-link { min-width: 22px !important; min-height: 22px !important; padding: 0 4px !important; }
 .community-callout .news-link svg { width: 13px !important; height: 13px !important; }
+
+
+/* Make the two-tone ineasy wordmark more prominent without losing its compact style */
+.topbar .brand {
+  font-size: 25px !important;
+  line-height: 1 !important;
+  letter-spacing: -.065em !important;
+  transform: none !important;
+}
+.topbar .brand .brand-in,
+.topbar .brand .brand-easy {
+  font-size: inherit !important;
+  font-weight: 750 !important;
+}
