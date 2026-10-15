@@ -59,23 +59,23 @@ const translations = {
     buy: 'Buy',
     nav: ['HOME', 'PATCHER', 'VIDEO CHECK', 'FAQ'],
     homeKicker: 'INEASY  ·  VIDEO OPTIMIZATION',
-    homeTitle: 'EVERY FRAME. READY TO SHINE.',
-    homeIntro: 'A polished final step before TikTok: prepare your finished edit in a clean, guided workflow right in your browser.',
-    homeCta: 'Go to processing',
+    homeTitle: 'Prepare your TikTok video',
+    homeIntro: 'Prepare videos up to 4K and 120 FPS for high-quality TikTok posts.',
+    homeCta: 'Process video',
     comparisonKicker: 'QUALITY',
     comparisonTitle: 'See the result: patched vs. unpatched',
     comparisonIntro: 'Drag the divider to compare the image.',
     comparisonDisclaimer: 'Visual illustration only, not a preview of a specific processed video. TikTok controls the final published quality.',
     workflowKicker: 'THREE STEPS',
     workflowTitle: 'From edit to post',
-    stepOneTitle: 'Start with your finished edit',
-    stepOneBody: 'Add your final cut after music, captions, and effects are in place.',
-    stepTwoTitle: 'Process in one tap',
-    stepTwoBody: 'INEASY prepares the compatible file in your browser and verifies the finished output.',
-    stepThreeTitle: 'Download. Publish. Done.',
-    stepThreeBody: 'Download your result or open the publishing panel to send it to TikTok.',
+    stepOneTitle: 'Process your video',
+    stepOneBody: 'Upload your video in Patcher and press Auto Post.',
+    stepTwoTitle: 'Connect Zernio',
+    stepTwoBody: 'Add your Zernio API key and connect your TikTok account.',
+    stepThreeTitle: 'Publish your video',
+    stepThreeBody: 'Write a caption, choose publishing settings, and publish.',
     localProcessingCopy: 'Your video stays on your device. Patcher preserves the source frame rate and resolution. HDR/SDR metadata is validated without re-encoding.',
-    homeBottomCta: 'Start processing',
+    homeBottomCta: 'Process video',
     faqLabel: 'FAQ / FREQUENTLY ASKED QUESTIONS',
     analyzerEyebrow: 'VIDEO ANALYZER',
     videos: 'videos',
@@ -246,23 +246,23 @@ const translations = {
     buy: 'Купить',
     nav: ['ГЛАВНАЯ', 'ПАТЧЕР', 'ПРОВЕРКА ВИДЕО', 'FAQ'],
     homeKicker: 'INEASY  ·  ОПТИМИЗАЦИЯ ВИДЕО',
-    homeTitle: 'КАЖДЫЙ КАДР. ПОД КОНТРОЛЕМ.',
-    homeIntro: 'Профессиональный финальный этап перед TikTok: подготовьте готовый ролик в браузере — без сложных настроек и лишних шагов.',
-    homeCta: 'Перейти к обработке',
+    homeTitle: 'Обработай своё видео для TikTok',
+    homeIntro: 'Подготовь видео до 4K и 120 FPS для публикации в высоком качестве.',
+    homeCta: 'Обработка видео',
     comparisonKicker: 'КАЧЕСТВО',
     comparisonTitle: 'Смотрите результат: с патчингом и без патчинга',
     comparisonIntro: 'Потяните разделитель, чтобы сравнить изображение.',
     comparisonDisclaimer: 'Визуальный пример, а не предпросмотр результата обработки конкретного видео. Итоговое качество публикации зависит от TikTok.',
     workflowKicker: 'ТРИ ШАГА',
     workflowTitle: 'От монтажа до публикации',
-    stepOneTitle: 'Загрузите готовый ролик',
-    stepOneBody: 'Сначала завершите монтаж — добавьте звук, подписи и эффекты. Затем выберите итоговый файл.',
-    stepTwoTitle: 'Обработайте одним нажатием',
-    stepTwoBody: 'INEASY подготовит совместимый файл прямо в браузере и проверит результат перед скачиванием.',
-    stepThreeTitle: 'Скачайте и публикуйте',
-    stepThreeBody: 'Сохраните готовый файл или откройте блок публикации, чтобы отправить ролик в TikTok.',
+    stepOneTitle: 'Обработайте видео',
+    stepOneBody: 'Загрузите ролик в Patcher и нажмите «Автопост».',
+    stepTwoTitle: 'Подключите Zernio',
+    stepTwoBody: 'Добавьте API-ключ Zernio и подключите свой аккаунт TikTok.',
+    stepThreeTitle: 'Опубликуйте ролик',
+    stepThreeBody: 'Напишите описание, выберите настройки публикации и нажмите «Опубликовать».',
     localProcessingCopy: 'Видео остаётся на устройстве. Патчер сохраняет исходные FPS и разрешение. Метаданные HDR/SDR проверяются без перекодирования.',
-    homeBottomCta: 'Начать обработку',
+    homeBottomCta: 'Обработка видео',
     faqLabel: 'FAQ / ЧАСТЫЕ ВОПРОСЫ',
     analyzerEyebrow: 'АНАЛИЗАТОР ВИДЕО',
     videos: 'видео',
@@ -433,9 +433,9 @@ const translations = {
     buy: 'Сатып алу',
     nav: ['БАСТЫ', 'ПАТЧЕР', 'БЕЙНЕНІ ТЕКСЕРУ', 'FAQ'],
     homeKicker: 'INEASY  ·  БЕЙНЕНІ ОҢТАЙЛАНДЫРУ',
-    homeTitle: 'ӘР КАДР. ТОЛЫҚ БАҚЫЛАУДА.',
-    homeIntro: 'TikTok алдында бейнеңізді браузерде оңтайландырыңыз: қарапайым қадамдар, түсінікті процесс және дайын нәтижені жүктеу.',
-    homeCta: 'Өңдеуге өту',
+    homeTitle: 'TikTok бейнеңізді өңдеңіз',
+    homeIntro: 'Жоғары сапалы жариялау үшін 4K және 120 FPS дейінгі бейнені дайындаңыз.',
+    homeCta: 'Бейнені өңдеу',
     comparisonKicker: 'САПА',
     comparisonTitle: 'Патчпен және патчсыз нәтижені салыстырыңыз',
     comparisonIntro: 'Суретті салыстыру үшін бөлгішті жылжытыңыз.',
@@ -449,7 +449,7 @@ const translations = {
     stepThreeTitle: 'Жүктеп, жариялаңыз',
     stepThreeBody: 'Дайын файлды жүктеңіз немесе TikTok-қа жіберу үшін жариялау бөлімін ашыңыз.',
     localProcessingCopy: 'Бейне құрылғыңызда қалады. Патчер бастапқы FPS пен ажыратымдылықты сақтайды. HDR/SDR метадеректері қайта кодтаусыз тексеріледі.',
-    homeBottomCta: 'Өңдеуді бастау',
+    homeBottomCta: 'Бейнені өңдеу',
     faqLabel: 'FAQ / ЖИІ ҚОЙЫЛАТЫН СҰРАҚТАР',
     analyzerEyebrow: 'БЕЙНЕ АНАЛИЗАТОРЫ',
     videos: 'бейне',
@@ -692,7 +692,7 @@ function applyLanguage(lang) {
   setText('navAnalyzer', pack.nav[2]);
   setText('navFaq', pack.nav[3]);
   setText('homeKicker', pack.homeKicker);
-  setText('homeTitle', pack.homeTitle);
+  renderHomeGreeting();
   setText('homeIntro', pack.homeIntro);
   setText('homeCta', pack.homeCta);
   setText('comparisonKicker', pack.comparisonKicker);
@@ -840,6 +840,16 @@ function applyLanguage(lang) {
 
   document.getElementById('checkerUrl').value = document.getElementById('checkerUrl').value.trim();
   renderPackages();
+}
+
+function renderHomeGreeting() {
+  const title = document.getElementById('homeTitle');
+  if (!title) return;
+  const rawName = (getBrowserValue('tg_first_name') || getBrowserValue('tg_username') || '').trim();
+  const name = rawName ? rawName.replace(/^@/, '').split(/\s+/)[0] : (STATE.lang === 'ru' ? 'друг' : STATE.lang === 'kk' ? 'дос' : 'there');
+  const prefix = STATE.lang === 'ru' ? 'Привет, ' : STATE.lang === 'kk' ? 'Сәлем, ' : 'Hi, ';
+  const suffix = STATE.lang === 'ru' ? '! Обработай своё видео для TikTok' : STATE.lang === 'kk' ? '! TikTok бейнеңізді өңдеңіз' : '! Prepare your TikTok video';
+  title.textContent = prefix + name + suffix;
 }
 
 const tgIdLabel = document.getElementById('tgIdLabel');
