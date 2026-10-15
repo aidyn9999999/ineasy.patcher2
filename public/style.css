@@ -2108,3 +2108,30 @@ body {
   text-shadow: none !important;
   white-space: nowrap;
 }
+
+
+/* Restore the original two-tone ineasy logo, slightly larger but still compact */
+.topbar .brand {
+  display: flex !important;
+  align-items: baseline;
+  gap: 0 !important;
+  font-family: Inter, system-ui, sans-serif !important;
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: -.065em !important;
+  white-space: nowrap;
+  text-shadow: none !important;
+}
+.topbar .brand .brand-in {
+  color: #3984ff !important;
+  font-size: inherit !important;
+  font-weight: 950 !important;
+  letter-spacing: inherit !important;
+}
+.topbar .brand .brand-easy {
+  color: #f3f6fc !important;
+  font-size: inherit !important;
+  font-weight: 900 !important;
+  letter-spacing: inherit !important;
+}
