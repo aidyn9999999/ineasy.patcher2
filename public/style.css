@@ -2093,3 +2093,18 @@ body {
   font-weight: 900 !important;
   letter-spacing: inherit !important;
 }
+
+
+/* Short, low-profile and bold ineasy wordmark */
+.topbar .brand {
+  display: block !important;
+  font-family: Inter, system-ui, sans-serif !important;
+  font-size: 15px !important;
+  font-weight: 950 !important;
+  line-height: .95 !important;
+  letter-spacing: -.055em !important;
+  text-transform: lowercase;
+  color: #f3f6fc !important;
+  text-shadow: none !important;
+  white-space: nowrap;
+}
