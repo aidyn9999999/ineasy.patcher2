@@ -2214,3 +2214,10 @@ body, .app-shell, .app-main, .view-section, #patchSection {
   border: 0 !important;
 }
 
+
+
+/* Lock comparison dragging during the first-visit automatic demonstration. */
+#homeSection .quality-comparison.comparison-auto-running .comparison-range {
+  pointer-events: none !important;
+  cursor: default !important;
+}
