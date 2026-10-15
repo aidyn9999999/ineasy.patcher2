@@ -1182,10 +1182,10 @@ const clearBtn = document.getElementById('clearBtn');
     const selected = document.querySelector('input[name="patcherVersion"]:checked')?.value || 'v1';
     if (note) {
       const pack = translations[STATE.lang] || translations.en;
-      note.textContent = selected === 'v2' ? pack.patcherNoteV2 : pack.patcherNoteV1;
-      note.classList.toggle('v1-highlight', selected === 'v1');
+      note.textContent = '';
+      note.classList.add('hidden');
     }
-    if (fpsAdvice) { fpsAdvice.textContent = (translations[STATE.lang] || translations.en).fpsAdvice; fpsAdvice.classList.toggle('hidden', selected !== 'v1' || Boolean(picker?.classList.contains('hidden'))); }
+    if (fpsAdvice) { fpsAdvice.textContent = ''; fpsAdvice.classList.add('hidden'); }
     if (picker) picker.classList.toggle('has-v1-selected', selected === 'v1');
   };
   inputs.forEach((input) => input.addEventListener('change', update));
