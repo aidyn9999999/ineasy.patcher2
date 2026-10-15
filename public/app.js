@@ -2603,15 +2603,17 @@ if (comparisonRange && qualityComparison) {
       video.playsInline = true;
       video.setAttribute('playsinline', '');
       video.setAttribute('webkit-playsinline', '');
-      // iOS Safari can defer autoplay until the page becomes visible or the
-      // video has decoded its first frame. Retry safely without creating a second decoder.
-      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && !document.hidden) {
-        const promise = video.play();
-        if (promise && typeof promise.catch === 'function') {
-          promise.catch(() => {
-            // Keep the frame available; visibility/pageshow listeners retry below.
-          });
-        }
+      // Start the fetch/decode on demand. Calling play before HAVE_CURRENT_DATA
+      // avoids a Safari deadlock where metadata loads but the first frame never does.
+      if (!document.hidden) {
+        try {
+          const promise = video.play();
+          if (promise && typeof promise.catch === 'function') {
+            promise.catch(() => {
+              // Retry when the section becomes visible or the page resumes.
+            });
+          }
+        } catch (_) {}
       }
     });
   };
@@ -2624,6 +2626,7 @@ if (comparisonRange && qualityComparison) {
     video.addEventListener('loadedmetadata', playComparisonVideos);
     video.addEventListener('loadeddata', playComparisonVideos);
     video.addEventListener('canplay', playComparisonVideos);
+    video.addEventListener('playing', () => qualityComparison.classList.add('comparison-video-ready'));
     video.addEventListener('error', () => {
       console.warn('INEASY comparison video failed to load:', video.currentSrc || video.src, video.error?.code);
     });
