@@ -860,13 +860,19 @@ if (homeUserName) {
   homeUserName.textContent = firstName ? firstName.replace(/^@/, '').split(/\s+/)[0] : 'друг';
 }
 
-document.getElementById('copyIdBtn').addEventListener('click', () => {
-  navigator.clipboard.writeText(tgId).then(() => {
-    const btn = document.getElementById('copyIdBtn');
-    const old = btn.textContent;
-    btn.textContent = '✓';
-    setTimeout(() => { btn.textContent = old; }, 1200);
-  });
+document.getElementById('copyIdBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('copyIdBtn');
+  try {
+    await navigator.clipboard.writeText(tgId);
+    btn.classList.add('copied');
+    btn.setAttribute('aria-label', STATE.lang === 'ru' ? 'ID скопирован' : STATE.lang === 'kk' ? 'ID көшірілді' : 'ID copied');
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.setAttribute('aria-label', 'Copy Telegram ID');
+    }, 1200);
+  } catch (error) {
+    console.warn('Could not copy Telegram ID:', error);
+  }
 });
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
