@@ -59,8 +59,8 @@ const translations = {
     buy: 'Buy',
     nav: ['HOME', 'PATCHER', 'VIDEO CHECK', 'FAQ'],
     homeKicker: 'INEASY  ·  VIDEO OPTIMIZATION',
-    homeTitle: 'BYPASS TIKTOK COMPRESSION',
-    homeIntro: 'Process video without re-compression, preserving quality and without re-encoding.',
+    homeTitle: 'Prepare your TikTok video',
+    homeIntro: 'Prepare videos up to 4K and 120 FPS for high-quality TikTok posts.',
     homeCta: 'Process video',
     comparisonKicker: 'QUALITY',
     comparisonTitle: 'See the result: patched vs. unpatched',
@@ -246,8 +246,8 @@ const translations = {
     buy: 'Купить',
     nav: ['ГЛАВНАЯ', 'ПАТЧЕР', 'ПРОВЕРКА ВИДЕО', 'FAQ'],
     homeKicker: 'INEASY  ·  ОПТИМИЗАЦИЯ ВИДЕО',
-    homeTitle: 'ОБХОД СЖАТИЯ TIKTOK',
-    homeIntro: 'Обработайте видео без повторного сжатия, с сохранением качества и без перекодирования.',
+    homeTitle: 'Обработай своё видео для TikTok',
+    homeIntro: 'Подготовь видео до 4K и 120 FPS для публикации в высоком качестве.',
     homeCta: 'Обработка видео',
     comparisonKicker: 'КАЧЕСТВО',
     comparisonTitle: 'Смотрите результат: с патчингом и без патчинга',
@@ -433,8 +433,8 @@ const translations = {
     buy: 'Сатып алу',
     nav: ['БАСТЫ', 'ПАТЧЕР', 'БЕЙНЕНІ ТЕКСЕРУ', 'FAQ'],
     homeKicker: 'INEASY  ·  БЕЙНЕНІ ОҢТАЙЛАНДЫРУ',
-    homeTitle: 'TIKTOK СЫҒЫМДАУЫН АЙНАЛЫП ӨТУ',
-    homeIntro: 'Бейнені қайта сығымдамай, сапасын сақтап және қайта кодтамай өңдеңіз.',
+    homeTitle: 'TikTok бейнеңізді өңдеңіз',
+    homeIntro: 'Жоғары сапалы жариялау үшін 4K және 120 FPS дейінгі бейнені дайындаңыз.',
     homeCta: 'Бейнені өңдеу',
     comparisonKicker: 'САПА',
     comparisonTitle: 'Патчпен және патчсыз нәтижені салыстырыңыз',
@@ -845,8 +845,11 @@ function applyLanguage(lang) {
 function renderHomeGreeting() {
   const title = document.getElementById('homeTitle');
   if (!title) return;
-  const headings = { ru: 'ОБХОД СЖАТИЯ TIKTOK', kk: 'TIKTOK СЫҒЫМДАУЫН АЙНАЛЫП ӨТУ', en: 'BYPASS TIKTOK COMPRESSION' };
-  title.textContent = headings[STATE.lang] || headings.ru;
+  const rawName = (getBrowserValue('tg_first_name') || getBrowserValue('tg_username') || '').trim();
+  const name = rawName ? rawName.replace(/^@/, '').split(/\s+/)[0] : (STATE.lang === 'ru' ? 'друг' : STATE.lang === 'kk' ? 'дос' : 'there');
+  const prefix = STATE.lang === 'ru' ? 'Привет, ' : STATE.lang === 'kk' ? 'Сәлем, ' : 'Hi, ';
+  const suffix = STATE.lang === 'ru' ? '! Обработай своё видео для TikTok' : STATE.lang === 'kk' ? '! TikTok бейнеңізді өңдеңіз' : '! Prepare your TikTok video';
+  title.textContent = prefix + name + suffix;
 }
 
 const tgIdLabel = document.getElementById('tgIdLabel');
