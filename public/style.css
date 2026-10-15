@@ -2219,3 +2219,26 @@ body {
   font-weight: 600 !important;
 }
 .topbar .logout-btn:hover { background: rgba(148,163,184,.08) !important; color: #d5dce7 !important; }
+
+
+/* Logout should look like a small button, not plain text or an icon */
+.topbar .logout-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 30px !important;
+  padding: 5px 11px !important;
+  border: 1px solid #394354 !important;
+  border-radius: 7px !important;
+  background: #171d28 !important;
+  color: #aeb8c7 !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+}
+.topbar .logout-btn:hover {
+  border-color: #596579 !important;
+  background: #202938 !important;
+  color: #e2e8f0 !important;
+}
