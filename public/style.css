@@ -2135,3 +2135,18 @@ body {
   font-weight: 900 !important;
   letter-spacing: inherit !important;
 }
+
+
+/* Final logo weight and minimalist channel invitation */
+.topbar .brand .brand-in { font-weight: 750 !important; }
+.topbar .brand .brand-easy { font-weight: 750 !important; }
+.community-callout .news-callout {
+  max-width: 680px !important;
+  padding: 3px 7px !important;
+  gap: 5px !important;
+  border-left-width: 1px !important;
+}
+.community-callout .news-copy strong { font-size: 10px !important; font-weight: 700 !important; }
+.community-callout .news-callout p { font-size: 8px !important; line-height: 1.25 !important; margin-top: 1px !important; }
+.community-callout .news-link { min-width: 22px !important; min-height: 22px !important; padding: 0 4px !important; }
+.community-callout .news-link svg { width: 13px !important; height: 13px !important; }
