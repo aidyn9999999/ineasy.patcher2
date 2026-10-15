@@ -2584,7 +2584,8 @@ if (PATCHER_TEST_MODE) {
 const comparisonRange = document.getElementById('comparisonRange');
 const qualityComparison = document.getElementById('qualityComparison');
 if (comparisonRange && qualityComparison) {
-  const comparisonVideos = [...qualityComparison.querySelectorAll('video.comparison-image')];
+  // Use a single decoder: iOS Safari often stalls when two identical videos autoplay at once.
+  const comparisonVideos = [qualityComparison.querySelector('video.comparison-after')].filter(Boolean);
   let comparisonTouched = false;
   let comparisonStarted = false;
   let comparisonTimer = null;
@@ -2600,22 +2601,40 @@ if (comparisonRange && qualityComparison) {
       video.defaultMuted = true;
       video.loop = true;
       video.playsInline = true;
-      // Retry when the browser has loaded enough data; autoplay can be delayed
-      // because the homepage section may initially be hidden.
-      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+      // iOS Safari can defer autoplay until the page becomes visible or the
+      // video has decoded its first frame. Retry safely without creating a second decoder.
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && !document.hidden) {
         const promise = video.play();
-        if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+        if (promise && typeof promise.catch === 'function') {
+          promise.catch(() => {
+            // Keep the frame available; visibility/pageshow listeners retry below.
+          });
+        }
       }
     });
   };
 
   comparisonVideos.forEach((video) => {
+    video.setAttribute('muted', '');
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.addEventListener('loadedmetadata', playComparisonVideos);
     video.addEventListener('loadeddata', playComparisonVideos);
     video.addEventListener('canplay', playComparisonVideos);
     video.addEventListener('error', () => {
       console.warn('INEASY comparison video failed to load:', video.currentSrc || video.src, video.error?.code);
     });
   });
+
+  const retryComparisonPlayback = () => {
+    if (!document.hidden) playComparisonVideos();
+  };
+  document.addEventListener('visibilitychange', retryComparisonPlayback);
+  window.addEventListener('pageshow', retryComparisonPlayback);
+  window.addEventListener('focus', retryComparisonPlayback);
 
   const stopComparisonDemo = () => {
     comparisonTouched = true;
