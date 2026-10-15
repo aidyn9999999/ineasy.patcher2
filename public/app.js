@@ -246,8 +246,8 @@ const translations = {
     buy: 'Купить',
     nav: ['ГЛАВНАЯ', 'ПАТЧЕР', 'ПРОВЕРКА ВИДЕО', 'FAQ'],
     homeKicker: 'INEASY  ·  ОПТИМИЗАЦИЯ ВИДЕО',
-    homeTitle: 'Обработай своё видео для TikTok',
-    homeIntro: 'Подготовь видео до 4K и 120 FPS для публикации в высоком качестве.',
+    homeTitle: 'Обработай своё видео специально для обхода сжатия TikTok',
+    homeIntro: 'До 4K · 120 FPS. Обработай видео, подключи автопост и опубликуй в TikTok — без повторного перекодирования.',
     homeCta: 'Обработка видео',
     comparisonKicker: 'КАЧЕСТВО',
     comparisonTitle: 'Смотрите результат: с патчингом и без патчинга',
@@ -848,8 +848,9 @@ function renderHomeGreeting() {
   const rawName = (getBrowserValue('tg_first_name') || getBrowserValue('tg_username') || '').trim();
   const name = rawName ? rawName.replace(/^@/, '').split(/\s+/)[0] : (STATE.lang === 'ru' ? 'друг' : STATE.lang === 'kk' ? 'дос' : 'there');
   const prefix = STATE.lang === 'ru' ? 'Привет, ' : STATE.lang === 'kk' ? 'Сәлем, ' : 'Hi, ';
-  const suffix = STATE.lang === 'ru' ? '! Обработай своё видео для TikTok' : STATE.lang === 'kk' ? '! TikTok бейнеңізді өңдеңіз' : '! Prepare your TikTok video';
-  title.textContent = prefix + name + suffix;
+  const safeName = name.replace(/[&<>\"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}[ch]));
+  const headline = STATE.lang === 'ru' ? 'Обработай своё видео специально для обхода сжатия TikTok' : STATE.lang === 'kk' ? 'TikTok сығуын айналып өту үшін бейнеңізді өңдеңіз' : 'Prepare your video to bypass TikTok compression';
+  title.innerHTML = '<span class="home-greeting">' + prefix + '<span id="homeUserName">' + safeName + '</span>!</span><span class="home-headline">' + headline + '</span>';
 }
 
 const tgIdLabel = document.getElementById('tgIdLabel');
