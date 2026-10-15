@@ -2035,3 +2035,21 @@ body, .app-shell, .app-main, .view-section, #patchSection {
   #homeSection .comparison-divider span { width: 50px; height: 50px; }
   #homeSection .comparison-range { min-height: 44px; }
 }
+
+
+/* iPhone/Safari reliability: one real video decoder, with a clipped visual treatment
+   for the lower-quality half instead of a second autoplaying video element. */
+#homeSection .comparison-before-wrap {
+  background: rgba(5, 12, 25, .13);
+  -webkit-backdrop-filter: blur(.65px) contrast(.92) saturate(.88);
+  backdrop-filter: blur(.65px) contrast(.92) saturate(.88);
+}
+#homeSection .comparison-before {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 20, 38, .08);
+  pointer-events: none;
+}
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  #homeSection .comparison-before-wrap { background: rgba(8, 20, 38, .18); }
+}
