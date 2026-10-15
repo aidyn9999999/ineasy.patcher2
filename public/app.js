@@ -2679,15 +2679,16 @@ if (comparisonRange && qualityComparison) {
       return;
     }
 
-    // Start with 540p covering the frame, reveal 1080p, pause, compare at center,
-    // then show 1080p in full before returning to the centered handle.
+    // Close 1080p for 5 seconds, pause centered for 3 seconds,
+    // close 540p for 4 seconds, then return to center and unlock dragging.
     setComparison(100);
     await wait(80);
-    await animateTo(0);
-    await wait(2500);
+    await animateTo(100);
+    await wait(5000);
     await animateTo(50);
-    await wait(1000);
+    await wait(3000);
     await animateTo(0);
+    await wait(4000);
     await animateTo(50);
 
     qualityComparison.classList.remove('demo-running', 'comparison-auto-running');
