@@ -1899,3 +1899,29 @@ body {
   #ineasyLocalArchive #ineasyArchiveItems > div { align-items: flex-start !important; }
   #ineasyLocalArchive #ineasyArchiveItems > div > div:last-child { width: 100%; }
 }
+
+
+/* Safari/iOS compatibility and performance guardrails. */
+.safari-browser *,
+.safari-browser *::before,
+.safari-browser *::after {
+  -webkit-backface-visibility: hidden;
+}
+.safari-browser .modal,
+.safari-browser .popover,
+.safari-browser .dropdown-menu {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.safari-browser .app-shell,
+.safari-browser .main-content,
+.safari-browser #homeSection {
+  min-width: 0;
+  -webkit-text-size-adjust: 100%;
+}
+@supports (padding: max(0px)) {
+  .safari-browser body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
