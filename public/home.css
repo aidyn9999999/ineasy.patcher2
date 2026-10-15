@@ -1890,3 +1890,109 @@ body, .app-shell, .app-main, .view-section, #patchSection {
   }
   #homeSection .workflow-step p { grid-column:2; }
 }
+
+
+/* Homepage correction: stylish heavier typography, raised metrics, centered step badges. */
+#homeSection {
+  font-family: 'Plus Jakarta Sans', 'Manrope', sans-serif !important;
+  font-weight: 700;
+}
+#homeSection .home-hero h1,
+#homeSection .home-eyebrow,
+#homeSection .home-intro,
+#homeSection .home-hero-foot,
+#homeSection .home-cta,
+#homeSection .home-section-heading h2,
+#homeSection .home-section-heading > p:last-child,
+#homeSection .home-stat-label,
+#homeSection .home-stat strong,
+#homeSection .home-stat > span:last-child,
+#homeSection .workflow-step h3,
+#homeSection .workflow-step p,
+#homeSection .daily-limit-heading,
+#homeSection .daily-limit-card p,
+#homeSection .home-local-note p {
+  font-family: 'Plus Jakarta Sans', 'Manrope', sans-serif !important;
+  font-weight: 800 !important;
+}
+#homeSection .home-intro,
+#homeSection .home-section-heading > p:last-child,
+#homeSection .workflow-step p,
+#homeSection .daily-limit-card p,
+#homeSection .home-local-note p {
+  font-weight: 700 !important;
+}
+#homeSection .home-stats {
+  margin-top: 10px !important;
+  transform: translateY(-7px);
+}
+#homeSection .home-stat {
+  padding-top: 13px !important;
+  padding-bottom: 15px !important;
+}
+#homeSection .home-stat-label {
+  font-weight: 800 !important;
+}
+#homeSection .home-stat-local .status-icon {
+  stroke: #60a5fa;
+  filter: drop-shadow(0 0 5px rgba(96,165,250,.35));
+}
+#homeSection .home-stat-local strong {
+  font-size: clamp(16px, 1.8vw, 21px) !important;
+  letter-spacing: -.04em;
+}
+#homeSection .workflow-step {
+  display: flex !important;
+  flex-direction: column;
+  align-items: center !important;
+  justify-content: flex-start;
+  text-align: center !important;
+  padding: 22px !important;
+}
+#homeSection .workflow-number {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  align-self: center !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  margin: 0 0 15px !important;
+  border-radius: 13px !important;
+  font-size: 17px !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 22px rgba(34,197,94,.22), inset 0 0 13px rgba(34,197,94,.08) !important;
+}
+#homeSection .workflow-step h3 {
+  width: 100%;
+  min-height: 0 !important;
+  margin: 0 0 9px !important;
+  text-align: center !important;
+  font-weight: 800 !important;
+}
+#homeSection .workflow-step p {
+  width: 100%;
+  margin: 0 !important;
+  text-align: center !important;
+  font-weight: 700 !important;
+}
+@media(max-width:700px) {
+  #homeSection .home-stats { transform: translateY(-5px); }
+  #homeSection .workflow-step {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 18px !important;
+  }
+  #homeSection .workflow-number {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    margin: 0 0 12px !important;
+  }
+  #homeSection .workflow-step h3,
+  #homeSection .workflow-step p {
+    grid-column: auto !important;
+    text-align: center !important;
+  }
+}
