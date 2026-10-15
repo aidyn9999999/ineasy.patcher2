@@ -2242,3 +2242,65 @@ body {
   background: #202938 !important;
   color: #e2e8f0 !important;
 }
+
+
+/* Home hero refresh: personal greeting, bold blue quality callout */
+.home-hero-copy { max-width: 1120px; }
+.home-hero .home-eyebrow { display: none; }
+.home-hero #homeTitle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(12px, 2vw, 22px);
+  max-width: 1120px;
+  margin: 0 auto;
+  text-align: center;
+  font-size: clamp(30px, 5.1vw, 64px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  font-weight: 850;
+}
+.home-greeting { display: block; font-size: clamp(22px, 2.8vw, 34px); line-height: 1.2; color: #e8f1ff; letter-spacing: -.02em; }
+.home-headline { display: block; max-width: 1100px; }
+.home-hero .home-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: 900px;
+  margin: 22px auto 0;
+  color: #c5d2e4;
+  font-size: clamp(15px, 1.6vw, 20px);
+  line-height: 1.6;
+  text-align: center;
+}
+.hero-quality {
+  color: #35a7ff;
+  font-size: clamp(28px, 4.5vw, 52px);
+  font-weight: 900;
+  letter-spacing: .015em;
+  text-shadow: 0 0 14px rgba(31, 150, 255, .45), 0 0 34px rgba(31, 150, 255, .2);
+}
+.hero-workflow { display: block; }
+.logout-btn {
+  min-height: 30px;
+  padding: 5px 11px;
+  border: 1px solid #394354;
+  border-radius: 7px;
+  background: #171d28;
+  color: #c1cbd8;
+  font: 650 12px 'Manrope', sans-serif;
+  cursor: pointer;
+  transition: color .15s ease, background .15s ease, border-color .15s ease;
+}
+.logout-btn:hover { color: #fff; background: #222b3a; border-color: #596579; }
+.logout-btn .logout-icon { display: none; width: 18px; height: 18px; }
+@media (max-width: 600px) {
+  .logout-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; min-height: 32px; padding: 6px; border-radius: 8px; }
+  .logout-btn span { display: none; }
+  .logout-btn .logout-icon { display: block; }
+  .home-hero #homeTitle { font-size: clamp(29px, 8vw, 42px); gap: 14px; }
+  .home-greeting { font-size: clamp(21px, 5.8vw, 27px); }
+  .hero-quality { font-size: clamp(30px, 8vw, 40px); }
+  .home-hero .home-intro { margin-top: 18px; font-size: 15px; }
+}
