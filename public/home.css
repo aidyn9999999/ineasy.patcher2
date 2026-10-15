@@ -1662,3 +1662,37 @@ body, .app-shell, .app-main, .view-section, #patchSection {
   .app-main:has(#homeSection.active) > .community-callout .news-callout { padding: 9px 11px !important; }
   #homeSection .home-hero h1 { font-size: clamp(30px, 8vw, 43px) !important; }
 }
+
+
+/* Final typography tuning: slightly stronger weight, more compact sizing. */
+#homeSection .home-hero h1 {
+  font-weight: 430 !important;
+  font-size: clamp(29px, 4.3vw, 51px) !important;
+}
+#homeSection .home-eyebrow,
+#homeSection .home-hero-foot,
+#homeSection .home-section-heading h2,
+#homeSection .workflow-step h3,
+#homeSection .home-stat strong,
+#homeSection .daily-limit-heading strong {
+  font-weight: 430 !important;
+}
+#homeSection .home-intro,
+#homeSection .home-section-heading > p:last-child,
+#homeSection .workflow-step p,
+#homeSection .daily-limit-card p,
+#homeSection .home-stat span {
+  font-size: .94em !important;
+  font-weight: 430 !important;
+}
+#homeSection .home-section-heading h2 {
+  font-size: clamp(23px, 2.7vw, 31px) !important;
+}
+#homeSection .workflow-step h3 { font-size: 16px !important; }
+#homeSection .home-stat strong { font-size: 22px !important; }
+#homeSection .home-cta { font-size: 14px !important; }
+@media(max-width:700px) {
+  #homeSection .home-hero h1 { font-size: clamp(27px, 7.4vw, 38px) !important; }
+  #homeSection .home-section-heading h2 { font-size: 23px !important; }
+  #homeSection .home-stat strong { font-size: 19px !important; }
+}
