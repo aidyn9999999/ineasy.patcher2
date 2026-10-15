@@ -2788,7 +2788,7 @@ if (processBtn) {
       setProcessingState('processing', '');
       updateProcessingProgress(3);
 
-      // V2 uses server FFmpeg for verified, lossless 59.94 FPS CFR conversion.
+      // V2 uses server FFmpeg for verified, exact 60 FPS CFR conversion with size-conscious encoding.
       // V1 keeps its existing SDR-only MediaBunny path and is otherwise untouched.
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
       const sourceLongSide = Math.max(
