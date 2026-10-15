@@ -2586,6 +2586,8 @@ const qualityComparison = document.getElementById('qualityComparison');
 if (comparisonRange && qualityComparison) {
   // Use a single decoder: iOS Safari often stalls when two identical videos autoplay at once.
   const comparisonVideos = [qualityComparison.querySelector('video.comparison-after')].filter(Boolean);
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const animationDuration = reducedMotion ? 0 : 1250;
   let comparisonTouched = false;
   let comparisonStarted = false;
   let comparisonTimer = null;
@@ -2603,16 +2605,10 @@ if (comparisonRange && qualityComparison) {
       video.playsInline = true;
       video.setAttribute('playsinline', '');
       video.setAttribute('webkit-playsinline', '');
-      // Start the fetch/decode on demand. Calling play before HAVE_CURRENT_DATA
-      // avoids a Safari deadlock where metadata loads but the first frame never does.
       if (!document.hidden) {
         try {
           const promise = video.play();
-          if (promise && typeof promise.catch === 'function') {
-            promise.catch(() => {
-              // Retry when the section becomes visible or the page resumes.
-            });
-          }
+          if (promise && typeof promise.catch === 'function') promise.catch(() => {});
         } catch (_) {}
       }
     });
@@ -2640,6 +2636,7 @@ if (comparisonRange && qualityComparison) {
   window.addEventListener('focus', retryComparisonPlayback);
 
   const stopComparisonDemo = () => {
+    if (qualityComparison.classList.contains('comparison-auto-running')) return;
     comparisonTouched = true;
     qualityComparison.classList.remove('demo-running');
     if (comparisonTimer) window.clearTimeout(comparisonTimer);
@@ -2650,6 +2647,7 @@ if (comparisonRange && qualityComparison) {
   comparisonRange.max = '100';
   comparisonRange.step = '1';
   comparisonRange.addEventListener('input', () => {
+    if (qualityComparison.classList.contains('comparison-auto-running')) return;
     stopComparisonDemo();
     qualityComparison.classList.add('comparison-user-adjusted');
     qualityComparison.style.setProperty('--compare-split', `${comparisonRange.value}%`);
@@ -2657,20 +2655,44 @@ if (comparisonRange && qualityComparison) {
   qualityComparison.addEventListener('pointerdown', stopComparisonDemo, { once: true });
   qualityComparison.addEventListener('touchstart', stopComparisonDemo, { once: true, passive: true });
 
-  const startComparisonDemo = () => {
+  const wait = (ms) => new Promise((resolve) => {
+    comparisonTimer = window.setTimeout(resolve, ms);
+  });
+  const animateTo = async (value) => {
+    setComparison(value);
+    await wait(animationDuration);
+  };
+
+  const startComparisonDemo = async () => {
     playComparisonVideos();
-    if (comparisonStarted || comparisonTouched || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (comparisonStarted || comparisonTouched) return;
     comparisonStarted = true;
-    setComparison(100);
-    qualityComparison.classList.add('demo-running');
-    comparisonTimer = window.setTimeout(() => {
-      if (comparisonTouched) return;
+
+    // Lock manual dragging until the full first-visit demonstration has finished.
+    qualityComparison.classList.add('comparison-auto-running', 'demo-running');
+    comparisonRange.setAttribute('aria-disabled', 'true');
+
+    if (reducedMotion) {
       setComparison(50);
-      comparisonTimer = window.setTimeout(() => {
-        qualityComparison.classList.remove('demo-running');
-        comparisonTimer = null;
-      }, 2700);
-    }, 350);
+      qualityComparison.classList.remove('demo-running', 'comparison-auto-running');
+      comparisonRange.removeAttribute('aria-disabled');
+      return;
+    }
+
+    // Start with 540p covering the frame, reveal 1080p, pause, compare at center,
+    // then show 1080p in full before returning to the centered handle.
+    setComparison(100);
+    await wait(80);
+    await animateTo(0);
+    await wait(2500);
+    await animateTo(50);
+    await wait(1000);
+    await animateTo(0);
+    await animateTo(50);
+
+    qualityComparison.classList.remove('demo-running', 'comparison-auto-running');
+    comparisonRange.removeAttribute('aria-disabled');
+    comparisonTimer = null;
   };
 
   setComparison(100);
@@ -2687,7 +2709,6 @@ if (comparisonRange && qualityComparison) {
     window.addEventListener('load', () => window.setTimeout(startComparisonDemo, 500), { once: true });
   }
 }
-
 
 if (processBtn) {
   processBtn.addEventListener('click', async () => {
