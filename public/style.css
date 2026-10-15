@@ -1993,3 +1993,22 @@ body {
   .video-size-meter-heading strong { font-size: 12px; }
   .video-size-meter-value { font-size: 11px; }
 }
+
+
+/* Compact neutral logout button; keep the language-specific label. */
+.logout-btn {
+  border: 1px solid rgba(148, 163, 184, .25) !important;
+  border-left: 1px solid rgba(148, 163, 184, .25) !important;
+  border-radius: 9px !important;
+  padding: 8px 11px !important;
+  background: #374151 !important;
+  color: #f3f4f6 !important;
+  font: 600 12px 'Manrope', sans-serif !important;
+  transition: background .18s ease, border-color .18s ease !important;
+}
+.logout-btn:hover {
+  background: #4b5563 !important;
+  border-color: rgba(203, 213, 225, .45) !important;
+  color: #fff !important;
+}
+.logout-icon { width: 16px !important; height: 16px !important; flex-basis: 16px !important; }
