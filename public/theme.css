@@ -589,11 +589,18 @@ html,body,.app-shell{background:#030817!important}
 }
 #patchSection .video-size-meter-heading > div { gap: 2px; }
 #patchSection .video-size-meter-kicker {
-  font-size: 8px;
-  letter-spacing: .1em;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .15em;
 }
-#patchSection .video-size-meter-heading strong { font-size: 11px; }
-#patchSection .video-size-meter-value { font-size: 10px; }
+#patchSection .video-size-meter-heading strong {
+  font-size: 13px;
+  font-weight: 800;
+}
+#patchSection .video-size-meter-value {
+  font-size: 12px;
+  font-weight: 800;
+}
 #patchSection .video-size-meter-track { height: 5px; }
 #patchSection .daily-limit-card {
   margin-top: 8px;
@@ -603,7 +610,10 @@ html,body,.app-shell{background:#030817!important}
 }
 #patchSection .daily-limit-heading { margin-bottom: 6px; gap: 8px; }
 #patchSection .daily-limit-heading strong,
-#patchSection .daily-limit-heading span { font-size: 11px; }
+#patchSection .daily-limit-heading span {
+  font-size: 13px;
+  font-weight: 800;
+}
 #patchSection .daily-limit-track { height: 5px; }
 #patchSection #dailyLimitHint { display: none !important; }
 @media (max-width: 700px) {
