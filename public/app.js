@@ -2584,6 +2584,28 @@ if (PATCHER_TEST_MODE) {
 const comparisonRange = document.getElementById('comparisonRange');
 const qualityComparison = document.getElementById('qualityComparison');
 if (comparisonRange && qualityComparison) {
+  const comparisonVideos = [...qualityComparison.querySelectorAll('video.comparison-image')];
+  const syncComparisonVideos = () => {
+    const [baseVideo, overlayVideo] = comparisonVideos;
+    if (!baseVideo || !overlayVideo) return;
+    if (Number.isFinite(baseVideo.currentTime) && Math.abs(overlayVideo.currentTime - baseVideo.currentTime) > 0.18) {
+      try { overlayVideo.currentTime = baseVideo.currentTime; } catch (_) {}
+    }
+  };
+  comparisonVideos.forEach((video) => {
+    video.muted = true;
+    video.defaultMuted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.addEventListener('loadedmetadata', () => {
+      try { video.currentTime = 0; } catch (_) {}
+      video.play().catch(() => {});
+    }, { once: true });
+    video.addEventListener('timeupdate', syncComparisonVideos);
+  });
+  if (comparisonVideos.length > 1) {
+    comparisonVideos[0].addEventListener('play', () => comparisonVideos[1].play().catch(() => {}));
+  }
   let comparisonTouched = false;
   let comparisonStarted = false;
   let comparisonTimer = null;
