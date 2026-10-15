@@ -572,3 +572,41 @@ html,body,.app-shell{background:#030817!important}
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
+
+
+/* Compact size meter and daily quota: keep only essential information. */
+#patchSection .video-size-meter {
+  margin-top: 8px;
+  padding: 9px 12px 10px;
+  border-radius: 10px;
+  box-shadow: none;
+  background: rgba(7, 19, 41, .72);
+}
+#patchSection .video-size-meter-heading {
+  gap: 8px;
+  margin-bottom: 7px;
+  align-items: center;
+}
+#patchSection .video-size-meter-heading > div { gap: 2px; }
+#patchSection .video-size-meter-kicker {
+  font-size: 8px;
+  letter-spacing: .1em;
+}
+#patchSection .video-size-meter-heading strong { font-size: 11px; }
+#patchSection .video-size-meter-value { font-size: 10px; }
+#patchSection .video-size-meter-track { height: 5px; }
+#patchSection .daily-limit-card {
+  margin-top: 8px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  gap: 6px;
+}
+#patchSection .daily-limit-heading { margin-bottom: 6px; gap: 8px; }
+#patchSection .daily-limit-heading strong,
+#patchSection .daily-limit-heading span { font-size: 11px; }
+#patchSection .daily-limit-track { height: 5px; }
+#patchSection #dailyLimitHint { display: none !important; }
+@media (max-width: 700px) {
+  #patchSection .video-size-meter { margin-top: 7px; padding: 8px 10px; }
+  #patchSection .daily-limit-card { margin-top: 7px; padding: 8px 10px; }
+}
