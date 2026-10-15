@@ -2585,40 +2585,45 @@ const comparisonRange = document.getElementById('comparisonRange');
 const qualityComparison = document.getElementById('qualityComparison');
 if (comparisonRange && qualityComparison) {
   const comparisonVideos = [...qualityComparison.querySelectorAll('video.comparison-image')];
-  const syncComparisonVideos = () => {
-    const [baseVideo, overlayVideo] = comparisonVideos;
-    if (!baseVideo || !overlayVideo) return;
-    if (Number.isFinite(baseVideo.currentTime) && Math.abs(overlayVideo.currentTime - baseVideo.currentTime) > 0.18) {
-      try { overlayVideo.currentTime = baseVideo.currentTime; } catch (_) {}
-    }
-  };
-  comparisonVideos.forEach((video) => {
-    video.muted = true;
-    video.defaultMuted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.addEventListener('loadedmetadata', () => {
-      try { video.currentTime = 0; } catch (_) {}
-      video.play().catch(() => {});
-    }, { once: true });
-    video.addEventListener('timeupdate', syncComparisonVideos);
-  });
-  if (comparisonVideos.length > 1) {
-    comparisonVideos[0].addEventListener('play', () => comparisonVideos[1].play().catch(() => {}));
-  }
   let comparisonTouched = false;
   let comparisonStarted = false;
   let comparisonTimer = null;
+
   const setComparison = (value) => {
     comparisonRange.value = String(value);
     qualityComparison.style.setProperty('--compare-split', `${value}%`);
   };
+
+  const playComparisonVideos = () => {
+    comparisonVideos.forEach((video) => {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.loop = true;
+      video.playsInline = true;
+      // Retry when the browser has loaded enough data; autoplay can be delayed
+      // because the homepage section may initially be hidden.
+      if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+        const promise = video.play();
+        if (promise && typeof promise.catch === 'function') promise.catch(() => {});
+      }
+    });
+  };
+
+  comparisonVideos.forEach((video) => {
+    video.addEventListener('loadeddata', playComparisonVideos);
+    video.addEventListener('canplay', playComparisonVideos);
+    video.addEventListener('error', () => {
+      console.warn('INEASY comparison video failed to load:', video.currentSrc || video.src, video.error?.code);
+    });
+  });
+
   const stopComparisonDemo = () => {
     comparisonTouched = true;
     qualityComparison.classList.remove('demo-running');
     if (comparisonTimer) window.clearTimeout(comparisonTimer);
     comparisonTimer = null;
   };
+
   comparisonRange.min = '0';
   comparisonRange.max = '100';
   comparisonRange.step = '1';
@@ -2631,9 +2636,9 @@ if (comparisonRange && qualityComparison) {
   qualityComparison.addEventListener('touchstart', stopComparisonDemo, { once: true, passive: true });
 
   const startComparisonDemo = () => {
+    playComparisonVideos();
     if (comparisonStarted || comparisonTouched || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     comparisonStarted = true;
-    // Begin with the low-quality 540p side covering the full preview, then glide to 50%.
     setComparison(100);
     qualityComparison.classList.add('demo-running');
     comparisonTimer = window.setTimeout(() => {
@@ -2645,20 +2650,21 @@ if (comparisonRange && qualityComparison) {
       }, 2700);
     }, 350);
   };
+
   setComparison(100);
   if ('IntersectionObserver' in window) {
     const comparisonObserver = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
+        playComparisonVideos();
         startComparisonDemo();
         comparisonObserver.disconnect();
       }
-    }, { threshold: 0.3 });
+    }, { threshold: 0.1 });
     comparisonObserver.observe(qualityComparison);
   } else {
     window.addEventListener('load', () => window.setTimeout(startComparisonDemo, 500), { once: true });
   }
 }
-
 
 
 if (processBtn) {
