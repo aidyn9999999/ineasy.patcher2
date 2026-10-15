@@ -2012,3 +2012,17 @@ body {
   color: #fff !important;
 }
 .logout-icon { width: 16px !important; height: 16px !important; flex-basis: 16px !important; }
+
+
+/* Compact format note inside the patcher upload panel */
+.patch-format-note {
+  margin: 5px 0 0;
+  color: var(--muted, #8b95a7);
+  font-size: 11px;
+  line-height: 1.45;
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+.dropzone .dz-sub {
+  color: var(--muted, #8b95a7);
+}
