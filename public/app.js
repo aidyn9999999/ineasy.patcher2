@@ -1152,6 +1152,26 @@ const balanceLock = document.getElementById('balanceLock');
 const previewWrap = document.getElementById('previewWrap');
 const previewVideo = document.getElementById('previewVideo');
 const fileMeta = document.getElementById('fileMeta');
+const videoSizeValue = document.getElementById('videoSizeValue');
+const videoSizeFill = document.getElementById('videoSizeFill');
+const videoSizeProgress = document.getElementById('videoSizeProgress');
+const videoSizeNote = document.getElementById('videoSizeNote');
+
+function updateVideoSizeMeter(file) {
+  const sizeBytes = file && Number.isFinite(file.size) ? file.size : 0;
+  const sizeMb = sizeBytes / 1_000_000;
+  const percent = Math.min(100, (sizeBytes / MAX_VIDEO_SIZE_BYTES) * 100);
+  if (videoSizeValue) videoSizeValue.textContent = `${sizeMb.toFixed(1)} / 150 МБ`;
+  if (videoSizeFill) videoSizeFill.style.width = `${percent}%`;
+  if (videoSizeProgress) videoSizeProgress.setAttribute('aria-valuenow', String(Math.min(150, sizeMb).toFixed(1)));
+  if (videoSizeNote) {
+    videoSizeNote.textContent = !file
+      ? 'Выберите видео — здесь отобразится его размер относительно лимита 150 МБ.'
+      : sizeBytes > MAX_VIDEO_SIZE_BYTES
+        ? 'Превышен лимит 150 МБ. Выберите файл меньшего размера.'
+        : `Использовано ${percent.toFixed(0)}% лимита · осталось ${Math.max(0, 150 - sizeMb).toFixed(1)} МБ.`;
+  }
+}
 const clearBtn = document.getElementById('clearBtn');
 (() => {
   const inputs = document.querySelectorAll('input[name="patcherVersion"]');
@@ -2243,6 +2263,7 @@ async function handleFile(file) {
     previewVideo.load();
   }
   if (fileMeta) fileMeta.textContent = `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB`;
+  updateVideoSizeMeter(file);
   if (previewWrap) previewWrap.classList.add('show');
 
   document.querySelector('.patcher-version-picker')?.classList.remove('hidden');
@@ -2348,6 +2369,7 @@ function clearSelectedVideo(openPicker = false) {
   if (postingDeviceSelect) postingDeviceSelect.value = '';
   if (fileInput) fileInput.value = '';
   if (fileMeta) fileMeta.textContent = '—';
+  updateVideoSizeMeter(null);
   document.querySelector('.patcher-version-picker')?.classList.add('hidden');
   document.getElementById('patcherVersionNote')?.classList.add('hidden');
   document.getElementById('fpsAdvice')?.classList.add('hidden');
