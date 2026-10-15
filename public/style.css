@@ -2057,3 +2057,24 @@ body {
 .community-callout .news-link { min-width: 25px; min-height: 25px; padding: 0 5px; }
 .community-callout .news-link svg { width: 16px; height: 16px; }
 .community-callout .language-dock button { padding: 3px 5px; font-size: 8px; }
+
+
+/* Exact Patcher heading hierarchy requested */
+#patchSection .patch-quality-heading {
+  margin: 8px auto 18px;
+  max-width: 720px;
+  color: #8796ad;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+#patchSection .dropzone .patch-format-note {
+  color: #8796ad !important;
+  font-size: 11px !important;
+  line-height: 1.4;
+  font-weight: 700 !important;
+  letter-spacing: 0;
+  margin-top: 5px;
+}
+#patchSection .dropzone .patch-quality-note { display: none !important; }
