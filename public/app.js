@@ -844,6 +844,11 @@ function applyLanguage(lang) {
 
 const tgIdLabel = document.getElementById('tgIdLabel');
 if (tgIdLabel) tgIdLabel.textContent = tgId;
+const homeUserName = document.getElementById('homeUserName');
+if (homeUserName) {
+  const firstName = (getBrowserValue('tg_first_name') || getBrowserValue('tg_username') || '').trim();
+  homeUserName.textContent = firstName ? firstName.replace(/^@/, '').split(/\s+/)[0] : 'друг';
+}
 
 document.getElementById('copyIdBtn').addEventListener('click', () => {
   navigator.clipboard.writeText(tgId).then(() => {
@@ -871,6 +876,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
 // --- Balance ---
 const balanceLabel = document.getElementById('balanceLabel');
 let currentBalance = null;
+let currentFreeBalance = null;
 let currentFreeNextAt = null;
 let balanceRequestVersion = 0;
 let checkingFileDimensions = false;
@@ -887,9 +893,25 @@ function balanceTotal(data) {
 
 function renderBalance() {
   if (balanceLabel && currentBalance !== null) balanceLabel.textContent = `${currentBalance} ${t('videos')}`;
+  renderDailyLimit();
   updateFreeBalanceNextAt();
   updateDropzoneAvailability();
   updateProcessButton();
+}
+
+function renderDailyLimit() {
+  const fill = document.getElementById('dailyLimitFill');
+  const count = document.getElementById('dailyLimitCount');
+  const progress = document.getElementById('dailyLimitProgress');
+  const hint = document.getElementById('dailyLimitHint');
+  const free = Number(currentFreeBalance);
+  if (!fill || !count || !progress || !Number.isFinite(free)) return;
+  const remaining = Math.max(0, Math.min(2, free));
+  const used = 2 - remaining;
+  fill.style.width = `${(used / 2) * 100}%`;
+  count.textContent = `${used} / 2 видео`;
+  progress.setAttribute('aria-valuenow', String(used));
+  if (hint) hint.textContent = remaining === 0 ? 'Дневной лимит использован.' : `Осталось видео на сегодня: ${remaining}.`;
 }
 
 function updateFreeBalanceNextAt() {
@@ -974,11 +996,13 @@ async function loadBalance() {
     const data = await res.json();
     if (requestVersion !== balanceRequestVersion) return;
     currentBalance = balanceTotal(data);
+    currentFreeBalance = Number.isFinite(Number(data.free)) ? Number(data.free) : null;
     currentFreeNextAt = data.freeNextAt || null;
     renderBalance();
   } catch (e) {
     if (requestVersion !== balanceRequestVersion) return;
     currentBalance = null;
+    currentFreeBalance = null;
     updateDropzoneAvailability();
     updateProcessButton();
     if (balanceLabel) balanceLabel.textContent = '—';
