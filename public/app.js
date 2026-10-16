@@ -2903,8 +2903,45 @@ if (processBtn) {
           outputHeight: selectedVideoDimensions?.height || null
         }
       };
-      const processingFile = preparedInput.blob;
-      const processingFileName = processingFile.name || `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`;
+      let processingFile = preparedInput.blob;
+      const processingFileName = processingFile.name || `${sourceFile.name.replace(/\\.[^.]+$/, '')}.mp4`;
+      if (isV2SelectedForJob) {
+        setProcessingState('processing', '');
+        updateProcessingProgress(7);
+        let copyResponse;
+        try {
+          const copyHeaders = { 'Content-Type': 'application/octet-stream' };
+          if (tgAuthToken) copyHeaders.Authorization = `Bearer ${tgAuthToken}`;
+          copyResponse = await fetch('/api/v2/ffmpeg-copy', {
+            method: 'POST',
+            headers: copyHeaders,
+            body: processingFile,
+            signal: controller.signal,
+            cache: 'no-store'
+          });
+        } catch (error) {
+          if (controller.signal.aborted) throw error;
+          throw new Error('v2_ffmpeg_copy_failed: ' + (error?.message || 'network_error'));
+        }
+        if (!copyResponse.ok) {
+          const failure = await copyResponse.json().catch(() => ({}));
+          throw new Error('v2_ffmpeg_copy_failed: ' + (failure.error || `http_${copyResponse.status}`));
+        }
+        if (copyResponse.headers.get('X-INEASY-FFMPEG-COPY') !== '1') {
+          throw new Error('v2_ffmpeg_copy_failed: unverified_server_output');
+        }
+        const remuxedBlob = await copyResponse.blob();
+        if (!remuxedBlob.size) throw new Error('v2_ffmpeg_copy_failed: empty_output');
+        processingFile = new File([remuxedBlob], processingFileName.replace(/\\.[^.]+$/, '') + '.mp4', {
+          type: 'video/mp4',
+          lastModified: Date.now()
+        });
+        console.info('[INEASY V2] FFmpeg stream-copy remux completed; proceeding to metadata patching.', {
+          inputBytes: sourceFile.size,
+          remuxedBytes: processingFile.size
+        });
+        updateProcessingProgress(13);
+      }
       const buffer = await processingFile.arrayBuffer();
       // Keep ADJN and its SIZE GUARD unchanged; only eligible 1080p SDR is transcoded before patching.
       if (!isV2SelectedForJob && !fpsConversion.preserveOriginal) {
@@ -3211,6 +3248,23 @@ if (processBtn) {
 if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processController?.abort());
 
 function localizePatchError(message) {
+  const v2CopyFailure = String(message || '').match(/^v2_ffmpeg_copy_failed:\\s*(.*)$/i);
+  if (v2CopyFailure) {
+    const reason = v2CopyFailure[1];
+    if (/timeout_3s/i.test(reason)) {
+      return ({
+        ru: 'V2 остановлен: FFmpeg не завершил копирование потоков за 3 секунды. Метаданные не изменялись; попробуйте файл поменьше.',
+        kk: 'V2 тоқтатылды: FFmpeg ағындарды 3 секунд ішінде көшіріп үлгермеді. Метадеректер өзгертілмеді; кішірек файлды қолданып көріңіз.',
+        en: 'V2 stopped: FFmpeg did not finish stream-copying within 3 seconds. Metadata was not changed; try a smaller file.'
+      })[lang];
+    }
+    return ({
+      ru: `V2 остановлен: обязательная команда FFmpeg copy не выполнена (${reason}). Метаданные не изменялись.`,
+      kk: `V2 тоқтатылды: міндетті FFmpeg copy командасы орындалмады (${reason}). Метадеректер өзгертілмеді.`,
+      en: `V2 stopped: required FFmpeg copy command failed (${reason}). Metadata was not changed.`
+    })[lang];
+  }
+
   const lang = STATE.lang || 'en';
   const conversionFailure = String(message || '').match(/^AUTO_VIDEO_CONVERSION_FAILED:\s*(.*)$/i);
   if (conversionFailure) {
