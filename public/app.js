@@ -3265,11 +3265,11 @@ function localizePatchError(message) {
   const v2CopyFailure = String(message || '').match(/^v2_ffmpeg_copy_failed:\s*(.*)$/i);
   if (v2CopyFailure) {
     const reason = v2CopyFailure[1];
-    if (/timeout_30s/i.test(reason)) {
+    if (/timeout_120s/i.test(reason)) {
       return ({
-        ru: 'V2 остановлен: FFmpeg не завершил копирование потоков за 30 секунд. Метаданные не изменялись; попробуйте файл поменьше.',
-        kk: 'V2 тоқтатылды: FFmpeg ағындарды 30 секунд ішінде көшіріп үлгермеді. Метадеректер өзгертілмеді; кішірек файлды қолданып көріңіз.',
-        en: 'V2 stopped: FFmpeg did not finish stream-copying within 30 seconds. Metadata was not changed; try a smaller file.'
+        ru: 'V2 остановлен: FFmpeg не завершил копирование потоков за 120 секунд. Метаданные не изменялись; попробуйте файл поменьше.',
+        kk: 'V2 тоқтатылды: FFmpeg ағындарды 120 секунд ішінде көшіріп үлгермеді. Метадеректер өзгертілмеді; кішірек файлды қолданып көріңіз.',
+        en: 'V2 stopped: FFmpeg did not finish stream-copying within 120 seconds. Metadata was not changed; try a smaller file.'
       })[lang];
     }
     return ({
@@ -3363,7 +3363,7 @@ function localizePatchError(message) {
     { test: /BROWSER_FORMAT_CONVERSION_FAILED/i, ru: t('formatConversionFailed'), kk: t('formatConversionFailed'), en: t('formatConversionFailed') },
     { test: /hdr_video_not_supported/i, ru: 'HDR-видео нельзя безопасно перекодировать в этом браузере. Исходный поток должен быть сохранён без изменения.', kk: 'Бұл браузерде HDR бейнені қауіпсіз қайта кодтау мүмкін емес. Бастапқы ағын өзгеріссіз сақталуы керек.', en: 'This browser cannot safely transcode this HDR video. The original video stream must be preserved.' },
     { test: /engine not loaded|Worker crashed|Script error/i, ru: 'Не удалось загрузить модуль обработки. Обновите страницу и откройте сайт в Chrome или Safari.', kk: 'Өңдеу модулін жүктеу мүмкін болмады. Бетті жаңартып, сайтты Chrome немесе Safari арқылы ашыңыз.', en: 'Could not load the processing module. Refresh the page and open the site in Chrome or Safari.' },
-    { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 30 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 30 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 30 seconds. Check the file or try another video.' },
+    { test: /video metadata loading timed out/i, ru: 'Не удалось прочитать метаданные видео за 120 секунд. Проверьте файл или выберите другое видео.', kk: 'Бейне метадеректерін 120 секунд ішінде оқу мүмкін болмады. Файлды тексеріңіз немесе басқа бейне таңдаңыз.', en: 'Video metadata could not be read within 120 seconds. Check the file or try another video.' },
     { test: /video_over_60_seconds/i, ru: t('videoTooLong'), kk: t('videoTooLong'), en: t('videoTooLong') },
     { test: /video_duration_unavailable/i, ru: t('videoDurationUnavailable'), kk: t('videoDurationUnavailable'), en: t('videoDurationUnavailable') },
     { test: /HDR|Dolby Vision|HLG|BT\.2020|PQ/i, ru: 'Обнаружены HDR или цветовые метаданные. Патчер должен сохранить исходный видеопоток без перекодирования.', kk: 'HDR немесе түс метадеректері анықталды. Патчер бастапқы бейне ағынын қайта кодтамай сақтауы керек.', en: 'HDR or color metadata was detected. The patcher must preserve the original video stream without re-encoding.' },
