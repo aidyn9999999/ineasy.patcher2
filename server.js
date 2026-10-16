@@ -1891,7 +1891,12 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
   } catch (error) {
     await fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
     const timedOut = error && (error.killed || error.signal === 'SIGKILL' || error.code === 'ETIMEDOUT');
-    console.error('[INEASY V2] FFmpeg stream-copy failed:', timedOut ? '30-second timeout' : (error.message || error));
+    console.error('[INEASY V2] FFmpeg stream-copy failed:', {
+      reason: timedOut ? '30-second timeout' : (error.message || 'ffmpeg_copy_failed'),
+      code: error.code || null,
+      signal: error.signal || null,
+      stderr: String(error.stderr || '').slice(-3000)
+    });
     return res.status(422).json({ error: timedOut ? 'ffmpeg_copy_timeout_30s' : 'ffmpeg_copy_failed' });
   }
 });
