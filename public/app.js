@@ -2800,7 +2800,7 @@ if (processBtn) {
       setProcessingState('processing', '');
       updateProcessingProgress(3);
 
-      // V2 uses server FFmpeg for verified, exact 60 FPS CFR conversion with size-conscious encoding.
+      // V2 uses server FFmpeg only for verified stream-copy remux and preserves native FPS.
       // V1 keeps its existing SDR-only MediaBunny path and is otherwise untouched.
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
       const sourceLongSide = Math.max(
@@ -2816,7 +2816,7 @@ if (processBtn) {
       }
 
       const sdr1080pEligibility = isV2SelectedForJob
-        ? { eligible: false, reason: 'v2_uses_ffmpeg_server_cfr' }
+        ? { eligible: false, reason: 'v2_uses_verified_ffmpeg_stream_copy' }
         : await getExplicitSdr1080pEligibility(sourceFile, selectedVideoDimensions);
       let fpsConversion = {
         blob: sourceFile,
