@@ -135,15 +135,27 @@ const TEXTS = {
     checkerWait: '⏳ Подождите несколько секунд перед следующей проверкой.',
     checkerError: '❌ Не удалось получить данные. Проверьте ссылку (видео должно быть публичным) и попробуйте ещё раз.',
     checkerResult: (d) =>
-      `🔍 Данные видео\n\n` +
-      `📺 Качество: ${d.quality}p (${d.width}×${d.height})\n` +
+      `🔍 Подробные данные TikTok\n\n` +
+      `📝 Название: ${d.title || '—'}\n` +
+      `🆔 ID видео: ${d.videoId || '—'}\n` +
+      `👤 Автор: ${d.author}\n` +
+      `🪪 ID автора: ${d.authorId || '—'}\n` +
+      `📅 Дата публикации: ${d.uploadDate || '—'}\n` +
+      `📺 Разрешение: ${d.width}×${d.height} (${d.quality}p)\n` +
       `🎞 FPS: ${d.fps}\n` +
-      `🎬 Кодек: ${d.codec}\n` +
+      `🎬 Видеокодек: ${d.codec}\n` +
       `📶 Битрейт: ${d.bitrate}\n` +
       `⏱ Длительность: ${d.duration}\n` +
       `💾 Размер: ${d.size}\n` +
       `📁 Формат: ${d.ext}\n` +
-      `👤 Автор: ${d.author}`,
+      `👁 Просмотры: ${d.views || '—'}\n` +
+      `❤️ Лайки: ${d.likes || '—'}\n` +
+      `💬 Комментарии: ${d.comments || '—'}\n` +
+      `🔁 Репосты: ${d.reposts || '—'}\n` +
+      `🌍 Регион: ${d.region || 'TikTok не предоставляет эти данные'}\n` +
+      `🚫 Теневой бан: достоверно определить по публичным данным нельзя\n` +
+      `🏷 Теги: ${d.tags || '—'}\n\n` +
+      `📄 Описание: ${d.description || '—'}`,
   },
   en: {
     welcome: (name) =>
@@ -221,15 +233,27 @@ const TEXTS = {
     checkerWait: '⏳ Please wait a few seconds before the next check.',
     checkerError: '❌ Could not get the data. Check the link (the video must be public) and try again.',
     checkerResult: (d) =>
-      `🔍 Video details\n\n` +
-      `📺 Quality: ${d.quality}p (${d.width}×${d.height})\n` +
+      `🔍 Detailed TikTok data\n\n` +
+      `📝 Title: ${d.title || '—'}\n` +
+      `🆔 Video ID: ${d.videoId || '—'}\n` +
+      `👤 Creator: ${d.author}\n` +
+      `🪪 Creator ID: ${d.authorId || '—'}\n` +
+      `📅 Upload date: ${d.uploadDate || '—'}\n` +
+      `📺 Resolution: ${d.width}×${d.height} (${d.quality}p)\n` +
       `🎞 FPS: ${d.fps}\n` +
-      `🎬 Codec: ${d.codec}\n` +
+      `🎬 Video codec: ${d.codec}\n` +
       `📶 Bitrate: ${d.bitrate}\n` +
       `⏱ Duration: ${d.duration}\n` +
       `💾 Size: ${d.size}\n` +
       `📁 Format: ${d.ext}\n` +
-      `👤 Author: ${d.author}`,
+      `👁 Views: ${d.views || '—'}\n` +
+      `❤️ Likes: ${d.likes || '—'}\n` +
+      `💬 Comments: ${d.comments || '—'}\n` +
+      `🔁 Reposts: ${d.reposts || '—'}\n` +
+      `🌍 Region: ${d.region || 'Not provided by TikTok'}\n` +
+      `🚫 Shadowban: cannot be reliably determined from public data\n` +
+      `🏷 Tags: ${d.tags || '—'}\n\n` +
+      `📄 Description: ${d.description || '—'}`,
   },
   kk: {
     welcome: (name) =>
@@ -724,6 +748,11 @@ async function analyzeTikTok(url) {
     ? `${Math.round((Number(meta.bytes) * 8 / Number(duration)) / 1000)} kbps`
     : null;
   const uploadRegion = info.region || info.country || info.uploader_location || info.location;
+  const formatCount = (value) => value == null ? '—' : Number(value).toLocaleString('ru-RU');
+  const uploadDateRaw = info.upload_date || (info.timestamp ? new Date(info.timestamp * 1000).toISOString().slice(0, 10).replace(/-/g, '') : null);
+  const uploadDate = uploadDateRaw && /^\d{8}$/.test(String(uploadDateRaw))
+    ? \`\${String(uploadDateRaw).slice(6, 8)}.\${String(uploadDateRaw).slice(4, 6)}.\${String(uploadDateRaw).slice(0, 4)}\`
+    : (uploadDateRaw || '—');
   return {
     quality: Math.min(width || 0, height || 0) || '—',
     width: width || '—',
@@ -732,10 +761,20 @@ async function analyzeTikTok(url) {
     codec: real.codec || meta.codec || '—',
     bitrate: real.bitrate || meta.bitrate || fallbackBitrate || '—',
     duration: fmtDuration(duration),
-    size: bytes ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : '—',
+    size: bytes ? \`\${(bytes / 1024 / 1024).toFixed(1)} MB\` : '—',
     ext: v.ext || info.ext || '—',
-    author: info.uploader ? `@${info.uploader}` : (info.creator || '—'),
-    region: typeof uploadRegion === 'string' ? uploadRegion : null,
+    author: info.uploader ? \`@\${info.uploader}\` : (info.creator || '—'),
+    authorId: info.uploader_id || info.channel_id || '—',
+    videoId: info.id || '—',
+    title: String(info.title || '—').slice(0, 250),
+    description: String(info.description || '—').replace(/\s+/g, ' ').slice(0, 500),
+    uploadDate,
+    views: formatCount(info.view_count),
+    likes: formatCount(info.like_count),
+    comments: formatCount(info.comment_count),
+    reposts: formatCount(info.repost_count || info.share_count),
+    tags: Array.isArray(info.tags) && info.tags.length ? info.tags.slice(0, 15).join(', ') : '—',
+    region: typeof uploadRegion === 'string' && uploadRegion.trim() ? uploadRegion.trim() : null,
   };
 }
 
@@ -1379,6 +1418,14 @@ bot.hears([BTN.ru.profile, BTN.en.profile, BTN.kk.profile], async (ctx) => sendP
 bot.action(/^pkg_(\d+)_(\d+)$/, async (ctx) => {
   await ctx.answerCbQuery();
   const lang = await getLang(ctx.from.id);
+  // Delete only the bot's package list; never delete a user's message.
+  try {
+    if (ctx.callbackQuery && ctx.callbackQuery.message) {
+      await ctx.telegram.deleteMessage(ctx.callbackQuery.message.chat.id, ctx.callbackQuery.message.message_id);
+    }
+  } catch (error) {
+    console.warn('[INEASY] Не удалось удалить список пакетов:', error.description || error.message);
+  }
   await createPurchaseOrder(ctx, Number(ctx.match[1]), Number(ctx.match[2]), lang);
 });
 
@@ -1820,14 +1867,22 @@ bot.on('text', async (ctx, next) => {
 
   lastCheckAt.set(ctx.from.id, now);
   activeChecks++;
+  let statusMessage = null;
   try {
-    await ctx.reply(t.checkerWorking);
+    statusMessage = await ctx.reply(t.checkerWorking);
     const data = await analyzeTikTok(url);
     await ctx.reply(t.checkerResult(data), mainKeyboard(lang));
   } catch (err) {
     console.error('Ошибка чекера:', err.message);
     await ctx.reply(t.checkerError, mainKeyboard(lang));
   } finally {
+    // Keep the result, but remove the submitted link and temporary status message.
+    try { await ctx.telegram.deleteMessage(ctx.chat.id, ctx.message.message_id); }
+    catch (error) { console.warn('[INEASY] Не удалось удалить ссылку чекера:', error.description || error.message); }
+    if (statusMessage) {
+      try { await ctx.telegram.deleteMessage(ctx.chat.id, statusMessage.message_id); }
+      catch (error) { console.warn('[INEASY] Не удалось удалить статус чекера:', error.description || error.message); }
+    }
     activeChecks--;
   }
 });
