@@ -1864,9 +1864,14 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
       execFile(FFMPEG_PATH, [
         '-hide_banner', '-loglevel', 'error', '-nostdin', '-y',
         '-i', inputPath,
-        '-map', '0', '-c:v', 'copy', '-c:a', 'copy', '-c:s', 'copy',
+        // Phone MOV/MP4 files can contain timed-metadata, data, or subtitle tracks
+        // (for example tmcd). Mapping every stream makes MP4 remux fail even when
+        // the actual video/audio streams are compatible. Preserve A/V bitstreams,
+        // but omit optional non-A/V tracks that the MP4 container cannot carry.
+        '-map', '0:v?', '-map', '0:a?',
+        '-c:v', 'copy', '-c:a', 'copy', '-sn', '-dn',
         '-map_metadata', '0', '-movflags', '+faststart',
-        outputPath
+        '-f', 'mp4', outputPath
       ], { maxBuffer: 4 * 1024 * 1024, timeout: 30000, killSignal: 'SIGKILL' }, (error, stdout, stderr) => {
         if (error) {
           error.stderr = stderr;
