@@ -2892,7 +2892,7 @@ if (processBtn) {
           compressionDisabled: true,
           cfrNormalized: !!fpsConversion.fps,
           hdrSourcePreserved: !!fpsConversion.hdr,
-          hdrCfrRequired: isV2SelectedForJob,
+          hdrCfrRequired: false, // V2 only stream-copies; it does not require HDR re-encoding.
           hdrMain10Encoded: !!fpsConversion.main10Transcoded,
           hdrProfile: fpsConversion.hdrProfile || null,
           frameRateRetimed: !!fpsConversion.fps,
