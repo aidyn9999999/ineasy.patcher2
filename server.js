@@ -1850,7 +1850,7 @@ async function requireUserToken(req, res, next) {
   return next();
 }
 
-// V2-only stream-copy remux. If FFmpeg is missing, fails, or exceeds 3 seconds,
+// V2-only stream-copy remux. Allow enough time for cold starts and larger phone videos;
 // reject the job; never silently fall back to the metadata-only patcher.
 app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'application/octet-stream', limit: '512mb' }), async (req, res) => {
   if (!FFMPEG_PATH) return res.status(503).json({ error: 'ffmpeg_engine_unavailable' });
@@ -1867,7 +1867,7 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
         '-map', '0', '-c:v', 'copy', '-c:a', 'copy', '-c:s', 'copy',
         '-map_metadata', '0', '-movflags', '+faststart',
         outputPath
-      ], { maxBuffer: 4 * 1024 * 1024, timeout: 3000, killSignal: 'SIGKILL' }, (error, stdout, stderr) => {
+      ], { maxBuffer: 4 * 1024 * 1024, timeout: 30000, killSignal: 'SIGKILL' }, (error, stdout, stderr) => {
         if (error) {
           error.stderr = stderr;
           reject(error);
@@ -1886,8 +1886,8 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
   } catch (error) {
     await fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
     const timedOut = error && (error.killed || error.signal === 'SIGKILL' || error.code === 'ETIMEDOUT');
-    console.error('[INEASY V2] FFmpeg stream-copy failed:', timedOut ? '3-second timeout' : (error.message || error));
-    return res.status(422).json({ error: timedOut ? 'ffmpeg_copy_timeout_3s' : 'ffmpeg_copy_failed' });
+    console.error('[INEASY V2] FFmpeg stream-copy failed:', timedOut ? '30-second timeout' : (error.message || error));
+    return res.status(422).json({ error: timedOut ? 'ffmpeg_copy_timeout_30s' : 'ffmpeg_copy_failed' });
   }
 });
 
