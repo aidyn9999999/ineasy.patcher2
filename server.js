@@ -751,7 +751,7 @@ async function analyzeTikTok(url) {
   const formatCount = (value) => value == null ? '—' : Number(value).toLocaleString('ru-RU');
   const uploadDateRaw = info.upload_date || (info.timestamp ? new Date(info.timestamp * 1000).toISOString().slice(0, 10).replace(/-/g, '') : null);
   const uploadDate = uploadDateRaw && /^\d{8}$/.test(String(uploadDateRaw))
-    ? \`\${String(uploadDateRaw).slice(6, 8)}.\${String(uploadDateRaw).slice(4, 6)}.\${String(uploadDateRaw).slice(0, 4)}\`
+    ? `${String(uploadDateRaw).slice(6, 8)}.${String(uploadDateRaw).slice(4, 6)}.${String(uploadDateRaw).slice(0, 4)}`
     : (uploadDateRaw || '—');
   return {
     quality: Math.min(width || 0, height || 0) || '—',
@@ -761,9 +761,9 @@ async function analyzeTikTok(url) {
     codec: real.codec || meta.codec || '—',
     bitrate: real.bitrate || meta.bitrate || fallbackBitrate || '—',
     duration: fmtDuration(duration),
-    size: bytes ? \`\${(bytes / 1024 / 1024).toFixed(1)} MB\` : '—',
+    size: bytes ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : '—',
     ext: v.ext || info.ext || '—',
-    author: info.uploader ? \`@\${info.uploader}\` : (info.creator || '—'),
+    author: info.uploader ? `@${info.uploader}` : (info.creator || '—'),
     authorId: info.uploader_id || info.channel_id || '—',
     videoId: info.id || '—',
     title: String(info.title || '—').slice(0, 250),
