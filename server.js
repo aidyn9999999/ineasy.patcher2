@@ -1741,8 +1741,67 @@ bot.hears([BTN.ru.check, BTN.en.check, BTN.kk.check], async (ctx) => {
   await ctx.reply(TEXTS[lang].checkerHint, mainKeyboard(lang));
 });
 
-// Любое сообщение со ссылкой на TikTok = запуск чекера
+// /check <TikTok URL> — compact checker for group chats.
+// In groups, ordinary links never trigger analysis; only an explicit /check does.
+bot.command('check', async (ctx) => {
+  const chatType = ctx.chat && ctx.chat.type;
+  const isGroup = chatType === 'group' || chatType === 'supergroup';
+  const text = String(ctx.message && ctx.message.text || '');
+  const url = extractTikTokUrl(text.replace(/^\\/check(?:@\\w+)?\\s*/i, ''));
+  const lang = await getLang(ctx.from.id);
+  const t = TEXTS[lang];
+
+  let statusMessage = null;
+  const tryDelete = async (chatId, messageId) => {
+    if (!messageId) return;
+    try { await ctx.telegram.deleteMessage(chatId, messageId); }
+    catch (error) {
+      // Telegram requires admin/delete permissions to remove other users' messages.
+      console.warn('[INEASY] Could not delete checker message:', error.description || error.message);
+    }
+  };
+
+  // Delete the command itself when possible to keep the group tidy.
+  if (isGroup) await tryDelete(ctx.chat.id, ctx.message.message_id);
+
+  if (!url) {
+    await ctx.reply('Используйте: /check https://www.tiktok.com/@user/video/123');
+    return;
+  }
+
+  const now = Date.now();
+  if (now - (lastCheckAt.get(ctx.from.id) || 0) < CHECK_COOLDOWN_MS) {
+    await ctx.reply(t.checkerWait);
+    return;
+  }
+  if (activeChecks >= MAX_PARALLEL_CHECKS) {
+    await ctx.reply(t.checkerBusy);
+    return;
+  }
+
+  lastCheckAt.set(ctx.from.id, now);
+  activeChecks++;
+  try {
+    statusMessage = await ctx.reply('⏳ Проверяю…');
+    const data = await analyzeTikTok(url);
+    await ctx.reply(
+      `🎬 ${data.width}×${data.height} · ${data.fps} FPS
+🎞 ${data.codec} · ${data.bitrate}
+⏱ ${data.duration} · 💾 ${data.size}
+👤 ${data.author}`
+    );
+  } catch (err) {
+    console.error('[INEASY] Group /check failed:', err.message);
+    await ctx.reply(t.checkerError);
+  } finally {
+    if (statusMessage) await tryDelete(ctx.chat.id, statusMessage.message_id);
+    activeChecks--;
+  }
+});
+
+// Private chat keeps the existing link-checker behavior. In groups, links alone do nothing.
 bot.on('text', async (ctx, next) => {
+  if (ctx.chat && (ctx.chat.type === 'group' || ctx.chat.type === 'supergroup')) return next();
   const url = extractTikTokUrl(ctx.message.text);
   if (!url) return next();
 
