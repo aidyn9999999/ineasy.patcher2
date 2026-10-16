@@ -2304,3 +2304,38 @@ body {
   .hero-quality { font-size: clamp(30px, 8vw, 40px); }
   .home-hero .home-intro { margin-top: 18px; font-size: 15px; }
 }
+
+
+/* Fit account header controls within the top bar on narrow screens */
+.topbar {
+  min-width: 0;
+}
+.topbar .topbar-right,
+.topbar .topbar-actions,
+.topbar .account-controls {
+  min-width: 0;
+  max-width: 100%;
+}
+.topbar .balance-pill {
+  max-width: min(100%, 360px) !important;
+  min-width: 0 !important;
+  flex-wrap: wrap !important;
+  column-gap: 6px !important;
+  row-gap: 4px !important;
+  padding: 5px 6px !important;
+}
+.topbar .balance-pill .id-part,
+.topbar .balance-pill > span {
+  font-size: 11px !important;
+}
+.topbar .brand { font-size: clamp(18px, 2vw, 23px) !important; }
+@media (max-width: 520px) {
+  .topbar { gap: 6px !important; }
+  .topbar .brand { font-size: 19px !important; }
+  .topbar .balance-pill { gap: 4px !important; padding: 4px !important; }
+  .topbar .balance-pill .id-part,
+  .topbar .balance-pill > span { font-size: 10px !important; }
+  .topbar .copy-id-btn { width: 21px !important; height: 21px !important; min-width: 21px !important; min-height: 21px !important; }
+  .topbar .plus-btn { width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; }
+  .topbar .logout-btn { min-width: 26px !important; min-height: 26px !important; padding: 3px !important; }
+}
