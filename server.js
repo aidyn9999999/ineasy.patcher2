@@ -1981,10 +1981,47 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
   const outputPath = path.join(jobDir, 'output.mp4');
   try {
     await fs.promises.writeFile(inputPath, req.body);
+
+    // Probe the original file before remuxing so the verifier never trusts only
+    // post-FFmpeg metadata. Video frames must remain stream-copied, not re-timed.
+    const probeVideo = (filePath) => new Promise((resolve, reject) => {
+      execFile(FFPROBE_PATH, [
+        '-v', 'error', '-select_streams', 'v:0', '-show_streams',
+        '-show_entries',
+        'stream=codec_name,width,height,avg_frame_rate,r_frame_rate,nb_frames,pix_fmt,color_primaries,color_transfer',
+        '-of', 'json', filePath
+      ], { maxBuffer: 2 * 1024 * 1024, timeout: 30000 }, (error, stdout, stderr) => {
+        if (error) {
+          error.stderr = stderr;
+          return reject(error);
+        }
+        try {
+          const stream = JSON.parse(stdout).streams?.[0];
+          if (!stream) throw new Error('ffprobe_video_stream_missing');
+          resolve(stream);
+        } catch (parseError) {
+          reject(parseError);
+        }
+      });
+    });
+    const parseFrameRate = (value) => {
+      const parts = String(value || '').split('/').map(Number);
+      if (parts.length !== 2 || !Number.isFinite(parts[0]) ||
+          !Number.isFinite(parts[1]) || parts[0] <= 0 || parts[1] <= 0) return 0;
+      return parts[0] / parts[1];
+    };
+    const inputVideo = await probeVideo(inputPath);
+    const inputAverageFps = parseFrameRate(inputVideo.avg_frame_rate);
+    const inputNominalFps = parseFrameRate(inputVideo.r_frame_rate);
+    const sourceFps = inputAverageFps || inputNominalFps;
+    const inputFrames = Number(inputVideo.nb_frames);
+
     const runRemux = (audioMode) => new Promise((resolve, reject) => {
       const args = [
         '-hide_banner', '-loglevel', 'error', '-nostdin', '-y',
-        '-i', inputPath,
+        '-i', inputPath, '-copytb', '1',
+        // Use the demuxer time base when stream-copying high-FPS/VFR phone footage.
+        // Never apply an fps filter or re-encode the video track here.
         // Phone MOV/MP4 files may include unsupported timed metadata (tmcd), PCM audio,
         // or other tracks. Keep the original video bitstream and only map A/V streams.
         '-map', '0:v:0?', '-map', '0:a:0?',
@@ -2024,12 +2061,48 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
         throw aacError;
       }
     }
+    // Verify the actual remux output against the ORIGINAL input, before returning it.
+    const outputVideo = await probeVideo(outputPath);
+    const outputAverageFps = parseFrameRate(outputVideo.avg_frame_rate);
+    const outputNominalFps = parseFrameRate(outputVideo.r_frame_rate);
+    const outputFps = outputAverageFps || outputNominalFps;
+    const outputFrames = Number(outputVideo.nb_frames);
+
+    if (Number(inputVideo.width) !== Number(outputVideo.width) ||
+        Number(inputVideo.height) !== Number(outputVideo.height) ||
+        String(inputVideo.codec_name || '').toLowerCase() !== String(outputVideo.codec_name || '').toLowerCase()) {
+      throw new Error('ffmpeg_copy_video_metadata_mismatch');
+    }
+    if (sourceFps >= 29 && outputFps > 0 && outputFps < sourceFps - 1) {
+      throw new Error('ffmpeg_copy_fps_downgrade_blocked: source=' +
+        sourceFps.toFixed(3) + '; output=' + outputFps.toFixed(3));
+    }
+    if (sourceFps >= 50 && outputFps > 0 && outputFps < 50) {
+      throw new Error('ffmpeg_copy_4k_fps_downgrade_blocked: source=' +
+        sourceFps.toFixed(3) + '; output=' + outputFps.toFixed(3));
+    }
+    if (Number.isFinite(inputFrames) && inputFrames > 0 &&
+        Number.isFinite(outputFrames) && outputFrames > 0 && inputFrames !== outputFrames) {
+      throw new Error('ffmpeg_copy_frame_count_mismatch: source=' + inputFrames + '; output=' + outputFrames);
+    }
+    for (const key of ['pix_fmt', 'color_primaries', 'color_transfer']) {
+      const before = String(inputVideo[key] || '').toLowerCase();
+      const after = String(outputVideo[key] || '').toLowerCase();
+      if (before && before !== 'unknown' && after && after !== 'unknown' && before !== after) {
+        throw new Error('ffmpeg_copy_' + key + '_mismatch');
+      }
+    }
+
     const stat = await fs.promises.stat(outputPath);
     if (stat.size < 16) throw new Error('ffmpeg_copy_output_invalid');
     res.set('Content-Type', 'video/mp4');
     res.set('Content-Length', String(stat.size));
     res.set('X-INEASY-FFMPEG-COPY', '1');
     res.set('X-INEASY-FFMPEG-AUDIO', remuxAudioMode);
+    if (sourceFps > 0) res.set('X-INEASY-SOURCE-FPS', sourceFps.toFixed(6));
+    if (Number(inputVideo.width) > 0) res.set('X-INEASY-SOURCE-WIDTH', String(inputVideo.width));
+    if (Number(inputVideo.height) > 0) res.set('X-INEASY-SOURCE-HEIGHT', String(inputVideo.height));
+    if (outputFps > 0) res.set('X-INEASY-OUTPUT-FPS', outputFps.toFixed(6));
     return res.sendFile(outputPath, (error) => {
       if (error && !res.headersSent) res.status(500).end();
       fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
@@ -2047,151 +2120,7 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
   }
 });
 
-// V2-only CFR conversion: encode at exact 60 FPS with a size-conscious bitrate/quality target.
-// Dynamic HDR profiles are rejected rather than silently stripped.
-app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'application/octet-stream', limit: '512mb' }), async (req, res) => {
-  if (!FFMPEG_PATH) return res.status(503).json({ error: 'ffmpeg_engine_unavailable' });
-  if (!Buffer.isBuffer(req.body) || req.body.length < 16) return res.status(400).json({ error: 'video_body_missing' });
-  const jobDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'ineasy-v2-cfr-'));
-  const inputPath = path.join(jobDir, 'input.mp4');
-  const outputPath = path.join(jobDir, 'output.mp4');
-  const rejectJob = async (status, payload) => {
-    await fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
-    return res.status(status).json(payload);
-  };
-  const run = (bin, args, options = {}) => new Promise((resolve, reject) => {
-    execFile(bin, args, { ...options, maxBuffer: 8 * 1024 * 1024, timeout: 15 * 60 * 1000 }, (error, stdout, stderr) => {
-      if (error) {
-        error.stderr = stderr;
-        reject(error);
-      } else resolve({ stdout, stderr });
-    });
-  });
-  let ffmpegStage = 'write_input';
-  try {
-    await fs.promises.writeFile(inputPath, req.body);
-    ffmpegStage = 'probe_input';
-    const probe = async (file) => {
-      const result = await run(FFPROBE_PATH, [
-        '-v', 'error', '-select_streams', 'v:0', '-show_streams', '-show_format', '-of', 'json', file
-      ]);
-      return JSON.parse(result.stdout);
-    };
-    const inputMeta = await probe(inputPath);
-    const inputVideo = (inputMeta.streams || []).find((stream) => stream.codec_type === 'video');
-    if (!inputVideo) return await rejectJob(422, { error: 'video_track_missing' });
-    const inputWidth = Number(inputVideo.width);
-    const inputHeight = Number(inputVideo.height);
-    const pixFmt = String(inputVideo.pix_fmt || '').toLowerCase();
-    const transfer = String(inputVideo.color_transfer || '').toLowerCase();
-    const primaries = String(inputVideo.color_primaries || '').toLowerCase();
-    const matrix = String(inputVideo.color_space || '').toLowerCase();
-    const sideDataText = JSON.stringify(inputVideo.side_data_list || []).toLowerCase();
-    const tagsText = JSON.stringify(inputVideo.tags || {}).toLowerCase();
-    const hdr = /smpte2084|arib-std-b67/.test(transfer) || /bt2020/.test(primaries);
-    const dynamicHdr = /dolby.?vision|dovi|hdr10.?plus|hdr10plus|dynamic.?hdr|smpte.?2094/.test(sideDataText + tagsText);
-    if (dynamicHdr) return await rejectJob(422, { error: 'dynamic_hdr_not_supported_without_metadata_loss' });
-    if (!Number.isInteger(inputWidth) || !Number.isInteger(inputHeight) || inputWidth < 1 || inputHeight < 1) {
-      return await rejectJob(422, { error: 'video_dimensions_unavailable' });
-    }
-    // Restrict the first V2 rollout to common 4:2:0 sources so we never silently downsample chroma.
-    if (!/^yuv420p(?:10le|12le|16le)?$/.test(pixFmt)) {
-      return await rejectJob(422, { error: 'unsupported_pixel_format_for_lossless_cfr', pixelFormat: pixFmt });
-    }
-    if (hdr && !/(?:10|12|16)le$/.test(pixFmt)) {
-      return await rejectJob(422, { error: 'hdr_requires_high_bit_depth_source', pixelFormat: pixFmt });
-    }
-    const isHighBitDepth = /(?:10|12|16)le$/.test(pixFmt);
-    const videoEncoder = isHighBitDepth ? 'libx265' : 'libx264';
-    const outputPixFmt = pixFmt;
-    const args = [
-      '-hide_banner', '-loglevel', 'error', '-y', '-i', inputPath,
-      '-map', '0:v:0', '-map', '0:a:0?', '-map_metadata', '0',
-      '-vf', 'fps=60',
-      '-c:v', videoEncoder, '-preset', 'ultrafast',
-      // Bound x265 parallelism: unrestricted pools can exhaust small hosted instances
-      // while encoding high-resolution 10-bit HDR. Keep lossless/Main10 settings.
-      ...(isHighBitDepth ? [
-        // Faster Main10/HDR CFR encode for V2 on constrained hosted instances.
-        // Enable x265 wavefront parallel processing and two frame threads; wpp=0 plus
-        // one frame thread serialized too much work and made 4K conversion appear stuck.
-        // Keep source bit depth and HDR signaling while reducing output size; CRF 20 is lossy.
-        '-threads', '2',
-        '-crf', '20',
-        '-x265-params', (hdr && transfer === 'smpte2084'
-          ? 'hdr10=1:pools=2:frame-threads=2:wpp=1'
-          : 'pools=2:frame-threads=2:wpp=1')
-      ] : ['-threads', '2', '-crf', '23']),
-      '-pix_fmt', outputPixFmt,
-      ...(primaries && primaries !== 'unknown' ? ['-color_primaries', primaries] : []),
-      ...(transfer && transfer !== 'unknown' ? ['-color_trc', transfer] : []),
-      ...(matrix && matrix !== 'unknown' ? ['-colorspace', matrix] : []),
-      '-c:a', 'copy', '-movflags', '+faststart', outputPath
-    ];
-    ffmpegStage = 'encode_cfr_60';
-    await run(FFMPEG_PATH, args);
-    ffmpegStage = 'probe_output';
-    const outputMeta = await probe(outputPath);
-    const outputVideo = (outputMeta.streams || []).find((stream) => stream.codec_type === 'video');
-    if (!outputVideo ||
-        Number(outputVideo.width) !== inputWidth ||
-        Number(outputVideo.height) !== inputHeight ||
-        String(outputVideo.avg_frame_rate || '') !== '60/1' ||
-        String(outputVideo.pix_fmt || '') !== outputPixFmt) {
-      return await rejectJob(422, { error: 'cfr_output_verification_failed' });
-    }
-    const outputHdr = /smpte2084|arib-std-b67/.test(String(outputVideo.color_transfer || '').toLowerCase()) ||
-      /bt2020/.test(String(outputVideo.color_primaries || '').toLowerCase());
-    const inputSideData = (inputVideo.side_data_list || []).map((item) => String(item.side_data_type || '').toLowerCase());
-    const outputSideData = (outputVideo.side_data_list || []).map((item) => String(item.side_data_type || '').toLowerCase());
-    const requiredHdrSideData = inputSideData.filter((name) => /mastering display|content light level/.test(name));
-    const missingHdrSideData = requiredHdrSideData.filter((name) => !outputSideData.some((outName) => outName === name));
-    if (hdr && missingHdrSideData.length) {
-      return await rejectJob(422, { error: 'hdr_dynamic_or_mastering_metadata_not_preserved' });
-    }
-    if (hdr && (!outputHdr ||
-        String(outputVideo.color_transfer || '').toLowerCase() !== transfer ||
-        String(outputVideo.color_primaries || '').toLowerCase() !== primaries)) {
-      return await rejectJob(422, { error: 'hdr_metadata_verification_failed' });
-    }
-    const stat = await fs.promises.stat(outputPath);
-    res.set('Content-Type', 'video/mp4');
-    res.set('Content-Length', String(stat.size));
-    res.set('X-INEASY-CFR', '60/1');
-    res.set('X-INEASY-WIDTH', String(inputWidth));
-    res.set('X-INEASY-HEIGHT', String(inputHeight));
-    res.set('X-INEASY-HDR', outputHdr ? 'preserved' : 'sdr');
-    res.sendFile(outputPath, (error) => {
-      fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
-      if (error && !res.headersSent) res.status(500).end();
-    });
-  } catch (error) {
-    // FFmpeg/x265 writes the most useful failure reason at the END of stderr.
-    // Preserve the tail so the API does not return only the encoder startup banner.
-    const stderrTail = String(error.stderr || error.message || 'unknown_error')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(-700);
-    const detail = `exit=${error.code ?? 'unknown'} signal=${error.signal || 'none'}; ${stderrTail}`.slice(-900);
-    console.error('[INEASY V2] FFmpeg CFR conversion failed:', {
-      stage: ffmpegStage,
-      code: error.code || null,
-      signal: error.signal || null,
-      message: error.message || '',
-      stderr: detail
-    });
-    if (!res.headersSent) {
-      res.status(422).json({
-        error: 'ffmpeg_cfr_conversion_failed',
-        stage: ffmpegStage,
-        detail: detail || String(error.message || 'unknown_error').slice(0, 300),
-        exitCode: error.code ?? null,
-        signal: error.signal || null
-      });
-    }
-    fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
-  }
-});
+// The unused CFR-transcoding endpoint was removed: V2 uses verified stream-copy only.
 
 // INEASY_RAILWAY_4K_ENDPOINT
 function zernioEncryptionKey() {
