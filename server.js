@@ -135,27 +135,31 @@ const TEXTS = {
     checkerWait: '⏳ Подождите несколько секунд перед следующей проверкой.',
     checkerError: '❌ Не удалось получить данные. Проверьте ссылку (видео должно быть публичным) и попробуйте ещё раз.',
     checkerResult: (d) =>
-      `🔍 Подробные данные TikTok\n\n` +
-      `📝 Название: ${d.title || '—'}\n` +
+      `🔎 ПРОВЕРКА ВИДЕО TIKTOK\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `🎬 ВИДЕО\n` +
+      `📝 Название: ${d.title || 'Не указано'}\n` +
       `🆔 ID видео: ${d.videoId || '—'}\n` +
-      `👤 Автор: ${d.author}\n` +
+      `📅 Опубликовано: ${d.uploadDate || '—'}\n` +
+      `⏱ Длительность: ${d.duration || '—'}\n` +
+      `💾 Размер файла: ${d.size || '—'}\n` +
+      `📦 Формат: ${d.ext || '—'}\n\n` +
+      `📹 КАЧЕСТВО И КОДИРОВАНИЕ\n` +
+      `🖥 Разрешение: ${d.width} × ${d.height} (${d.quality}p)\n` +
+      `🎞 Частота кадров: ${d.fps} FPS\n` +
+      `🎥 Видеокодек: ${d.codec}\n` +
+      `📶 Битрейт: ${d.bitrate}\n\n` +
+      `👤 АВТОР И АКТИВНОСТЬ\n` +
+      `👤 Аккаунт: ${d.author || '—'}\n` +
       `🪪 ID автора: ${d.authorId || '—'}\n` +
-      `📅 Дата публикации: ${d.uploadDate || '—'}\n` +
-      `📺 Разрешение: ${d.width}×${d.height} (${d.quality}p)\n` +
-      `🎞 FPS: ${d.fps}\n` +
-      `🎬 Видеокодек: ${d.codec}\n` +
-      `📶 Битрейт: ${d.bitrate}\n` +
-      `⏱ Длительность: ${d.duration}\n` +
-      `💾 Размер: ${d.size}\n` +
-      `📁 Формат: ${d.ext}\n` +
-      `👁 Просмотры: ${d.views || '—'}\n` +
-      `❤️ Лайки: ${d.likes || '—'}\n` +
-      `💬 Комментарии: ${d.comments || '—'}\n` +
-      `🔁 Репосты: ${d.reposts || '—'}\n` +
-      `🌍 Регион: ${d.region || 'TikTok не предоставляет эти данные'}\n` +
-      `🚫 Теневой бан: достоверно определить по публичным данным нельзя\n` +
-      `🏷 Теги: ${d.tags || '—'}\n\n` +
-      `📄 Описание: ${d.description || '—'}`,
+      `👁 Просмотры: ${d.views || 'Нет данных'}\n` +
+      `❤️ Лайки: ${d.likes || 'Нет данных'}\n` +
+      `💬 Комментарии: ${d.comments || 'Нет данных'}\n` +
+      `🔁 Репосты: ${d.reposts || 'Нет данных'}\n\n` +
+      `🌍 Регион: ${d.region || 'Не указан в открытых данных TikTok'}\n` +
+      `🚦 Теневой бан: нельзя достоверно определить по одной публичной ссылке.\n\n` +
+      `🏷 Теги: ${d.tags || 'Нет данных'}\n\n` +
+      `📄 ОПИСАНИЕ\n${d.description || 'Нет описания'}`,
   },
   en: {
     welcome: (name) =>
@@ -233,27 +237,31 @@ const TEXTS = {
     checkerWait: '⏳ Please wait a few seconds before the next check.',
     checkerError: '❌ Could not get the data. Check the link (the video must be public) and try again.',
     checkerResult: (d) =>
-      `🔍 Detailed TikTok data\n\n` +
-      `📝 Title: ${d.title || '—'}\n` +
+      `🔎 TIKTOK VIDEO CHECK\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `🎬 VIDEO\n` +
+      `📝 Title: ${d.title || 'Not provided'}\n` +
       `🆔 Video ID: ${d.videoId || '—'}\n` +
-      `👤 Creator: ${d.author}\n` +
+      `📅 Uploaded: ${d.uploadDate || '—'}\n` +
+      `⏱ Duration: ${d.duration || '—'}\n` +
+      `💾 File size: ${d.size || '—'}\n` +
+      `📦 Format: ${d.ext || '—'}\n\n` +
+      `📹 QUALITY & ENCODING\n` +
+      `🖥 Resolution: ${d.width} × ${d.height} (${d.quality}p)\n` +
+      `🎞 Frame rate: ${d.fps} FPS\n` +
+      `🎥 Video codec: ${d.codec}\n` +
+      `📶 Bitrate: ${d.bitrate}\n\n` +
+      `👤 CREATOR & ENGAGEMENT\n` +
+      `👤 Account: ${d.author || '—'}\n` +
       `🪪 Creator ID: ${d.authorId || '—'}\n` +
-      `📅 Upload date: ${d.uploadDate || '—'}\n` +
-      `📺 Resolution: ${d.width}×${d.height} (${d.quality}p)\n` +
-      `🎞 FPS: ${d.fps}\n` +
-      `🎬 Video codec: ${d.codec}\n` +
-      `📶 Bitrate: ${d.bitrate}\n` +
-      `⏱ Duration: ${d.duration}\n` +
-      `💾 Size: ${d.size}\n` +
-      `📁 Format: ${d.ext}\n` +
-      `👁 Views: ${d.views || '—'}\n` +
-      `❤️ Likes: ${d.likes || '—'}\n` +
-      `💬 Comments: ${d.comments || '—'}\n` +
-      `🔁 Reposts: ${d.reposts || '—'}\n` +
-      `🌍 Region: ${d.region || 'Not provided by TikTok'}\n` +
-      `🚫 Shadowban: cannot be reliably determined from public data\n` +
-      `🏷 Tags: ${d.tags || '—'}\n\n` +
-      `📄 Description: ${d.description || '—'}`,
+      `👁 Views: ${d.views || 'Unavailable'}\n` +
+      `❤️ Likes: ${d.likes || 'Unavailable'}\n` +
+      `💬 Comments: ${d.comments || 'Unavailable'}\n` +
+      `🔁 Reposts: ${d.reposts || 'Unavailable'}\n\n` +
+      `🌍 Region: ${d.region || 'Not listed in public TikTok data'}\n` +
+      `🚦 Shadowban: cannot be reliably confirmed from a public link alone.\n\n` +
+      `🏷 Tags: ${d.tags || 'Unavailable'}\n\n` +
+      `📄 DESCRIPTION\n${d.description || 'No description'}`,
   },
   kk: {
     welcome: (name) =>
@@ -331,15 +339,31 @@ const TEXTS = {
     checkerWait: '⏳ Келесі тексеруге дейін бірнеше секунд күтіңіз.',
     checkerError: '❌ Деректерді алу мүмкін болмады. Сілтемені тексеріңіз (бейне ашық болуы керек) да қайталап көріңіз.',
     checkerResult: (d) =>
-      `🔍 Бейне деректері\n\n` +
-      `📺 Сапасы: ${d.quality}p (${d.width}×${d.height})\n` +
-      `🎞 FPS: ${d.fps}\n` +
-      `🎬 Кодек: ${d.codec}\n` +
-      `📶 Битрейт: ${d.bitrate}\n` +
-      `⏱ Ұзақтығы: ${d.duration}\n` +
-      `💾 Көлемі: ${d.size}\n` +
-      `📁 Форматы: ${d.ext}\n` +
-      `👤 Авторы: ${d.author}`,
+      `🔎 TIKTOK БЕЙНЕСІН ТЕКСЕРУ\n` +
+      `━━━━━━━━━━━━━━━━━━\n\n` +
+      `🎬 БЕЙНЕ\n` +
+      `📝 Атауы: ${d.title || 'Көрсетілмеген'}\n` +
+      `🆔 Бейне ID: ${d.videoId || '—'}\n` +
+      `📅 Жарияланған күні: ${d.uploadDate || '—'}\n` +
+      `⏱ Ұзақтығы: ${d.duration || '—'}\n` +
+      `💾 Файл көлемі: ${d.size || '—'}\n` +
+      `📦 Пішімі: ${d.ext || '—'}\n\n` +
+      `📹 САПАСЫ ЖӘНЕ КОДТАУ\n` +
+      `🖥 Ажыратымдылығы: ${d.width} × ${d.height} (${d.quality}p)\n` +
+      `🎞 Кадр жиілігі: ${d.fps} FPS\n` +
+      `🎥 Кодек: ${d.codec}\n` +
+      `📶 Битрейт: ${d.bitrate}\n\n` +
+      `👤 АВТОР ЖӘНЕ БЕЛСЕНДІЛІК\n` +
+      `👤 Аккаунт: ${d.author || '—'}\n` +
+      `🪪 Автор ID: ${d.authorId || '—'}\n` +
+      `👁 Қаралым: ${d.views || 'Дерек жоқ'}\n` +
+      `❤️ Лайк: ${d.likes || 'Дерек жоқ'}\n` +
+      `💬 Пікір: ${d.comments || 'Дерек жоқ'}\n` +
+      `🔁 Қайта бөлісу: ${d.reposts || 'Дерек жоқ'}\n\n` +
+      `🌍 Аймақ: ${d.region || 'Ашық TikTok деректерінде көрсетілмеген'}\n` +
+      `🚦 Көлеңкелі бан: ашық сілтеме арқылы нақты анықтау мүмкін емес.\n\n` +
+      `🏷 Тегтер: ${d.tags || 'Дерек жоқ'}\n\n` +
+      `📄 СИПАТТАМАСЫ\n${d.description || 'Сипаттама жоқ'}`,
   },
 };
 
