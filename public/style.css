@@ -1313,7 +1313,7 @@ button, .tg-btn, .news-link, .download-link, .balance-buy-site, .balance-buy-tel
 }
 
 
-/* Patcher engine selector: V1 stable / V2 beta */
+/* Patcher engine selector: V1 stable / V2 public */
 .patcher-version-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0 8px}
 .patcher-version-option{display:block;cursor:pointer;min-width:0}
 .patcher-version-option input{position:absolute;opacity:0;pointer-events:none}
