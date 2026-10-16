@@ -2904,7 +2904,7 @@ if (processBtn) {
         }
       };
       let processingFile = preparedInput.blob;
-      const processingFileName = processingFile.name || `${sourceFile.name.replace(/\\.[^.]+$/, '')}.mp4`;
+      const processingFileName = processingFile.name || `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`;
       if (isV2SelectedForJob) {
         setProcessingState('processing', '');
         updateProcessingProgress(7);
@@ -2932,7 +2932,7 @@ if (processBtn) {
         }
         const remuxedBlob = await copyResponse.blob();
         if (!remuxedBlob.size) throw new Error('v2_ffmpeg_copy_failed: empty_output');
-        processingFile = new File([remuxedBlob], processingFileName.replace(/\\.[^.]+$/, '') + '.mp4', {
+        processingFile = new File([remuxedBlob], processingFileName.replace(/\.[^.]+$/, '') + '.mp4', {
           type: 'video/mp4',
           lastModified: Date.now()
         });
@@ -3248,7 +3248,7 @@ if (processBtn) {
 if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processController?.abort());
 
 function localizePatchError(message) {
-  const v2CopyFailure = String(message || '').match(/^v2_ffmpeg_copy_failed:\\s*(.*)$/i);
+  const v2CopyFailure = String(message || '').match(/^v2_ffmpeg_copy_failed:\s*(.*)$/i);
   if (v2CopyFailure) {
     const reason = v2CopyFailure[1];
     if (/timeout_3s/i.test(reason)) {
