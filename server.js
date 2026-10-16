@@ -1788,80 +1788,65 @@ bot.hears([BTN.ru.check, BTN.en.check, BTN.kk.check], async (ctx) => {
   await ctx.reply(TEXTS[lang].checkerHint, mainKeyboard(lang));
 });
 
-// /check <TikTok URL> — compact checker for group chats.
-// In groups, ordinary links never trigger analysis; only an explicit /check does.
+// /check <TikTok URL> — explicit checker command. Keep the user's message and reply in the same chat/thread.
 bot.command('check', async (ctx) => {
-  const chatType = ctx.chat && ctx.chat.type;
-  const isGroup = chatType === 'group' || chatType === 'supergroup';
   const text = String(ctx.message && ctx.message.text || '');
   const url = extractTikTokUrl(text.replace(/^\/check(?:@\w+)?\s*/i, ''));
   const lang = await getLang(ctx.from.id);
   const t = TEXTS[lang];
-
+  const replyOptions = { reply_to_message_id: ctx.message.message_id, allow_sending_without_reply: true };
   let statusMessage = null;
-  const tryDelete = async (chatId, messageId) => {
-    if (!messageId) return;
-    try { await ctx.telegram.deleteMessage(chatId, messageId); }
-    catch (error) {
-      // Telegram requires admin/delete permissions to remove other users' messages.
-      console.warn('[INEASY] Could not delete checker message:', error.description || error.message);
-    }
-  };
-
-  // Delete the command itself when possible to keep the group tidy.
-  if (isGroup) await tryDelete(ctx.chat.id, ctx.message.message_id);
 
   if (!url) {
-    await ctx.reply('Используйте: /check https://www.tiktok.com/@user/video/123');
+    await ctx.reply('Используйте: /check https://www.tiktok.com/@user/video/123', replyOptions);
     return;
   }
 
   const now = Date.now();
   if (now - (lastCheckAt.get(ctx.from.id) || 0) < CHECK_COOLDOWN_MS) {
-    await ctx.reply(t.checkerWait);
+    await ctx.reply(t.checkerWait, replyOptions);
     return;
   }
   if (activeChecks >= MAX_PARALLEL_CHECKS) {
-    await ctx.reply(t.checkerBusy);
+    await ctx.reply(t.checkerBusy, replyOptions);
     return;
   }
 
   lastCheckAt.set(ctx.from.id, now);
   activeChecks++;
   try {
-    statusMessage = await ctx.reply('⏳ Проверяю…');
+    statusMessage = await ctx.reply(t.checkerWorking, replyOptions);
     const data = await analyzeTikTok(url);
-    await ctx.reply(
-      `🎬 ${data.width}×${data.height} · ${data.fps} FPS
-🎞 ${data.codec} · ${data.bitrate}
-⏱ ${data.duration} · 💾 ${data.size}
-👤 ${data.author}`
-    );
+    await ctx.reply(t.checkerResult(data), replyOptions);
   } catch (err) {
-    console.error('[INEASY] Group /check failed:', err.message);
-    await ctx.reply(t.checkerError);
+    console.error('[INEASY] /check failed:', err.message);
+    await ctx.reply(t.checkerError, replyOptions);
   } finally {
-    if (statusMessage) await tryDelete(ctx.chat.id, statusMessage.message_id);
+    if (statusMessage) {
+      try { await ctx.telegram.deleteMessage(ctx.chat.id, statusMessage.message_id); }
+      catch (error) { console.warn('[INEASY] Could not delete checker status:', error.description || error.message); }
+    }
     activeChecks--;
   }
 });
 
 // Private chat keeps the existing link-checker behavior. In groups, links alone do nothing.
 bot.on('text', async (ctx, next) => {
-  if (ctx.chat && (ctx.chat.type === 'group' || ctx.chat.type === 'supergroup')) return next();
   const url = extractTikTokUrl(ctx.message.text);
   if (!url) return next();
 
   const lang = await getLang(ctx.from.id);
   const t = TEXTS[lang];
+  const isGroup = ctx.chat && (ctx.chat.type === 'group' || ctx.chat.type === 'supergroup');
+  const replyOptions = isGroup ? { reply_to_message_id: ctx.message.message_id, allow_sending_without_reply: true } : mainKeyboard(lang);
   const now = Date.now();
 
   if (now - (lastCheckAt.get(ctx.from.id) || 0) < CHECK_COOLDOWN_MS) {
-    await ctx.reply(t.checkerWait);
+    await ctx.reply(t.checkerWait, replyOptions);
     return;
   }
   if (activeChecks >= MAX_PARALLEL_CHECKS) {
-    await ctx.reply(t.checkerBusy);
+    await ctx.reply(t.checkerBusy, replyOptions);
     return;
   }
 
@@ -1869,16 +1854,14 @@ bot.on('text', async (ctx, next) => {
   activeChecks++;
   let statusMessage = null;
   try {
-    statusMessage = await ctx.reply(t.checkerWorking);
+    statusMessage = await ctx.reply(t.checkerWorking, isGroup ? { reply_to_message_id: ctx.message.message_id, allow_sending_without_reply: true } : undefined);
     const data = await analyzeTikTok(url);
-    await ctx.reply(t.checkerResult(data), mainKeyboard(lang));
+    await ctx.reply(t.checkerResult(data), replyOptions);
   } catch (err) {
     console.error('Ошибка чекера:', err.message);
-    await ctx.reply(t.checkerError, mainKeyboard(lang));
+    await ctx.reply(t.checkerError, replyOptions);
   } finally {
-    // Keep the result, but remove the submitted link and temporary status message.
-    try { await ctx.telegram.deleteMessage(ctx.chat.id, ctx.message.message_id); }
-    catch (error) { console.warn('[INEASY] Не удалось удалить ссылку чекера:', error.description || error.message); }
+    // Keep the original link/comment; only remove the temporary status message.
     if (statusMessage) {
       try { await ctx.telegram.deleteMessage(ctx.chat.id, statusMessage.message_id); }
       catch (error) { console.warn('[INEASY] Не удалось удалить статус чекера:', error.description || error.message); }
