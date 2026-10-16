@@ -3251,11 +3251,11 @@ function localizePatchError(message) {
   const v2CopyFailure = String(message || '').match(/^v2_ffmpeg_copy_failed:\s*(.*)$/i);
   if (v2CopyFailure) {
     const reason = v2CopyFailure[1];
-    if (/timeout_3s/i.test(reason)) {
+    if (/timeout_30s/i.test(reason)) {
       return ({
-        ru: 'V2 остановлен: FFmpeg не завершил копирование потоков за 3 секунды. Метаданные не изменялись; попробуйте файл поменьше.',
-        kk: 'V2 тоқтатылды: FFmpeg ағындарды 3 секунд ішінде көшіріп үлгермеді. Метадеректер өзгертілмеді; кішірек файлды қолданып көріңіз.',
-        en: 'V2 stopped: FFmpeg did not finish stream-copying within 3 seconds. Metadata was not changed; try a smaller file.'
+        ru: 'V2 остановлен: FFmpeg не завершил копирование потоков за 30 секунд. Метаданные не изменялись; попробуйте файл поменьше.',
+        kk: 'V2 тоқтатылды: FFmpeg ағындарды 30 секунд ішінде көшіріп үлгермеді. Метадеректер өзгертілмеді; кішірек файлды қолданып көріңіз.',
+        en: 'V2 stopped: FFmpeg did not finish stream-copying within 30 seconds. Metadata was not changed; try a smaller file.'
       })[lang];
     }
     return ({
