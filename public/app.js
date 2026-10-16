@@ -2790,6 +2790,7 @@ if (processBtn) {
     updateProcessingProgress(0);
 
     let originalInputFps = null;
+    let originalFfprobeSourceInfo = null;
     try {
       setProcessingState('processing', '');
       updateProcessingProgress(1);
@@ -2929,6 +2930,28 @@ if (processBtn) {
         }
         if (copyResponse.headers.get('X-INEASY-FFMPEG-COPY') !== '1') {
           throw new Error('v2_ffmpeg_copy_failed: unverified_server_output');
+        }
+        // Remember FPS/dimensions measured by ffprobe on the ORIGINAL file,
+        // before remuxing. Never use only the remuxed file as the reference.
+        const sourceFpsHeader = Number(copyResponse.headers.get('X-INEASY-SOURCE-FPS'));
+        const outputFpsHeader = Number(copyResponse.headers.get('X-INEASY-OUTPUT-FPS'));
+        const sourceWidthHeader = Number(copyResponse.headers.get('X-INEASY-SOURCE-WIDTH'));
+        const sourceHeightHeader = Number(copyResponse.headers.get('X-INEASY-SOURCE-HEIGHT'));
+        if (Number.isFinite(sourceFpsHeader) && sourceFpsHeader > 0) {
+          originalInputFps = sourceFpsHeader;
+        }
+        if (Number.isFinite(sourceWidthHeader) && sourceWidthHeader > 0 &&
+            Number.isFinite(sourceHeightHeader) && sourceHeightHeader > 0) {
+          originalFfprobeSourceInfo = {
+            width: sourceWidthHeader,
+            height: sourceHeightHeader,
+            fps: Number.isFinite(sourceFpsHeader) && sourceFpsHeader > 0 ? sourceFpsHeader : null
+          };
+        }
+        if (Number.isFinite(sourceFpsHeader) && sourceFpsHeader >= 50 &&
+            (!Number.isFinite(outputFpsHeader) || outputFpsHeader < 50 ||
+             outputFpsHeader < sourceFpsHeader - 1)) {
+          throw new Error('v2_ffmpeg_copy_failed: ffmpeg_copy_fps_downgrade_blocked');
         }
         const remuxedBlob = await copyResponse.blob();
         if (!remuxedBlob.size) throw new Error('v2_ffmpeg_copy_failed: empty_output');
@@ -3108,8 +3131,8 @@ if (processBtn) {
       const verifiedOutputFps = Number(verifiedOutputInfo?.averageFps);
       // Never accept an output that silently drops a source to 720p or reduces FPS.
       // ADJN is a metadata/MP4 patcher; output geometry and cadence must remain intact.
-      const sourceWidthForGuard = Number(result.inputInfo?.width || selectedVideoDimensions?.width);
-      const sourceHeightForGuard = Number(result.inputInfo?.height || selectedVideoDimensions?.height);
+      const sourceWidthForGuard = Number(originalFfprobeSourceInfo?.width || result.inputInfo?.width || selectedVideoDimensions?.width);
+      const sourceHeightForGuard = Number(originalFfprobeSourceInfo?.height || result.inputInfo?.height || selectedVideoDimensions?.height);
       const outputWidthForGuard = Number(verifiedOutputInfo?.width);
       const outputHeightForGuard = Number(verifiedOutputInfo?.height);
       if (sourceWidthForGuard >= 1280 && sourceHeightForGuard >= 720 &&
@@ -3119,14 +3142,19 @@ if (processBtn) {
           sourceWidthForGuard + 'x' + sourceHeightForGuard + '; output=' +
           outputWidthForGuard + 'x' + outputHeightForGuard);
       }
-      const sourceFpsForGuard = Number(result.inputInfo?.averageFps);
+      const sourceFpsForGuard = Number(originalInputFps ?? result.inputInfo?.averageFps);
+      if (Number.isFinite(sourceFpsForGuard) && sourceFpsForGuard >= 50 &&
+          !Number.isFinite(verifiedOutputFps)) {
+        throw new Error('fps_output_verification_failed: source=' +
+          sourceFpsForGuard.toFixed(3) + '; output=unknown');
+      }
       if (Number.isFinite(sourceFpsForGuard) && sourceFpsForGuard >= 29 &&
           Number.isFinite(verifiedOutputFps) && verifiedOutputFps < sourceFpsForGuard - 1) {
         throw new Error('fps_downgrade_blocked: source=' +
           sourceFpsForGuard.toFixed(3) + '; output=' + verifiedOutputFps.toFixed(3));
       }
-      if (is4kSource) {
-        const sourceFpsFor4k = Number(result.inputInfo?.averageFps);
+      if (is4kSource || sourceWidthForGuard >= 3000 || sourceHeightForGuard >= 3000) {
+        const sourceFpsFor4k = Number(originalInputFps ?? result.inputInfo?.averageFps);
         if (Number.isFinite(sourceFpsFor4k) && sourceFpsFor4k >= 50 &&
             Number.isFinite(verifiedOutputFps) && verifiedOutputFps < 50) {
           throw new Error('4k_fps_downgrade_blocked: source=' +
@@ -3138,11 +3166,11 @@ if (processBtn) {
         verifiedHdrProfile?.hdr10 || verifiedHdrProfile?.hdr10plus || verifiedHdrProfile?.hlg ||
         verifiedHdrProfile?.dolbyVision || verifiedHdrProfile?.main10
       );
-      if (is4kSource) {
-        // Compare the patcher's coded dimensions to its own source metadata. The preview
-        // may expose display-rotated dimensions for phone videos, while MP4 tkhd stores coded ones.
-        const expectedWidth = Number(result.inputInfo?.width || selectedVideoDimensions?.width);
-        const expectedHeight = Number(result.inputInfo?.height || selectedVideoDimensions?.height);
+      if (is4kSource || sourceWidthForGuard >= 3000 || sourceHeightForGuard >= 3000) {
+        // Compare final coded dimensions against the original-file probe, not only post-remux metadata.
+        // The preview may expose display-rotated dimensions for phone videos, while MP4 tkhd stores coded ones.
+        const expectedWidth = Number(originalFfprobeSourceInfo?.width || result.inputInfo?.width || selectedVideoDimensions?.width);
+        const expectedHeight = Number(originalFfprobeSourceInfo?.height || result.inputInfo?.height || selectedVideoDimensions?.height);
         const finalWidth = Number(verifiedOutputInfo?.width);
         const finalHeight = Number(verifiedOutputInfo?.height);
         if (!expectedWidth || !expectedHeight || finalWidth !== expectedWidth || finalHeight !== expectedHeight) {
@@ -3335,6 +3363,8 @@ function localizePatchError(message) {
     }[lang];
   }
   const knownErrors = [
+    { test: /ffmpeg_copy_(?:4k_)?fps_downgrade_blocked|fps_downgrade_blocked/i, ru: 'Исходное видео имеет высокую частоту кадров, но после копирования или обработки FPS снизился. Файл не выдан, чтобы не публиковать видео с потерей FPS.', kk: 'Бастапқы бейненің кадр жиілігі жоғары, бірақ көшіру не өңдеу кезінде FPS төмендеді. FPS жоғалуын болдырмау үшін файл берілмеді.', en: 'The source has a high frame rate, but FPS dropped during copying or processing. No file was produced.' },
+    { test: /ffmpeg_copy_(?:video_metadata_mismatch|frame_count_mismatch|pix_fmt_mismatch|color_primaries_mismatch|color_transfer_mismatch)/i, ru: 'FFmpeg-копирование изменило параметры исходного видеопотока. Файл не выдан.', kk: 'FFmpeg көшіруі бастапқы бейне ағынының параметрлерін өзгертті. Файл берілмеді.', en: 'FFmpeg stream copy changed source video properties. No file was produced.' },
     { test: /video_resolution_changed_during_cfr|resolution_output_verification_failed/i, ru: 'После конвертации 4K-разрешение изменилось. Файл не выдан.', kk: '4K түрлендіруден кейін ажыратымдылық өзгерді. Файл шығарылған жоқ.', en: 'The 4K resolution changed during processing. No file was produced.' },
     { test: /hdr_dolby_vision_transcode_unsupported/i, ru: 'Обнаружен Dolby Vision. Для конвертации в 59,94 FPS нужен режим HDR10; исходные динамические метаданные Dolby Vision не сохраняются, но видео не переводится в SDR.', kk: 'Dolby Vision анықталды. 59,94 FPS түрлендіру үшін HDR10 режимі қолданылады; Dolby Vision динамикалық метадеректері сақталмайды, бірақ видео SDR-ге айналмайды.', en: 'Dolby Vision detected. 59.94 FPS conversion uses HDR10; Dolby Vision dynamic metadata is not preserved, but video is not converted to SDR.' },
     { test: /hdr_hevc10_encode_failed|hdr_output_verification_failed|hdr_metadata_not_detected|hdr_source_codec_unsupported/i, ru: 'Не удалось безопасно перекодировать HDR в HEVC Main10 с сохранением HDR-сигнала. Файл не выдан.', kk: 'HDR сигналын сақтай отырып HEVC Main10 кодтау мүмкін болмады. Файл шығарылған жоқ.', en: 'HDR could not be safely re-encoded as HEVC Main10 with HDR signaling. No output was produced.' },
