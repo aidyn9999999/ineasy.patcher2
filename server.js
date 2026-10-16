@@ -1850,6 +1850,47 @@ async function requireUserToken(req, res, next) {
   return next();
 }
 
+// V2-only stream-copy remux. If FFmpeg is missing, fails, or exceeds 3 seconds,
+// reject the job; never silently fall back to the metadata-only patcher.
+app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'application/octet-stream', limit: '512mb' }), async (req, res) => {
+  if (!FFMPEG_PATH) return res.status(503).json({ error: 'ffmpeg_engine_unavailable' });
+  if (!Buffer.isBuffer(req.body) || req.body.length < 16) return res.status(400).json({ error: 'video_body_missing' });
+  const jobDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'ineasy-v2-copy-'));
+  const inputPath = path.join(jobDir, 'input.mp4');
+  const outputPath = path.join(jobDir, 'output.mp4');
+  try {
+    await fs.promises.writeFile(inputPath, req.body);
+    await new Promise((resolve, reject) => {
+      execFile(FFMPEG_PATH, [
+        '-hide_banner', '-loglevel', 'error', '-nostdin', '-y',
+        '-i', inputPath,
+        '-map', '0', '-c:v', 'copy', '-c:a', 'copy', '-c:s', 'copy',
+        '-map_metadata', '0', '-movflags', '+faststart',
+        outputPath
+      ], { maxBuffer: 4 * 1024 * 1024, timeout: 3000, killSignal: 'SIGKILL' }, (error, stdout, stderr) => {
+        if (error) {
+          error.stderr = stderr;
+          reject(error);
+        } else resolve({ stdout, stderr });
+      });
+    });
+    const stat = await fs.promises.stat(outputPath);
+    if (stat.size < 16) throw new Error('ffmpeg_copy_output_invalid');
+    res.set('Content-Type', 'video/mp4');
+    res.set('Content-Length', String(stat.size));
+    res.set('X-INEASY-FFMPEG-COPY', '1');
+    return res.sendFile(outputPath, (error) => {
+      if (error && !res.headersSent) res.status(500).end();
+      fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
+    });
+  } catch (error) {
+    await fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
+    const timedOut = error && (error.killed || error.signal === 'SIGKILL' || error.code === 'ETIMEDOUT');
+    console.error('[INEASY V2] FFmpeg stream-copy failed:', timedOut ? '3-second timeout' : (error.message || error));
+    return res.status(422).json({ error: timedOut ? 'ffmpeg_copy_timeout_3s' : 'ffmpeg_copy_failed' });
+  }
+});
+
 // V2-only CFR conversion: encode at exact 60 FPS with a size-conscious bitrate/quality target.
 // Dynamic HDR profiles are rejected rather than silently stripped.
 app.post('/api/v2/ffmpeg-cfr', requireUserToken, express.raw({ type: 'application/octet-stream', limit: '512mb' }), async (req, res) => {
