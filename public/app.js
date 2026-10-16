@@ -2280,9 +2280,17 @@ async function handleFile(file) {
     dimensions = await readVideoDimensionsForSelection(file);
   } catch (error) {
     if (selectionVersion !== fileSelectionVersion) return;
-    checkingFileDimensions = false;
-    rejectFileSelection(t('videoDimensionsUnavailable'));
-    return;
+    // V2 patches the original MP4/MOV stream and does not need dimensions to
+    // determine or convert FPS. Do not block a compatible source just because
+    // the browser cannot decode its metadata (common with HEVC/HDR phone clips).
+    if (getSelectedPatcherVersion() === 'v2') {
+      dimensions = null;
+      console.warn('[INEASY] V2 continuing without browser-readable dimensions:', error);
+    } else {
+      checkingFileDimensions = false;
+      rejectFileSelection(t('videoDimensionsUnavailable'));
+      return;
+    }
   }
   if (selectionVersion !== fileSelectionVersion) return;
   checkingFileDimensions = false;
@@ -2296,8 +2304,8 @@ async function handleFile(file) {
   }
   // Do not reject large HDR/UHD sources by resolution. Actual browser/WASM memory
   // remains the practical limit; keep the selected dimensions unchanged.
-  const selectedLongSide = Math.max(dimensions.width, dimensions.height);
-  selectedVideoDimensions = dimensions;
+  const selectedLongSide = Math.max(Number(dimensions?.width) || 0, Number(dimensions?.height) || 0);
+  selectedVideoDimensions = selectedLongSide > 0 ? dimensions : null;
   // Keep the large FFmpeg/WASM fallback unloaded while the user selects a file.
   // It is imported only if HDR inspection or the primary browser encoder needs it.
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
