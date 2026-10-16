@@ -87,7 +87,7 @@ const translations = {
     localNote: 'Supports source videos up to 4K / 120 FPS • recommended bitrate 15–45 Mbps.',
     exportNote: '',
     fpsPolicyNote: 'TikTok may change video quality after upload.',
-    patcherNoteV1: 'V1 is the standard mode for everyday use. V2 is for testing only and is not intended for regular processing.',
+    patcherNoteV1: 'V1 is the standard mode for everyday use.',
     patcherNoteV2: 'V2 is for testing only. It is not intended for everyday use.',
     fpsAdvice: 'V1 is the recommended mode for regular processing.',
     fps30Rejected: 'This video cannot be processed. Choose another file.',
