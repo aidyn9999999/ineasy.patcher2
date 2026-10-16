@@ -270,7 +270,7 @@ const translations = {
     patchTitle: 'ОБХОД СЖАТИЯ TIKTOK',
     patchSub: 'Подготовьте видео для TikTok.',
     choose: 'Загрузите или вставьте видео',
-    chooseSub: 'MP4 / MOV · H.264 / H.265 · с аудио или без',
+    chooseSub: 'MP4 / MOV · H.264 / H.265',
     localNote: 'До 4K / 120 FPS · максимум 150 МБ',
     exportNote: '',
     fpsPolicyNote: 'После загрузки TikTok может повторно обработать видео и изменить его качество.',
@@ -926,7 +926,7 @@ function renderDailyLimit() {
   const remaining = Math.max(0, Math.min(2, free));
   const used = 2 - remaining;
   fill.style.width = `${(used / 2) * 100}%`;
-  count.textContent = `${used} / 2 видео`;
+  count.textContent = `${used}/2`;
   progress.setAttribute('aria-valuenow', String(used));
   if (hint) hint.textContent = remaining === 0 ? 'Дневной лимит использован.' : `Осталось видео на сегодня: ${remaining}.`;
 }
