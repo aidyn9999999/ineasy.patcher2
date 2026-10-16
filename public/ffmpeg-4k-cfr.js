@@ -691,6 +691,44 @@ export async function convertVideoToExact5994FpsWithFFmpeg(inputBlob, dimensions
       inputResolution: width + 'x' + height
     });
     const message = (rawMessage + (diagnostic && !rawMessage.includes(diagnostic) ? '; detail=' + diagnostic : '')).slice(0, 1400);
+    // VN and some mobile editors produce valid HEVC Main10 HDR files whose
+    // colour boxes are not reported consistently by the browser/WASM inspector.
+    // If HDR re-encoding fails or verification is inconclusive, preserve the
+    // original HDR bitstream instead of refusing the video or emitting SDR.
+    // Crucially, report the source FPS and never claim CFR conversion succeeded.
+    if (isHdrEncode && colorProfile.hdr && colorProfile.tenBit) {
+      const sourceHdrFps = Number(sourceInfo.averageFps || 0);
+      const sourceHdrProfile = {
+        label: colorProfile.displayColor || (hdrType === 'hlg' ? 'BT.2020 / HLG' : 'BT.2020 / PQ (HDR10)'),
+        hdr10: hdrType !== 'hlg',
+        hdr10plus: /HDR10\+/i.test(colorProfile.displayColor || ''),
+        hlg: hdrType === 'hlg',
+        main10: true,
+        dolbyVision: sourceIsDolbyVision,
+        sourceDolbyVision,
+        dolbyVisionDynamicMetadataPreserved: true
+      };
+      console.warn('[INEASY] HDR CFR encode failed; preserving original VN/mobile-editor HDR file without re-encoding.', {
+        stage,
+        reason: message.slice(0, 500),
+        sourceFps: sourceHdrFps || null,
+        resolution: width + 'x' + height
+      });
+      onProgress?.(1);
+      return {
+        blob: inputBlob,
+        info: sourceInfo,
+        fps: sourceHdrFps || null,
+        sourceFps: sourceHdrFps || null,
+        preserveOriginal: true,
+        hdr: true,
+        hdrTranscoded: false,
+        main10Transcoded: false,
+        hdrProfile: sourceHdrProfile,
+        downscaledFallback: false,
+        warning: 'hdr_cfr_failed_original_preserved'
+      };
+    }
     if (/ffmpeg_4k_hdr_unsafe|ffmpeg_4k_source_format_unsupported|fps_encoder_empty_output|fps_encoder_verification_failed|ffmpeg_4k_resolution_verification_failed|ffmpeg_4k_exec_failed/.test(message)) {
       throw new Error(message);
     }
