@@ -3232,9 +3232,22 @@ if (processBtn) {
     } catch (error) {
       console.error('[INEASY] Video processing failed:', error);
       if (processingState) processingState.classList.add('failed');
-      if (processingText) processingText.textContent = processingTimedOut
-        ? t('processingTimedOut')
-        : controller.signal.aborted ? t('processingCancelled') : localizePatchError(error.message);
+      if (processingText) {
+        let visibleError;
+        try {
+          visibleError = processingTimedOut
+            ? t('processingTimedOut')
+            : controller.signal.aborted ? t('processingCancelled') : localizePatchError(error?.message || String(error || 'unknown_error'));
+        } catch (localizationError) {
+          console.error('[INEASY] Error localization failed:', localizationError);
+          visibleError = (STATE.lang === 'ru')
+            ? 'Не удалось обработать видео. Причина записана в консоли браузера. Попробуйте другой MOV/MP4 или повторите попытку.'
+            : (STATE.lang === 'kk')
+              ? 'Бейнені өңдеу мүмкін болмады. Себебі браузер консоліне жазылды. Басқа MOV/MP4 файлын қолданып көріңіз немесе қайталаңыз.'
+              : 'Video processing failed. The cause was logged to the browser console. Try another MOV/MP4 file or retry.';
+        }
+        processingText.textContent = visibleError || ((STATE.lang === 'ru') ? 'Не удалось обработать видео. Попробуйте ещё раз.' : 'Video processing failed. Please try again.');
+      }
       // Keep the last reached percentage visible on errors instead of snapping back to zero.
     } finally {
       clearTimeout(processingTimeoutId);
