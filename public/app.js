@@ -1788,7 +1788,10 @@ async function readVideoDimensionsForSelection(file) {
   try {
     const core = globalThis.ADJNOriginalMp4Core || globalThis.FRYOriginalMp4Core;
     if (core?.inspectMediaInfo) {
-      const bytes = new Uint8Array(await file.slice(0, Math.min(file.size, 16 * 1024 * 1024)).arrayBuffer());
+      // Samsung/Android recordings may place the MP4 metadata (moov atom) near the
+      // end of the file. Inspecting only the first 16 MB fails for those files.
+      // The uploader already enforces a 150 MB limit, so inspect the complete file.
+      const bytes = new Uint8Array(await file.arrayBuffer());
       const info = core.inspectMediaInfo(bytes);
       const track = (info?.tracks || []).find((item) => item.handler === 'vide');
       const width = Number(track?.width || track?.displayWidth || info?.width);
