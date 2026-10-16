@@ -2339,3 +2339,30 @@ body {
   .topbar .plus-btn { width: 26px !important; height: 26px !important; min-width: 26px !important; min-height: 26px !important; }
   .topbar .logout-btn { min-width: 26px !important; min-height: 26px !important; padding: 3px !important; }
 }
+
+
+/* Compact upload hint and daily quota bar */
+#chooseSub, .choose-sub, .dropzone-subtitle, .upload-subtitle {
+  font-size: 11px !important;
+  font-weight: 400 !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0 !important;
+}
+#dailyLimitProgress {
+  height: 3px !important;
+  min-height: 3px !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+}
+#dailyLimitFill {
+  height: 100% !important;
+  border-radius: 999px !important;
+  transition: width .2s ease !important;
+}
+#dailyLimitCount {
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+#dailyLimitHint { display: none !important; }
