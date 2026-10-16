@@ -2824,24 +2824,49 @@ if (processBtn) {
       };
 
       if (isV2SelectedForJob) {
-        // V2 patching must not transcode the source: preserve original video/audio
-        // streams, resolution, frame rate, and HDR metadata byte-for-byte before patching.
-        // Exact 60 FPS and bitrate changes require re-encoding, so do not claim either here.
-        fpsConversion = {
-          blob: sourceFile,
-          info: {
-            width: Number(selectedVideoDimensions?.width) || null,
-            height: Number(selectedVideoDimensions?.height) || null,
-            averageFps: null,
-            codec: 'original-stream-preserved'
+        // V2: preserve source dimensions and HDR where supported, encode CFR at exact 60/1,
+        // and use a size-conscious CRF target. This is real transcoding, not metadata-only.
+        updateProcessingProgress(4);
+        const cfrResponse = await fetch('/api/v2/ffmpeg-cfr', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            ...(tgAuthToken ? { Authorization: 'Bearer ' + tgAuthToken } : {})
           },
-          fps: null,
+          body: sourceFile,
+          signal: controller.signal
+        });
+        if (!cfrResponse.ok) {
+          let errorCode = 'ffmpeg_cfr_conversion_failed';
+          try {
+            const failure = await cfrResponse.json();
+            errorCode = failure.error || errorCode;
+            if (failure.stage || failure.detail) {
+              errorCode += ': stage=' + String(failure.stage || 'unknown') +
+                '; detail=' + String(failure.detail || 'no diagnostic detail').slice(-900);
+            }
+          } catch (_) {}
+          throw new Error(errorCode);
+        }
+        const cfrBlob = await cfrResponse.blob();
+        if (!cfrBlob.size || cfrResponse.headers.get('X-INEASY-CFR') !== '60/1') {
+          throw new Error('cfr_output_verification_failed');
+        }
+        fpsConversion = {
+          blob: cfrBlob,
+          info: {
+            width: Number(cfrResponse.headers.get('X-INEASY-WIDTH')) || null,
+            height: Number(cfrResponse.headers.get('X-INEASY-HEIGHT')) || null,
+            averageFps: 60,
+            codec: 'ffmpeg-cfr-60'
+          },
+          fps: 60,
           sourceFps: null,
-          preserveOriginal: true,
-          hdr: false,
-          hdrTranscoded: false,
-          main10Transcoded: false,
-          hdrProfile: null
+          preserveOriginal: false,
+          hdr: cfrResponse.headers.get('X-INEASY-HDR') === 'preserved',
+          hdrTranscoded: cfrResponse.headers.get('X-INEASY-HDR') === 'preserved',
+          main10Transcoded: cfrResponse.headers.get('X-INEASY-HDR') === 'preserved',
+          hdrProfile: cfrResponse.headers.get('X-INEASY-HDR') === 'preserved' ? 'verified-static-hdr' : null
         };
         updateProcessingProgress(13);
       } else if (sdr1080pEligibility.eligible) {
