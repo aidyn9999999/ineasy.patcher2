@@ -1860,30 +1860,55 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
   const outputPath = path.join(jobDir, 'output.mp4');
   try {
     await fs.promises.writeFile(inputPath, req.body);
-    await new Promise((resolve, reject) => {
-      execFile(FFMPEG_PATH, [
+    const runRemux = (audioMode) => new Promise((resolve, reject) => {
+      const args = [
         '-hide_banner', '-loglevel', 'error', '-nostdin', '-y',
         '-i', inputPath,
-        // Phone MOV/MP4 files can contain timed-metadata, data, or subtitle tracks
-        // (for example tmcd). Mapping every stream makes MP4 remux fail even when
-        // the actual video/audio streams are compatible. Preserve A/V bitstreams,
-        // but omit optional non-A/V tracks that the MP4 container cannot carry.
-        '-map', '0:v?', '-map', '0:a?',
-        '-c:v', 'copy', '-c:a', 'copy', '-sn', '-dn',
-        '-map_metadata', '0', '-movflags', '+faststart',
+        // Phone MOV/MP4 files may include unsupported timed metadata (tmcd), PCM audio,
+        // or other tracks. Keep the original video bitstream and only map A/V streams.
+        '-map', '0:v:0?', '-map', '0:a:0?',
+        '-c:v', 'copy',
+        ...(audioMode === 'aac'
+          ? ['-c:a', 'aac', '-b:a', '192k']
+          : ['-c:a', 'copy']),
+        '-sn', '-dn', '-map_metadata', '0', '-movflags', '+faststart',
         '-f', 'mp4', outputPath
-      ], { maxBuffer: 4 * 1024 * 1024, timeout: 30000, killSignal: 'SIGKILL' }, (error, stdout, stderr) => {
+      ];
+      execFile(FFMPEG_PATH, args, {
+        maxBuffer: 4 * 1024 * 1024,
+        timeout: 120000,
+        killSignal: 'SIGKILL'
+      }, (error, stdout, stderr) => {
         if (error) {
           error.stderr = stderr;
           reject(error);
         } else resolve({ stdout, stderr });
       });
     });
+    let remuxAudioMode = 'copy';
+    try {
+      await runRemux('copy');
+    } catch (copyError) {
+      // Some phone MOV files use PCM/ALAC audio that cannot be muxed into MP4.
+      // Retry with AAC audio while preserving the video bitstream byte-for-byte.
+      await fs.promises.rm(outputPath, { force: true }).catch(() => {});
+      remuxAudioMode = 'aac';
+      try {
+        await runRemux('aac');
+      } catch (aacError) {
+        aacError.stderr = [
+          'Audio-copy attempt: ' + String(copyError.stderr || copyError.message || '').slice(-1200),
+          'AAC fallback attempt: ' + String(aacError.stderr || aacError.message || '').slice(-1800)
+        ].join('\\n');
+        throw aacError;
+      }
+    }
     const stat = await fs.promises.stat(outputPath);
     if (stat.size < 16) throw new Error('ffmpeg_copy_output_invalid');
     res.set('Content-Type', 'video/mp4');
     res.set('Content-Length', String(stat.size));
     res.set('X-INEASY-FFMPEG-COPY', '1');
+    res.set('X-INEASY-FFMPEG-AUDIO', remuxAudioMode);
     return res.sendFile(outputPath, (error) => {
       if (error && !res.headersSent) res.status(500).end();
       fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
@@ -1892,12 +1917,12 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
     await fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
     const timedOut = error && (error.killed || error.signal === 'SIGKILL' || error.code === 'ETIMEDOUT');
     console.error('[INEASY V2] FFmpeg stream-copy failed:', {
-      reason: timedOut ? '30-second timeout' : (error.message || 'ffmpeg_copy_failed'),
+      reason: timedOut ? '120-second timeout' : (error.message || 'ffmpeg_copy_failed'),
       code: error.code || null,
       signal: error.signal || null,
       stderr: String(error.stderr || '').slice(-3000)
     });
-    return res.status(422).json({ error: timedOut ? 'ffmpeg_copy_timeout_30s' : 'ffmpeg_copy_failed' });
+    return res.status(422).json({ error: timedOut ? 'ffmpeg_copy_timeout_120s' : 'ffmpeg_copy_failed' });
   }
 });
 
