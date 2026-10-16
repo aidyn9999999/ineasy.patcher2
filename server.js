@@ -1747,7 +1747,7 @@ bot.command('check', async (ctx) => {
   const chatType = ctx.chat && ctx.chat.type;
   const isGroup = chatType === 'group' || chatType === 'supergroup';
   const text = String(ctx.message && ctx.message.text || '');
-  const url = extractTikTokUrl(text.replace(/^\\/check(?:@\\w+)?\\s*/i, ''));
+  const url = extractTikTokUrl(text.replace(/^\/check(?:@\w+)?\s*/i, ''));
   const lang = await getLang(ctx.from.id);
   const t = TEXTS[lang];
 
