@@ -1988,7 +1988,7 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
       execFile(FFPROBE_PATH, [
         '-v', 'error', '-select_streams', 'v:0', '-show_streams',
         '-show_entries',
-        'stream=codec_name,width,height,avg_frame_rate,r_frame_rate,nb_frames,pix_fmt,color_primaries,color_transfer',
+        'stream=codec_name,width,height,avg_frame_rate,r_frame_rate,nb_frames,pix_fmt,color_primaries,color_transfer,color_space',
         '-of', 'json', filePath
       ], { maxBuffer: 2 * 1024 * 1024, timeout: 30000 }, (error, stdout, stderr) => {
         if (error) {
@@ -2085,7 +2085,7 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
         Number.isFinite(outputFrames) && outputFrames > 0 && inputFrames !== outputFrames) {
       throw new Error('ffmpeg_copy_frame_count_mismatch: source=' + inputFrames + '; output=' + outputFrames);
     }
-    for (const key of ['pix_fmt', 'color_primaries', 'color_transfer']) {
+    for (const key of ['pix_fmt', 'color_primaries', 'color_transfer', 'color_space']) {
       const before = String(inputVideo[key] || '').toLowerCase();
       const after = String(outputVideo[key] || '').toLowerCase();
       if (before && before !== 'unknown' && after && after !== 'unknown' && before !== after) {
