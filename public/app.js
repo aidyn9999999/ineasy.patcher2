@@ -3248,6 +3248,7 @@ if (processBtn) {
 if (cancelProcessBtn) cancelProcessBtn.addEventListener('click', () => processController?.abort());
 
 function localizePatchError(message) {
+  const lang = STATE.lang || 'en';
   const v2CopyFailure = String(message || '').match(/^v2_ffmpeg_copy_failed:\s*(.*)$/i);
   if (v2CopyFailure) {
     const reason = v2CopyFailure[1];
@@ -3265,7 +3266,6 @@ function localizePatchError(message) {
     })[lang];
   }
 
-  const lang = STATE.lang || 'en';
   const conversionFailure = String(message || '').match(/^AUTO_VIDEO_CONVERSION_FAILED:\s*(.*)$/i);
   if (conversionFailure) {
     if (/cannot encode H\.264/i.test(conversionFailure[1])) {
