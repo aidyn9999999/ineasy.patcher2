@@ -902,8 +902,7 @@
     }
   }
 
-  function quickPatch(input, options = {}) {
-    const preserveSourceFps = options?.preserveSourceFps === true;
+  function quickPatch(input) {
     const bytes = toU8Array(input);
     const parsed = parseMp4Structure(bytes);
     const sourceInfo = inspectMediaInfo(bytes);
@@ -917,10 +916,8 @@
     // No video/audio samples, frame timing, HDR metadata, or FFmpeg-copy behavior is changed.
     const preserveMovieDuration = longSide >= 3000 && sourceFps >= 50 &&
       sourceMvhd && !isSentinelDuration(sourceMvhd.payload);
-    // V1's container-patch path must preserve the exact source cadence.
-    // V2 keeps the previous retiming behavior unless explicitly told otherwise.
-    const shouldRetime = !preserveSourceFps && getTargetFrameRate(sourceFps) !== null;
-    const retimed = shouldRetime ? retimeVideoToTarget(parsed) : false;
+    const shouldRetime = getTargetFrameRate(sourceFps) !== null;
+    const retimed = retimeVideoToTarget(parsed);
     if (shouldRetime && !retimed) throwError('Failed to retime 60/59.94 FPS MP4 to 60.05 FPS.');
     const patched = executePatch(bytes, parsed, { preserveMovieDuration: !!preserveMovieDuration });
     validateFinalOutput(patched, { requireSentinel: !preserveMovieDuration });
@@ -1053,14 +1050,13 @@
     };
   }
 
-  function patchWithReport(input, options = {}) {
-    const preserveSourceFps = options?.preserveSourceFps === true;
+  function patchWithReport(input) {
     const original = toU8Array(input);
     const sourceFps = inspectMediaInfo(original).averageFps;
-    const patched = quickPatch(original, { preserveSourceFps });
+    const patched = quickPatch(original);
     const inspected = inspect(patched);
     const outputFps = inspectMediaInfo(patched).averageFps;
-    const targetFrameRate = preserveSourceFps ? null : getTargetFrameRate(sourceFps);
+    const targetFrameRate = getTargetFrameRate(sourceFps);
     const frameRateRetimed = targetFrameRate !== null && Math.abs(outputFps - targetFrameRate) < 0.001;
     if (targetFrameRate !== null && !frameRateRetimed) {
       throwError(`Frame-rate verification failed: expected ${targetFrameRate} FPS, got ${outputFps.toFixed(3)} FPS.`);

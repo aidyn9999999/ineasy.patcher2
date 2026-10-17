@@ -2800,8 +2800,8 @@ if (processBtn) {
       setProcessingState('processing', '');
       updateProcessingProgress(3);
 
-      // V2 uses server FFmpeg only for verified stream-copy remux.
-      // V1 keeps the original frames/timing and only patches the MP4 container.
+      // V2 uses server FFmpeg only for verified stream-copy remux and preserves native FPS.
+      // V1 keeps its existing SDR-only MediaBunny path and is otherwise untouched.
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
       const sourceLongSide = Math.max(
         Number(selectedVideoDimensions?.width) || 0,
@@ -2815,14 +2815,9 @@ if (processBtn) {
         throw new Error('patcher_requires_mp4_mov');
       }
 
-      // V1 uses the source-preserving container patch: never re-encode frames before patching.
-      // V2 keeps its existing verified server-side FFmpeg stream-copy path.
-      const sdr1080pEligibility = {
-        eligible: false,
-        reason: isV2SelectedForJob
-          ? 'v2_uses_verified_ffmpeg_stream_copy'
-          : 'v1_source_preserving_container_patch'
-      };
+      const sdr1080pEligibility = isV2SelectedForJob
+        ? { eligible: false, reason: 'v2_uses_verified_ffmpeg_stream_copy' }
+        : await getExplicitSdr1080pEligibility(sourceFile, selectedVideoDimensions);
       let fpsConversion = {
         blob: sourceFile,
         info: {
@@ -3002,7 +2997,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261017-v1-source-preserve');
+        const worker = new Worker('adjn-worker.js?v=20261017-v1-restore');
         let workerReadyTimeoutId = setTimeout(() => {
           if (workerDone) return;
           workerDone = true;
@@ -3034,8 +3029,7 @@ if (processBtn) {
                 fileType: processingFile.type || sourceFile.type || 'video/mp4',
                 fileSize: processingFile.size || buffer.byteLength,
                 preparationReport: preparedInput.report || null,
-                engine: '2.1.5',
-                patcherVersion: getSelectedPatcherVersion()
+                engine: '2.1.5'
               }, [buffer]);
             } catch (error) {
               clearWorkerReadyTimeout();
