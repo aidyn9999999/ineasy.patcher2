@@ -50,6 +50,7 @@ self.onmessage = async function (event) {
         fileType: outputType,
         fileSize: inputBuffer.byteLength,
         engine,
+        patcherVersion: data.patcherVersion === 'v1' ? 'v1' : 'v2',
         preparationReport: prep
       },
       (label, progress, detail, key) => self.postMessage({ type: 'STAGE', requestId, phase: 'patching', label, progress, detail, key })
