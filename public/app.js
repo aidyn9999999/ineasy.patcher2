@@ -1547,6 +1547,9 @@ if (tiktokPublishForm) {
           : result.draft
             ? t('draftSuccess')
             : publishState === 'published' ? t('publishSuccess') : t('publishPending');
+        if (!scheduledFor && !result.draft && publishState === 'published') {
+          document.getElementById('postSuccessOverlay')?.classList.remove('hidden');
+        }
       }
       // Keep the publish form and its status visible after publishing.
       // It closes when the user switches tabs or clears/changes the video.
@@ -1565,6 +1568,20 @@ if (tiktokPublishForm) {
     }
   });
 }
+
+
+const postSuccessOverlay = document.getElementById('postSuccessOverlay');
+const closePostSuccess = () => postSuccessOverlay?.classList.add('hidden');
+document.getElementById('postSuccessClose')?.addEventListener('click', closePostSuccess);
+document.getElementById('postSuccessKeep')?.addEventListener('click', closePostSuccess);
+postSuccessOverlay?.addEventListener('click', (event) => {
+  if (event.target === postSuccessOverlay) closePostSuccess();
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && postSuccessOverlay && !postSuccessOverlay.classList.contains('hidden')) {
+    closePostSuccess();
+  }
+});
 
 function setProcessingState(type, text) {
   if (!processingState) return;
