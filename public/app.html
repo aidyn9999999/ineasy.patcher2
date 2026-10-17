@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20261014-original-look-v1">
 <link rel="stylesheet" href="home.css?v=20261014-home-video-preview-v1">
-<link rel="stylesheet" href="theme.css?v=20261017-editorial-v1">
+<link rel="stylesheet" href="theme.css?v=20261017-adobe-inspired-v2">
 <script>
 (function () {
   var ua = navigator.userAgent || '';
@@ -124,9 +124,9 @@
         <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.avi,.3gp,.3g2,.ts,.mts,.m2ts,.mpg,.mpeg,.wmv,.flv,.ogv">
         <div class="dropzone-content" id="dropzoneContent">
           <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload ui-icon" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
-          <p class="dz-title" id="dzTitle">Нажмите здесь или вставьте видео</p>
-          
-          <p class="patch-format-note">MP4 / MOV · H.264 / H.265 (HEVC) · с музыкой или аудио</p>
+          <p class="dz-title" id="dzTitle">Выберите видео</p>
+          <p class="dz-sub" id="dzSub">Нажмите, чтобы загрузить или перетащите файл</p>
+          <p class="patch-format-note">MP4, MOV</p>
         </div>
         <div class="balance-lock hidden" id="balanceLock">
           <svg class="balance-lock-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 14v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
@@ -380,7 +380,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261013-4"></script>
-<script src="app.js?v=20261017-editorial-v1"></script>
+<script src="app.js?v=20261017-adobe-inspired-v2"></script>
 <script src="local-video-archive.js?v=20261014-1"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
