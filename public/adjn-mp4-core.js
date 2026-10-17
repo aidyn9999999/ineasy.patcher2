@@ -356,6 +356,44 @@
     return list;
   }
 
+  // Derive cadence from the per-sample timing table, not mdhd.duration alone.
+  // Some phone/UHD MP4s have a declared media duration that disagrees with stts;
+  // using only sampleCount / mdhd.duration can misclassify a 60 FPS source as 30.
+  function getSampleTableFrameRate(trak) {
+    try {
+      const mdhd = trak && trak.path('mdia', 'mdhd');
+      const stts = trak && getSampleTableBox(trak, 'stts');
+      if (!mdhd || !stts || !mdhd.payload) return 0;
+
+      const version = mdhd.payload[0];
+      const timescaleOffset = version === 1 ? 20 : 12;
+      if ((version !== 0 && version !== 1) ||
+          mdhd.payload.length < timescaleOffset + 4) {
+        return 0;
+      }
+
+      const timescale = readU32(mdhd.payload, timescaleOffset);
+      if (!timescale) return 0;
+
+      const entries = parseStts(stts.payload);
+      let frameCount = 0;
+      let totalTicks = 0;
+      for (const [count, delta] of entries) {
+        if (!count || !delta) return 0;
+        frameCount += count;
+        totalTicks += count * delta;
+        if (!Number.isSafeInteger(frameCount) || !Number.isSafeInteger(totalTicks)) return 0;
+      }
+
+      if (!frameCount || !totalTicks) return 0;
+      const fps = frameCount * timescale / totalTicks;
+      return Number.isFinite(fps) && fps > 0 ? fps : 0;
+    } catch (_) {
+      // This is a detection helper only; existing validation/fallback remains in charge.
+      return 0;
+    }
+  }
+
   // Preserve the source timeline exactly. Do not rewrite 59.94/60 FPS to
   // 60.05 FPS or 30 FPS to 30.05 FPS: non-standard retiming can introduce
   // uneven playback and trigger another platform transcode. The patcher only
@@ -868,13 +906,14 @@
     const bytes = toU8Array(input);
     const parsed = parseMp4Structure(bytes);
     const sourceInfo = inspectMediaInfo(bytes);
-    const sourceFps = Number(sourceInfo.averageFps) || 0;
+    const sampleTimingFps = getSampleTableFrameRate(parsed.video.trak);
+    const sourceFps = sampleTimingFps || Number(sourceInfo.averageFps) || 0;
     const longSide = Math.max(Number(sourceInfo.width) || 0, Number(sourceInfo.height) || 0);
     const sourceMvhd = parsed.moov.find('mvhd');
-    // A UHD/high-FPS source keeps its normal movie duration so upload-time
-    // frame-rate detection does not depend on an unknown-duration sentinel.
-    // The elementary video stream, frame timing, audio, HDR and encoder tag
-    // remain untouched; legacy behavior remains unchanged for other sources.
+    // Use stts sample timing to identify UHD/high-FPS sources even when mdhd.duration
+    // is inconsistent. Keeping the original movie duration avoids the unknown-duration
+    // sentinel path that can make platforms mis-detect high-FPS uploads as 30 FPS.
+    // No video/audio samples, frame timing, HDR metadata, or FFmpeg-copy behavior is changed.
     const preserveMovieDuration = longSide >= 3000 && sourceFps >= 50 &&
       sourceMvhd && !isSentinelDuration(sourceMvhd.payload);
     const shouldRetime = getTargetFrameRate(sourceFps) !== null;
