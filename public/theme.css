@@ -1140,3 +1140,57 @@ body { overflow-x: clip; }
   #homeSection .home-intro { margin-top: 16px !important; }
   #homeSection .home-hero-foot { bottom: 13px !important; }
 }
+
+
+/* Refine the compact profile header shown on mobile. */
+.topbar {
+  gap: 8px !important;
+  padding-inline: 10px !important;
+}
+.topbar .brand {
+  font-family: 'Space Grotesk', 'Manrope', sans-serif !important;
+  font-size: 19px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.085em !important;
+  line-height: 1 !important;
+  white-space: nowrap;
+}
+.topbar .brand-in, .topbar .brand-easy { font-weight: 700 !important; letter-spacing: inherit !important; }
+.topbar .profile-actions, .topbar .user-meta, .topbar .account-actions {
+  gap: 4px !important;
+}
+.topbar .id-part {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  white-space: nowrap;
+  font-family: 'Manrope', sans-serif !important;
+  font-size: 10px !important;
+  letter-spacing: -.025em !important;
+}
+.topbar #idCaption { margin: 0 !important; letter-spacing: -.035em !important; }
+.topbar #tgIdLabel {
+  font-family: 'IBM Plex Mono', monospace !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.045em !important;
+}
+.topbar .copy-id-btn {
+  margin-left: 1px !important;
+  padding: 3px !important;
+}
+.topbar .balance-label, .topbar .balance-text, .topbar #balanceLabel {
+  font-family: 'Manrope', sans-serif !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: -.035em !important;
+}
+.topbar .icon-action-btn, .topbar .logout-btn { flex-shrink: 0; }
+@media (max-width: 420px) {
+  .topbar { gap: 6px !important; padding-inline: 8px !important; }
+  .topbar .brand { font-size: 21px !important; }
+  .topbar .profile-actions, .topbar .user-meta, .topbar .account-actions { gap: 3px !important; }
+  .topbar .id-part { gap: 2px !important; font-size: 9px !important; }
+  .topbar #tgIdLabel { font-size: 8px !important; }
+  .topbar .balance-label, .topbar .balance-text, .topbar #balanceLabel { font-size: 9px !important; }
+}
