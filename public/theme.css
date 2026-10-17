@@ -1278,3 +1278,128 @@ body { overflow-x: clip; }
   #patchSection .video-size-meter-track,
   #patchSection .daily-limit-track { height: 18px !important; }
 }
+
+
+/* Mode status badges and a focused auto-post composer. */
+.mode-status {
+  display: inline-flex !important;
+  align-items: center;
+  margin-left: 7px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font: 800 9px/1.2 'Manrope', sans-serif !important;
+  font-style: normal !important;
+  vertical-align: middle;
+  letter-spacing: .01em;
+}
+.mode-status-slow {
+  color: #91A2B8 !important;
+  background: rgba(145, 162, 184, .12);
+  border: 1px solid rgba(145, 162, 184, .22);
+}
+.mode-status-best {
+  color: #07111F !important;
+  background: #55B8FF;
+  border: 1px solid #55B8FF;
+}
+.tiktok-upload-notice {
+  margin: 0 0 8px !important;
+  color: #F3F7FC !important;
+  font-weight: 700 !important;
+  line-height: 1.5;
+}
+.tiktok-drafts-warning {
+  margin: 0 0 16px !important;
+  padding: 9px 11px;
+  border: 1px solid rgba(145, 162, 184, .2);
+  border-radius: 9px;
+  background: rgba(145, 162, 184, .06);
+  color: #91A2B8 !important;
+  font-size: 12px;
+  line-height: 1.45;
+}
+/* Keep publishing defaults and event-bound inputs in the DOM, but simplify the visible form. */
+#tiktokPublishForm > .post-options-group:first-of-type,
+#tiktokPublishForm > .post-options-group.schedule-group,
+#tiktokPublishForm > .tiktok-ai-toggle,
+#tiktokPublishForm > .tiktok-draft-note,
+#tiktokPublishForm > #zernioChangeKeyBtn { display: none !important; }
+#tiktokPublishForm > .post-options-group:not(.schedule-group) > legend,
+#tiktokPublishForm > .post-options-group:not(.schedule-group) > .post-options-description,
+#tiktokPublishForm > .post-options-group:not(.schedule-group) .tiktok-toggle-grid label:not(:first-child) {
+  display: none !important;
+}
+#tiktokPublishForm > .post-options-group:not(.schedule-group) {
+  margin: 12px 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+#tiktokPublishForm .tiktok-toggle-grid {
+  display: block !important;
+  margin: 0 !important;
+}
+#tiktokPublishForm .tiktok-toggle-grid label:first-child {
+  display: flex !important;
+  align-items: center;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid rgba(145, 162, 184, .2);
+  border-radius: 9px;
+  background: #07111F;
+  color: #F3F7FC;
+  font-weight: 700;
+}
+#tiktokPublishForm .tiktok-consent {
+  margin: 12px 0 !important;
+  font-size: 11px !important;
+  line-height: 1.45 !important;
+  color: #91A2B8 !important;
+}
+#tiktokPublishForm .tiktok-submit-btn {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 10px;
+  background: #55B8FF !important;
+  border-color: #55B8FF !important;
+  color: #07111F !important;
+  font-weight: 800 !important;
+}
+/* Small centered success prompt; it is shown only after confirmed successful publication. */
+.post-success-overlay {
+  z-index: 1200 !important;
+  padding: 18px !important;
+  background: rgba(3, 9, 18, .72) !important;
+  backdrop-filter: blur(5px);
+}
+.post-success-modal {
+  position: relative;
+  width: min(100%, 340px) !important;
+  margin: auto !important;
+  padding: 24px 20px 18px !important;
+  border: 1px solid rgba(85, 184, 255, .24) !important;
+  border-radius: 16px !important;
+  background: #0C192B !important;
+  text-align: center;
+  box-shadow: 0 18px 55px rgba(0,0,0,.3) !important;
+}
+.post-success-close { position: absolute; top: 8px; right: 8px; }
+.post-success-mark {
+  width: 38px; height: 38px; margin: 0 auto 12px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: rgba(85,184,255,.13); color: #55B8FF;
+  font-size: 22px; font-weight: 800;
+}
+.post-success-modal h2 { margin: 0 0 8px; color: #F3F7FC; font-size: 19px; font-weight: 800; }
+.post-success-modal p { margin: 0; color: #91A2B8; font-size: 12px; line-height: 1.55; }
+.post-success-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 17px; }
+.post-success-actions button, .post-success-actions a {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 40px; padding: 8px 10px; border-radius: 9px;
+  font: 800 11px/1.25 'Manrope', sans-serif; text-decoration: none; cursor: pointer;
+}
+.post-success-secondary { border: 1px solid rgba(145,162,184,.24); background: transparent; color: #F3F7FC; }
+.post-success-primary { border: 1px solid #55B8FF; background: #55B8FF; color: #07111F; }
+@media (max-width: 420px) {
+  .mode-status { margin-left: 4px; padding: 3px 5px; font-size: 8px !important; }
+  .post-success-modal { padding: 22px 15px 15px !important; }
+}
