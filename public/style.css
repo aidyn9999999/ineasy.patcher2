@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 :root {
   --bg: #071a33;
   --bg-2: #0b2342;
@@ -2377,7 +2379,7 @@ body {
 }
 
 /* Load two restrained typefaces; body keeps the existing Manrope fallback. */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 
 /* Clear hierarchy: less all-bold UI, tighter display copy, more readable body copy. */
 body,
