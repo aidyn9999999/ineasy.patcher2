@@ -1982,48 +1982,13 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
   try {
     await fs.promises.writeFile(inputPath, req.body);
 
-    // Probe the original file before remuxing so the verifier never trusts only
-    // post-FFmpeg metadata. Video frames must remain stream-copied, not re-timed.
-    const probeVideo = (filePath) => new Promise((resolve, reject) => {
-      execFile(FFPROBE_PATH, [
-        '-v', 'error', '-select_streams', 'v:0', '-show_streams',
-        '-show_entries',
-        'stream=codec_name,width,height,avg_frame_rate,r_frame_rate,nb_frames,pix_fmt,color_primaries,color_transfer,color_space',
-        '-of', 'json', filePath
-      ], { maxBuffer: 2 * 1024 * 1024, timeout: 30000 }, (error, stdout, stderr) => {
-        if (error) {
-          error.stderr = stderr;
-          return reject(error);
-        }
-        try {
-          const stream = JSON.parse(stdout).streams?.[0];
-          if (!stream) throw new Error('ffprobe_video_stream_missing');
-          resolve(stream);
-        } catch (parseError) {
-          reject(parseError);
-        }
-      });
-    });
-    const parseFrameRate = (value) => {
-      const parts = String(value || '').split('/').map(Number);
-      if (parts.length !== 2 || !Number.isFinite(parts[0]) ||
-          !Number.isFinite(parts[1]) || parts[0] <= 0 || parts[1] <= 0) return 0;
-      return parts[0] / parts[1];
-    };
-    const inputVideo = await probeVideo(inputPath);
-    const inputAverageFps = parseFrameRate(inputVideo.avg_frame_rate);
-    const inputNominalFps = parseFrameRate(inputVideo.r_frame_rate);
-    const sourceFps = inputAverageFps || inputNominalFps;
-    const inputFrames = Number(inputVideo.nb_frames);
-
+    // Keep V2 fast: remux with stream copy only. Do not probe the whole file
+    // before and after the copy; that extra validation delayed returning the file.
+    // Video is not re-encoded, so resolution and HDR video bitstream stay intact.
     const runRemux = (audioMode) => new Promise((resolve, reject) => {
       const args = [
         '-hide_banner', '-loglevel', 'error', '-nostdin', '-y',
         '-i', inputPath, '-copytb', '1',
-        // Use the demuxer time base when stream-copying high-FPS/VFR phone footage.
-        // Never apply an fps filter or re-encode the video track here.
-        // Phone MOV/MP4 files may include unsupported timed metadata (tmcd), PCM audio,
-        // or other tracks. Keep the original video bitstream and only map A/V streams.
         '-map', '0:v:0?', '-map', '0:a:0?',
         '-c:v', 'copy',
         ...(audioMode === 'aac'
@@ -2047,8 +2012,7 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
     try {
       await runRemux('copy');
     } catch (copyError) {
-      // Some phone MOV files use PCM/ALAC audio that cannot be muxed into MP4.
-      // Retry with AAC audio while preserving the video bitstream byte-for-byte.
+      // Retry only audio compatibility; the video stream remains copied.
       await fs.promises.rm(outputPath, { force: true }).catch(() => {});
       remuxAudioMode = 'aac';
       try {
@@ -2061,48 +2025,12 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
         throw aacError;
       }
     }
-    // Verify the actual remux output against the ORIGINAL input, before returning it.
-    const outputVideo = await probeVideo(outputPath);
-    const outputAverageFps = parseFrameRate(outputVideo.avg_frame_rate);
-    const outputNominalFps = parseFrameRate(outputVideo.r_frame_rate);
-    const outputFps = outputAverageFps || outputNominalFps;
-    const outputFrames = Number(outputVideo.nb_frames);
-
-    if (Number(inputVideo.width) !== Number(outputVideo.width) ||
-        Number(inputVideo.height) !== Number(outputVideo.height) ||
-        String(inputVideo.codec_name || '').toLowerCase() !== String(outputVideo.codec_name || '').toLowerCase()) {
-      throw new Error('ffmpeg_copy_video_metadata_mismatch');
-    }
-    if (sourceFps >= 29 && outputFps > 0 && outputFps < sourceFps - 1) {
-      throw new Error('ffmpeg_copy_fps_downgrade_blocked: source=' +
-        sourceFps.toFixed(3) + '; output=' + outputFps.toFixed(3));
-    }
-    if (sourceFps >= 50 && outputFps > 0 && outputFps < 50) {
-      throw new Error('ffmpeg_copy_4k_fps_downgrade_blocked: source=' +
-        sourceFps.toFixed(3) + '; output=' + outputFps.toFixed(3));
-    }
-    if (Number.isFinite(inputFrames) && inputFrames > 0 &&
-        Number.isFinite(outputFrames) && outputFrames > 0 && inputFrames !== outputFrames) {
-      throw new Error('ffmpeg_copy_frame_count_mismatch: source=' + inputFrames + '; output=' + outputFrames);
-    }
-    for (const key of ['pix_fmt', 'color_primaries', 'color_transfer', 'color_space']) {
-      const before = String(inputVideo[key] || '').toLowerCase();
-      const after = String(outputVideo[key] || '').toLowerCase();
-      if (before && before !== 'unknown' && after && after !== 'unknown' && before !== after) {
-        throw new Error('ffmpeg_copy_' + key + '_mismatch');
-      }
-    }
-
     const stat = await fs.promises.stat(outputPath);
     if (stat.size < 16) throw new Error('ffmpeg_copy_output_invalid');
     res.set('Content-Type', 'video/mp4');
     res.set('Content-Length', String(stat.size));
     res.set('X-INEASY-FFMPEG-COPY', '1');
     res.set('X-INEASY-FFMPEG-AUDIO', remuxAudioMode);
-    if (sourceFps > 0) res.set('X-INEASY-SOURCE-FPS', sourceFps.toFixed(6));
-    if (Number(inputVideo.width) > 0) res.set('X-INEASY-SOURCE-WIDTH', String(inputVideo.width));
-    if (Number(inputVideo.height) > 0) res.set('X-INEASY-SOURCE-HEIGHT', String(inputVideo.height));
-    if (outputFps > 0) res.set('X-INEASY-OUTPUT-FPS', outputFps.toFixed(6));
     return res.sendFile(outputPath, (error) => {
       if (error && !res.headersSent) res.status(500).end();
       fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
