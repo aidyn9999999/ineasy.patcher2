@@ -171,11 +171,11 @@
       <div class="patcher-version-picker hidden" role="group" aria-label="Patcher version">
         <label class="patcher-version-option">
           <input type="radio" name="patcherVersion" value="v1" checked>
-          <span><strong>V1</strong><small>Обычный режим — используйте его</small></span>
+          <span><strong>V1 <em class="mode-status mode-status-slow">Может тормозить</em></strong><small>Обычный режим — используйте его</small></span>
         </label>
         <label class="patcher-version-option patcher-version-beta">
           <input type="radio" name="patcherVersion" value="v2">
-          <span><strong>V2 <em class="v2-new-indicator">NEW</em></strong><small>Публичный режим — доступен для обычного использования</small></span>
+          <span><strong>V2 <em class="mode-status mode-status-best">Лучший выбор</em></strong><small>Публичный режим — доступен для обычного использования</small></span>
         </label>
       </div>
       <p class="patcher-version-note hidden" id="patcherVersionNote" aria-hidden="true"></p>
@@ -278,6 +278,19 @@
     </section>
   </main>
 
+
+  <div class="modal-overlay post-success-overlay hidden" id="postSuccessOverlay" role="dialog" aria-modal="true" aria-labelledby="postSuccessTitle">
+    <section class="modal post-success-modal">
+      <button class="modal-close post-success-close" id="postSuccessClose" type="button" aria-label="Закрыть">×</button>
+      <div class="post-success-mark" aria-hidden="true">✓</div>
+      <h2 id="postSuccessTitle">Видео опубликовано!</h2>
+      <p>Хотите удалить только что опубликованное видео? Если оно больше не нужно, откройте TikTok и удалите его там.</p>
+      <div class="post-success-actions">
+        <button type="button" class="post-success-secondary" id="postSuccessKeep">Оставить видео</button>
+        <a class="post-success-primary" id="postSuccessOpenTikTok" href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer">Открыть TikTok</a>
+      </div>
+    </section>
+  </div>
   <div class="modal-overlay tiktok-overlay hidden" id="tiktokComposerOverlay" aria-labelledby="publishModalTitle">
     <section class="modal tiktok-composer">
       <div class="modal-head">
@@ -299,7 +312,8 @@
           <p class="tiktok-account-status" id="tiktokAccountStatus" role="status" aria-live="polite">TikTok account is not connected.</p>
         </section>
         <form class="tiktok-publish-form hidden" id="tiktokPublishForm">
-          <p class="tiktok-upload-notice" id="tiktokUploadNotice">Your processed video will be uploaded to your TikTok account through Zernio.</p>
+          <p class="tiktok-upload-notice" id="tiktokUploadNotice">Рекомендуем автопост: опубликуйте обработанное видео прямо отсюда, не переключаясь между приложениями.</p>
+          <p class="tiktok-drafts-warning" id="tiktokDraftsWarning">Черновики могут не храниться постоянно. Проверяйте их в TikTok и удаляйте ненужные вручную.</p>
           <label class="tiktok-field-label" for="tiktokCaption" id="tiktokCaptionLabel">Description</label>
           <textarea id="tiktokCaption" maxlength="2200" rows="3" placeholder="#хештеги  @упоминания"></textarea>
           <div class="tiktok-caption-hint"><span id="tiktokCaptionHint">#хештеги  @упоминания</span><span id="tiktokCaptionCount">0 / 2200</span></div>
