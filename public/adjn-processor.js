@@ -370,6 +370,7 @@
     const selectedEngine = ['2.1.5','2.3','3.0'].includes(String(data.engine || '')) ? String(data.engine) : '2.1.5';
     const engineVersion = selectedEngine === '2.3' ? '5.5' : selectedEngine === '3.0' ? '6.0' : null;
     const requestId = data.requestId;
+    const preserveSourceFps = data.patcherVersion === 'v1';
     const core = globalThis.FRYOriginalMp4Core || globalThis.ADJNOriginalMp4Core;
     if (!core?.patchWithReport || !core?.verifyOutput || !core?.inspectMediaInfo) {
       throw new Error('ADJN Media Core tidak termuat.');
@@ -384,7 +385,10 @@
     // Engine 2.3/3.0: use the supplied engine source as a strict
     // compatibility/layout validator, while keeping the actual mutation local
     // in ADJN Core. No external engine watermark/branding is written by this extension.
-    let engineProfile = { id: selectedEngine, source: 'ADJN Core v5.0' };
+    let engineProfile = {
+      id: selectedEngine,
+      source: preserveSourceFps ? 'INEASY V1 source-preserving container patch' : 'ADJN Core v5.0'
+    };
     if (engineVersion && globalThis.ADJNEngines?.[engineVersion]?.checkLayout) {
       try {
         const check = await globalThis.ADJNEngines[engineVersion].checkLayout(new Blob([original], { type: data.fileType || 'video/mp4' }));
@@ -479,7 +483,7 @@
     let result;
     try {
       stage(requestId, 'patching', 'Applying ADJN patch…', 66, engineProfile.source);
-      result = core.patchWithReport(original);
+      result = core.patchWithReport(original, { preserveSourceFps });
       if (result?.report) result.report.engine = engineProfile.source;
     } catch (patchError) {
       stage(requestId, 'patching', 'Fallback Universal Safe…', 72, 'Patch klasik tidak aman untuk file ini • pakai byte-identical passthrough');
