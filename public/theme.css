@@ -1093,3 +1093,24 @@ body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) {
   #patchSection .dropzone, #patchSection .process-btn { transition: none !important; }
 }
+
+
+/* Consistent weight and neutral-blue palette across the rest of the interface. */
+:root { --success: #55B8FF; --danger: #91A2B8; }
+:where(.topbar, .view-nav, .bottom-nav, .nav-tabs, #archiveSection, #checkerSection, #faqSection, #publishSection) {
+  color: #F3F7FC;
+}
+:where(.topbar, .view-nav, .bottom-nav, .nav-tabs, #archiveSection, #checkerSection, #faqSection) :is(h1, h2, h3, label, summary, button, .section-title, .archive-title, .archive-name, .nav-tab) {
+  font-weight: 800;
+}
+:where(.topbar, .view-nav, .bottom-nav, .nav-tabs) {
+  border-color: rgba(145, 162, 184, .18) !important;
+}
+:where(#archiveSection, #checkerSection, #faqSection, #publishSection) :is(.card, .panel, .archive-item, .archive-card, .video-archive-item, details) {
+  background-color: #0C192B;
+  border-color: rgba(145, 162, 184, .2);
+  box-shadow: none;
+}
+:where(#archiveSection, #checkerSection, #faqSection, #publishSection) :is(p, .description, .hint, .subtext, .muted) {
+  color: #91A2B8;
+}
