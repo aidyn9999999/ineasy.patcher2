@@ -1403,3 +1403,44 @@ body { overflow-x: clip; }
   .mode-status { margin-left: 4px; padding: 3px 5px; font-size: 8px !important; }
   .post-success-modal { padding: 22px 15px 15px !important; }
 }
+
+
+/* High-contrast mode badges on small/mobile screens. */
+.mode-status {
+  opacity: 1 !important;
+  visibility: visible !important;
+  text-shadow: none !important;
+  font-weight: 800 !important;
+}
+.mode-status-slow {
+  color: #F3F7FC !important;
+  background: #26364B !important;
+  border: 1px solid #91A2B8 !important;
+}
+.mode-status-best {
+  color: #07111F !important;
+  background: #55B8FF !important;
+  border: 1px solid #B5E2FF !important;
+  box-shadow: 0 0 0 1px rgba(85,184,255,.3) !important;
+}
+@media (max-width: 700px) {
+  .mode-status {
+    display: inline-flex !important;
+    opacity: 1 !important;
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+    padding: 4px 7px !important;
+    margin-left: 5px !important;
+    flex-shrink: 0 !important;
+  }
+  .mode-status-best {
+    color: #07111F !important;
+    background: #55B8FF !important;
+    border-color: #B5E2FF !important;
+  }
+  .mode-status-slow {
+    color: #F3F7FC !important;
+    background: #26364B !important;
+    border-color: #91A2B8 !important;
+  }
+}
