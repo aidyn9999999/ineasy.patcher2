@@ -1444,3 +1444,59 @@ body { overflow-x: clip; }
     border-color: #91A2B8 !important;
   }
 }
+
+
+/* Minimal publish form: caption, comments, consent and publish only. */
+#tiktokPublishForm > .post-options-group:first-of-type { display: none !important; }
+#tiktokPublishForm > .post-options-group.schedule-group,
+#tiktokPublishForm > .tiktok-ai-toggle,
+#tiktokPublishForm > .tiktok-draft-note,
+#tiktokPublishForm > #zernioChangeKeyBtn { display: none !important; }
+#tiktokPublishForm > .post-options-group:not(:first-of-type) .tiktok-toggle-grid label:not(:first-child) { display: none !important; }
+#tiktokPublishForm > .post-options-group:not(:first-of-type) > legend,
+#tiktokPublishForm > .post-options-group:not(:first-of-type) > .post-options-description { display: none !important; }
+#tiktokPublishForm > .post-options-group:not(:first-of-type) {
+  margin: 10px 0 !important; padding: 0 !important; border: 0 !important;
+}
+#tiktokPublishForm .tiktok-toggle-grid label:first-child {
+  min-height: 42px; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid rgba(145,162,184,.25); background: #07111F;
+}
+.archive-full-overlay, .resolution-warning-overlay {
+  z-index: 1250 !important; padding: 18px !important;
+  background: rgba(3,9,18,.76) !important; backdrop-filter: blur(5px);
+}
+.archive-full-modal, .resolution-warning-modal {
+  width: min(100%, 360px) !important; margin: auto !important;
+  padding: 22px 18px !important; border: 1px solid rgba(85,184,255,.25) !important;
+  border-radius: 16px !important; background: #0C192B !important;
+}
+.archive-full-modal h2, .resolution-warning-modal h2 {
+  margin: 0 0 9px !important; color: #F3F7FC !important;
+  font-size: 18px !important; font-weight: 800 !important;
+}
+.archive-full-modal p, .resolution-warning-modal p {
+  margin: 0 0 14px !important; color: #91A2B8 !important;
+  font-size: 12px !important; line-height: 1.55 !important;
+}
+.archive-full-items { display: grid; gap: 8px; margin: 12px 0 16px; }
+.archive-full-choice {
+  display: flex; align-items: center; gap: 9px; padding: 10px;
+  border: 1px solid rgba(145,162,184,.2); border-radius: 9px;
+  color: #F3F7FC; font-size: 12px; overflow-wrap: anywhere;
+}
+.archive-full-choice input { accent-color: #55B8FF; flex-shrink: 0; }
+.archive-full-actions, .resolution-warning-actions { display: grid; gap: 8px; }
+.archive-full-actions button, .resolution-warning-actions button {
+  min-height: 42px; padding: 10px 12px; border-radius: 9px;
+  font: 800 12px/1.25 'Manrope', sans-serif; cursor: pointer;
+}
+#archiveFullDone, #resolutionWarningContinue {
+  color: #FFFFFF !important; background: #1676C5 !important;
+  border: 1px solid #55B8FF !important;
+}
+#archiveFullDone:disabled { opacity: .45; cursor: not-allowed; }
+#archiveFullCancel, #resolutionWarningCancel {
+  color: #F3F7FC; background: transparent;
+  border: 1px solid rgba(145,162,184,.28);
+}
