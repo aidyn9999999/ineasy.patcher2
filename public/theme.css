@@ -1114,3 +1114,29 @@ body { overflow-x: clip; }
 :where(#archiveSection, #checkerSection, #faqSection, #publishSection) :is(p, .description, .hint, .subtext, .muted) {
   color: #91A2B8;
 }
+
+
+/* Tighten the mobile home hero: remove the oversized empty area above the greeting. */
+@media (max-width: 700px) {
+  .app-main:has(#homeSection.active) { padding-top: 4px !important; }
+  #homeSection .home-hero {
+    min-height: 0 !important;
+    height: auto !important;
+    align-items: flex-start !important;
+  }
+  #homeSection .home-hero-copy {
+    padding: 26px 16px 58px !important;
+  }
+  #homeSection .home-hero-copy::before {
+    margin-bottom: 14px !important;
+  }
+  #homeSection .home-greeting {
+    margin-bottom: 12px !important;
+  }
+  #homeSection .home-headline {
+    font-size: clamp(39px, 11.5vw, 56px) !important;
+    line-height: .98 !important;
+  }
+  #homeSection .home-intro { margin-top: 16px !important; }
+  #homeSection .home-hero-foot { bottom: 13px !important; }
+}
