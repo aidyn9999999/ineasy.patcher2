@@ -760,12 +760,17 @@
     };
   }
 
-  function executePatch(bytes, parsed) {
+  function executePatch(bytes, parsed, options = {}) {
     const { top, moovBox, mdatBox, moov } = parsed;
     const mvhd = moov.find('mvhd');
     if (!mvhd || mvhd.payload.length < 4) throwError('Invalid MP4 — mvhd hilang.');
 
-    mvhd.payload = patchMvhdToV1Sentinel(mvhd.payload);
+    // For UHD/high-FPS uploads, keep the source movie duration instead of using
+    // the unknown-duration sentinel; this avoids an unnecessary nonstandard
+    // movie-header value while preserving every video/audio sample and timing.
+    if (options.preserveMovieDuration !== true) {
+      mvhd.payload = patchMvhdToV1Sentinel(mvhd.payload);
+    }
     injectUdta(moov, ENCODER_TAG);
 
     // FastStart optimization: place moov before mdat so the video streams smoothly without buffering lags on social platforms
@@ -822,7 +827,8 @@
     }
   }
 
-  function validateFinalOutput(bytes) {
+  function validateFinalOutput(bytes, options = {}) {
+    const requireSentinel = options.requireSentinel !== false;
     const top = parseTopLevel(bytes);
     if (!top.length || top[top.length - 1].end !== bytes.length) throwError('Hasil patch bukan box run lengkap.');
     const moovList = top.filter(b => b.type === 'moov');
@@ -838,7 +844,14 @@
     if (!hasEncoderTag(moov, ENCODER_TAG)) throwError('Hasil patch tidak memiliki ADJN encoder tag.');
 
     const mvhd = moov.find('mvhd');
-    if (!mvhd || !isSentinelDuration(mvhd.payload)) throwError('Hasil patch mvhd.duration bukan sentinel Unknown Duration.');
+    if (!mvhd || mvhd.payload.length < 4) throwError('Hasil patch kehilangan mvhd yang valid.');
+    const hasSentinelDuration = isSentinelDuration(mvhd.payload);
+    if (requireSentinel && !hasSentinelDuration) {
+      throwError('Hasil patch mvhd.duration bukan sentinel Unknown Duration.');
+    }
+    if (!requireSentinel && hasSentinelDuration) {
+      throwError('Hasil patch UHD/High-FPS tidak boleh menggunakan durasi film sentinel.');
+    }
 
     for (const trak of moov.findAll('trak')) {
       const offsBox = getOffsetBox(trak);
@@ -854,12 +867,21 @@
   function quickPatch(input) {
     const bytes = toU8Array(input);
     const parsed = parseMp4Structure(bytes);
-    const sourceFps = inspectMediaInfo(bytes).averageFps;
+    const sourceInfo = inspectMediaInfo(bytes);
+    const sourceFps = Number(sourceInfo.averageFps) || 0;
+    const longSide = Math.max(Number(sourceInfo.width) || 0, Number(sourceInfo.height) || 0);
+    const sourceMvhd = parsed.moov.find('mvhd');
+    // A UHD/high-FPS source keeps its normal movie duration so upload-time
+    // frame-rate detection does not depend on an unknown-duration sentinel.
+    // The elementary video stream, frame timing, audio, HDR and encoder tag
+    // remain untouched; legacy behavior remains unchanged for other sources.
+    const preserveMovieDuration = longSide >= 3000 && sourceFps >= 50 &&
+      sourceMvhd && !isSentinelDuration(sourceMvhd.payload);
     const shouldRetime = getTargetFrameRate(sourceFps) !== null;
     const retimed = retimeVideoToTarget(parsed);
     if (shouldRetime && !retimed) throwError('Failed to retime 60/59.94 FPS MP4 to 60.05 FPS.');
-    const patched = executePatch(bytes, parsed);
-    validateFinalOutput(patched);
+    const patched = executePatch(bytes, parsed, { preserveMovieDuration: !!preserveMovieDuration });
+    validateFinalOutput(patched, { requireSentinel: !preserveMovieDuration });
     return patched;
   }
 
@@ -1003,8 +1025,11 @@
     return {
       bytes: patched,
       report: {
-        engine: 'ADJN 64-bit Duration Sentinel v5.0',
+        engine: inspected.durationUnknown
+          ? 'ADJN 64-bit Duration Sentinel v5.0'
+          : 'ADJN UHD/High-FPS Duration-Preserving v5.0',
         durationUnknown: inspected.durationUnknown,
+        durationStrategy: inspected.durationUnknown ? 'unknown-duration-sentinel' : 'source-movie-duration-preserved',
         encoderTag: inspected.encoderTag,
         codec: inspected.codec,
         sampleCount: inspected.sampleCount,

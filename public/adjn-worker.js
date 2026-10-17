@@ -7,7 +7,7 @@
 
 // We need to import the core and processor scripts into the worker context.
 // importScripts is synchronous and available in dedicated workers.
-importScripts('adjn-mp4-core.js?v=20261013-4');
+importScripts('adjn-mp4-core.js?v=20261017-4k60-duration-fix');
 
 
 self.onmessage = async function (event) {

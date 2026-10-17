@@ -2997,7 +2997,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261013-4');
+        const worker = new Worker('adjn-worker.js?v=20261017-4k60-duration-fix');
         let workerReadyTimeoutId = setTimeout(() => {
           if (workerDone) return;
           workerDone = true;
