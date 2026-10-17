@@ -108,7 +108,7 @@ const translations = {
     download: 'Download',
     publishTikTok: 'Post on site (easy)',
     publishTikTokStudio: 'Open TikTok Studio',
-    autopostHint: 'Quick auto-post with Zernio',
+    autopostHint: 'Recommended: publish directly from INEASY',
     tiktokStudioHint: 'Official TikTok upload. Posting on site is usually faster.',
     autopostScrollHint: 'The publishing section is below. Scroll down to continue.',
     publishNow: 'Publish now',
@@ -295,7 +295,7 @@ const translations = {
     download: 'Скачать',
     publishTikTok: 'Опубликовать через сайт',
     publishTikTokStudio: 'Открыть TikTok Studio',
-    autopostHint: 'Быстрая публикация через Zernio',
+    autopostHint: 'Рекомендуем автопост — публикация прямо на сайте',
     tiktokStudioHint: 'Официальная страница загрузки TikTok. Доступные способы публикации зависят от вашего аккаунта.',
     autopostScrollHint: 'Раздел публикации ниже. Прокрутите страницу вниз.',
     publishNow: 'Опубликовать сейчас',
@@ -481,7 +481,7 @@ const translations = {
     download: 'Жүктеу',
     publishTikTok: 'Сайтқа жариялау (жеңіл)',
     publishTikTokStudio: 'TikTok Studio ашу',
-    autopostHint: 'Zernio арқылы жылдам жариялау',
+    autopostHint: 'Ұсынылады: INEASY арқылы тікелей жариялау',
     tiktokStudioHint: 'TikTok-тың ресми жүктеу беті. Сайт арқылы жариялау әдетте жылдамырақ.',
     autopostScrollHint: 'Жариялау бөлімі төменде. Жалғастыру үшін төмен қарай айналдырыңыз.',
     publishNow: 'Қазір жариялау',
@@ -1549,6 +1549,8 @@ if (tiktokPublishForm) {
             : publishState === 'published' ? t('publishSuccess') : t('publishPending');
         if (!scheduledFor && !result.draft && publishState === 'published') {
           document.getElementById('postSuccessOverlay')?.classList.remove('hidden');
+        } else if (result.draft) {
+          document.getElementById('draftWarningOverlay')?.classList.remove('hidden');
         }
       }
       // Keep the publish form and its status visible after publishing.
@@ -1569,6 +1571,15 @@ if (tiktokPublishForm) {
   });
 }
 
+
+const draftWarningOverlay = document.getElementById('draftWarningOverlay');
+const closeDraftWarning = () => draftWarningOverlay?.classList.add('hidden');
+document.getElementById('draftWarningClose')?.addEventListener('click', closeDraftWarning);
+document.getElementById('draftWarningOk')?.addEventListener('click', closeDraftWarning);
+document.getElementById('draftWarningOpenTikTok')?.addEventListener('click', closeDraftWarning);
+draftWarningOverlay?.addEventListener('click', (event) => {
+  if (event.target === draftWarningOverlay) closeDraftWarning();
+});
 
 const postSuccessOverlay = document.getElementById('postSuccessOverlay');
 const closePostSuccess = () => postSuccessOverlay?.classList.add('hidden');
