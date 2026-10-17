@@ -280,6 +280,29 @@
 
 
 
+
+  <div class="modal-overlay archive-full-overlay hidden" id="archiveFullOverlay" role="dialog" aria-modal="true" aria-labelledby="archiveFullTitle">
+    <section class="modal archive-full-modal">
+      <h2 id="archiveFullTitle">Архив заполнен</h2>
+      <p>У вас уже сохранены 2 видео. Удалите одно или оба ненужных видео — новое обработанное видео сохранится автоматически после освобождения места.</p>
+      <div id="archiveFullItems" class="archive-full-items"></div>
+      <div class="archive-full-actions">
+        <button type="button" id="archiveFullDone" disabled>Удалить выбранные и продолжить</button>
+        <button type="button" id="archiveFullCancel">Позже</button>
+      </div>
+    </section>
+  </div>
+  <div class="modal-overlay resolution-warning-overlay hidden" id="resolutionWarningOverlay" role="dialog" aria-modal="true" aria-labelledby="resolutionWarningTitle">
+    <section class="modal resolution-warning-modal">
+      <h2 id="resolutionWarningTitle">Видео выше 1080p</h2>
+      <p id="resolutionWarningCopy">Вы выбрали видео 4K. После публикации TikTok может изменить качество или частоту кадров. Для более предсказуемого результата рекомендуем 1080p. Если исходный формат вам подходит, нажмите «Продолжить».</p>
+      <div class="resolution-warning-actions">
+        <button type="button" id="resolutionWarningContinue">Продолжить</button>
+        <button type="button" id="resolutionWarningCancel">Отмена</button>
+      </div>
+    </section>
+  </div>
+
   <div class="modal-overlay post-success-overlay hidden" id="draftWarningOverlay" role="dialog" aria-modal="true" aria-labelledby="draftWarningTitle">
     <section class="modal post-success-modal">
       <button class="modal-close" id="draftWarningClose" type="button" aria-label="Закрыть">×</button>
