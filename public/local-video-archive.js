@@ -133,11 +133,69 @@
       status.textContent = 'Локальный архив недоступен в этом браузере: ' + (error.message || 'ошибка хранилища');
     }
   }
-  async function save(detail) {
+
+  let pendingArchiveDetail = null;
+  async function requestArchiveSpace(detail) {
+    pendingArchiveDetail = detail;
+    const overlay = document.getElementById('archiveFullOverlay');
+    const list = document.getElementById('archiveFullItems');
+    const done = document.getElementById('archiveFullDone');
+    const cancel = document.getElementById('archiveFullCancel');
+    if (!overlay || !list || !done || !cancel) {
+      pendingArchiveDetail = null;
+      const status = ensurePanel().querySelector('#ineasyArchiveStatus');
+      status.textContent = 'Архив заполнен. Удалите ненужное видео и повторите обработку, чтобы сохранить результат.';
+      return;
+    }
+    list.replaceChildren();
+    const records = await allRecords();
+    for (const record of records) {
+      const label = document.createElement('label');
+      label.className = 'archive-full-choice';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = record.id;
+      checkbox.addEventListener('change', () => {
+        done.disabled = !list.querySelector('input:checked');
+      });
+      const text = document.createElement('span');
+      text.textContent = record.name + ' · ' + formatSize(record.blob.size);
+      label.append(checkbox, text);
+      list.appendChild(label);
+    }
+    done.disabled = true;
+    overlay.classList.remove('hidden');
+    done.onclick = async () => {
+      const ids = Array.from(list.querySelectorAll('input:checked')).map(input => input.value);
+      if (!ids.length || !pendingArchiveDetail) return;
+      done.disabled = true;
+      try {
+        for (const id of ids) await deleteRecord(id);
+        const detailToSave = pendingArchiveDetail;
+        pendingArchiveDetail = null;
+        overlay.classList.add('hidden');
+        await save(detailToSave, true);
+        const status = ensurePanel().querySelector('#ineasyArchiveStatus');
+        status.textContent = 'Готово — новое обработанное видео добавлено в архив.';
+      } catch (error) {
+        done.disabled = false;
+        ensurePanel().querySelector('#ineasyArchiveStatus').textContent = 'Не удалось обновить архив. Попробуйте ещё раз.';
+      }
+    };
+    cancel.onclick = () => {
+      pendingArchiveDetail = null;
+      overlay.classList.add('hidden');
+    };
+  }
+  async function save(detail, spaceAlreadyFreed = false) {
     if (!detail || !(detail.blob instanceof Blob) || !detail.blob.size) return;
     const status = ensurePanel().querySelector('#ineasyArchiveStatus');
     try {
       const records = await allRecords();
+      if (records.length >= LIMIT && !spaceAlreadyFreed) {
+        await requestArchiveSpace(detail);
+        return;
+      }
       const record = { id: makeId(), name: String(detail.name || 'ineasy-video.mp4').slice(0, 240), blob: detail.blob, createdAt: Date.now(), mimeType: detail.blob.type || 'application/octet-stream' };
       await putRecord(record);
       const after = await allRecords();
