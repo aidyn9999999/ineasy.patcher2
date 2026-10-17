@@ -1194,3 +1194,89 @@ body { overflow-x: clip; }
   .topbar #tgIdLabel { font-size: 8px !important; }
   .topbar .balance-label, .topbar .balance-text, .topbar #balanceLabel { font-size: 9px !important; }
 }
+
+
+/* Compact meter cards: put the value inside the progress bar, without extra copy. */
+#patchSection .video-size-meter,
+#patchSection .daily-limit-card {
+  margin-top: 8px !important;
+  padding: 9px 11px 10px !important;
+  border: 1px solid rgba(145, 162, 184, .16) !important;
+  border-radius: 10px !important;
+  background: #0C192B !important;
+  box-shadow: none !important;
+}
+#patchSection .video-size-meter-heading {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  margin: 0 0 6px !important;
+  min-height: 0 !important;
+}
+#patchSection .video-size-meter-heading > div { display: none !important; }
+#patchSection .video-size-meter-value {
+  color: #F3F7FC !important;
+  font: 700 10px/1.2 'IBM Plex Mono', monospace !important;
+  letter-spacing: -.02em !important;
+}
+#patchSection .video-size-meter-track,
+#patchSection .daily-limit-track {
+  position: relative !important;
+  height: 19px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(145, 162, 184, .13) !important;
+  border-radius: 5px !important;
+  background: rgba(145, 162, 184, .12) !important;
+}
+#patchSection .video-size-meter-fill,
+#patchSection .daily-limit-track > span {
+  display: block !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  border-radius: 4px !important;
+  background: #55B8FF !important;
+  transition: width .22s ease !important;
+}
+#patchSection .video-size-meter-track::after {
+  content: '0 / 150 МБ';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #F3F7FC;
+  font: 700 10px/1 'IBM Plex Mono', monospace;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(7,17,31,.55);
+}
+#patchSection .daily-limit-heading {
+  display: none !important;
+}
+#patchSection .daily-limit-track::after {
+  content: '0 / 2 видео';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #F3F7FC;
+  font: 700 10px/1 'IBM Plex Mono', monospace;
+  pointer-events: none;
+  text-shadow: 0 1px 2px rgba(7,17,31,.55);
+}
+#patchSection .video-size-meter-track,
+#patchSection .daily-limit-track { isolation: isolate; }
+#patchSection .video-size-meter-track::after,
+#patchSection .daily-limit-track::after { z-index: 2; }
+#patchSection .video-size-meter-fill,
+#patchSection .daily-limit-track > span { position: relative; z-index: 1; }
+@media (max-width: 700px) {
+  #patchSection .video-size-meter,
+  #patchSection .daily-limit-card {
+    margin-top: 6px !important;
+    padding: 7px 8px 8px !important;
+    border-radius: 8px !important;
+  }
+  #patchSection .video-size-meter-track,
+  #patchSection .daily-limit-track { height: 18px !important; }
+}
