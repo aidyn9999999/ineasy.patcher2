@@ -1035,10 +1035,7 @@ body { overflow-x: clip; }
   font: 600 10px/1.4 'IBM Plex Mono', monospace !important;
   letter-spacing: .07em !important; text-transform: uppercase;
 }
-#patchSection .dropzone input[type="file"] {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  opacity: 0; cursor: pointer; display: block !important;
-}
+/* Keep the native file input hidden: the existing dropzone click handler opens it. */
 #patchSection .dropzone.locked {
   border-style: solid !important; border-color: rgba(145, 162, 184, .2) !important; background: #07111F !important;
 }
