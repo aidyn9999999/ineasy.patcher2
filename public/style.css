@@ -2366,3 +2366,299 @@ body {
   white-space: nowrap !important;
 }
 #dailyLimitHint { display: none !important; }
+
+
+/* INEASY editorial typography + layout pass (presentation only) */
+:root {
+  --type-display: "Space Grotesk", "Manrope", Inter, system-ui, sans-serif;
+  --type-body: "Manrope", Inter, system-ui, sans-serif;
+  --type-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  --type-measure: 66ch;
+}
+
+/* Load two restrained typefaces; body keeps the existing Manrope fallback. */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* Clear hierarchy: less all-bold UI, tighter display copy, more readable body copy. */
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--type-body);
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3,
+.home-hero #homeTitle,
+.patch-title,
+.checker-copy h2,
+.faq-section h2 {
+  font-family: var(--type-display) !important;
+  font-weight: 600 !important;
+  letter-spacing: -.045em !important;
+  text-wrap: balance;
+}
+
+p,
+.home-intro,
+.patch-sub,
+.checker-copy p:not(.eyebrow),
+.faq-section details p {
+  max-width: var(--type-measure);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.72;
+  letter-spacing: -.012em;
+  text-wrap: pretty;
+}
+
+/* Editorial eyebrow: small label, not a glowing headline. */
+.eyebrow,
+.hero-kicker,
+.home-hero .home-eyebrow,
+.patch-quality-heading {
+  font-family: var(--type-mono) !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  letter-spacing: .075em !important;
+  line-height: 1.5 !important;
+  text-transform: uppercase;
+  text-shadow: none !important;
+}
+
+/* Home hero: left-aligned copy and a deliberate headline/subhead rhythm. */
+.home-hero {
+  text-align: left;
+}
+
+.home-hero-copy {
+  max-width: 1080px;
+  margin-inline: auto;
+}
+
+.home-hero #homeTitle {
+  display: block !important;
+  max-width: 900px;
+  margin: 0 !important;
+  text-align: left !important;
+  font-size: clamp(42px, 6.4vw, 78px) !important;
+  font-weight: 600 !important;
+  line-height: .99 !important;
+  letter-spacing: -.065em !important;
+}
+
+.home-greeting {
+  display: block;
+  margin-bottom: clamp(14px, 2vw, 24px);
+  font-family: var(--type-body);
+  font-size: clamp(17px, 2vw, 22px) !important;
+  line-height: 1.35 !important;
+  font-weight: 500;
+  letter-spacing: -.025em !important;
+  color: #b8c8dc;
+  text-shadow: none !important;
+}
+
+.home-headline {
+  display: block;
+  max-width: 850px;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.home-hero .home-intro {
+  align-items: flex-start !important;
+  max-width: 650px;
+  margin: 22px 0 0 !important;
+  text-align: left !important;
+  font-size: clamp(15px, 1.45vw, 18px) !important;
+  line-height: 1.7 !important;
+  color: #aebdd1;
+}
+
+.hero-quality {
+  display: inline-block;
+  margin-top: 5px;
+  font-family: var(--type-mono) !important;
+  font-size: clamp(13px, 1.35vw, 16px) !important;
+  font-weight: 500 !important;
+  letter-spacing: .025em !important;
+  color: #82b8ff !important;
+  text-shadow: none !important;
+}
+
+/* Use mixed alignment and spacing instead of centering every section. */
+.home-hero .home-cta,
+.home-hero .hero-workflow {
+  align-self: flex-start;
+}
+
+.patch-title {
+  max-width: 760px;
+  font-size: clamp(30px, 4.1vw, 46px) !important;
+  line-height: 1.06 !important;
+  letter-spacing: -.055em !important;
+}
+
+.patch-sub {
+  max-width: 590px;
+  font-size: 15px !important;
+  line-height: 1.7 !important;
+  color: #aebdd1;
+}
+
+#patchSection .patch-quality-heading {
+  max-width: 610px;
+  margin-inline: 0;
+  text-align: left;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: #8fa1ba !important;
+}
+
+#patchSection .dropzone .dz-title {
+  font-family: var(--type-display);
+  font-size: clamp(18px, 2vw, 22px) !important;
+  font-weight: 600 !important;
+  letter-spacing: -.035em;
+}
+
+#patchSection .dropzone .dz-sub,
+#patchSection .dropzone .patch-format-note,
+#patchSection .dropzone .patch-quality-note {
+  font-size: 12px !important;
+  line-height: 1.65 !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+}
+
+#patchSection .dropzone .patch-format-note {
+  font-family: var(--type-mono);
+  font-size: 10px !important;
+  color: #8fa1ba !important;
+}
+
+/* Technical values read like product data, not promotional labels. */
+.video-size-meter-kicker,
+.video-size-meter-value,
+#dailyLimitCount,
+.patch-counter,
+.result-grid small,
+.result-grid strong,
+.id-part,
+.copy-id-btn {
+  font-family: var(--type-mono) !important;
+  letter-spacing: -.02em;
+}
+
+.video-size-meter-heading strong,
+.pkg-text b {
+  font-family: var(--type-display);
+  font-weight: 600;
+  letter-spacing: -.025em;
+}
+
+/* Buttons: concise labels, consistent type, no extra decorative glow. */
+:where(button, .home-cta, .process-btn, .download-link, .checker-open-btn,
+.tiktok-publish-btn, .tiktok-connect-btn, .tiktok-submit-btn, .analyze-btn) {
+  font-family: var(--type-body);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -.015em;
+  text-wrap: nowrap;
+}
+
+:where(.home-cta, .process-btn, .download-link, .checker-open-btn) {
+  min-height: 46px;
+  padding-inline: 18px;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+}
+
+:where(.home-cta, .process-btn, .download-link, .checker-open-btn):hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, .18) !important;
+}
+
+/* Section headings become editorial, not generic card headings. */
+.checker-copy h2,
+.faq-section h2 {
+  font-size: clamp(25px, 3.2vw, 34px) !important;
+  line-height: 1.1 !important;
+  letter-spacing: -.05em !important;
+}
+
+.checker-copy p:not(.eyebrow),
+.faq-section details p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #aebdd1;
+}
+
+.faq-section summary {
+  font-family: var(--type-display);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -.02em;
+}
+
+/* Mobile: reduce display size, preserve the same left edge and breathing room. */
+@media (max-width: 700px) {
+  .home-hero {
+    text-align: left;
+  }
+
+  .home-hero-copy {
+    padding-inline: 4px;
+  }
+
+  .home-hero #homeTitle {
+    font-size: clamp(35px, 9.4vw, 49px) !important;
+    line-height: 1.02 !important;
+    letter-spacing: -.06em !important;
+  }
+
+  .home-greeting {
+    margin-bottom: 16px;
+    font-size: 17px !important;
+  }
+
+  .home-hero .home-intro {
+    margin-top: 16px !important;
+    font-size: 14px !important;
+    line-height: 1.65 !important;
+  }
+
+  .hero-quality {
+    font-size: 12px !important;
+    line-height: 1.7;
+  }
+
+  .patch-title {
+    font-size: clamp(29px, 8vw, 38px) !important;
+    line-height: 1.08 !important;
+  }
+
+  .patch-sub,
+  .checker-copy p:not(.eyebrow),
+  .faq-section details p {
+    font-size: 14px !important;
+    line-height: 1.68 !important;
+  }
+
+  #patchSection .patch-quality-heading {
+    font-size: 10px !important;
+  }
+
+  :where(.home-cta, .process-btn, .download-link, .checker-open-btn) {
+    min-height: 44px;
+    padding-inline: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(.home-cta, .process-btn, .download-link, .checker-open-btn) {
+    transition: none !important;
+  }
+}
