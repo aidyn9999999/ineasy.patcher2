@@ -2872,7 +2872,10 @@ if (processBtn) {
       } else {
         console.info('[INEASY] Preserving source FPS; CFR conversion not eligible:', sdr1080pEligibility.reason);
       }
-      originalInputFps = null;
+      // V2 is a byte-preserving FFmpeg stream-copy path: retain the original FPS
+      // measurement so the post-patch guard can detect a 60 -> 30 FPS regression.
+      // V1 may replace the source with a CFR-converted blob, so its old FPS is stale.
+      if (!isV2SelectedForJob) originalInputFps = null;
       const normalizedFile = fpsConversion.blob || sourceFile;
       const basePreparedInput = {
         blob: normalizedFile,
