@@ -947,3 +947,152 @@ code, pre, .home-hero-foot, .home-eyebrow, .workflow-number, .home-stat-label {
   #homeSection .workflow-number { margin-bottom: 18px; }
   #homeSection .home-cta-bottom { width: 100%; margin-top: 28px; }
 }
+
+
+/* INEASY upload-first refresh — inspired by the clarity of professional online editors.
+   Visual-only overrides; existing upload and processing handlers remain unchanged. */
+:root {
+  color-scheme: dark;
+  --bg: #07111F;
+  --bg-2: #07111F;
+  --card: #0C192B;
+  --card-border: rgba(145, 162, 184, .22);
+  --text: #F3F7FC;
+  --muted: #91A2B8;
+  --accent: #55B8FF;
+  --accent-hover: #79C8FF;
+  --accent-dim: rgba(85, 184, 255, .08);
+  --accent-glow: rgba(85, 184, 255, .13);
+  --border-color: rgba(145, 162, 184, .22);
+  --panel-bg: #0C192B;
+}
+html, body, .app-shell { background: #07111F !important; color: #F3F7FC; }
+body { overflow-x: clip; }
+.app-main { width: min(100%, 1120px); margin-inline: auto; }
+.patch-panel, .checker-panel, .faq-section, .publish-panel, .modal {
+  background: #0C192B !important;
+  border: 1px solid rgba(145, 162, 184, .2) !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+}
+#patchSection .patch-panel {
+  padding: clamp(16px, 2.5vw, 28px) !important;
+  gap: 0;
+}
+#patchSection .patch-panel::before { display: none !important; }
+#patchSection .patch-title {
+  width: 100%; max-width: 100%;
+  margin: 0 0 8px !important; text-align: left !important;
+  color: #F3F7FC !important;
+  font-family: 'Space Grotesk', 'Manrope', sans-serif !important;
+  font-size: clamp(23px, 3.2vw, 32px) !important;
+  font-weight: 800 !important; line-height: 1.08 !important; letter-spacing: -.045em !important;
+}
+#patchSection .patch-quality-heading, #patchSection .patch-sub {
+  text-align: left !important; color: #91A2B8 !important;
+}
+#patchSection .patch-quality-heading {
+  margin: 0 0 5px !important; font-size: 13px !important;
+  font-weight: 400 !important; line-height: 1.55 !important;
+}
+#patchSection .patch-sub {
+  margin: 0 0 16px !important; font-size: 12px !important;
+  font-weight: 400 !important; line-height: 1.45 !important;
+}
+#patchSection .dropzone {
+  position: relative; min-height: 0 !important; height: auto !important;
+  margin: 0 !important; padding: 22px 18px 17px !important;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+  border: 1px dashed rgba(145, 162, 184, .45) !important;
+  border-radius: 12px !important; background: #07111F !important;
+  box-shadow: none !important; cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, transform .16s ease !important;
+}
+#patchSection .dropzone:hover, #patchSection .dropzone.drag, #patchSection .dropzone:focus-within {
+  border-color: #55B8FF !important; background: rgba(85, 184, 255, .055) !important;
+  box-shadow: 0 0 0 2px rgba(85, 184, 255, .07) !important;
+}
+#patchSection .dropzone:active { transform: scale(.995); }
+#patchSection .dropzone-content {
+  width: 100%; min-height: 0 !important; padding: 0 !important;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+}
+#patchSection .dropzone-content > svg, #patchSection .dropzone-content > .ui-icon {
+  width: 27px !important; height: 27px !important; margin: 0 0 10px !important;
+  color: #55B8FF !important; opacity: 1 !important; stroke-width: 2 !important;
+}
+#patchSection .dropzone .dz-title {
+  margin: 0 !important; color: #F3F7FC !important;
+  font-size: clamp(16px, 2vw, 19px) !important; font-weight: 800 !important;
+  line-height: 1.3 !important; letter-spacing: -.02em; text-align: center;
+}
+#patchSection .dropzone .dz-sub {
+  display: block !important; margin: 5px 0 0 !important; color: #91A2B8 !important;
+  font-size: 12px !important; font-weight: 400 !important; line-height: 1.5 !important; text-align: center;
+}
+#patchSection .dropzone .patch-format-note {
+  margin: 9px 0 0 !important; color: #91A2B8 !important;
+  font: 600 10px/1.4 'IBM Plex Mono', monospace !important;
+  letter-spacing: .07em !important; text-transform: uppercase;
+}
+#patchSection .dropzone input[type="file"] {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; cursor: pointer; display: block !important;
+}
+#patchSection .dropzone.locked {
+  border-style: solid !important; border-color: rgba(145, 162, 184, .2) !important; background: #07111F !important;
+}
+#patchSection .video-size-meter, #patchSection .daily-limit-card {
+  margin-top: 12px !important; padding: 12px 14px !important;
+  border: 1px solid rgba(145, 162, 184, .18) !important; border-radius: 10px !important;
+  background: #07111F !important; box-shadow: none !important;
+}
+#patchSection .video-size-meter-heading { gap: 10px; }
+#patchSection .video-size-meter-kicker { color: #91A2B8 !important; font-weight: 800 !important; }
+#patchSection .video-size-meter-heading strong, #patchSection .video-size-meter-value,
+#patchSection .daily-limit-heading strong, #patchSection .daily-limit-heading span {
+  color: #F3F7FC !important; font-weight: 800 !important;
+}
+#patchSection .daily-limit-heading span, #patchSection .video-size-meter-value { color: #91A2B8 !important; }
+#patchSection .video-size-meter-track, #patchSection .daily-limit-track { background: rgba(145, 162, 184, .16) !important; }
+#patchSection .video-size-meter-fill, #patchSection .daily-limit-track span { background: #55B8FF !important; }
+#patchSection .process-btn {
+  min-height: 48px !important; margin-top: 14px !important; padding: 14px 18px !important;
+  border: 1px solid #55B8FF !important; border-radius: 10px !important;
+  background: #55B8FF !important; color: #07111F !important;
+  font-size: 14px !important; font-weight: 800 !important; box-shadow: none !important;
+  transition: transform .16s ease, background .16s ease, border-color .16s ease !important;
+}
+#patchSection .process-btn:not(:disabled):hover {
+  transform: translateY(-1px); background: #79C8FF !important; border-color: #79C8FF !important; box-shadow: none !important;
+}
+#patchSection .process-btn:active:not(:disabled) { transform: scale(.99); }
+#patchSection .process-btn:disabled {
+  background: rgba(85, 184, 255, .18) !important; border-color: rgba(85, 184, 255, .18) !important;
+  color: #91A2B8 !important; opacity: 1 !important;
+}
+#patchSection .file-row, #archiveSection .archive-item, #archiveSection .archive-card,
+#archiveSection .video-archive-item { border-color: rgba(145, 162, 184, .18) !important; }
+#archiveSection .archive-item, #archiveSection .archive-card, #archiveSection .video-archive-item { background: #0C192B !important; }
+.view-nav, .bottom-nav, .nav-tabs, .view-nav-inner { border-color: rgba(145, 162, 184, .18) !important; }
+.view-nav button, .bottom-nav button, .nav-tab { font-weight: 800 !important; }
+#patchSection :is(.patch-title, .dz-title, .video-size-meter-heading strong, .daily-limit-heading strong, .process-btn, button, a) { font-weight: 800; }
+/* Descriptive copy intentionally keeps its existing regular weight and wording. */
+#patchSection :is(.patch-quality-heading, .patch-sub, .dz-sub, .patch-format-note, .export-note, .autopost-hint, .processing-state, .processed-result p) { font-weight: 400; }
+@media (max-width: 700px) {
+  .app-main { padding-inline: 12px !important; }
+  #patchSection .patch-panel { padding: 15px 13px !important; }
+  #patchSection .patch-title { font-size: clamp(22px, 6vw, 28px) !important; }
+  #patchSection .patch-quality-heading { font-size: 12px !important; }
+  #patchSection .patch-sub { margin-bottom: 12px !important; }
+  #patchSection .dropzone { padding: 18px 12px 15px !important; border-radius: 11px !important; }
+  #patchSection .dropzone-content > svg, #patchSection .dropzone-content > .ui-icon { width: 24px !important; height: 24px !important; }
+  #patchSection .dropzone .dz-title { font-size: 16px !important; }
+  #patchSection .dropzone .dz-sub { max-width: 270px; font-size: 11px !important; }
+  #patchSection .dropzone .patch-format-note { font-size: 9px !important; }
+  #patchSection .video-size-meter, #patchSection .daily-limit-card { padding: 10px 11px !important; }
+  #patchSection .process-btn { min-height: 48px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #patchSection .dropzone, #patchSection .process-btn { transition: none !important; }
+}
