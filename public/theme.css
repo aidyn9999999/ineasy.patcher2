@@ -1538,3 +1538,42 @@ body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) {
   #homeSection .home-headline { animation: none; }
 }
+
+/* Main menu hero, round 2: left-aligned copy, Exo 2 body text and glow on the
+   user name and the 4K · 120 FPS spec. Glow pulses stop for reduced motion. */
+#homeSection .home-hero {
+  justify-content: flex-start;
+}
+#homeSection .home-hero-copy {
+  width: min(100%, 780px);
+  margin: 0;
+  padding: clamp(56px, 6vw, 82px) clamp(24px, 5vw, 72px) 100px;
+  align-items: flex-start;
+  text-align: left;
+}
+#homeSection .home-hero-copy > * { text-align: left; }
+#homeSection .home-intro {
+  max-width: 640px;
+  margin: 20px 0 0;
+  font-family: 'Exo 2', 'Manrope', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+}
+#homeSection .home-name {
+  filter: drop-shadow(0 0 10px rgba(127, 176, 255, .85)) drop-shadow(0 0 22px rgba(199, 167, 255, .55));
+}
+#homeSection .hero-quality {
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 800;
+  color: #FFFFFF;
+  text-shadow: 0 0 10px rgba(127, 176, 255, .75), 0 0 24px rgba(199, 167, 255, .45);
+  animation: menuGlowPulse 2.8s ease-in-out infinite;
+}
+@keyframes menuGlowPulse {
+  0%, 100% { text-shadow: 0 0 8px rgba(127, 176, 255, .55), 0 0 18px rgba(199, 167, 255, .3); }
+  50% { text-shadow: 0 0 16px rgba(127, 176, 255, 1), 0 0 38px rgba(199, 167, 255, .75); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #homeSection .hero-quality { animation: none; }
+}

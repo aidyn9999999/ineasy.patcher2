@@ -248,7 +248,7 @@ const translations = {
     nav: ['ГЛАВНАЯ', 'ПАТЧЕР', 'ПРОВЕРКА ВИДЕО', 'FAQ'],
     homeKicker: 'INEASY  ·  ОПТИМИЗАЦИЯ ВИДЕО',
     homeGreeting: 'Добро пожаловать, ',
-    homeTitle: 'Видео для TikTok в полном качестве',
+    homeTitle: 'Публикуй видео в TikTok без потери качества',
     homeIntro: 'Видео до 4K · 120 FPS. Загрузи видео. Выбери режим. Готово.',
     homeCta: 'Обработка видео',
     comparisonKicker: 'КАЧЕСТВО',
