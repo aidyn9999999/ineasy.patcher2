@@ -1498,3 +1498,82 @@ body { overflow-x: clip; }
   color: #F3F7FC; background: transparent;
   border: 1px solid rgba(145,162,184,.28);
 }
+
+/* Main menu hero: display type, welcome line and a restrained shimmer on the headline.
+   Motion is skipped for users who ask for reduced motion. */
+#homeSection .home-greeting {
+  font: 600 clamp(15px, 1.6vw, 19px)/1.3 'Manrope', sans-serif;
+  letter-spacing: .01em;
+  color: #9FB0C8;
+}
+#homeSection .home-name {
+  color: #EAF2FF;
+  background: linear-gradient(100deg, #EAF2FF 0%, #7FB0FF 45%, #C7A7FF 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800;
+}
+#homeSection .home-headline {
+  font-family: 'Unbounded', 'Manrope', sans-serif;
+  font-size: clamp(36px, 5.6vw, 76px);
+  font-weight: 700;
+  line-height: 1.06;
+  letter-spacing: -.035em;
+  max-width: 980px;
+  background: linear-gradient(100deg, #F5F7FC 0%, #F5F7FC 38%, #8FB8FF 50%, #F5F7FC 62%, #F5F7FC 100%);
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: menuHeadlineShimmer 7s ease-in-out infinite;
+}
+@keyframes menuHeadlineShimmer {
+  0%, 100% { background-position: 100% 50%; }
+  50% { background-position: 0% 50%; }
+}
+@media (max-width: 700px) {
+  #homeSection .home-headline { font-size: clamp(32px, 9.4vw, 46px); line-height: 1.1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #homeSection .home-headline { animation: none; }
+}
+
+/* Main menu hero, round 2: left-aligned copy, Exo 2 body text and glow on the
+   user name and the 4K · 120 FPS spec. Glow pulses stop for reduced motion. */
+#homeSection .home-hero {
+  justify-content: flex-start;
+}
+#homeSection .home-hero-copy {
+  width: min(100%, 780px);
+  margin: 0;
+  padding: clamp(56px, 6vw, 82px) clamp(24px, 5vw, 72px) 100px;
+  align-items: flex-start;
+  text-align: left;
+}
+#homeSection .home-hero-copy > * { text-align: left; }
+#homeSection .home-intro {
+  max-width: 640px;
+  margin: 20px 0 0;
+  font-family: 'Exo 2', 'Manrope', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+}
+#homeSection .home-name {
+  filter: drop-shadow(0 0 10px rgba(127, 176, 255, .85)) drop-shadow(0 0 22px rgba(199, 167, 255, .55));
+}
+#homeSection .hero-quality {
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 800;
+  color: #FFFFFF;
+  text-shadow: 0 0 10px rgba(127, 176, 255, .75), 0 0 24px rgba(199, 167, 255, .45);
+  animation: menuGlowPulse 2.8s ease-in-out infinite;
+}
+@keyframes menuGlowPulse {
+  0%, 100% { text-shadow: 0 0 8px rgba(127, 176, 255, .55), 0 0 18px rgba(199, 167, 255, .3); }
+  50% { text-shadow: 0 0 16px rgba(127, 176, 255, 1), 0 0 38px rgba(199, 167, 255, .75); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #homeSection .hero-quality { animation: none; }
+}
