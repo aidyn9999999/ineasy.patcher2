@@ -1577,3 +1577,76 @@ body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) {
   #homeSection .hero-quality { animation: none; }
 }
+
+/* Chrome polish: brand, profile bar, language dock, icon buttons, quiet stat row,
+   dropzone and patcher nav icon. Scoped so other sections keep their styling. */
+.brand {
+  font-family: 'Unbounded', sans-serif;
+  font-size: 13px !important;
+  font-weight: 800;
+  letter-spacing: .02em;
+  line-height: 1;
+  text-transform: lowercase;
+}
+.brand-in { color: #F5F7FC; }
+.brand-easy { color: #7FB0FF; }
+.balance-pill { gap: 8px; padding: 4px 6px 4px 12px; font-size: 12px; }
+.language-dock { border-radius: 999px; padding: 3px; gap: 1px; }
+.language-dock button { border-radius: 999px; padding: 5px 9px; font-size: 10px; font-weight: 700; letter-spacing: .04em; }
+.copy-id-btn, .plus-btn, .logout-btn {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 1px solid rgba(127, 176, 255, .28);
+  border-radius: 50%;
+  background: rgba(127, 176, 255, .08);
+  color: #CFE0FF;
+  box-shadow: none;
+  justify-content: center;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease;
+}
+.copy-id-btn:hover, .plus-btn:hover {
+  background: rgba(127, 176, 255, .22);
+  border-color: rgba(127, 176, 255, .7);
+  box-shadow: 0 0 14px rgba(127, 176, 255, .35);
+  color: #FFFFFF;
+}
+.plus-btn {
+  background: linear-gradient(145deg, #7FB0FF, #C7A7FF);
+  border-color: transparent;
+  color: #0B1220;
+}
+.plus-btn:hover { background: linear-gradient(145deg, #9CC2FF, #D6BCFF); color: #0B1220; box-shadow: 0 0 16px rgba(199, 167, 255, .45); }
+.logout-btn { border-left: 1px solid rgba(127, 176, 255, .28); border-radius: 50%; padding: 0; margin-left: 2px; font-size: 0; gap: 0; }
+.logout-btn:hover { background: rgba(255, 107, 107, .14); border-color: rgba(255, 107, 107, .6); color: #FF8A8A; box-shadow: 0 0 14px rgba(255, 107, 107, .3); }
+
+#homeSection .home-stats { gap: 10px; opacity: .92; }
+#homeSection .home-stat {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .02);
+  border: 1px solid rgba(177, 191, 210, .12);
+  box-shadow: none;
+}
+#homeSection .home-stat strong { font-size: 15px; font-weight: 700; }
+#homeSection .home-stat span:not(.status-dot):not(.mode-divider) { font-size: 11px; }
+
+#patchSection .dropzone {
+  min-height: 200px;
+  border: 1.5px dashed rgba(127, 176, 255, .45);
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(127, 176, 255, .16), transparent 62%),
+    linear-gradient(160deg, rgba(20, 28, 44, .92), rgba(9, 13, 22, .96));
+  box-shadow: 0 18px 50px rgba(40, 70, 140, .22);
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+#patchSection .dropzone:hover {
+  border-color: rgba(127, 176, 255, .9);
+  box-shadow: 0 0 34px rgba(127, 176, 255, .3);
+  transform: translateY(-2px);
+}
+#patchSection .dz-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 700; color: #F5F7FC; letter-spacing: -.02em; }
+#patchSection .dz-sub { color: #9FB0C8; }
