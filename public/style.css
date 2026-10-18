@@ -1198,7 +1198,7 @@ button:focus-visible, .tg-btn:focus-visible { outline-color: var(--accent); }
 .autopost-hint.attention { color: var(--accent); font-size: 12px; font-weight: 700; opacity: 1; animation: scrollHintPulse 1.4s ease-in-out 2; }
 @keyframes scrollHintPulse { 50% { text-shadow: 0 0 12px var(--accent-glow); } }
 .zernio-key-panel { display: grid; gap: 10px; }
-.zernio-key-panel.hidden, .tiktok-account-panel.hidden { display: none; }
+.zernio-key-panel.hidden, .tiktok-account-panel.hidden, .tiktok-connect-btn.hidden { display: none; }
 .zernio-connect-copy { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .zernio-key-row { display: flex; align-items: stretch; gap: 8px; }
 .zernio-key-row input {

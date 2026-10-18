@@ -742,6 +742,7 @@ function applyLanguage(lang) {
   setText('zernioGetApiKey', pack.zernioGetApiKey);
   setText('zernioSaveKeyBtn', pack.zernioSaveKey);
   setText('zernioChangeKeyBtn', pack.zernioChangeKey);
+  setText('tiktokConnectBtn', pack.connectTikTok);
   setText('zernioKeyHint', pack.zernioKeyHint);
   const zernioApiKeyInput = document.getElementById('zernioApiKey');
   if (zernioApiKeyInput) zernioApiKeyInput.placeholder = pack.zernioKeyPlaceholder;
@@ -1218,6 +1219,7 @@ const zernioChangeKeyBtn = document.getElementById('zernioChangeKeyBtn');
 const zernioKeyHint = document.getElementById('zernioKeyHint');
 const tiktokAccountPanel = document.getElementById('tiktokAccountPanel');
 const tiktokAccountStatus = document.getElementById('tiktokAccountStatus');
+const tiktokConnectBtn = document.getElementById('tiktokConnectBtn');
 const tiktokPublishForm = document.getElementById('tiktokPublishForm');
 const tiktokPublishStatus = document.getElementById('tiktokPublishStatus');
 const tiktokCaption = document.getElementById('tiktokCaption');
@@ -1339,6 +1341,7 @@ async function refreshTikTokStatus() {
   if (!tiktokAccountStatus || !tiktokPublishForm) return;
   tiktokAccountStatus.textContent = t('checkingTikTok');
   tiktokAccountStatus.classList.remove('online');
+  tiktokConnectBtn.classList.add('hidden');
   zernioKeyPanel.classList.add('hidden');
   tiktokAccountPanel.classList.remove('hidden');
   tiktokPublishForm.classList.add('hidden');
@@ -1353,6 +1356,7 @@ async function refreshTikTokStatus() {
     if (!data.connected) {
       tiktokAccountId = null;
       tiktokAccountStatus.textContent = t('connectHint');
+      tiktokConnectBtn.classList.remove('hidden');
       return;
     }
     tiktokAccountId = data.account.id;
@@ -1371,6 +1375,19 @@ async function refreshTikTokStatus() {
       tiktokAccountStatus.textContent = error.status === 401 ? t('authExpired') : (error.message || t('connectFailed'));
     }
   }
+}
+
+if (tiktokConnectBtn) {
+  tiktokConnectBtn.addEventListener('click', async () => {
+    tiktokConnectBtn.disabled = true;
+    try {
+      const data = await tiktokApi('/api/tiktok/connect');
+      window.location.href = data.authUrl;
+    } catch (error) {
+      tiktokAccountStatus.textContent = error.message || t('connectFailed');
+      tiktokConnectBtn.disabled = false;
+    }
+  });
 }
 
 async function openTikTokComposer() {
