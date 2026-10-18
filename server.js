@@ -832,6 +832,12 @@ async function setLoginSession(sessionId, session) {
 const bot = new Telegraf(BOT_TOKEN);
 
 bot.use(async (ctx, next) => {
+  // Channel posts (including posts that mention @ineasybot) are publications, not
+  // commands sent to the bot. Ignore them before user-specific handlers run.
+  // This prevents accidental welcome/unknown-command replies in channels while
+  // leaving private chats, groups, balances, and broadcasts unchanged.
+  if (ctx.channelPost || ctx.editedChannelPost) return;
+
   const telegramId = ctx.from && String(ctx.from.id);
   if (!telegramId) return next();
 
