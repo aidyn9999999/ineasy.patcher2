@@ -1322,8 +1322,7 @@ body { overflow-x: clip; }
 #tiktokPublishForm > .post-options-group:first-of-type,
 #tiktokPublishForm > .post-options-group.schedule-group,
 #tiktokPublishForm > .tiktok-ai-toggle,
-#tiktokPublishForm > .tiktok-draft-note,
-#tiktokPublishForm > #zernioChangeKeyBtn { display: none !important; }
+#tiktokPublishForm > .tiktok-draft-note { display: none !important; }
 #tiktokPublishForm > .post-options-group:not(.schedule-group) > legend,
 #tiktokPublishForm > .post-options-group:not(.schedule-group) > .post-options-description,
 #tiktokPublishForm > .post-options-group:not(.schedule-group) .tiktok-toggle-grid label:not(:first-child) {
@@ -1450,8 +1449,7 @@ body { overflow-x: clip; }
 #tiktokPublishForm > .post-options-group:first-of-type { display: none !important; }
 #tiktokPublishForm > .post-options-group.schedule-group,
 #tiktokPublishForm > .tiktok-ai-toggle,
-#tiktokPublishForm > .tiktok-draft-note,
-#tiktokPublishForm > #zernioChangeKeyBtn { display: none !important; }
+#tiktokPublishForm > .tiktok-draft-note { display: none !important; }
 #tiktokPublishForm > .post-options-group:not(:first-of-type) .tiktok-toggle-grid label:not(:first-child) { display: none !important; }
 #tiktokPublishForm > .post-options-group:not(:first-of-type) > legend,
 #tiktokPublishForm > .post-options-group:not(:first-of-type) > .post-options-description { display: none !important; }
