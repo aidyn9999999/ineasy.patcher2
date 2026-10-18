@@ -58,23 +58,53 @@
   function formatSize(bytes) {
     return bytes >= 1024 * 1024 ? (bytes / (1024 * 1024)).toFixed(1) + ' MB' : Math.max(1, Math.round(bytes / 1024)) + ' KB';
   }
+  let liveWatching = false;
   function ensurePanel() {
     let panel = document.getElementById('ineasyLocalArchive');
     if (panel) return panel;
     panel = document.createElement('section');
     panel.id = 'ineasyLocalArchive';
-    panel.style.cssText = 'max-width:980px;margin:28px auto;padding:20px;border:1px solid var(--border-color,#333);border-radius:18px;background:var(--card-bg,rgba(127,127,127,.06));color:inherit';
-    panel.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><h2 style="margin:0 0 6px">Архив обработанных видео</h2><p style="margin:0;opacity:.75">До 2 видео · хранится только в этом браузере, без загрузки видео на сервер</p></div><span id="ineasyArchiveCount">0 / 2</span></div><div id="ineasyArchiveItems" style="display:grid;gap:10px;margin-top:16px"></div><p id="ineasyArchiveStatus" role="status" style="margin:12px 0 0;opacity:.8"></p>';
+    panel.className = 'ia-panel';
+    panel.innerHTML =
+      '<header class="ia-head"><h2>Архив</h2><span class="ia-note">только в этом браузере</span><span id="ineasyArchiveCount" class="ia-count">0 / ' + LIMIT + '</span></header>' +
+      '<div class="ia-live hidden" id="ineasyArchiveLive"><div class="ia-live-label" id="ineasyArchiveLiveLabel"></div><div class="ia-track"><i id="ineasyArchiveLiveBar"></i></div></div>' +
+      '<div class="ia-list" id="ineasyArchiveItems"></div>' +
+      '<p class="ia-status" id="ineasyArchiveStatus" role="status" aria-live="polite"></p>';
     const footer = document.querySelector('.site-footer');
     if (footer?.parentNode) footer.parentNode.insertBefore(panel, footer);
     else document.body.appendChild(panel);
+    watchProcessing();
     return panel;
   }
-  function button(label, action) {
+  // Mirror the real processing progress bar so the archive shows the same live state.
+  function syncLive() {
+    const state = document.getElementById('processingState');
+    const bar = document.getElementById('processingProgress');
+    const live = document.getElementById('ineasyArchiveLive');
+    if (!state || !bar || !live) return;
+    const active = !state.classList.contains('hidden') && !state.classList.contains('failed');
+    live.classList.toggle('hidden', !active);
+    if (!active) return;
+    document.getElementById('ineasyArchiveLiveBar').style.width = bar.style.width;
+    document.getElementById('ineasyArchiveLiveLabel').textContent = document.getElementById('processingPercent')?.textContent || '';
+  }
+  function watchProcessing() {
+    if (liveWatching) return;
+    const state = document.getElementById('processingState');
+    const bar = document.getElementById('processingProgress');
+    const percent = document.getElementById('processingPercent');
+    if (!state || !bar) return;
+    liveWatching = true;
+    new MutationObserver(syncLive).observe(state, { attributes: true, attributeFilter: ['class'] });
+    new MutationObserver(syncLive).observe(bar, { attributes: true, attributeFilter: ['style'] });
+    if (percent) new MutationObserver(syncLive).observe(percent, { childList: true, characterData: true, subtree: true });
+    syncLive();
+  }
+  function button(label, action, variant) {
     const el = document.createElement('button');
     el.type = 'button';
+    el.className = 'ia-btn' + (variant ? ' ' + variant : '');
     el.textContent = label;
-    el.style.cssText = 'padding:9px 13px;border:1px solid currentColor;border-radius:10px;background:transparent;color:inherit;cursor:pointer';
     el.addEventListener('click', action);
     return el;
   }
@@ -91,24 +121,24 @@
       count.textContent = records.length + ' / ' + LIMIT;
       if (!records.length) {
         const empty = document.createElement('p');
-        empty.textContent = 'Пока нет сохранённых видео. После обработки они появятся здесь.';
-        empty.style.opacity = '.7';
+        empty.className = 'ia-empty';
+        empty.textContent = 'Пусто';
         list.appendChild(empty);
       }
       for (const record of records) {
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px;border:1px solid rgba(127,127,127,.25);border-radius:12px';
+        row.className = 'ia-row';
         const info = document.createElement('div');
-        info.style.cssText = 'min-width:0;flex:1';
-        const name = document.createElement('strong');
+        info.className = 'ia-info';
+        const name = document.createElement('span');
+        name.className = 'ia-name';
         name.textContent = record.name;
-        name.style.cssText = 'display:block;overflow-wrap:anywhere';
-        const meta = document.createElement('small');
-        meta.textContent = formatSize(record.blob.size) + ' · ' + new Date(record.createdAt).toLocaleString();
-        meta.style.opacity = '.7';
+        const meta = document.createElement('span');
+        meta.className = 'ia-meta';
+        meta.textContent = formatSize(record.blob.size) + ' · ' + new Date(record.createdAt).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
         info.append(name, meta);
         const actions = document.createElement('div');
-        actions.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap';
+        actions.className = 'ia-actions';
         actions.appendChild(button('Скачать', () => {
           const url = URL.createObjectURL(record.blob);
           objectUrls.add(url);
@@ -121,16 +151,16 @@
           window.dispatchEvent(new CustomEvent('ineasy:archive-autopost', { detail: { blob: record.blob, name: record.name } }));
         }));
         actions.appendChild(button('Удалить', async () => {
-          try { await deleteRecord(record.id); status.textContent = 'Видео удалено из локального архива.'; await render(); }
-          catch (_) { status.textContent = 'Не удалось удалить видео. Проверьте свободное место браузера.'; }
-        }));
+          try { await deleteRecord(record.id); status.textContent = ''; await render(); }
+          catch (_) { status.textContent = 'Не удалось удалить.'; }
+        }, 'ia-btn-danger'));
         row.append(info, actions);
         list.appendChild(row);
       }
       status.textContent = '';
     } catch (error) {
       count.textContent = '— / ' + LIMIT;
-      status.textContent = 'Локальный архив недоступен в этом браузере: ' + (error.message || 'ошибка хранилища');
+      status.textContent = 'Архив недоступен в этом браузере.';
     }
   }
 
@@ -144,7 +174,7 @@
     if (!overlay || !list || !done || !cancel) {
       pendingArchiveDetail = null;
       const status = ensurePanel().querySelector('#ineasyArchiveStatus');
-      status.textContent = 'Архив заполнен. Удалите ненужное видео и повторите обработку, чтобы сохранить результат.';
+      status.textContent = 'Архив полон. Удалите видео и повторите.';
       return;
     }
     list.replaceChildren();
@@ -176,10 +206,10 @@
         overlay.classList.add('hidden');
         await save(detailToSave, true);
         const status = ensurePanel().querySelector('#ineasyArchiveStatus');
-        status.textContent = 'Готово — новое обработанное видео добавлено в архив.';
+        status.textContent = '';
       } catch (error) {
         done.disabled = false;
-        ensurePanel().querySelector('#ineasyArchiveStatus').textContent = 'Не удалось обновить архив. Попробуйте ещё раз.';
+        ensurePanel().querySelector('#ineasyArchiveStatus').textContent = 'Не удалось обновить архив.';
       }
     };
     cancel.onclick = () => {
@@ -200,10 +230,10 @@
       await putRecord(record);
       const after = await allRecords();
       for (const old of after.slice(LIMIT)) await deleteRecord(old.id);
-      status.textContent = 'Видео сохранено в архиве этого браузера.';
+      status.textContent = '';
       await render();
     } catch (error) {
-      status.textContent = 'Видео обработано, но не помещается в локальный архив. Освободите место браузера; скачать результат можно выше.';
+      status.textContent = 'Нет места для сохранения. Освободите место в браузере.';
       console.warn('[INEASY archive] Save failed:', error);
     }
   }
