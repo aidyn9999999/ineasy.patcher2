@@ -2969,20 +2969,42 @@ if (processBtn) {
         setProcessingState('processing', '');
         updateProcessingProgress(7);
         let copyResponse;
-        try {
-          const copyHeaders = { 'Content-Type': 'application/octet-stream' };
-          if (tgAuthToken) copyHeaders.Authorization = `Bearer ${tgAuthToken}`;
-          copyResponse = await fetch('/api/v2/ffmpeg-copy', {
-            method: 'POST',
-            headers: copyHeaders,
-            body: processingFile,
-            signal: controller.signal,
-            cache: 'no-store'
-          });
-        } catch (error) {
-          if (controller.signal.aborted) throw error;
-          throw new Error('v2_ffmpeg_copy_failed: ' + (error?.message || 'network_error'));
+        const copyHeaders = { 'Content-Type': 'application/octet-stream' };
+        if (tgAuthToken) copyHeaders.Authorization = `Bearer ${tgAuthToken}`;
+        // Mobile Samsung/Android browsers can transiently reset large uploads.
+        // Retry once only when fetch fails before a response is received; keep the
+        // same original bytes and never switch to transcoding or a metadata-only path.
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            copyResponse = await fetch('/api/v2/ffmpeg-copy', {
+              method: 'POST',
+              headers: copyHeaders,
+              body: processingFile,
+              signal: controller.signal,
+              cache: 'no-store'
+            });
+            break;
+          } catch (error) {
+            if (controller.signal.aborted) throw error;
+            if (attempt === 0 && (error instanceof TypeError || /failed to fetch|network|load failed/i.test(String(error?.message || '')))) {
+              setProcessingState('processing', STATE.lang === 'ru'
+                ? 'Соединение прервалось. Повторяем отправку видео…'
+                : STATE.lang === 'kk'
+                  ? 'Байланыс үзілді. Бейнені қайта жіберіп жатырмыз…'
+                  : 'Connection interrupted. Retrying video upload…');
+              await new Promise((resolve, reject) => {
+                const retryTimer = setTimeout(resolve, 900);
+                controller.signal.addEventListener('abort', () => {
+                  clearTimeout(retryTimer);
+                  reject(new DOMException('Aborted', 'AbortError'));
+                }, { once: true });
+              });
+              continue;
+            }
+            throw new Error('v2_ffmpeg_copy_failed: ' + (error?.message || 'network_error'));
+          }
         }
+        if (!copyResponse) throw new Error('v2_ffmpeg_copy_failed: network_error');
         if (!copyResponse.ok) {
           const failure = await copyResponse.json().catch(() => ({}));
           throw new Error('v2_ffmpeg_copy_failed: ' + (failure.error || `http_${copyResponse.status}`));
