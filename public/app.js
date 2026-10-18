@@ -926,7 +926,7 @@ function renderDailyLimit() {
   const remaining = Math.max(0, Math.min(2, free));
   const used = 2 - remaining;
   fill.style.width = `${(used / 2) * 100}%`;
-  count.textContent = `${used}/2`;
+  count.textContent = `Бесплатный лимит · ${used} из 2 видео использовано`;
   progress.setAttribute('aria-valuenow', String(used));
   if (hint) hint.textContent = remaining === 0 ? 'Дневной лимит использован.' : `Осталось видео на сегодня: ${remaining}.`;
 }
