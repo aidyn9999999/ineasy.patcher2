@@ -59,7 +59,8 @@ const translations = {
     buy: 'Buy',
     nav: ['HOME', 'PATCHER', 'VIDEO CHECK', 'FAQ'],
     homeKicker: 'INEASY  ·  VIDEO OPTIMIZATION',
-    homeTitle: 'Prepare your video for publishing',
+    homeGreeting: 'Welcome, ',
+    homeTitle: 'Your videos, ready for TikTok in full quality',
     homeIntro: 'Video up to 4K · 120 FPS. Upload your video. Choose a mode. Done.',
     homeCta: 'Process video',
     comparisonKicker: 'QUALITY',
@@ -246,7 +247,8 @@ const translations = {
     buy: 'Купить',
     nav: ['ГЛАВНАЯ', 'ПАТЧЕР', 'ПРОВЕРКА ВИДЕО', 'FAQ'],
     homeKicker: 'INEASY  ·  ОПТИМИЗАЦИЯ ВИДЕО',
-    homeTitle: 'Подготовь видео к публикации',
+    homeGreeting: 'Добро пожаловать, ',
+    homeTitle: 'Видео для TikTok в полном качестве',
     homeIntro: 'Видео до 4K · 120 FPS. Загрузи видео. Выбери режим. Готово.',
     homeCta: 'Обработка видео',
     comparisonKicker: 'КАЧЕСТВО',
@@ -433,7 +435,8 @@ const translations = {
     buy: 'Сатып алу',
     nav: ['БАСТЫ', 'ПАТЧЕР', 'БЕЙНЕНІ ТЕКСЕРУ', 'FAQ'],
     homeKicker: 'INEASY  ·  БЕЙНЕНІ ОҢТАЙЛАНДЫРУ',
-    homeTitle: 'Бейнеңізді жариялауға дайындаңыз',
+    homeGreeting: 'Қош келдіңіз, ',
+    homeTitle: 'Бейнелеріңіз TikTok үшін толық сапада',
     homeIntro: '4K · 120 FPS дейін. Бейнені жүктеңіз. Режимді таңдаңыз. Дайын.',
     homeCta: 'Бейнені өңдеу',
     comparisonKicker: 'САПА',
@@ -846,12 +849,11 @@ function applyLanguage(lang) {
 function renderHomeGreeting() {
   const title = document.getElementById('homeTitle');
   if (!title) return;
+  const pack = translations[STATE.lang] || translations.en;
   const rawName = (getBrowserValue('tg_first_name') || getBrowserValue('tg_username') || '').trim();
   const name = rawName ? rawName.replace(/^@/, '').split(/\s+/)[0] : (STATE.lang === 'ru' ? 'друг' : STATE.lang === 'kk' ? 'дос' : 'there');
-  const prefix = STATE.lang === 'ru' ? 'Привет, ' : STATE.lang === 'kk' ? 'Сәлем, ' : 'Hi, ';
   const safeName = name.replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
-  const headline = STATE.lang === 'ru' ? 'Подготовь видео к публикации' : STATE.lang === 'kk' ? 'Бейнеңізді жариялауға дайындаңыз' : 'Prepare your video for publishing';
-  title.innerHTML = '<span class="home-greeting">' + prefix + '<span id="homeUserName">' + safeName + '</span>!</span><span class="home-headline">' + headline + '</span>';
+  title.innerHTML = '<span class="home-greeting">' + pack.homeGreeting + '<span id="homeUserName" class="home-name">' + safeName + '</span></span><span class="home-headline">' + pack.homeTitle + '</span>';
 }
 
 const tgIdLabel = document.getElementById('tgIdLabel');
