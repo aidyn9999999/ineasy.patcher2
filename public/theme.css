@@ -1650,3 +1650,80 @@ body { overflow-x: clip; }
 }
 #patchSection .dz-title { font-family: 'Unbounded', sans-serif; font-size: 20px; font-weight: 700; color: #F5F7FC; letter-spacing: -.02em; }
 #patchSection .dz-sub { color: #9FB0C8; }
+
+/* Patcher receiver states: hover, press and drag each get a distinct response.
+   Archive panel uses classes instead of inline styles and shows live processing progress. */
+#patchSection .dropzone:not(.locked):active { transform: scale(.995); }
+#patchSection .dropzone:not(.locked):hover .dropzone-content > svg { transform: translateY(-3px); }
+#patchSection .dropzone .dropzone-content > svg { transition: transform .25s ease; }
+#patchSection .dropzone.drag {
+  border-color: #7FB0FF;
+  box-shadow: 0 0 46px rgba(127, 176, 255, .45);
+  transform: scale(1.01);
+}
+#patchSection .dropzone.drag .dropzone-content > svg { animation: dropzoneFloat 1.1s ease-in-out infinite; }
+@keyframes dropzoneFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+#ineasyLocalArchive.ia-panel {
+  max-width: 980px;
+  margin: 28px auto;
+  padding: 16px 18px;
+  border: 1px solid rgba(127, 176, 255, .14);
+  border-radius: 16px;
+  background: rgba(12, 18, 30, .7);
+  color: #DDE7F5;
+}
+.ia-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.ia-head h2 { margin: 0; font: 700 15px 'Unbounded', sans-serif; letter-spacing: -.01em; }
+.ia-note { font-size: 11px; color: #7E8BA0; }
+.ia-count { margin-left: auto; font: 600 12px 'IBM Plex Mono', monospace; color: #8D9BB0; }
+.ia-live { margin-bottom: 12px; }
+.ia-live.hidden { display: none; }
+.ia-live-label { margin-bottom: 6px; font-size: 12px; color: #9FB0C8; }
+.ia-track { height: 4px; border-radius: 99px; background: rgba(127, 176, 255, .12); overflow: hidden; }
+.ia-track i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #7FB0FF, #C7A7FF);
+  box-shadow: 0 0 10px rgba(127, 176, 255, .6);
+  transition: width .25s linear;
+}
+.ia-list { display: grid; gap: 8px; }
+.ia-empty { margin: 0; font-size: 12px; color: #7E8BA0; }
+.ia-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(127, 176, 255, .1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .02);
+}
+.ia-info { min-width: 0; flex: 1; display: grid; gap: 2px; }
+.ia-name { font-size: 13px; font-weight: 600; color: #F5F7FC; overflow-wrap: anywhere; }
+.ia-meta { font-size: 11px; color: #7E8BA0; }
+.ia-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.ia-btn {
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid rgba(127, 176, 255, .28);
+  border-radius: 999px;
+  background: transparent;
+  color: #CFE0FF;
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color .15s ease, color .15s ease;
+}
+.ia-btn:hover { border-color: #7FB0FF; color: #FFFFFF; }
+.ia-btn-danger:hover { border-color: #FF8A8A; color: #FF8A8A; }
+.ia-status { margin: 10px 0 0; font-size: 12px; color: #8D9BB0; }
+.ia-status:empty { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  #patchSection .dropzone.drag .dropzone-content > svg { animation: none; }
+}
