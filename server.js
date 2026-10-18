@@ -802,7 +802,7 @@ async function analyzeTikTok(url) {
   };
 }
 
-const LOGIN_SESSION_TTL_SECONDS = 30 * 60;
+const LOGIN_SESSION_TTL_SECONDS = 5 * 60;
 
 async function getLoginSession(sessionId) {
   const key = `loginSession:${sessionId}`;
