@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+  syncLanguageThumb();
   const giveawayToastClose = document.getElementById('giveawayToastClose');
   const giveawayToast = document.getElementById('giveawayToast');
   if (giveawayToastClose && giveawayToast) {
@@ -3498,9 +3499,21 @@ if (window.opener && (zernioOAuthParams.get('connected') === 'tiktok' || zernioO
   window.close();
 }
 
+// Slide the highlight thumb of the language switch under the active language.
+function syncLanguageThumb() {
+  const dock = document.getElementById('languageDock');
+  const thumb = dock?.querySelector('.lang-thumb');
+  const active = dock?.querySelector('button.active');
+  if (!thumb || !active) return;
+  thumb.style.width = `${active.offsetWidth}px`;
+  thumb.style.transform = `translateX(${active.offsetLeft}px)`;
+}
+window.addEventListener('resize', syncLanguageThumb);
+
 document.querySelectorAll('[data-lang]').forEach((button) => {
   button.addEventListener('click', () => {
     applyLanguage(button.dataset.lang);
     renderBalance();
+    syncLanguageThumb();
   });
 });

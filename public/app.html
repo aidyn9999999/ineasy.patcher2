@@ -22,7 +22,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20261018-daily-limit-label-v1">
 <link rel="stylesheet" href="home.css?v=20261014-home-video-preview-v1">
-<link rel="stylesheet" href="theme.css?v=20261019-uhd-keep">
+<link rel="stylesheet" href="theme.css?v=20261019-living-ui-v1">
 <script>
 (function () {
   var ua = navigator.userAgent || '';
@@ -71,6 +71,7 @@
         <a class="news-link" id="newsButton" href="https://t.me/ineasynews" target="_blank" rel="noopener" aria-label="@ineasynews"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right ui-icon" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg></a>
       </div>
       <div class="language-dock" id="languageDock" aria-label="Language">
+        <span class="lang-thumb" aria-hidden="true"></span>
         <button type="button" data-lang="ru">RU</button>
         <button type="button" data-lang="kk">KZ</button>
         <button type="button" data-lang="en">EN</button>
@@ -423,7 +424,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261013-4"></script>
-<script src="app.js?v=20261019-uhd-keep"></script>
+<script src="app.js?v=20261019-living-ui-v1"></script>
 <script src="local-video-archive.js?v=20261019-archive-layout-v1"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
@@ -432,8 +433,8 @@
 
 <div class="giveaway-toast" id="giveawayToast">
   <a class="giveaway-toast-link" href="https://t.me/ineasynews" target="_blank" rel="noopener noreferrer" aria-label="Открыть канал с розыгрышами">
-    <span class="giveaway-toast-icon" aria-hidden="true">🎁</span>
-    <span class="giveaway-toast-copy"><strong>Канал с розыгрышами</strong><small>Новости и розыгрыши INEASY</small></span>
+    <span class="giveaway-toast-icon" aria-hidden="true"><span class="giveaway-gift">🎁</span></span>
+    <span class="giveaway-toast-copy"><strong class="giveaway-shine">Канал с розыгрышами</strong><small>Новости и розыгрыши INEASY</small></span>
   </a>
   <button class="giveaway-toast-close" id="giveawayToastClose" type="button" aria-label="Закрыть">×</button>
 </div>
