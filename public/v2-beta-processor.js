@@ -78,19 +78,12 @@
     const core = root.FRYOriginalMp4Core || root.ADJNOriginalMp4Core;
     const inputInfo = inspect(core, original);
     const isMp4 = /\.mp4$/i.test(data.fileName || '') || /video\/mp4/i.test(data.fileType || '');
-    // 4K high-FPS (>= 50) sources are kept byte-for-byte. The remux rewrites track
-    // timing and movie duration, which platforms can read back as 30 FPS.
-    const uhdHighFps = !!inputInfo &&
-      Math.max(Number(inputInfo.width) || 0, Number(inputInfo.height) || 0) >= 3000 &&
-      Number(inputInfo.averageFps) >= 50;
     let output = original.slice();
     let remuxed = false;
     let remuxError = '';
     let streamCheck = null;
 
-    if (uhdHighFps) {
-      remuxError = 'UHD high-FPS source preserved byte-for-byte; remux would rewrite frame timing.';
-    } else if (isMp4 && inputInfo && /^(avc|hevc)$/i.test(inputInfo.codecFamily || '')) {
+    if (isMp4 && inputInfo && /^(avc|hevc)$/i.test(inputInfo.codecFamily || '')) {
       progress('Checking source metadata', 12, 'Reading codec, dimensions, FPS and audio tracks');
       try {
         progress('Preparing MP4 tracks', 25, 'Standard stream remux; no video re-encoding');
