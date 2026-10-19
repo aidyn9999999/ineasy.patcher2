@@ -1827,3 +1827,32 @@ body { overflow-x: clip; }
 #patchSection .dropzone-content > svg.lucide-upload,
 #patchSection .dropzone-content > .ui-icon { display: block; margin: 0 auto 12px; padding: 14px; box-sizing: content-box; width: 28px !important; height: 28px !important; border-radius: 50%; background: rgba(127, 176, 255, .12); color: #8FB4FF; }
 #patchSection .dropzone:not(.locked):hover .dropzone-content > svg { transform: none; }
+
+/* 4K warning shown right after a 4K video is selected */
+.uhd-warning-modal .hl-4k, .uhd-warning-modal .hl-fps {
+  display: inline-block; padding: 0 7px; border-radius: 7px; font-weight: 900;
+}
+.uhd-warning-modal .hl-4k {
+  color: #06121F; background: linear-gradient(135deg, #7DE3FF, #55B8FF);
+  box-shadow: 0 0 14px rgba(85,184,255,.65);
+}
+.uhd-warning-modal .hl-fps {
+  color: #FFF6E5; background: linear-gradient(135deg, #FF5B3A, #FF9F1C);
+  box-shadow: 0 0 14px rgba(255,120,40,.6);
+}
+.uhd-warning-modal p strong { color: #F3F7FC; }
+.uhd-warning-modal .uhd-progress { margin: 0 0 14px; }
+.uhd-warning-modal .uhd-progress-row {
+  display: flex; justify-content: space-between; gap: 10px; margin-bottom: 7px;
+  color: #F3F7FC; font-size: 12px; font-weight: 700;
+}
+.uhd-warning-modal .uhd-error { color: #FF8A7A !important; font-weight: 700; }
+.uhd-warning-modal .hidden { display: none !important; }
+#uhdCompressBtn {
+  color: #FFFFFF !important; background: #1676C5 !important; border: 1px solid #55B8FF !important;
+}
+#uhdReplaceBtn, #uhdKeepBtn, #uhdCancelBtn {
+  color: #F3F7FC; background: transparent; border: 1px solid rgba(145,162,184,.28);
+}
+#uhdKeepBtn { color: #91A2B8; font-weight: 700; }
+#uhdWarningOverlay button:disabled { opacity: .5; cursor: not-allowed; }

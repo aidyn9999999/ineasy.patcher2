@@ -22,7 +22,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20261018-daily-limit-label-v1">
 <link rel="stylesheet" href="home.css?v=20261014-home-video-preview-v1">
-<link rel="stylesheet" href="theme.css?v=20261019-mode-composer-v1">
+<link rel="stylesheet" href="theme.css?v=20261019-uhd-compress">
 <script>
 (function () {
   var ua = navigator.userAgent || '';
@@ -298,6 +298,25 @@
       </div>
     </section>
   </div>
+  <div class="modal-overlay resolution-warning-overlay hidden" id="uhdWarningOverlay" role="dialog" aria-modal="true" aria-labelledby="uhdWarningTitle">
+    <section class="modal resolution-warning-modal uhd-warning-modal">
+      <h2 id="uhdWarningTitle">Ваше видео <span class="hl-4k">4K</span></h2>
+      <p id="uhdWarningCopy">Можете получить <span class="hl-fps">30 FPS</span> после публикации — это риск. Советуем лучше выбрать видео <strong>1080p 60 FPS</strong>.</p>
+      <div class="uhd-progress hidden" id="uhdProgress" aria-live="polite">
+        <div class="uhd-progress-row"><span id="uhdProgressText">Загрузка видео…</span><b id="uhdProgressPercent">0%</b></div>
+        <div class="progress-track"><i id="uhdProgressBar"></i></div>
+      </div>
+      <p class="uhd-error hidden" id="uhdError" role="alert"></p>
+      <div class="resolution-warning-actions" id="uhdActions">
+        <button type="button" id="uhdReplaceBtn">Заменить на другое</button>
+        <button type="button" id="uhdCompressBtn">Сжать до 1080p автоматически</button>
+        <button type="button" id="uhdKeepBtn">Оставить 4K</button>
+      </div>
+      <div class="resolution-warning-actions hidden" id="uhdCancelActions">
+        <button type="button" id="uhdCancelBtn">Отмена</button>
+      </div>
+    </section>
+  </div>
   <div class="modal-overlay resolution-warning-overlay hidden" id="resolutionWarningOverlay" role="dialog" aria-modal="true" aria-labelledby="resolutionWarningTitle">
     <section class="modal resolution-warning-modal">
       <h2 id="resolutionWarningTitle">Видео выше 1080p</h2>
@@ -413,7 +432,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261013-4"></script>
-<script src="app.js?v=20261019-uhd-sentinel"></script>
+<script src="app.js?v=20261019-uhd-compress"></script>
 <script src="local-video-archive.js?v=20261019-archive-layout-v1"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
