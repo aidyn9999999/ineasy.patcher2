@@ -2112,7 +2112,7 @@ html, body {
   to { opacity: 1; transform: scale(1.06); }
 }
 
-/* Footer note about purchase problems */
+/* (footer note replaced by the support block below) */
 .footer-payment {
   margin: 14px auto 0; max-width: 560px; text-align: center;
   color: #bcd3f5; font-size: 13px; line-height: 1.5;
@@ -2120,3 +2120,38 @@ html, body {
 .footer-payment a { color: #7dd3fc; font-weight: 800; text-decoration: none; }
 .footer-payment a:hover { text-decoration: underline; }
 .site-footer .footer-payment { flex-basis: 100%; order: 10; margin-top: 6px; }
+
+/* ---- Support block and chooser ---- */
+.package-help { margin: 8px 0 0; color: #bcd3f5; font-size: 13px; line-height: 1.5; }
+.package-help a, .support-choice small { color: #7dd3fc; font-weight: 800; text-decoration: none; }
+.support-block {
+  flex-basis: 100%; order: 10; display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: space-between; gap: 12px; margin-top: 10px; padding: 14px 16px;
+  border: 1px solid rgba(96,165,250,.35); border-radius: 14px;
+  background: linear-gradient(135deg, rgba(37,99,235,.18), rgba(14,165,233,.08));
+  box-shadow: 0 0 22px rgba(37,99,235,.18);
+}
+.support-block p { margin: 0; color: #eef5ff; font-size: 14px; font-weight: 700; }
+.support-open {
+  min-height: 40px; padding: 9px 18px; border: 1px solid rgba(125,211,252,.5); border-radius: 10px;
+  background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; font: 800 13px 'Sora', sans-serif; cursor: pointer;
+  box-shadow: 0 8px 20px rgba(37,99,235,.35);
+}
+.support-overlay { z-index: 1260 !important; padding: 18px !important; background: rgba(3,9,18,.76) !important; }
+.support-modal {
+  width: min(100%, 380px) !important; margin: auto !important; padding: 22px 18px !important;
+  border: 1px solid rgba(96,165,250,.35) !important; border-radius: 16px !important; background: #0c192b !important;
+}
+.support-modal h2 { margin: 0 0 14px !important; color: #f3f7fc !important; font: 800 18px 'Sora', sans-serif; }
+.support-choice {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding: 12px;
+  border: 1px solid rgba(145,162,184,.25); border-radius: 12px; color: #f3f7fc; text-decoration: none;
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+.support-choice:hover { transform: translateY(-2px); border-color: rgba(125,211,252,.6); box-shadow: 0 8px 20px rgba(37,99,235,.3); }
+.support-choice span { display: flex; flex-direction: column; gap: 3px; font-size: 13px; line-height: 1.4; }
+.support-choice-icon { font-size: 22px; }
+.support-close {
+  width: 100%; min-height: 42px; border: 1px solid rgba(145,162,184,.28); border-radius: 10px;
+  background: transparent; color: #f3f7fc; font: 800 13px 'Sora', sans-serif; cursor: pointer;
+}
