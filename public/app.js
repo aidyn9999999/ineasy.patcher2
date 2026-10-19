@@ -2944,7 +2944,11 @@ if (processBtn) {
         // same original bytes and never switch to transcoding or a metadata-only path.
         for (let attempt = 0; attempt < 2; attempt += 1) {
           try {
-            copyResponse = await fetch('/api/v2/ffmpeg-copy', {
+            // Test hook: localStorage.ineasyFfmpegVariant = 'ts60000' | 'dualaudio' (server whitelists names).
+            let copyVariant = '';
+            try { copyVariant = String(localStorage.getItem('ineasyFfmpegVariant') || ''); } catch (_) {}
+            copyResponse = await fetch('/api/v2/ffmpeg-copy' +
+              (/^[a-z0-9]{1,16}$/i.test(copyVariant) ? '?variant=' + encodeURIComponent(copyVariant) : ''), {
               method: 'POST',
               headers: copyHeaders,
               body: processingFile,
@@ -2982,6 +2986,8 @@ if (processBtn) {
         }
         // Remember FPS/dimensions measured by ffprobe on the ORIGINAL file,
         // before remuxing. Never use only the remuxed file as the reference.
+        console.info('[INEASY V2] FFmpeg copy variant:', copyResponse.headers.get('X-INEASY-FFMPEG-VARIANT'),
+          'audio:', copyResponse.headers.get('X-INEASY-FFMPEG-AUDIO'));
         const sourceFpsHeader = Number(copyResponse.headers.get('X-INEASY-SOURCE-FPS'));
         const outputFpsHeader = Number(copyResponse.headers.get('X-INEASY-OUTPUT-FPS'));
         const sourceWidthHeader = Number(copyResponse.headers.get('X-INEASY-SOURCE-WIDTH'));
