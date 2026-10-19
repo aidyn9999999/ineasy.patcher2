@@ -1623,48 +1623,20 @@ function setProcessingState(type, text) {
 
 let progressTarget = 0;
 let progressDisplayed = 0;
-let progressAnimationFrame = 0;
-let progressLastTimestamp = 0;
 
+// Show the real progress value immediately. Easing the bar toward it made a
+// fast job look slow, and the bar could trail the work actually done.
 function paintProcessingProgress() {
   const percent = Math.max(0, Math.min(100, Math.round(progressDisplayed)));
   if (processingPercent) processingPercent.textContent = `${t('progressLabel')}: ${percent}%`;
-  if (processingProgress) processingProgress.style.width = `${progressDisplayed.toFixed(2)}%`;
-}
-
-function animateProcessingProgress(timestamp) {
-  if (!progressLastTimestamp) progressLastTimestamp = timestamp;
-  const elapsed = Math.min(48, Math.max(0, timestamp - progressLastTimestamp));
-  progressLastTimestamp = timestamp;
-  const remaining = progressTarget - progressDisplayed;
-  if (remaining > 0.08) {
-    progressDisplayed = Math.min(progressTarget, progressDisplayed + Math.max(0.06, remaining * elapsed / 480));
-    paintProcessingProgress();
-    progressAnimationFrame = requestAnimationFrame(animateProcessingProgress);
-  } else {
-    progressDisplayed = progressTarget;
-    paintProcessingProgress();
-    progressAnimationFrame = 0;
-    progressLastTimestamp = 0;
-  }
+  if (processingProgress) processingProgress.style.width = `${percent}%`;
 }
 
 function updateProcessingProgress(value) {
   const percent = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
-  if (percent === 0) {
-    progressTarget = 0;
-    progressDisplayed = 0;
-    if (progressAnimationFrame) cancelAnimationFrame(progressAnimationFrame);
-    progressAnimationFrame = 0;
-    progressLastTimestamp = 0;
-    paintProcessingProgress();
-    return;
-  }
-  progressTarget = Math.max(progressTarget, percent);
-  if (!progressAnimationFrame) {
-    progressLastTimestamp = 0;
-    progressAnimationFrame = requestAnimationFrame(animateProcessingProgress);
-  }
+  progressTarget = percent === 0 ? 0 : Math.max(progressTarget, percent);
+  progressDisplayed = progressTarget;
+  paintProcessingProgress();
 }
 
 async function readVideoDuration(file, signal) {
