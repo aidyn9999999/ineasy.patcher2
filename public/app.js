@@ -196,6 +196,7 @@ const translations = {
     footerHome: 'Home',
     footerFaq: 'FAQ',
     footerTelegram: 'Telegram',
+    footerPayment: "Problems with a purchase? Message us, we almost always reply online: <a href=\"https://t.me/ineasyadmin\" target=\"_blank\" rel=\"noopener\">@ineasyadmin</a>",
     footerDesc: 'Prepare your video. Preserve its quality. Publish with confidence.',
     remove: 'Remove',
     selectFile: 'Select video',
@@ -384,6 +385,7 @@ const translations = {
     footerHome: 'Главная',
     footerFaq: 'FAQ',
     footerTelegram: 'Telegram',
+    footerPayment: "Проблемы с покупкой? Напишите, почти всегда отвечаем онлайн: <a href=\"https://t.me/ineasyadmin\" target=\"_blank\" rel=\"noopener\">@ineasyadmin</a>",
     footerDesc: 'Подготовьте видео к публикации с помощью INEASY.',
     remove: 'Убрать',
     selectFile: 'Выберите видео',
@@ -571,6 +573,7 @@ const translations = {
     footerHome: 'Басты',
     footerFaq: 'FAQ',
     footerTelegram: 'Telegram',
+    footerPayment: "Сатып алу кезінде мәселе туындадыма? Жазыңыз, көбінесе онлайн жауап береміз: <a href=\"https://t.me/ineasyadmin\" target=\"_blank\" rel=\"noopener\">@ineasyadmin</a>",
     footerDesc: 'Бейнеңізді дайындаңыз. Сапасын сақтаңыз. Сенімді түрде жариялаңыз.',
     remove: 'Жою',
     selectFile: 'Бейнені таңдаңыз',
@@ -796,6 +799,8 @@ function applyLanguage(lang) {
   setText('footerFaq', pack.footerFaq);
   setText('footerSupport', pack.footerSupport);
   setText('footerTelegram', pack.footerTelegram);
+  const footerPaymentEl = document.getElementById('footerPayment');
+  if (footerPaymentEl && pack.footerPayment) footerPaymentEl.innerHTML = pack.footerPayment;
   setText('faqLabel', pack.faqLabel);
   setText('analyzerLabel', pack.analyzerEyebrow);
   setText('clearBtn', pack.remove);

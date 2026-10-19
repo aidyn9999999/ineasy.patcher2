@@ -2111,3 +2111,12 @@ html, body {
   from { opacity: .55; transform: scale(.94); }
   to { opacity: 1; transform: scale(1.06); }
 }
+
+/* Footer note about purchase problems */
+.footer-payment {
+  margin: 14px auto 0; max-width: 560px; text-align: center;
+  color: #bcd3f5; font-size: 13px; line-height: 1.5;
+}
+.footer-payment a { color: #7dd3fc; font-weight: 800; text-decoration: none; }
+.footer-payment a:hover { text-decoration: underline; }
+.site-footer .footer-payment { flex-basis: 100%; order: 10; margin-top: 6px; }
