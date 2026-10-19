@@ -112,7 +112,7 @@ const translations = {
     autopostHint: 'Recommended: publish directly from INEASY',
     tiktokStudioHint: 'Official TikTok upload. Posting on site is usually faster.',
     autopostScrollHint: 'The publishing section is below. Scroll down to continue.',
-    publishNow: 'Publish now',
+    publishNow: 'Publish',
     scheduleSubmit: 'Schedule post',
     publishTitle: 'Publish to TikTok',
     connectTikTok: 'Connect TikTok account',
@@ -300,7 +300,7 @@ const translations = {
     autopostHint: 'Рекомендуем автопост — публикация прямо на сайте',
     tiktokStudioHint: 'Официальная страница загрузки TikTok. Доступные способы публикации зависят от вашего аккаунта.',
     autopostScrollHint: 'Раздел публикации ниже. Прокрутите страницу вниз.',
-    publishNow: 'Опубликовать сейчас',
+    publishNow: 'Опубликовать',
     scheduleSubmit: 'Запланировать публикацию',
     publishTitle: 'Публикация в TikTok',
     connectTikTok: 'Подключить аккаунт TikTok',
@@ -352,7 +352,7 @@ const translations = {
     connecting: 'Открываем вход в TikTok…',
     uploading: 'Загружаем видео…',
     publishing: 'Публикуем в TikTok…',
-    publishSuccess: 'Видео опубликовано в TikTok.',
+    publishSuccess: 'Видео успешно опубликовано в TikTok!',
     publishScheduled: 'Публикация запланирована.',
     publishPending: 'TikTok принял видео и обрабатывает публикацию.',
     draftSuccess: 'Черновик отправлен в TikTok. Завершите настройку видимости и публикацию в приложении TikTok.',
@@ -1227,9 +1227,6 @@ const tiktokPublishStatus = document.getElementById('tiktokPublishStatus');
 const tiktokCaption = document.getElementById('tiktokCaption');
 const tiktokCaptionCount = document.getElementById('tiktokCaptionCount');
 const tiktokPrivacy = document.getElementById('tiktokPrivacy');
-const tiktokDraftNote = document.getElementById('tiktokDraftNote');
-const tiktokScheduleField = document.getElementById('tiktokScheduleField');
-const tiktokScheduledFor = document.getElementById('tiktokScheduledFor');
 const tiktokSubmitBtn = document.getElementById('tiktokSubmitBtn');
 let processedVideoBlob = null;
 
@@ -1261,82 +1258,20 @@ function renderTikTokOptions() {
   const allowedPrivacy = new Set((Array.isArray(tiktokCreatorInfo.privacyLevels) ? tiktokCreatorInfo.privacyLevels : [])
     .map((level) => typeof level === 'string' ? level : level?.value)
     .filter(Boolean));
-  const privacyInputs = [...document.querySelectorAll('input[name="tiktokPrivacyChoice"]')];
-  privacyInputs.forEach((input) => {
-    input.disabled = allowedPrivacy.size > 0 && !allowedPrivacy.has(input.value);
-    input.closest('.privacy-choice')?.classList.toggle('unavailable', input.disabled);
-  });
-  setText('tiktokPrivacyDescription', privacyInputs.some((input) => input.disabled)
-    ? t('privacyUnavailable')
-    : t('privacyDescription'));
-  let selectedPrivacy = privacyInputs.find((input) => input.checked && !input.disabled);
-  if (!selectedPrivacy) {
-    selectedPrivacy = privacyInputs.find((input) => !input.disabled);
-    if (selectedPrivacy) selectedPrivacy.checked = true;
+  // Post publicly when TikTok allows it, otherwise use the first visibility the account can use.
+  tiktokPrivacy.value = !allowedPrivacy.size || allowedPrivacy.has('PUBLIC_TO_EVERYONE') ? 'PUBLIC_TO_EVERYONE' : [...allowedPrivacy][0];
+  const commentSetting = tiktokCreatorInfo.postingLimits?.interactionSettings?.allow_comment;
+  const comments = document.getElementById('tiktokAllowComments');
+  if (comments) {
+    comments.disabled = Boolean(commentSetting && commentSetting.enabled === false);
+    comments.checked = !comments.disabled;
   }
-  if (selectedPrivacy) updateTikTokPrivacyChoice(selectedPrivacy);
-  const settings = tiktokCreatorInfo.postingLimits?.interactionSettings || {};
-  [['tiktokAllowComments', 'allow_comment'], ['tiktokAllowDuet', 'allow_duet'], ['tiktokAllowStitch', 'allow_stitch']].forEach(([id, key]) => {
-    const input = document.getElementById(id);
-    const setting = settings[key];
-    if (input) {
-      input.checked = Boolean(setting && setting.default);
-      input.disabled = Boolean(setting && setting.enabled === false);
-    }
-  });
-
-  const commercialSelect = document.getElementById('tiktokCommercialType');
-    if (commercialSelect) {
-      const commercialLabels = { 
-        none: t('commercialNone'), 
-        brand_organic: t('commercialOwnBrand'), 
-        brand_content: t('commercialPartner') 
-      };
-      commercialSelect.replaceChildren(...(tiktokCreatorInfo.commercialContentTypes || [{ value: 'none' }]).map((item) => {
-        const option = document.createElement('option');
-        option.value = item.value;
-        option.textContent = commercialLabels[item.value] || item.label || item.value;
-        return option;
-      }));
-    }
-  updateTikTokPrivacyNote();
 }
 
 function buildTikTokCaption(value) {
   const caption = String(value || '').trim();
   if (caption.endsWith(TIKTOK_CAPTION_SUFFIX)) return caption;
   return `${caption}${caption ? '\n' : ''}${TIKTOK_CAPTION_SUFFIX}`;
-}
-
-function updateTikTokPrivacyNote() {
-  if (tiktokDraftNote && tiktokPrivacy) {
-    tiktokDraftNote.classList.toggle('hidden', tiktokPrivacy.value === 'PUBLIC_TO_EVERYONE' && !isTikTokScheduled());
-  }
-}
-
-function isTikTokScheduled() {
-  return document.querySelector('input[name="tiktokScheduleMode"]:checked')?.value === 'later';
-}
-
-function updateTikTokScheduleField() {
-  const scheduled = isTikTokScheduled();
-  if (tiktokScheduleField) tiktokScheduleField.classList.toggle('hidden', !scheduled);
-  if (tiktokSubmitBtn) tiktokSubmitBtn.textContent = t(scheduled ? 'scheduleSubmit' : 'publishNow');
-  if (tiktokScheduledFor) {
-    tiktokScheduledFor.required = scheduled;
-    const localNow = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    tiktokScheduledFor.min = localNow;
-  }
-  updateTikTokPrivacyNote();
-}
-
-function updateTikTokPrivacyChoice(input) {
-  if (!tiktokPrivacy || !input) return;
-  tiktokPrivacy.value = input.value;
-  document.querySelectorAll('.privacy-choice').forEach((choice) => {
-    choice.classList.toggle('selected', choice.contains(input));
-  });
-  updateTikTokPrivacyNote();
 }
 
 async function refreshTikTokStatus() {
@@ -1447,13 +1382,6 @@ if (zernioChangeKeyBtn) {
     zernioApiKeyInput.focus();
   });
 }
-document.querySelectorAll('input[name="tiktokPrivacyChoice"]').forEach((input) => {
-  input.addEventListener('change', () => updateTikTokPrivacyChoice(input));
-});
-document.querySelectorAll('input[name="tiktokScheduleMode"]').forEach((input) => {
-  input.addEventListener('change', updateTikTokScheduleField);
-});
-updateTikTokScheduleField();
 if (tiktokCaption && tiktokCaptionCount) {
   tiktokCaption.maxLength = 2200 - TIKTOK_CAPTION_SUFFIX.length - 1;
   tiktokCaption.addEventListener('input', () => {
@@ -1502,40 +1430,93 @@ if (downloadBtn) {
   });
 }
 
+// Upload progress for the composer. The video is sent with XMLHttpRequest because fetch() cannot report upload progress.
+const tiktokProgress = document.getElementById('tiktokProgress');
+const tiktokProgressLabel = document.getElementById('tiktokProgressLabel');
+const tiktokProgressValue = document.getElementById('tiktokProgressValue');
+const tiktokProgressBar = document.getElementById('tiktokProgressBar');
+let tiktokPublishing = false;
+
+function setTikTokProgress(label, ratio) {
+  if (!tiktokProgress) return;
+  const indeterminate = ratio === null;
+  const percent = indeterminate ? 0 : Math.min(100, Math.round(ratio * 100));
+  tiktokProgress.classList.remove('hidden');
+  tiktokProgress.classList.toggle('indeterminate', indeterminate);
+  tiktokProgressLabel.textContent = label;
+  tiktokProgressValue.textContent = indeterminate ? '' : `${percent}%`;
+  tiktokProgressBar.style.width = indeterminate ? '' : `${percent}%`;
+}
+
+function hideTikTokProgress() {
+  tiktokProgress?.classList.add('hidden');
+}
+
+function uploadTikTokVideo(url, blob, contentType, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url);
+    xhr.setRequestHeader('Content-Type', contentType);
+    if (tgAuthToken) xhr.setRequestHeader('Authorization', `Bearer ${tgAuthToken}`);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(event.loaded / event.total);
+    };
+    xhr.onload = () => {
+      let data = {};
+      try { data = JSON.parse(xhr.responseText || '{}'); } catch (_) {}
+      if (xhr.status >= 200 && xhr.status < 300) return resolve(data);
+      const error = new Error(data.error || 'tiktok_request_failed');
+      error.status = xhr.status;
+      reject(error);
+    };
+    xhr.onerror = () => {
+      const error = new Error('tiktok_request_failed');
+      error.status = 0;
+      reject(error);
+    };
+    xhr.send(blob);
+  });
+}
+
+// Leaving the page mid-upload would cancel it, so ask the browser to confirm first.
+window.addEventListener('beforeunload', (event) => {
+  if (!tiktokPublishing) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
+
 if (tiktokPublishForm) {
   tiktokPublishForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (!processedVideoBlob || !tiktokAccountId) return;
-    const scheduledFor = isTikTokScheduled() ? tiktokScheduledFor.value : '';
+    if (!processedVideoBlob || !tiktokAccountId || tiktokPublishing) return;
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-    if (scheduledFor && (!Number.isFinite(new Date(scheduledFor).getTime()) || new Date(scheduledFor).getTime() <= Date.now())) {
-      if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('scheduleInvalid');
-      tiktokScheduleField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const filename = (downloadBtn && downloadBtn.download) || 'ineasy-video.mp4';
+    const extension = filename.toLowerCase().match(/\.[^.]+$/)?.[0] || '';
+    const contentType = processedVideoBlob.type || (extension === '.mov' ? 'video/quicktime' : extension === '.mp4' ? 'video/mp4' : '');
+    const supportedFormat = (extension === '.mp4' && contentType === 'video/mp4') ||
+      (extension === '.mov' && contentType === 'video/quicktime');
+    if (!supportedFormat) {
+      if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('zernioMp4Required');
       return;
     }
+    tiktokPublishing = true;
     tiktokSubmitBtn.disabled = true;
+    tiktokPublishStatus.classList.remove('success');
+    tiktokPublishStatus.textContent = '';
+    setTikTokProgress(t('uploading'), 0);
     try {
-      if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('uploading');
-      const filename = (downloadBtn && downloadBtn.download) || 'ineasy-video.mp4';
-      const extension = filename.toLowerCase().match(/\.[^.]+$/)?.[0] || '';
-      const contentType = processedVideoBlob.type || (extension === '.mov' ? 'video/quicktime' : extension === '.mp4' ? 'video/mp4' : '');
-      const supportedFormat = (extension === '.mp4' && contentType === 'video/mp4') ||
-        (extension === '.mov' && contentType === 'video/quicktime');
-      if (!supportedFormat) {
-        if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('zernioMp4Required');
-        return;
-      }
       const upload = await tiktokApi('/api/tiktok/media/presign', {
         method: 'POST',
         body: JSON.stringify({ filename, contentType, size: processedVideoBlob.size }),
       });
-      const uploaded = await tiktokApi(`/api/tiktok/media/upload/${encodeURIComponent(upload.uploadId)}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': contentType },
-        body: processedVideoBlob,
-      });
+      const uploaded = await uploadTikTokVideo(
+        `/api/tiktok/media/upload/${encodeURIComponent(upload.uploadId)}`,
+        processedVideoBlob,
+        contentType,
+        (ratio) => setTikTokProgress(t('uploading'), ratio),
+      );
 
-      if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('publishing');
+      setTikTokProgress(t('publishing'), null);
       const result = await tiktokApi('/api/tiktok/publish', {
         method: 'POST',
         body: JSON.stringify({
@@ -1544,52 +1525,48 @@ if (tiktokPublishForm) {
           content: buildTikTokCaption(tiktokCaption.value),
           privacyLevel: tiktokPrivacy.value,
           allowComment: document.getElementById('tiktokAllowComments').checked,
-          allowDuet: document.getElementById('tiktokAllowDuet').checked,
-          allowStitch: document.getElementById('tiktokAllowStitch').checked,
-          madeWithAi: document.getElementById('tiktokMadeWithAi').checked,
+          allowDuet: false,
+          allowStitch: false,
+          madeWithAi: false,
           commercialContentType: 'none',
-          scheduledFor: scheduledFor || null,
+          scheduledFor: null,
           timezone,
-          confirmedPreview: document.getElementById('tiktokConsentGiven').checked,
-          consentGiven: document.getElementById('tiktokConsentGiven').checked,
+          confirmedPreview: true,
+          consentGiven: true,
         }),
       });
-      if (tiktokPublishStatus) {
-        const platformResult = result.post?.platforms?.find((item) => item.platform === 'tiktok');
-        const publishState = platformResult?.status || result.post?.status;
-        console.info('[INEASY] TikTok publish response', {
-          postStatus: result.post?.status || 'unknown',
-          platformStatus: publishState || 'unknown',
-        });
-        tiktokPublishStatus.textContent = scheduledFor
-          ? t('publishScheduled')
-          : result.draft
-            ? t('draftSuccess')
-            : publishState === 'published' ? t('publishSuccess') : t('publishPending');
-        if (!scheduledFor && !result.draft && publishState === 'published') {
-          document.getElementById('postSuccessOverlay')?.classList.remove('hidden');
-        } else if (result.draft) {
-          document.getElementById('draftWarningOverlay')?.classList.remove('hidden');
-        }
+      hideTikTokProgress();
+      const platformResult = result.post?.platforms?.find((item) => item.platform === 'tiktok');
+      const publishState = platformResult?.status || result.post?.status;
+      console.info('[INEASY] TikTok publish response', {
+        postStatus: result.post?.status || 'unknown',
+        platformStatus: publishState || 'unknown',
+      });
+      const published = !result.draft && publishState === 'published';
+      tiktokPublishStatus.textContent = result.draft
+        ? t('draftSuccess')
+        : publishState === 'published' ? t('publishSuccess') : t('publishPending');
+      tiktokPublishStatus.classList.toggle('success', published);
+      if (published) {
+        document.getElementById('postSuccessOverlay')?.classList.remove('hidden');
+      } else if (result.draft) {
+        document.getElementById('draftWarningOverlay')?.classList.remove('hidden');
       }
-      // Keep the publish form and its status visible after publishing.
-      // It closes when the user switches tabs or clears/changes the video.
     } catch (error) {
+      hideTikTokProgress();
       console.warn('[INEASY] TikTok publish request failed', {
         status: error.status || null,
         reason: error.message || 'unknown_error',
       });
-      if (tiktokPublishStatus) {
-        tiktokPublishStatus.textContent = error.status === 401
-          ? t('authExpired')
-          : error.message === 'invalid_zernio_api_key' ? t('invalidZernioKey') : localizeTikTokPublishError(error.message);
-      }
+      tiktokPublishStatus.textContent = error.status === 401
+        ? t('authExpired')
+        : error.message === 'invalid_zernio_api_key' ? t('invalidZernioKey') : localizeTikTokPublishError(error.message);
     } finally {
+      tiktokPublishing = false;
       tiktokSubmitBtn.disabled = false;
     }
   });
 }
-
 
 const draftWarningOverlay = document.getElementById('draftWarningOverlay');
 const closeDraftWarning = () => draftWarningOverlay?.classList.add('hidden');

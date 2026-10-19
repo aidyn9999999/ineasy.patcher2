@@ -15,14 +15,14 @@
 <meta name="twitter:title" content="INEASY — обработка видео для TikTok в высоком качестве">
 <meta name="twitter:description" content="Обработай своё видео для TikTok в высоком качестве с INEASY.">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261018-seo-v1">
-<link rel="apple-touch-icon" href="/favicon.svg?v=20261018-seo-v1">
+<link rel="apple-touch-icon" href="/ineasy-logo.png?v=20261019-photo-logo-v1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Unbounded:wght@600;700;800&family=Exo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20261018-daily-limit-label-v1">
 <link rel="stylesheet" href="home.css?v=20261014-home-video-preview-v1">
-<link rel="stylesheet" href="theme.css?v=20261019-receiver-v1">
+<link rel="stylesheet" href="theme.css?v=20261019-mode-composer-v1">
 <script>
 (function () {
   var ua = navigator.userAgent || '';
@@ -35,7 +35,7 @@
 
 <div class="app-shell">
   <header class="topbar">
-    <div class="brand"><span class="brand-in">in</span><span class="brand-easy">easy</span></div>
+    <div class="brand"><img class="brand-logo" src="ineasy-logo.png?v=20261019-photo-logo-v1" alt="INEASY" height="40"></div>
     <div class="balance-pill" id="balancePill">
       <span class="id-part"><span id="idCaption">ID:</span> <b id="tgIdLabel">—</b></span>
       <button class="copy-id-btn icon-action-btn" id="copyIdBtn" type="button" aria-label="Copy Telegram ID" title="Copy Telegram ID"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-check ui-icon" aria-hidden="true"><path d="M8 8V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-3"/><rect x="3" y="8" width="13" height="13" rx="2"/><path d="m6.5 14.5 2 2 4-4"/></svg></button>
@@ -178,14 +178,15 @@
         </div>
         </section>
       <input id="postingDevice" type="hidden" value="">
-      <div class="patcher-version-picker hidden" role="group" aria-label="Patcher version">
+      <div class="patcher-version-picker hidden" role="radiogroup" aria-label="Режим обработки">
+        <span class="mode-thumb" aria-hidden="true"></span>
         <label class="patcher-version-option">
           <input type="radio" name="patcherVersion" value="v1" checked>
-          <span><strong>V1 <em class="mode-status mode-status-slow">Может тормозить</em></strong><small>Обычный режим — используйте его</small></span>
+          <span class="mode-card"><strong>V1 <em class="mode-status mode-status-standard">Стандарт</em></strong><small>Обычный режим — используйте его</small></span>
         </label>
         <label class="patcher-version-option patcher-version-beta">
           <input type="radio" name="patcherVersion" value="v2">
-          <span><strong>V2 <em class="mode-status mode-status-best">Лучший выбор</em></strong><small>Публичный режим — доступен для обычного использования</small></span>
+          <span class="mode-card"><strong>V2 <em class="mode-status mode-status-best">Лучший выбор</em></strong><small>Публичный режим — доступен для обычного использования</small></span>
         </label>
       </div>
       <p class="patcher-version-note hidden" id="patcherVersionNote" aria-hidden="true"></p>
@@ -360,50 +361,22 @@
           <button class="tiktok-connect-btn hidden" id="tiktokConnectBtn" type="button">Connect TikTok account</button>
         </section>
         <form class="tiktok-publish-form hidden" id="tiktokPublishForm">
-          <p class="tiktok-upload-notice" id="tiktokUploadNotice">Рекомендуем автопост: опубликуйте обработанное видео прямо отсюда, не переключаясь между приложениями.</p>
-          <p class="tiktok-drafts-warning" id="tiktokDraftsWarning">Черновики могут не храниться постоянно. Проверяйте их в TikTok и удаляйте ненужные вручную.</p>
-          <label class="tiktok-field-label" for="tiktokCaption" id="tiktokCaptionLabel">Description</label>
-          <textarea id="tiktokCaption" maxlength="2200" rows="3" placeholder="#хештеги  @упоминания"></textarea>
+          <label class="tiktok-field-label" for="tiktokCaption" id="tiktokCaptionLabel">Описание</label>
+          <textarea id="tiktokCaption" maxlength="2200" rows="4" placeholder="#хештеги  @упоминания"></textarea>
           <div class="tiktok-caption-hint"><span id="tiktokCaptionHint">#хештеги  @упоминания</span><span id="tiktokCaptionCount">0 / 2200</span></div>
-
-          <fieldset class="post-options-group">
-            <legend id="tiktokPrivacyLabel">Кто может увидеть это видео</legend>
-            <p class="post-options-description" id="tiktokPrivacyDescription">Выберите видимость перед публикацией</p>
-            <div class="privacy-choice-grid" role="radiogroup" aria-labelledby="tiktokPrivacyLabel">
-              <label class="privacy-choice"><input type="radio" name="tiktokPrivacyChoice" value="PUBLIC_TO_EVERYONE" checked><span id="tiktokPrivacyPublic">Все</span></label>
-              <label class="privacy-choice"><input type="radio" name="tiktokPrivacyChoice" value="MUTUAL_FOLLOW_FRIENDS"><span id="tiktokPrivacyFriends">Друзья</span></label>
-              <label class="privacy-choice"><input type="radio" name="tiktokPrivacyChoice" value="SELF_ONLY"><span id="tiktokPrivacyPrivate">Только я</span></label>
-            </div>
-            <input id="tiktokPrivacy" type="hidden" value="PUBLIC_TO_EVERYONE">
-          </fieldset>
-
-          <fieldset class="post-options-group">
-            <legend id="tiktokInteractionsTitle">Взаимодействия</legend>
-            <p class="post-options-description" id="tiktokInteractionsDescription">Разрешите зрителям взаимодействовать с видео</p>
-            <div class="tiktok-toggle-grid">
-              <label><input id="tiktokAllowComments" type="checkbox"><span id="tiktokCommentsLabel">Разрешить комментарии</span></label>
-              <label><input id="tiktokAllowDuet" type="checkbox"><span id="tiktokDuetLabel">Разрешить дуэты</span></label>
-              <label><input id="tiktokAllowStitch" type="checkbox"><span id="tiktokStitchLabel">Разрешить Stitch</span></label>
-            </div>
-          </fieldset>
-          <label class="tiktok-ai-toggle"><input id="tiktokMadeWithAi" type="checkbox"><span id="tiktokAiLabel">Контент создан с помощью ИИ</span></label>
-
-          <fieldset class="post-options-group schedule-group">
-            <legend id="tiktokScheduleTitle">Когда опубликовать?</legend>
-            <div class="schedule-choice-grid" role="radiogroup" aria-labelledby="tiktokScheduleTitle">
-              <label class="schedule-choice"><input type="radio" name="tiktokScheduleMode" value="now" checked><span id="tiktokScheduleNow">Сейчас</span></label>
-              <label class="schedule-choice"><input type="radio" name="tiktokScheduleMode" value="later"><span id="tiktokScheduleLater">Запланировать</span></label>
-            </div>
-            <div class="schedule-time-field hidden" id="tiktokScheduleField">
-              <label class="tiktok-field-label" for="tiktokScheduledFor" id="tiktokScheduledForLabel">Дата и время публикации</label>
-              <input id="tiktokScheduledFor" type="datetime-local">
-              <small id="tiktokTimezoneHint"></small>
-            </div>
-          </fieldset>
-          <p class="tiktok-draft-note hidden" id="tiktokDraftNote">Friends-only and private videos are sent as drafts. Finish visibility and publishing in TikTok.</p>
-
-          <label class="tiktok-consent"><input id="tiktokConsentGiven" type="checkbox" required><span id="tiktokConsentLabel">Подтверждаю, что имею права на видео и музыку и принимаю правила публикации TikTok.</span></label>
-          <button class="tiktok-submit-btn" id="tiktokSubmitBtn" type="submit">Publish now</button>
+          <label class="tiktok-comments-toggle">
+            <span id="tiktokCommentsLabel">Разрешить комментарии</span>
+            <input id="tiktokAllowComments" type="checkbox" checked>
+            <i class="tiktok-switch" aria-hidden="true"></i>
+          </label>
+          <input id="tiktokPrivacy" type="hidden" value="PUBLIC_TO_EVERYONE">
+          <div class="tiktok-progress hidden" id="tiktokProgress" aria-live="polite">
+            <div class="tiktok-progress-head"><span id="tiktokProgressLabel"></span><b id="tiktokProgressValue">0%</b></div>
+            <div class="tiktok-progress-track"><i id="tiktokProgressBar"></i></div>
+            <p class="tiktok-progress-warn">Не закрывайте страницу, иначе загрузка прервётся.</p>
+          </div>
+          <button class="tiktok-submit-btn" id="tiktokSubmitBtn" type="submit">Опубликовать</button>
+          <p class="tiktok-consent-note">Публикуя видео, вы подтверждаете права на видео и музыку и соглашаетесь с правилами TikTok.</p>
         </form>
         <p class="tiktok-publish-status" id="tiktokPublishStatus" role="status" aria-live="polite"></p>
         <button class="tiktok-change-key-btn" id="zernioChangeKeyBtn" type="button">Change API key</button>
@@ -445,8 +418,8 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261013-4"></script>
-<script src="app.js?v=20261019-real-progress-v1"></script>
-<script src="local-video-archive.js?v=20261018-archive-minimal-v1"></script>
+<script src="app.js?v=20261019-composer-upload-v1"></script>
+<script src="local-video-archive.js?v=20261019-archive-layout-v1"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';

@@ -1733,3 +1733,71 @@ body { overflow-x: clip; }
 
 /* Progress fill follows the real value without easing. */
 .progress-track i { transition: width .2s linear; }
+
+/* ===== Photo logo in the header ===== */
+.topbar .brand-logo { display: block; height: 40px; width: auto; max-width: 160px; object-fit: contain; filter: drop-shadow(0 6px 16px rgba(47, 107, 240, .28)); }
+@media (max-width: 640px) { .topbar .brand-logo { height: 32px; } }
+
+/* ===== V1 / V2 sliding switch ===== */
+#patchSection .patcher-version-picker { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin: 18px 0 12px; padding: 5px; border: 1px solid #263B5A; border-radius: 16px; background: #0A1221; isolation: isolate; overflow: hidden; }
+#patchSection .mode-thumb { position: absolute; z-index: 0; top: 5px; bottom: 5px; left: 5px; width: calc(50% - 5px); border-radius: 12px; background: linear-gradient(135deg, #2F6BF0, #5B9BFF); box-shadow: 0 10px 28px rgba(47, 107, 240, .38), inset 0 1px 0 rgba(255, 255, 255, .22); transition: transform .6s cubic-bezier(.34, 1.45, .5, 1), background .45s ease, box-shadow .45s ease; }
+#patchSection .patcher-version-picker:has(input[value="v2"]:checked) .mode-thumb { transform: translateX(100%); background: linear-gradient(135deg, #7C3AED, #2563EB); box-shadow: 0 10px 28px rgba(124, 58, 237, .4), inset 0 1px 0 rgba(255, 255, 255, .22); }
+#patchSection .patcher-version-option { position: relative; z-index: 1; min-width: 0; cursor: pointer; }
+#patchSection .patcher-version-option input { position: absolute; opacity: 0; pointer-events: none; }
+#patchSection .patcher-version-option .mode-card { display: flex; flex-direction: column; gap: 4px; min-height: 0; padding: 12px 14px; border: 0; border-radius: 12px; background: transparent; box-shadow: none; transition: transform .35s cubic-bezier(.34, 1.56, .64, 1); }
+#patchSection .patcher-version-option input:checked + .mode-card { border-color: transparent; background: transparent; transform: scale(1.02); }
+#patchSection .patcher-version-option:hover .mode-card { transform: translateY(-1px); }
+#patchSection .patcher-version-option input:focus-visible + .mode-card { outline: 2px solid #7FB0FF; outline-offset: 2px; }
+#patchSection .patcher-version-option .mode-card strong { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 15px; font-weight: 700; letter-spacing: .05em; color: #8FA3BF; transition: color .35s ease; }
+#patchSection .patcher-version-option .mode-card small { font-size: 12px; line-height: 1.4; color: #6F819C; transition: color .35s ease; }
+#patchSection .patcher-version-option input:checked + .mode-card strong,
+#patchSection .patcher-version-option input:checked + .mode-card small { color: #FFFFFF; }
+#patchSection .mode-status { font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; line-height: 1.2; padding: 3px 8px; border: 1px solid rgba(143, 163, 191, .35); border-radius: 999px; color: #AFC0D8; background: rgba(143, 163, 191, .08); transition: background .35s ease, border-color .35s ease; }
+#patchSection .mode-status-best { border-color: rgba(255, 255, 255, .55); background: rgba(255, 255, 255, .2); color: #FFFFFF; box-shadow: 0 0 12px rgba(255, 255, 255, .25); }
+#patchSection .patcher-version-option input:checked + .mode-card .mode-status { animation: modeBadgePop .6s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes modeBadgePop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+@media (max-width: 420px) { #patchSection .patcher-version-picker { padding: 4px; } #patchSection .patcher-version-option .mode-card { padding: 10px; } }
+
+/* ===== Local archive ===== */
+#ineasyLocalArchive .ia-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; min-width: 0; padding: 12px; }
+#ineasyLocalArchive .ia-info { min-width: 0; }
+#ineasyLocalArchive .ia-name { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; }
+#ineasyLocalArchive .ia-meta { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ineasyLocalArchive .ia-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; }
+#ineasyLocalArchive .ia-btn { min-width: 0; min-height: 36px; width: 100%; padding: 8px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ineasyLocalArchive .ia-live-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ===== Publish composer: description, comments and one button ===== */
+#tiktokPublishForm { gap: 12px; }
+#tiktokPublishForm textarea { min-height: 112px; padding: 12px 14px; border-radius: 12px; font-size: 14px; }
+#tiktokPublishForm .tiktok-comments-toggle { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #263B5A; border-radius: 12px; background: #0A1221; color: #D7E5FB; font-size: 14px; cursor: pointer; user-select: none; }
+#tiktokPublishForm .tiktok-comments-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+#tiktokPublishForm .tiktok-switch { position: relative; flex: 0 0 auto; width: 44px; height: 26px; border-radius: 999px; background: #1B2A44; transition: background .35s ease, box-shadow .35s ease; }
+#tiktokPublishForm .tiktok-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #FFFFFF; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); transition: transform .5s cubic-bezier(.34, 1.56, .64, 1); }
+#tiktokPublishForm .tiktok-comments-toggle input:checked ~ .tiktok-switch { background: linear-gradient(135deg, #2F6BF0, #5B9BFF); box-shadow: 0 0 16px rgba(47, 107, 240, .45); }
+#tiktokPublishForm .tiktok-comments-toggle input:checked ~ .tiktok-switch::after { transform: translateX(18px); }
+#tiktokPublishForm .tiktok-comments-toggle input:focus-visible ~ .tiktok-switch { outline: 2px solid #7FB0FF; outline-offset: 2px; }
+#tiktokPublishForm .tiktok-comments-toggle input:disabled ~ .tiktok-switch { opacity: .45; }
+#tiktokPublishForm .tiktok-progress { display: grid; gap: 8px; padding: 14px; border: 1px solid rgba(91, 155, 255, .3); border-radius: 12px; background: rgba(47, 107, 240, .08); animation: tiktokProgressIn .4s ease both; }
+#tiktokPublishForm .tiktok-progress.hidden { display: none; }
+#tiktokPublishForm .tiktok-progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 13px; font-weight: 600; color: #D7E5FB; }
+#tiktokPublishForm .tiktok-progress-head b { font-variant-numeric: tabular-nums; color: #FFFFFF; }
+#tiktokPublishForm .tiktok-progress-track { position: relative; height: 8px; border-radius: 999px; background: rgba(127, 176, 255, .14); overflow: hidden; }
+#tiktokPublishForm .tiktok-progress-track i { position: absolute; top: 0; bottom: 0; left: 0; width: 0; border-radius: inherit; background: linear-gradient(90deg, #2F6BF0, #7FB0FF, #2F6BF0); background-size: 200% 100%; transition: width .35s ease; animation: tiktokShine 1.6s linear infinite; }
+#tiktokPublishForm .tiktok-progress.indeterminate .tiktok-progress-track i { width: 40%; animation: tiktokSlide 1.3s ease-in-out infinite, tiktokShine 1.6s linear infinite; }
+#tiktokPublishForm .tiktok-progress-warn { margin: 0; font-size: 12px; color: #F5C26B; }
+#tiktokPublishForm .tiktok-submit-btn { width: 100%; min-height: 50px; border-radius: 12px; font-size: 15px; font-weight: 700; letter-spacing: .02em; }
+#tiktokPublishForm .tiktok-submit-btn:not(:disabled):active { transform: scale(.98); }
+#tiktokPublishForm .tiktok-submit-btn:disabled { background: linear-gradient(90deg, #1E3A6E, #2F6BF0, #1E3A6E); background-size: 200% 100%; color: #E8EEF8; cursor: progress; animation: tiktokShine 1.6s linear infinite; }
+#tiktokPublishForm .tiktok-consent-note { margin: 0; font-size: 11px; line-height: 1.5; color: #7E8BA0; text-align: center; }
+#tiktokPublishStatus { min-height: 1em; }
+#tiktokPublishStatus.success { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border: 1px solid rgba(105, 225, 123, .35); border-radius: 12px; background: rgba(105, 225, 123, .1); color: #9AF0AA; font-weight: 600; animation: tiktokPop .6s cubic-bezier(.34, 1.56, .64, 1); }
+#tiktokPublishStatus.success::before { content: '✓'; display: grid; place-items: center; flex: 0 0 22px; width: 22px; height: 22px; border-radius: 50%; background: #69E17B; color: #0D1728; font-weight: 800; animation: tiktokCheck .5s ease .15s both; }
+@keyframes tiktokSlide { 0% { left: -40%; } 100% { left: 100%; } }
+@keyframes tiktokShine { 0% { background-position: 0 0; } 100% { background-position: 200% 0; } }
+@keyframes tiktokProgressIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes tiktokPop { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes tiktokCheck { 0% { transform: scale(0); } 70% { transform: scale(1.2); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  #patchSection .mode-thumb, #patchSection .mode-status, #tiktokPublishForm .tiktok-progress-track i, #tiktokPublishForm .tiktok-submit-btn:disabled, #tiktokPublishStatus.success, #tiktokPublishStatus.success::before { animation: none; transition: none; }
+}
