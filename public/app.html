@@ -17,12 +17,13 @@
 <link rel="icon" type="image/png" href="/ineasy-logo.png?v=20261019-favicon-photo-v1">
 <link rel="apple-touch-icon" href="/ineasy-logo.png?v=20261019-photo-logo-v1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Exo+2:wght@500;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=20261018-daily-limit-label-v1">
 <link rel="stylesheet" href="home.css?v=20261014-home-video-preview-v1">
-<link rel="stylesheet" href="theme.css?v=20261019-living-ui-v1">
+<link rel="stylesheet" href="theme.css?v=20261019-visual-refresh-v1">
 <script>
 (function () {
   var ua = navigator.userAgent || '';
@@ -80,6 +81,13 @@
     <section class="view-section home-section active" id="homeSection">
       <section class="home-hero" id="homeHero" aria-labelledby="homeTitle">
         <div class="home-hero-shade" aria-hidden="true"></div>
+        <div class="deco-stage" aria-hidden="true">
+          <span class="deco-orb deco-orb-a"></span><span class="deco-orb deco-orb-b"></span>
+          <span class="deco-ring deco-ring-a"></span><span class="deco-ring deco-ring-b"></span>
+          <div class="deco-cube deco-cube-a"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="deco-cube deco-cube-b"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <span class="deco-spark s1">✦</span><span class="deco-spark s2">✦</span><span class="deco-spark s3">✦</span>
+        </div>
         <div class="home-hero-copy">
           <h1 id="homeTitle"><span class="home-greeting">Добро пожаловать, <span id="homeUserName" class="home-name">друг</span></span><span class="home-headline">Публикуй видео в TikTok без потери качества</span></h1>
           <p class="home-intro" id="homeIntro">До <strong class="hero-quality">4K · 120 FPS</strong> <span class="hero-workflow">Обработай видео, подключи автопост и опубликуй в TikTok — без повторного перекодирования.</span></p>
@@ -424,7 +432,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261013-4"></script>
-<script src="app.js?v=20261019-living-ui-v1"></script>
+<script src="app.js?v=20261019-visual-refresh-v1"></script>
 <script src="local-video-archive.js?v=20261019-archive-layout-v1"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
