@@ -29,7 +29,7 @@ self.onmessage = async function (event) {
     // Always send the already-prepared file through ADJN after CFR conversion.
     // ADJN's own HDR contract verifies that it either safely patches metadata or
     // returns the exact same bytes for unsupported/complex HDR containers.
-    importScripts('adjn-processor.js?v=20261013-4', 'v2-beta-processor.js?v=20261013-4');
+    importScripts('adjn-processor.js?v=20261013-4', 'v2-beta-processor.js?v=20261019-1');
     if (engine === 'rein-beta') {
       if (!globalThis.V2BetaVideoProcessor?.processVideoDirect) {
         throw new Error('V2_BETA_ENGINE_NOT_LOADED');
