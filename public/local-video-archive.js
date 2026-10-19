@@ -82,7 +82,9 @@
     const bar = document.getElementById('processingProgress');
     const live = document.getElementById('ineasyArchiveLive');
     if (!state || !bar || !live) return;
-    const active = !state.classList.contains('hidden') && !state.classList.contains('failed');
+    // Once the bar reaches 100% processing is finished, so the live row should not linger at 100%.
+    const ratio = parseFloat(bar.style.width) || 0;
+    const active = !state.classList.contains('hidden') && !state.classList.contains('failed') && ratio < 100;
     live.classList.toggle('hidden', !active);
     if (!active) return;
     document.getElementById('ineasyArchiveLiveBar').style.width = bar.style.width;
@@ -133,6 +135,7 @@
         const name = document.createElement('span');
         name.className = 'ia-name';
         name.textContent = record.name;
+        name.title = record.name;
         const meta = document.createElement('span');
         meta.className = 'ia-meta';
         meta.textContent = formatSize(record.blob.size) + ' · ' + new Date(record.createdAt).toLocaleString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
