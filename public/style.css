@@ -311,7 +311,7 @@ h1, h2, .tg-btn, .patch-title { font-family: 'Manrope', sans-serif; }
   position: fixed;
   inset: 0;
   background: rgba(26,31,54,0.5);
-  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -829,7 +829,7 @@ button:focus-visible, .tg-btn:focus-visible {
   padding: 0 18px;
   background: rgba(255, 255, 255, 0.035);
   box-shadow: inset 0 1px 12px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
   font-size: 14px;
 }
 .checker-input-row input::placeholder { color: #a99a8d; }
@@ -849,7 +849,7 @@ button:focus-visible, .tg-btn:focus-visible {
   color: #d5c6b9;
   font-size: 12px;
   line-height: 1.5;
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
 }
 .checker-source.hidden, .checker-result.hidden { display: none; }
 .checker-status { display: flex; align-items: center; gap: 9px; min-height: 0; margin: 0; }
@@ -870,7 +870,7 @@ button:focus-visible, .tg-btn:focus-visible {
   border-color: rgba(255, 107, 0, 0.26);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.025);
-  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
 }
 .result-heading > span { background: var(--accent); color: #1a0d05; }
 .result-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
@@ -1004,7 +1004,7 @@ body {
   border-color: #292927;
   background: rgba(20, 20, 19, 0.94);
   box-shadow: 0 8px 26px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
 }
 .topbar .brand {
   color: var(--text);
@@ -1144,7 +1144,7 @@ body {
   border-radius: 8px 8px 0 0;
   background: rgba(25, 25, 24, 0.97);
   box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
 }
 .bottom-nav .nav-tab {
   min-height: 52px;
@@ -1161,7 +1161,7 @@ body {
 .nav-icon, .nav-icon svg { width: 18px; height: 18px; }
 
 .modal, .tiktok-composer { border-radius: 8px; background: #1c1c1b; }
-.modal-overlay { background: rgba(0, 0, 0, 0.76); backdrop-filter: blur(8px); }
+.modal-overlay { background: rgba(0, 0, 0, 0.76); -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px); }
 .tiktok-upload-notice, .tiktok-draft-note {
   border-radius: 6px;
   border-color: #3c3c37;
@@ -1277,7 +1277,7 @@ button, .tg-btn, .news-link, .download-link, .balance-buy-site, .balance-buy-tel
 @keyframes resultMarkPop { from { opacity: 0; transform: scale(.45) rotate(-20deg); } to { opacity: 1; transform: scale(1) rotate(0); } }
 @keyframes tabIconPop { from { opacity: .5; transform: translateY(3px) scale(.78); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .nav-icon.icon-arrive { animation: tabIconPop 280ms cubic-bezier(.2,1.3,.4,1) both; }
-.tiktok-overlay { position: static; inset: auto; z-index: auto; display: block; width: 100%; padding: 0; background: transparent; backdrop-filter: none; }
+.tiktok-overlay { position: static; inset: auto; z-index: auto; display: block; width: 100%; padding: 0; background: transparent; -webkit-backdrop-filter:none;backdrop-filter:none; }
 .tiktok-overlay.hidden { display: none; }
 .tiktok-composer { width: min(100% - 32px, 760px); max-width: 760px; max-height: none; margin: 0 auto 28px; overflow: visible; border: 1px solid var(--card-border); box-shadow: 0 14px 36px rgba(0, 0, 0, .2); animation: sectionArrive 260ms ease-out both; }
 .tiktok-composer .modal-head { position: static; display: flex; align-items: center; justify-content: space-between; padding: 15px 18px 0; }
@@ -1569,7 +1569,7 @@ button, .tg-btn, .checker-open-btn, .checker-input-row button, .pkg-buy,
   background: rgba(11, 15, 22, .94);
   border-bottom-color: rgba(164, 180, 201, .14);
   box-shadow: 0 10px 36px rgba(0, 0, 0, .16);
-  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
 }
 .topbar .brand { color: #e5ebf4; letter-spacing: .12em; font-weight: 800; }
 .balance-pill, .user-pill, .language-dock, .login-language-dock {
@@ -1611,7 +1611,7 @@ button, .tg-btn, .checker-open-btn, .checker-input-row button, .pkg-buy,
   border-radius: 12px;
   border: 1px solid rgba(164, 180, 201, .22);
 }
-.modal-overlay { background: rgba(2, 5, 9, .76); backdrop-filter: blur(10px); }
+.modal-overlay { background: rgba(2, 5, 9, .76); -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px); }
 .modal {
   border: 1px solid rgba(164, 180, 201, .22);
   border-radius: 22px;
@@ -1847,7 +1847,7 @@ body {
 .bottom-nav {
   background: rgba(7, 17, 31, .94);
   border-top-color: rgba(120, 157, 202, .22);
-  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
 }
 .bottom-nav .nav-tab.active {
   color: #a9ccff;
@@ -1912,8 +1912,7 @@ body {
 .safari-browser .modal,
 .safari-browser .popover,
 .safari-browser .dropdown-menu {
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  -webkit-backdrop-filter:none;backdrop-filter:none;
 }
 .safari-browser .app-shell,
 .safari-browser .main-content,
