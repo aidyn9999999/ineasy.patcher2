@@ -1197,6 +1197,16 @@ async function refreshAllDailyFreeBalances({ forceRefill = false, reportCtx = nu
   return { checked, renewed, failed };
 }
 
+// {name} in a broadcast becomes the recipient's @username, first name, or a neutral fallback.
+async function broadcastName(telegramId) {
+  try {
+    const chat = await bot.telegram.getChat(telegramId);
+    if (chat.username) return '@' + chat.username;
+    if (chat.first_name) return chat.first_name;
+  } catch (_) {}
+  return 'друг';
+}
+
 async function runUserBroadcast(message, reportCtx) {
   const messageHash = crypto.createHash('sha256').update(message).digest('hex').slice(0, 24);
   const lockKey = `userBroadcastLock:${messageHash}`;
@@ -1232,11 +1242,12 @@ async function runUserBroadcast(message, reportCtx) {
             continue;
           }
 
+          const text = message.replace(/\{name\}/g, await broadcastName(telegramId));
           let delivered = false;
           let lastError = null;
           for (let attempt = 0; attempt < 4 && !delivered; attempt++) {
             try {
-              await bot.telegram.sendMessage(telegramId, message, { disable_web_page_preview: true });
+              await bot.telegram.sendMessage(telegramId, text, { disable_web_page_preview: true });
               await redis.set(sentKey, '1', { ex: 30 * 24 * 60 * 60 });
               delivered = true;
               sent++;
@@ -1395,7 +1406,7 @@ bot.command('broadcast', async (ctx) => {
   if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
   const message = String(ctx.message?.text || '').replace(/^\/broadcast(?:@\w+)?\s*/i, '').trim();
   if (!message) {
-    await ctx.reply('Укажите текст рассылки после команды. Пример:\n/broadcast 🎉 INEASY PATCHER обновлён! Теперь вам доступны 2 бесплатных видео каждый день. Баланс обновляется автоматически. Сайт: https://ineasy.site/');
+    await ctx.reply('Укажите текст рассылки после команды. В тексте {name} заменится на ник получателя. Пример:\n/broadcast Привет, {name}! Обновились реквизиты. Купить видео уже доступно: выберите пакет и получайте видео. Спасибо за доверие!\n\nИли:\n/broadcast 🎉 INEASY PATCHER обновлён! Теперь вам доступны 2 бесплатных видео каждый день. Баланс обновляется автоматически. Сайт: https://ineasy.site/');
     return;
   }
   if (message.length > 4000) {
