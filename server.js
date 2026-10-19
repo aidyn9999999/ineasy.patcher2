@@ -1227,50 +1227,53 @@ async function runUserBroadcast(message, reportCtx) {
     do {
       const page = await redis.scan(cursor, { match: 'botStarted:*', count: 100 });
       cursor = String(page[0]);
-      for (const key of (page[1] || [])) {
-        const telegramId = String(key).slice('botStarted:'.length);
-        if (!/^\d+$/.test(telegramId)) continue;
-        scanned++;
-        const sentKey = `userBroadcast:${messageHash}:sent:${telegramId}`;
-        try {
-          if (await redis.get(sentKey)) {
-            skipped++;
-            continue;
-          }
-          if (await isUserBlocked(telegramId)) {
-            skipped++;
-            continue;
-          }
-
-          const text = message.replace(/\{name\}/g, await broadcastName(telegramId));
-          let delivered = false;
-          let lastError = null;
-          for (let attempt = 0; attempt < 4 && !delivered; attempt++) {
-            try {
-              await bot.telegram.sendMessage(telegramId, text, { disable_web_page_preview: true });
-              await redis.set(sentKey, '1', { ex: 30 * 24 * 60 * 60 });
-              delivered = true;
-              sent++;
-            } catch (error) {
-              lastError = error;
-              const status = Number(error?.response?.error_code || error?.response?.statusCode || 0);
-              const retryAfter = Number(error?.response?.parameters?.retry_after || error?.parameters?.retry_after || 0);
-              const transient = status === 429 || status >= 500 || !status;
-              if (!transient || attempt === 3) break;
-              const waitMs = retryAfter > 0 ? retryAfter * 1000 + 250 : 1000 * (attempt + 1);
-              await new Promise((resolve) => setTimeout(resolve, Math.min(waitMs, 60000)));
+      const ids = (page[1] || [])
+        .map((key) => String(key).slice('botStarted:'.length))
+        .filter((telegramId) => /^\d+$/.test(telegramId));
+      // Send in small parallel batches: about 25 messages/s, under Telegram's ~30/s limit.
+      for (let i = 0; i < ids.length; i += 10) {
+        await Promise.all(ids.slice(i, i + 10).map(async (telegramId) => {
+          scanned++;
+          const sentKey = `userBroadcast:${messageHash}:sent:${telegramId}`;
+          try {
+            if (await redis.get(sentKey)) {
+              skipped++;
+              return;
             }
-          }
-          if (!delivered) {
+            if (await isUserBlocked(telegramId)) {
+              skipped++;
+              return;
+            }
+
+            const text = message.replace(/\{name\}/g, await broadcastName(telegramId));
+            let delivered = false;
+            let lastError = null;
+            for (let attempt = 0; attempt < 4 && !delivered; attempt++) {
+              try {
+                await bot.telegram.sendMessage(telegramId, text, { disable_web_page_preview: true });
+                await redis.set(sentKey, '1', { ex: 30 * 24 * 60 * 60 });
+                delivered = true;
+                sent++;
+              } catch (error) {
+                lastError = error;
+                const status = Number(error?.response?.error_code || error?.response?.statusCode || 0);
+                const retryAfter = Number(error?.response?.parameters?.retry_after || error?.parameters?.retry_after || 0);
+                const transient = status === 429 || status >= 500 || !status;
+                if (!transient || attempt === 3) break;
+                const waitMs = retryAfter > 0 ? retryAfter * 1000 + 250 : 1000 * (attempt + 1);
+                await new Promise((resolve) => setTimeout(resolve, Math.min(waitMs, 60000)));
+              }
+            }
+            if (!delivered) {
+              failed++;
+              console.error('[INEASY] Broadcast failed for', telegramId, lastError?.message || lastError);
+            }
+          } catch (error) {
             failed++;
-            console.error('[INEASY] Broadcast failed for', telegramId, lastError?.message || lastError);
+            console.error('[INEASY] Broadcast processing failed for', telegramId, error.message);
           }
-        } catch (error) {
-          failed++;
-          console.error('[INEASY] Broadcast processing failed for', telegramId, error.message);
-        }
-        // Stay below Telegram's approximate free broadcast limit.
-        await new Promise((resolve) => setTimeout(resolve, 40));
+        }));
+        await new Promise((resolve) => setTimeout(resolve, 400));
       }
     } while (cursor !== '0');
 
