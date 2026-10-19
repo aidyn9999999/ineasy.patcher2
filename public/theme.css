@@ -1848,3 +1848,89 @@ body { overflow-x: clip; }
   color: #F3F7FC; background: transparent; border: 1px solid rgba(145,162,184,.28);
 }
 #uhdKeepBtn { color: #91A2B8; font-weight: 700; }
+
+/* ---- Living UI: giveaway card, language switch thumb, video size bar ---------------- */
+
+/* Giveaway card: soft pulsing glow around the whole card. */
+.giveaway-toast {
+  animation: giveawayGlow 3s ease-in-out infinite;
+}
+@keyframes giveawayGlow {
+  0%, 100% { box-shadow: 0 8px 24px rgba(0,0,0,.28), 0 0 0 rgba(85,184,255,0); border-color: rgba(190,198,210,.26); }
+  50% { box-shadow: 0 8px 24px rgba(0,0,0,.28), 0 0 22px rgba(85,184,255,.45); border-color: rgba(85,184,255,.55); }
+}
+
+/* Gift icon: wiggles once every 3 seconds. */
+.giveaway-gift {
+  display: inline-block;
+  transform-origin: 50% 80%;
+  animation: giftWiggle 3s ease-in-out infinite;
+}
+@keyframes giftWiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  4% { transform: rotate(-16deg) scale(1.08); }
+  8% { transform: rotate(14deg) scale(1.08); }
+  12% { transform: rotate(-10deg); }
+  16% { transform: rotate(7deg); }
+  20% { transform: rotate(0deg) scale(1); }
+}
+
+/* Title: bright text with a light sweep running from right to left. */
+.giveaway-shine {
+  background-image: linear-gradient(100deg, #ffffff 0%, #ffffff 40%, #7DE3FF 50%, #ffffff 60%, #ffffff 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  text-shadow: 0 0 10px rgba(125,227,255,.35);
+  animation: giveawayShine 3s linear infinite;
+}
+@keyframes giveawayShine {
+  from { background-position: 100% 0; }
+  to { background-position: -150% 0; }
+}
+
+/* Language switch: a highlight that slides between RU / KZ / EN. */
+.language-dock { position: relative; isolation: isolate; }
+.language-dock .lang-thumb {
+  position: absolute; top: 3px; bottom: 3px; left: 0; width: 0;
+  z-index: 0; border-radius: 999px; pointer-events: none;
+  background: linear-gradient(135deg, #2563EB, #55B8FF);
+  box-shadow: 0 0 14px rgba(85,184,255,.55);
+  transform: translateX(0);
+  transition: transform .45s cubic-bezier(.22,.9,.3,1), width .45s cubic-bezier(.22,.9,.3,1);
+}
+.language-dock button { position: relative; z-index: 1; transition: color .3s ease; }
+.language-dock button.active,
+.language-dock button.active:hover {
+  background: transparent !important; box-shadow: none !important; color: #FFFFFF !important;
+}
+
+/* Video size bar: glowing fill with a light sweep running from left to right. */
+.video-size-meter-fill {
+  position: relative; overflow: hidden;
+  animation: sizeFillGlow 2.4s ease-in-out infinite;
+}
+.video-size-meter-fill::after {
+  content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 45%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.6), transparent);
+  transform: translateX(-120%);
+  animation: sizeFillSweep 1.8s linear infinite;
+}
+.video-size-meter-fill[style*="width: 0"]::after,
+.video-size-meter-fill[style*="width:0"]::after { display: none; }
+@keyframes sizeFillSweep {
+  from { transform: translateX(-120%); }
+  to { transform: translateX(260%); }
+}
+@keyframes sizeFillGlow {
+  0%, 100% { box-shadow: 0 0 10px rgba(56,189,248,.35); }
+  50% { box-shadow: 0 0 22px rgba(56,189,248,.8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .giveaway-toast, .giveaway-gift, .giveaway-shine,
+  .video-size-meter-fill, .video-size-meter-fill::after { animation: none !important; }
+  .language-dock .lang-thumb { transition: none; }
+}
