@@ -1819,3 +1819,11 @@ body { overflow-x: clip; }
 .bottom-nav .nav-tab { font-size: 11px !important; padding: 6px 8px !important; gap: 3px !important; }
 .bottom-nav .nav-icon { width: 18px !important; height: 18px !important; }
 .bottom-nav .nav-icon svg { width: 18px !important; height: 18px !important; }
+
+/* ===== Patcher drop zone: upload icon centred in the empty zone ===== */
+#patchSection .dropzone { position: relative; display: flex; align-items: center; justify-content: center; }
+#patchSection .dropzone > input[type="file"] { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
+#patchSection .dropzone-content { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; text-align: center; }
+#patchSection .dropzone-content > svg.lucide-upload,
+#patchSection .dropzone-content > .ui-icon { display: block; margin: 0 auto 12px; padding: 14px; box-sizing: content-box; width: 28px !important; height: 28px !important; border-radius: 50%; background: rgba(127, 176, 255, .12); color: #8FB4FF; }
+#patchSection .dropzone:not(.locked):hover .dropzone-content > svg { transform: none; }
