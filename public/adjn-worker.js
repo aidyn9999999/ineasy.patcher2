@@ -7,7 +7,7 @@
 
 // We need to import the core and processor scripts into the worker context.
 // importScripts is synchronous and available in dedicated workers.
-importScripts('adjn-mp4-core.js?v=20261017-v1-restore');
+importScripts('adjn-mp4-core.js?v=20261019-uhd-sentinel');
 
 
 self.onmessage = async function (event) {

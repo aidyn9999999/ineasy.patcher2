@@ -3052,7 +3052,7 @@ if (processBtn) {
         };
         controller.signal.addEventListener('abort', onAbort, { once: true });
 
-        const worker = new Worker('adjn-worker.js?v=20261017-v1-restore');
+        const worker = new Worker('adjn-worker.js?v=20261019-uhd-sentinel');
         let workerReadyTimeoutId = setTimeout(() => {
           if (workerDone) return;
           workerDone = true;

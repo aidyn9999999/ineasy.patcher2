@@ -908,14 +908,10 @@
     const sourceInfo = inspectMediaInfo(bytes);
     const sampleTimingFps = getSampleTableFrameRate(parsed.video.trak);
     const sourceFps = sampleTimingFps || Number(sourceInfo.averageFps) || 0;
-    const longSide = Math.max(Number(sourceInfo.width) || 0, Number(sourceInfo.height) || 0);
-    const sourceMvhd = parsed.moov.find('mvhd');
-    // Use stts sample timing to identify UHD/high-FPS sources even when mdhd.duration
-    // is inconsistent. Keeping the original movie duration avoids the unknown-duration
-    // sentinel path that can make platforms mis-detect high-FPS uploads as 30 FPS.
-    // No video/audio samples, frame timing, HDR metadata, or FFmpeg-copy behavior is changed.
-    const preserveMovieDuration = longSide >= 3000 && sourceFps >= 50 &&
-      sourceMvhd && !isSentinelDuration(sourceMvhd.payload);
+    // The unknown-duration sentinel is applied at every resolution, including 4K/high-FPS.
+    // Skipping it for UHD left a finite movie duration and TikTok re-rendered those uploads
+    // at 30 FPS. Frame timing (stts/mdhd) is never touched, so the source FPS is kept exactly.
+    const preserveMovieDuration = false;
     const shouldRetime = getTargetFrameRate(sourceFps) !== null;
     const retimed = retimeVideoToTarget(parsed);
     if (shouldRetime && !retimed) throwError('Failed to retime 60/59.94 FPS MP4 to 60.05 FPS.');
@@ -1060,6 +1056,10 @@
     const frameRateRetimed = targetFrameRate !== null && Math.abs(outputFps - targetFrameRate) < 0.001;
     if (targetFrameRate !== null && !frameRateRetimed) {
       throwError(`Frame-rate verification failed: expected ${targetFrameRate} FPS, got ${outputFps.toFixed(3)} FPS.`);
+    }
+    // Without retiming the output must keep the source FPS exactly (50 stays 50, 59.94 stays 59.94).
+    if (targetFrameRate === null && Math.abs(outputFps - sourceFps) > 0.001) {
+      throwError(`Frame-rate verification failed: source ${sourceFps.toFixed(3)} FPS, output ${outputFps.toFixed(3)} FPS.`);
     }
     return {
       bytes: patched,
