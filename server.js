@@ -2555,6 +2555,15 @@ app.listen(PORT, async () => {
   }
 
   // One-time production migration + broadcast. Redis guard prevents duplicate sends on restarts.
+  // A restart stops any in-memory broadcast, so clear stale broadcast locks left behind by it.
+  (async () => {
+    let cursor = '0';
+    do {
+      const page = await redis.scan(cursor, { match: 'userBroadcastLock:*', count: 100 });
+      cursor = String(page[0]);
+      for (const key of (page[1] || [])) await redis.del(key);
+    } while (cursor !== '0');
+  })().catch((error) => console.error('[INEASY] Не удалось сбросить блокировки рассылки:', error.message));
   runBalanceMigrationBroadcast().catch((error) => console.error('[INEASY] Одноразовое обновление баланса не удалось:', error.message));
   // Catch up overdue daily renewals after deploy/restart, then keep checking hourly.
   refreshAllDailyFreeBalances().catch((error) => console.error('[INEASY] Стартовая проверка дневных балансов не удалась:', error.message));
