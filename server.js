@@ -24,7 +24,7 @@ const TIKTOK_CAPTION_SUFFIX = '@ineasybot или ineasy.site(веб сайт)\n#
 const DAILY_FREE_BALANCE = 2;
 const FREE_BALANCE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const ASTANA_TIME_ZONE = 'Asia/Almaty';
-const CARD_INFO = '4400 4300 4955 5771 или 705 542 37 05 (Freedom Bank, Halyk Bank, Kaspi.kz)\nИмя: Айдынбек Н.';
+const CARD_INFO = '4400 4300 2627 8157 или +7 771 327 79 49 (только Kaspi)\nИмя: Алмаз Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasy.site/app.html';
 const WEBSITE_URL = new URL('/', SITE_URL).toString();
 
