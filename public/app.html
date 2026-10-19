@@ -57,6 +57,7 @@
 
       <div class="modal-body" id="packagesView">
         <p class="modal-hint" id="packagesHint">Click "Buy" to open @ineasybot for payment details.</p>
+        <p class="package-help" id="packageHelp"></p>
         <ul class="pkg-list" id="pkgList"></ul>
       </div>
     </div>
@@ -304,6 +305,20 @@
       </div>
     </section>
   </div>
+  <div class="modal-overlay support-overlay hidden" id="supportOverlay" role="dialog" aria-modal="true" aria-labelledby="supportTitle">
+    <section class="modal support-modal">
+      <h2 id="supportTitle">Куда написать?</h2>
+      <a class="support-choice" href="https://t.me/ineasynews" target="_blank" rel="noopener">
+        <span class="support-choice-icon" aria-hidden="true">💬</span>
+        <span><strong id="supportQText">Вопрос? Напишите в комментарии канала</strong><small id="supportQLink">@ineasynews</small></span>
+      </a>
+      <a class="support-choice" href="https://t.me/ineasyadmin" target="_blank" rel="noopener">
+        <span class="support-choice-icon" aria-hidden="true">🐞</span>
+        <span><strong id="supportBText">Баг или ошибка? Напишите контакт, ответим в личку</strong><small id="supportBLink">@ineasyadmin</small></span>
+      </a>
+      <button type="button" class="support-close" id="supportCloseBtn">Закрыть</button>
+    </section>
+  </div>
   <div class="modal-overlay resolution-warning-overlay hidden" id="uhdWarningOverlay" role="dialog" aria-modal="true" aria-labelledby="uhdWarningTitle">
     <section class="modal resolution-warning-modal uhd-warning-modal">
       <h2 id="uhdWarningTitle">Ваше видео <span class="hl-4k">4K</span></h2>
@@ -423,7 +438,10 @@
       <a href="mailto:support@ineasy.site" id="footerSupport">Support</a>
     </nav>
     <a class="footer-telegram" href="https://t.me/ineasyadmin?text=I%20found%20a%20bug%20on%20the%20site%20and%20want%20to%20report%20it" target="_blank" rel="noopener" id="footerTelegram">Telegram</a>
-    <p class="footer-payment" id="footerPayment">Проблемы с покупкой? Напишите в комментариях канала <a href="https://t.me/ineasynews" target="_blank" rel="noopener">@ineasynews</a>, почти всегда отвечаем онлайн.</p>
+    <section class="support-block" aria-labelledby="supportBlockText">
+      <p id="supportBlockText">Заметили ошибку? Напишите</p>
+      <button type="button" class="support-open" id="supportOpenBtn">Написать</button>
+    </section>
   </footer>
 </div>
 
@@ -431,7 +449,7 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261013-4"></script>
-<script src="app.js?v=20261019-footer-channel-v1"></script>
+<script src="app.js?v=20261019-support-chooser-v1"></script>
 <script src="local-video-archive.js?v=20261019-archive-layout-v1"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);

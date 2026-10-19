@@ -196,7 +196,15 @@ const translations = {
     footerHome: 'Home',
     footerFaq: 'FAQ',
     footerTelegram: 'Telegram',
-    footerPayment: "Problems with a purchase? Write in the channel comments at <a href=\"https://t.me/ineasynews\" target=\"_blank\" rel=\"noopener\">@ineasynews</a>, we almost always reply online.",
+    packageHelp: "Problems with a purchase? Message <a href=\"https://t.me/ineasyadmin\" target=\"_blank\" rel=\"noopener\">@ineasyadmin</a>, we almost always reply online.",
+    supportBlockText: "Spotted a bug? Write to us",
+    supportOpenBtn: "Message us",
+    supportTitle: "Where should I write?",
+    supportQText: "Question? Write in the channel comments",
+    supportQLink: "@ineasynews",
+    supportBText: "Bug or error? Write your contact, we reply in a private chat",
+    supportBLink: "@ineasyadmin",
+    supportClose: "Close",
     footerDesc: 'Prepare your video. Preserve its quality. Publish with confidence.',
     remove: 'Remove',
     selectFile: 'Select video',
@@ -385,7 +393,15 @@ const translations = {
     footerHome: 'Главная',
     footerFaq: 'FAQ',
     footerTelegram: 'Telegram',
-    footerPayment: "Проблемы с покупкой? Напишите в комментариях канала <a href=\"https://t.me/ineasynews\" target=\"_blank\" rel=\"noopener\">@ineasynews</a>, почти всегда отвечаем онлайн.",
+    packageHelp: "Проблемы с покупкой? Напишите <a href=\"https://t.me/ineasyadmin\" target=\"_blank\" rel=\"noopener\">@ineasyadmin</a>, почти всегда отвечаем онлайн.",
+    supportBlockText: "Заметили ошибку? Напишите",
+    supportOpenBtn: "Написать",
+    supportTitle: "Куда написать?",
+    supportQText: "Вопрос? Напишите в комментарии канала",
+    supportQLink: "@ineasynews",
+    supportBText: "Баг или ошибка? Напишите контакт, ответим в личку",
+    supportBLink: "@ineasyadmin",
+    supportClose: "Закрыть",
     footerDesc: 'Подготовьте видео к публикации с помощью INEASY.',
     remove: 'Убрать',
     selectFile: 'Выберите видео',
@@ -573,7 +589,15 @@ const translations = {
     footerHome: 'Басты',
     footerFaq: 'FAQ',
     footerTelegram: 'Telegram',
-    footerPayment: "Сатып алу кезінде мәселе туындадыма? <a href=\"https://t.me/ineasynews\" target=\"_blank\" rel=\"noopener\">@ineasynews</a> арнасының пікірлеріне жазыңыз, көбінесе онлайн жауап береміз.",
+    packageHelp: "Сатып алу кезінде мәселе бар ма? <a href=\"https://t.me/ineasyadmin\" target=\"_blank\" rel=\"noopener\">@ineasyadmin</a> жазыңыз, көбінесе онлайн жауап береміз.",
+    supportBlockText: "Қатені байқадыңыз ба? Жазыңыз",
+    supportOpenBtn: "Жазу",
+    supportTitle: "Қайда жазамыз?",
+    supportQText: "Сұрақ бар ма? Арна пікірлеріне жазыңыз",
+    supportQLink: "@ineasynews",
+    supportBText: "Баг немесе қате? Байланысыңызды жазыңыз, жеке хабарға жауап береміз",
+    supportBLink: "@ineasyadmin",
+    supportClose: "Жабу",
     footerDesc: 'Бейнеңізді дайындаңыз. Сапасын сақтаңыз. Сенімді түрде жариялаңыз.',
     remove: 'Жою',
     selectFile: 'Бейнені таңдаңыз',
@@ -799,8 +823,13 @@ function applyLanguage(lang) {
   setText('footerFaq', pack.footerFaq);
   setText('footerSupport', pack.footerSupport);
   setText('footerTelegram', pack.footerTelegram);
-  const footerPaymentEl = document.getElementById('footerPayment');
-  if (footerPaymentEl && pack.footerPayment) footerPaymentEl.innerHTML = pack.footerPayment;
+  const packageHelpEl = document.getElementById('packageHelp');
+  if (packageHelpEl) packageHelpEl.innerHTML = pack.packageHelp;
+  ['supportBlockText', 'supportOpenBtn', 'supportTitle', 'supportQText', 'supportBText', 'supportClose'].forEach((key) => setText(key, pack[key]));
+  const supportQLinkEl = document.getElementById('supportQLink');
+  if (supportQLinkEl) supportQLinkEl.textContent = pack.supportQLink;
+  const supportBLinkEl = document.getElementById('supportBLink');
+  if (supportBLinkEl) supportBLinkEl.textContent = pack.supportBLink;
   setText('faqLabel', pack.faqLabel);
   setText('analyzerLabel', pack.analyzerEyebrow);
   setText('clearBtn', pack.remove);
@@ -3544,3 +3573,15 @@ document.querySelectorAll('[data-lang]').forEach((button) => {
     syncLanguageThumb();
   });
 });
+
+// ---- Support chooser: questions go to the channel comments, bugs to a private chat ----
+(function setupSupportChooser() {
+  const overlay = document.getElementById('supportOverlay');
+  const openBtn = document.getElementById('supportOpenBtn');
+  const closeBtn = document.getElementById('supportCloseBtn');
+  if (!overlay || !openBtn) return;
+  const close = () => overlay.classList.add('hidden');
+  openBtn.addEventListener('click', () => overlay.classList.remove('hidden'));
+  closeBtn?.addEventListener('click', close);
+  overlay.addEventListener('click', (event) => { if (event.target === overlay) close(); });
+})();
