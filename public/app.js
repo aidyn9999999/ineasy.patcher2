@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   syncLanguageThumb();
+  syncNavThumb(false);
   const giveawayToastClose = document.getElementById('giveawayToastClose');
   const giveawayToast = document.getElementById('giveawayToast');
   if (giveawayToastClose && giveawayToast) {
@@ -2582,6 +2583,26 @@ function syncSectionFromPath() {
   const tab = document.querySelector(`.nav-tab[data-view="${view}"]`);
   if (tab) tab.click();
 }
+// Slide the highlight of the bottom tab bar under the active tab, with a flash on each switch.
+function syncNavThumb(flash = true) {
+  const thumb = document.querySelector('.bottom-nav .nav-thumb');
+  const active = document.querySelector('.bottom-nav .nav-tab.active');
+  if (!thumb || !active) return;
+  const moved = thumb.dataset.left !== String(active.offsetLeft);
+  thumb.dataset.left = String(active.offsetLeft);
+  thumb.style.width = `${active.offsetWidth}px`;
+  thumb.style.transform = `translateX(${active.offsetLeft}px)`;
+  if (flash && moved) {
+    thumb.classList.remove('nav-thumb-flash');
+    void thumb.offsetWidth;
+    thumb.classList.add('nav-thumb-flash');
+  }
+}
+window.addEventListener('resize', () => syncNavThumb(false));
+// Fonts load after first paint and change button widths; re-measure both highlights then.
+window.addEventListener('load', () => { syncLanguageThumb(); syncNavThumb(false); });
+document.fonts?.ready.then(() => { syncLanguageThumb(); syncNavThumb(false); });
+
 document.querySelectorAll('.nav-tab').forEach((tab) => {
   tab.addEventListener('click', () => {
     const nextPath = SECTION_PATHS[tab.dataset.view] || '/app.html';
@@ -2612,6 +2633,7 @@ document.querySelectorAll('.nav-tab').forEach((tab) => {
       target.classList.remove('hidden');
       target.classList.add('active');
     }
+    requestAnimationFrame(() => syncNavThumb());
   });
 });
 
