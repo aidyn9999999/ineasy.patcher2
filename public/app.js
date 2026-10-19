@@ -2224,7 +2224,164 @@ function rejectFileSelection(message) {
   updateProcessButton();
 }
 
+// ---- 4K warning + optional careful 1080p compression (runs only on user confirmation) ----
+const uhdWarningOverlay = document.getElementById('uhdWarningOverlay');
+let uhdCompressController = null;
+let uhdActiveJobId = '';
+
+function uhdAuthHeaders(extra = {}) {
+  const headers = { ...extra };
+  if (tgAuthToken) headers.Authorization = `Bearer ${tgAuthToken}`;
+  return headers;
+}
+
+function setUhdBusy(busy, text = '', percent = 0) {
+  document.getElementById('uhdProgress')?.classList.toggle('hidden', !busy);
+  document.getElementById('uhdActions')?.classList.toggle('hidden', busy);
+  document.getElementById('uhdCancelActions')?.classList.toggle('hidden', !busy);
+  const textEl = document.getElementById('uhdProgressText');
+  const percentEl = document.getElementById('uhdProgressPercent');
+  const bar = document.getElementById('uhdProgressBar');
+  if (textEl && text) textEl.textContent = text;
+  if (percentEl) percentEl.textContent = `${Math.round(percent)}%`;
+  if (bar) bar.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+}
+
+function showUhdError(message) {
+  const el = document.getElementById('uhdError');
+  if (!el) return;
+  el.textContent = message || '';
+  el.classList.toggle('hidden', !message);
+}
+
+function openUhdWarning() {
+  setUhdBusy(false);
+  showUhdError('');
+  const compressBtn = document.getElementById('uhdCompressBtn');
+  if (compressBtn) compressBtn.disabled = false;
+  uhdWarningOverlay?.classList.remove('hidden');
+}
+
+function closeUhdWarning() {
+  uhdWarningOverlay?.classList.add('hidden');
+}
+
+const UHD_ERRORS = {
+  downscale_busy: 'Сервер сейчас занят сжатием. Попробуйте через минуту.',
+  downscale_already_running: 'Сжатие вашего видео уже идёт.',
+  downscale_fps_changed: 'Сжатие остановлено: частота кадров изменилась бы. Файл не заменён.',
+  downscale_verification_failed: 'Не удалось проверить результат сжатия. Файл не заменён.',
+  downscale_output_too_large: 'После сжатия файл больше 150 МБ. Выберите видео покороче.',
+  downscale_encode_failed: 'Не удалось сжать это видео. Выберите другое или оставьте 4K.',
+  already_1080p_or_smaller: 'Видео уже 1080p или меньше.',
+  unsupported_video: 'Не удалось прочитать это видео.',
+  ffmpeg_engine_unavailable: 'Сжатие сейчас недоступно на сервере.'
+};
+
+async function cancelUhdCompression() {
+  const jobId = uhdActiveJobId;
+  uhdActiveJobId = '';
+  if (uhdCompressController) uhdCompressController.abort();
+  uhdCompressController = null;
+  if (jobId) {
+    fetch(`/api/v2/downscale-1080/${encodeURIComponent(jobId)}`, { method: 'DELETE', headers: uhdAuthHeaders() }).catch(() => {});
+  }
+}
+
+async function compressSelectedVideoTo1080p() {
+  const sourceFile = fileInput?.files?.[0];
+  if (!sourceFile || uhdCompressController) return;
+  const controller = new AbortController();
+  uhdCompressController = controller;
+  const compressBtn = document.getElementById('uhdCompressBtn');
+  if (compressBtn) compressBtn.disabled = true;
+  showUhdError('');
+  setUhdBusy(true, 'Загрузка видео на сервер…', 2);
+  try {
+    let startResponse = null;
+    for (let attempt = 0; attempt < 2 && !startResponse; attempt += 1) {
+      try {
+        startResponse = await fetch('/api/v2/downscale-1080', {
+          method: 'POST',
+          headers: uhdAuthHeaders({ 'Content-Type': 'application/octet-stream' }),
+          body: sourceFile,
+          signal: controller.signal,
+          cache: 'no-store'
+        });
+      } catch (error) {
+        if (controller.signal.aborted || attempt === 1) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 900));
+      }
+    }
+    const started = await startResponse.json().catch(() => ({}));
+    if (!startResponse.ok || !started.jobId) throw new Error(started.error || `http_${startResponse.status}`);
+    uhdActiveJobId = started.jobId;
+
+    let failures = 0;
+    for (;;) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (controller.signal.aborted) throw new DOMException('Aborted', 'AbortError');
+      let state;
+      try {
+        const response = await fetch(`/api/v2/downscale-1080/${encodeURIComponent(started.jobId)}`, {
+          headers: uhdAuthHeaders(), signal: controller.signal, cache: 'no-store'
+        });
+        if (!response.ok) throw new Error(`http_${response.status}`);
+        state = await response.json();
+        failures = 0;
+      } catch (error) {
+        if (controller.signal.aborted) throw error;
+        if ((failures += 1) >= 6) throw new Error('downscale_encode_failed');
+        continue;
+      }
+      if (state.status === 'failed') throw new Error(state.error || 'downscale_encode_failed');
+      setUhdBusy(true, 'Сжимаем до 1080p, FPS сохраняется…', state.progress || 0);
+      if (state.status === 'done') break;
+    }
+
+    setUhdBusy(true, 'Загружаем результат…', 99);
+    const fileResponse = await fetch(`/api/v2/downscale-1080/${encodeURIComponent(started.jobId)}/file`, {
+      headers: uhdAuthHeaders(), signal: controller.signal, cache: 'no-store'
+    });
+    if (!fileResponse.ok) throw new Error('downscale_encode_failed');
+    const blob = await fileResponse.blob();
+    if (!blob.size) throw new Error('downscale_verification_failed');
+    uhdActiveJobId = '';
+
+    const baseName = sourceFile.name.replace(/\.[^.]+$/, '');
+    const compressed = new File([blob], `${baseName}-1080p.mp4`, { type: 'video/mp4', lastModified: Date.now() });
+    const transfer = new DataTransfer();
+    transfer.items.add(compressed);
+    fileInput.files = transfer.files;
+    uhdCompressController = null;
+    closeUhdWarning();
+    // Show the compressed file in the preview and continue with the normal flow.
+    await handleFile(compressed);
+  } catch (error) {
+    uhdCompressController = null;
+    uhdActiveJobId = '';
+    if (controller.signal.aborted) { setUhdBusy(false); if (compressBtn) compressBtn.disabled = false; return; }
+    console.warn('[INEASY] 1080p compression failed:', error);
+    setUhdBusy(false);
+    if (compressBtn) compressBtn.disabled = false;
+    showUhdError(UHD_ERRORS[String(error?.message || '')] || 'Не удалось сжать видео. Выберите другое или оставьте 4K.');
+  }
+}
+
+document.getElementById('uhdReplaceBtn')?.addEventListener('click', () => {
+  closeUhdWarning();
+  clearSelectedVideo(true);
+});
+document.getElementById('uhdCompressBtn')?.addEventListener('click', compressSelectedVideoTo1080p);
+document.getElementById('uhdCancelBtn')?.addEventListener('click', cancelUhdCompression);
+document.getElementById('uhdKeepBtn')?.addEventListener('click', () => {
+  const file = fileInput?.files?.[0];
+  if (file) resolutionWarningConfirmedFor = [file.name, file.size, file.lastModified].join(':');
+  closeUhdWarning();
+});
+
 async function handleFile(file) {
+  if (uhdCompressController) cancelUhdCompression();
   const selectionVersion = ++fileSelectionVersion;
   selectedVideoDimensions = null;
   checkingFileDimensions = false;
@@ -2302,6 +2459,8 @@ async function handleFile(file) {
   // remains the practical limit; keep the selected dimensions unchanged.
   const selectedLongSide = Math.max(Number(dimensions?.width) || 0, Number(dimensions?.height) || 0);
   selectedVideoDimensions = selectedLongSide > 0 ? dimensions : null;
+  if (selectedLongSide >= 3000) openUhdWarning();
+  else closeUhdWarning();
   // Keep the large FFmpeg/WASM fallback unloaded while the user selects a file.
   // It is imported only if HDR inspection or the primary browser encoder needs it.
   if (patchedDownloadUrl) URL.revokeObjectURL(patchedDownloadUrl);
