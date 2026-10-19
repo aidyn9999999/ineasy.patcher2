@@ -1841,18 +1841,10 @@ body { overflow-x: clip; }
   box-shadow: 0 0 14px rgba(255,120,40,.6);
 }
 .uhd-warning-modal p strong { color: #F3F7FC; }
-.uhd-warning-modal .uhd-progress { margin: 0 0 14px; }
-.uhd-warning-modal .uhd-progress-row {
   display: flex; justify-content: space-between; gap: 10px; margin-bottom: 7px;
   color: #F3F7FC; font-size: 12px; font-weight: 700;
 }
-.uhd-warning-modal .uhd-error { color: #FF8A7A !important; font-weight: 700; }
-.uhd-warning-modal .hidden { display: none !important; }
-#uhdCompressBtn {
-  color: #FFFFFF !important; background: #1676C5 !important; border: 1px solid #55B8FF !important;
-}
-#uhdReplaceBtn, #uhdKeepBtn, #uhdCancelBtn {
+#uhdReplaceBtn, #uhdKeepBtn {
   color: #F3F7FC; background: transparent; border: 1px solid rgba(145,162,184,.28);
 }
 #uhdKeepBtn { color: #91A2B8; font-weight: 700; }
-#uhdWarningOverlay button:disabled { opacity: .5; cursor: not-allowed; }
