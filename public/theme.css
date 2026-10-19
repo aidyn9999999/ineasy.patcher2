@@ -1801,3 +1801,36 @@ body { overflow-x: clip; }
 @media (prefers-reduced-motion: reduce) {
   #patchSection .mode-thumb, #patchSection .mode-status, #tiktokPublishForm .tiktok-progress-track i, #tiktokPublishForm .tiktok-submit-btn:disabled, #tiktokPublishStatus.success, #tiktokPublishStatus.success::before { animation: none; transition: none; }
 }
+
+/* ===== Home: text sits on the page, no stats cards ===== */
+#homeSection .home-hero { background: none !important; border: 0 !important; box-shadow: none !important; }
+#homeSection .home-hero::before, #homeSection .home-hero::after, #homeSection .home-hero-shade, #homeSection .home-hero-foot { display: none !important; }
+.home-cta-bottom { border-radius: 999px !important; }
+
+/* ===== Mode badges: V1 lags (red), V2 is the best choice (white) ===== */
+#patchSection .mode-status-slow { background: rgba(248, 113, 113, .14); border-color: rgba(248, 113, 113, .55); color: #FCA5A5; box-shadow: none; }
+
+/* ===== Header pill: live indicators, bigger text, smaller icons ===== */
+.balance-pill { font-size: 14px; }
+.balance-pill b { font-size: 15px; }
+.balance-pill .id-part, .balance-pill .balance-part { display: inline-flex; align-items: center; gap: 7px; }
+.live-dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: #5EEAD4; animation: livePulse 1.8s ease-out infinite; }
+.balance-part .live-dot { background: #FBBF24; animation-delay: .9s; }
+@keyframes livePulse {
+  0% { box-shadow: 0 0 0 0 rgba(94, 234, 212, .6), 0 0 10px #5EEAD4; }
+  70% { box-shadow: 0 0 0 7px rgba(94, 234, 212, 0), 0 0 14px #5EEAD4; }
+  100% { box-shadow: 0 0 0 0 rgba(94, 234, 212, 0), 0 0 10px #5EEAD4; }
+}
+.balance-part .live-dot { animation-name: livePulseGold; }
+@keyframes livePulseGold {
+  0% { box-shadow: 0 0 0 0 rgba(251, 191, 36, .6), 0 0 10px #FBBF24; }
+  70% { box-shadow: 0 0 0 7px rgba(251, 191, 36, 0), 0 0 14px #FBBF24; }
+  100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, 0), 0 0 10px #FBBF24; }
+}
+.balance-pill .copy-id-btn.icon-action-btn { width: 22px !important; height: 22px !important; }
+.balance-pill .copy-id-btn svg { width: 12px; height: 12px; }
+.plus-btn.icon-action-btn { width: 24px !important; height: 24px !important; }
+.plus-btn svg { width: 14px !important; height: 14px !important; }
+.logout-btn { width: 26px !important; height: 26px !important; }
+.logout-btn .logout-icon, .logout-btn .logout-icon { width: 14px !important; height: 14px !important; flex-basis: 14px !important; stroke-width: 2.2 !important; }
+@media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }

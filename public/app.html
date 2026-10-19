@@ -37,10 +37,10 @@
   <header class="topbar">
     <div class="brand"><img class="brand-logo" src="ineasy-logo.png?v=20261019-photo-logo-v1" alt="INEASY" height="40"></div>
     <div class="balance-pill" id="balancePill">
-      <span class="id-part"><span id="idCaption">ID:</span> <b id="tgIdLabel">—</b></span>
+      <span class="id-part"><i class="live-dot" aria-hidden="true"></i><span id="idCaption">ID:</span> <b id="tgIdLabel">—</b></span>
       <button class="copy-id-btn icon-action-btn" id="copyIdBtn" type="button" aria-label="Copy Telegram ID" title="Copy Telegram ID"><svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy-check ui-icon" aria-hidden="true"><path d="M8 8V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-3"/><rect x="3" y="8" width="13" height="13" rx="2"/><path d="m6.5 14.5 2 2 4-4"/></svg></button>
       <span class="pill-sep"></span>
-      <span><span id="balanceCaption">Balance:</span> <b id="balanceLabel">…</b></span>
+      <span class="balance-part"><i class="live-dot" aria-hidden="true"></i><span id="balanceCaption">Balance:</span> <b id="balanceLabel">…</b></span>
       <button class="plus-btn icon-action-btn" id="plusBtn" type="button" aria-label="Top up balance" title="Top up balance"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus ui-icon" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button>
       <button class="logout-btn" id="logoutBtn" type="button" aria-label="Log out" title="Log out"><svg class="logout-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg><span id="logoutLabel">Log out</span></button>
     </div>
@@ -84,11 +84,6 @@
           <p class="home-intro" id="homeIntro">До <strong class="hero-quality">4K · 120 FPS</strong> <span class="hero-workflow">Обработай видео, подключи автопост и опубликуй в TikTok — без повторного перекодирования.</span></p>
         </div>
         <div class="home-hero-foot" aria-hidden="true"><span>INEASY</span><span>ДО 4K · 120 FPS*</span></div>
-      </section>
-      <section class="home-stats" aria-label="Статус INEASY">
-        <div class="home-stat home-stat-live"><div class="home-stat-label"><span class="status-dot" aria-hidden="true"></span><span>Сообщество</span></div><strong>1800+</strong><span>онлайн · пользователей</span></div>
-        <div class="home-stat home-stat-local"><div class="home-stat-label"><svg class="status-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/></svg><span>Видео</span></div><strong>Локально</strong><span>Быстрая обработка видео</span></div>
-        <div class="home-stat"><div class="home-stat-label"><span class="status-dot status-dot-blue" aria-hidden="true"></span><span>Режимы</span></div><strong>V1 <span class="mode-divider">/</span> V2</strong><span>выбери свой режим</span></div>
       </section>
 
       <section class="home-content-section" aria-labelledby="comparisonTitle">
@@ -182,11 +177,11 @@
         <span class="mode-thumb" aria-hidden="true"></span>
         <label class="patcher-version-option">
           <input type="radio" name="patcherVersion" value="v1" checked>
-          <span class="mode-card"><strong>V1 <em class="mode-status mode-status-standard">Стандарт</em></strong><small>Обычный режим — используйте его</small></span>
+          <span class="mode-card"><strong>V1 <em class="mode-status mode-status-slow">Лагает</em></strong><small>Обычный режим</small></span>
         </label>
         <label class="patcher-version-option patcher-version-beta">
           <input type="radio" name="patcherVersion" value="v2">
-          <span class="mode-card"><strong>V2 <em class="mode-status mode-status-best">Лучший выбор</em></strong><small>Публичный режим — доступен для обычного использования</small></span>
+          <span class="mode-card"><strong>V2 <em class="mode-status mode-status-best">Лучший выбор</em></strong><small>Не лагает — публичный режим</small></span>
         </label>
       </div>
       <p class="patcher-version-note hidden" id="patcherVersionNote" aria-hidden="true"></p>
