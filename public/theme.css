@@ -1515,7 +1515,7 @@ body { overflow-x: clip; }
   font-weight: 800;
 }
 #homeSection .home-headline {
-  font-family: 'Unbounded', 'Manrope', sans-serif;
+  font-family: 'Manrope', sans-serif;
   font-size: clamp(36px, 5.6vw, 76px);
   font-weight: 700;
   line-height: 1.06;
@@ -1581,7 +1581,7 @@ body { overflow-x: clip; }
 /* Chrome polish: brand, profile bar, language dock, icon buttons, quiet stat row,
    dropzone and patcher nav icon. Scoped so other sections keep their styling. */
 .brand {
-  font-family: 'Unbounded', sans-serif;
+  font-family: 'Manrope', sans-serif;
   font-size: 13px !important;
   font-weight: 800;
   letter-spacing: .02em;
@@ -1647,7 +1647,7 @@ body { overflow-x: clip; }
   color: #DDE7F5;
 }
 .ia-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
-.ia-head h2 { margin: 0; font: 700 15px 'Unbounded', sans-serif; letter-spacing: -.01em; }
+.ia-head h2 { margin: 0; font: 700 15px 'Manrope', sans-serif; letter-spacing: -.01em; }
 .ia-note { font-size: 11px; color: #7E8BA0; }
 .ia-count { margin-left: auto; font: 600 12px 'IBM Plex Mono', monospace; color: #8D9BB0; }
 .ia-live { margin-bottom: 12px; }
@@ -1728,7 +1728,7 @@ body { overflow-x: clip; }
   color: #0B1220;
   transform: translateY(-2px);
 }
-#patchSection .dz-title { font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 600; color: #F5F7FC; letter-spacing: -.02em; }
+#patchSection .dz-title { font-family: 'Manrope', sans-serif; font-size: 18px; font-weight: 600; color: #F5F7FC; letter-spacing: -.02em; }
 #patchSection .dz-sub { color: #9FB0C8; }
 
 /* Progress fill follows the real value without easing. */
