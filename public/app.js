@@ -2144,19 +2144,36 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
 }
 // V2 upload with real progress: fetch() cannot report upload progress, so a big 4K
 // file looked frozen while it was being sent. Resolves with a fetch-style Response.
-function postV2FfmpegCopy(url, body, headers, signal, onUploadProgress) {
+// A watchdog turns a silent stall (dead mobile connection) into a retryable network
+// error instead of an endless wait.
+function postV2FfmpegCopy(url, body, headers, signal, onProgress) {
   return new Promise((resolve, reject) => {
     if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url);
     xhr.responseType = 'blob';
     Object.entries(headers || {}).forEach(([key, value]) => xhr.setRequestHeader(key, value));
+    let lastActivity = Date.now();
+    let uploadDone = false;
+    let stalled = false;
     xhr.upload.onprogress = (event) => {
-      if (event.lengthComputable && event.total > 0) onUploadProgress?.(event.loaded / event.total);
+      lastActivity = Date.now();
+      if (event.lengthComputable && event.total > 0) onProgress?.(7 + (event.loaded / event.total) * 4);
     };
+    xhr.upload.onload = () => { uploadDone = true; lastActivity = Date.now(); onProgress?.(11); };
+    xhr.onprogress = (event) => {
+      lastActivity = Date.now();
+      if (event.lengthComputable && event.total > 0) onProgress?.(11 + (event.loaded / event.total) * 2);
+    };
+    // Upload: 60 s without a single byte moving. After upload the server is remuxing
+    // and sends nothing until it finishes, so allow it up to its own 240 s limit.
+    const watchdog = setInterval(() => {
+      const limit = uploadDone ? 270000 : 60000;
+      if (Date.now() - lastActivity > limit) { stalled = true; xhr.abort(); }
+    }, 3000);
     const onAbort = () => xhr.abort();
     signal.addEventListener('abort', onAbort, { once: true });
-    const done = () => signal.removeEventListener('abort', onAbort);
+    const done = () => { clearInterval(watchdog); signal.removeEventListener('abort', onAbort); };
     xhr.onload = () => {
       done();
       const responseHeaders = new Headers();
@@ -2168,7 +2185,11 @@ function postV2FfmpegCopy(url, body, headers, signal, onUploadProgress) {
     };
     xhr.onerror = () => { done(); reject(new TypeError('Failed to fetch')); };
     xhr.ontimeout = xhr.onerror;
-    xhr.onabort = () => { done(); reject(new DOMException('Aborted', 'AbortError')); };
+    xhr.onabort = () => {
+      done();
+      if (stalled && !signal.aborted) reject(new TypeError('Failed to fetch'));
+      else reject(new DOMException('Aborted', 'AbortError'));
+    };
     xhr.send(body);
   });
 }
@@ -3093,7 +3114,7 @@ if (processBtn) {
             copyResponse = await postV2FfmpegCopy('/api/v2/ffmpeg-copy' +
               (/^[a-z0-9]{1,16}$/i.test(copyVariant) ? '?variant=' + encodeURIComponent(copyVariant) : ''),
               processingFile, copyHeaders, controller.signal,
-              (ratio) => updateProcessingProgress(7 + Math.round(ratio * 4)));
+              (percent) => updateProcessingProgress(Math.round(percent)));
             break;
           } catch (error) {
             if (controller.signal.aborted) throw error;

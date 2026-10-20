@@ -2094,14 +2094,34 @@ function missingHdrSignaling(source, output) {
 
 // V2-only stream-copy remux. Allow enough time for cold starts and larger phone videos;
 // reject the job; never silently fall back to the metadata-only patcher.
-app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'application/octet-stream', limit: '512mb' }), async (req, res) => {
+// The upload is streamed straight to disk (not buffered in RAM) so several large 4K
+// uploads at once cannot exhaust server memory and stall every job.
+const V2_COPY_MAX_BYTES = 512 * 1024 * 1024;
+app.post('/api/v2/ffmpeg-copy', requireUserToken, async (req, res) => {
   if (!FFMPEG_PATH) return res.status(503).json({ error: 'ffmpeg_engine_unavailable' });
-  if (!Buffer.isBuffer(req.body) || req.body.length < 16) return res.status(400).json({ error: 'video_body_missing' });
+  const declaredLength = Number(req.headers['content-length']);
+  if (Number.isFinite(declaredLength) && declaredLength > V2_COPY_MAX_BYTES) return res.status(413).json({ error: 'video_too_large' });
   const jobDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'ineasy-v2-copy-'));
   const inputPath = path.join(jobDir, 'input.mp4');
   const outputPath = path.join(jobDir, 'output.mp4');
   try {
-    await fs.promises.writeFile(inputPath, req.body);
+    let received = 0;
+    await new Promise((resolve, reject) => {
+      const sink = fs.createWriteStream(inputPath);
+      req.on('data', (chunk) => {
+        received += chunk.length;
+        if (received > V2_COPY_MAX_BYTES) { req.destroy(); sink.destroy(); reject(new Error('video_too_large')); }
+      });
+      req.on('error', reject);
+      req.on('aborted', () => reject(new Error('upload_aborted')));
+      sink.on('error', reject);
+      sink.on('finish', resolve);
+      req.pipe(sink);
+    });
+    if (received < 16) {
+      await fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
+      return res.status(400).json({ error: 'video_body_missing' });
+    }
 
     // Probe only container headers (no full-file scan) so the copy is verified against
     // the ORIGINAL file. Video is never re-encoded, so frames and resolution stay intact.
