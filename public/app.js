@@ -2142,6 +2142,37 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     try { input?.dispose?.(); } catch (_) {}
   }
 }
+// V2 upload with real progress: fetch() cannot report upload progress, so a big 4K
+// file looked frozen while it was being sent. Resolves with a fetch-style Response.
+function postV2FfmpegCopy(url, body, headers, signal, onUploadProgress) {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.responseType = 'blob';
+    Object.entries(headers || {}).forEach(([key, value]) => xhr.setRequestHeader(key, value));
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && event.total > 0) onUploadProgress?.(event.loaded / event.total);
+    };
+    const onAbort = () => xhr.abort();
+    signal.addEventListener('abort', onAbort, { once: true });
+    const done = () => signal.removeEventListener('abort', onAbort);
+    xhr.onload = () => {
+      done();
+      const responseHeaders = new Headers();
+      xhr.getAllResponseHeaders().trim().split(/\r?\n/).forEach((line) => {
+        const index = line.indexOf(':');
+        if (index > 0) { try { responseHeaders.append(line.slice(0, index).trim(), line.slice(index + 1).trim()); } catch (_) {} }
+      });
+      resolve(new Response(xhr.response, { status: xhr.status, headers: responseHeaders }));
+    };
+    xhr.onerror = () => { done(); reject(new TypeError('Failed to fetch')); };
+    xhr.ontimeout = xhr.onerror;
+    xhr.onabort = () => { done(); reject(new DOMException('Aborted', 'AbortError')); };
+    xhr.send(body);
+  });
+}
+
 async function prepareVideoForPatcher(file, dimensions, signal) {
   signal.throwIfAborted();
   return {
@@ -3059,14 +3090,10 @@ if (processBtn) {
             // Test hook: localStorage.ineasyFfmpegVariant = 'ts60000' | 'dualaudio' (server whitelists names).
             let copyVariant = '';
             try { copyVariant = String(localStorage.getItem('ineasyFfmpegVariant') || ''); } catch (_) {}
-            copyResponse = await fetch('/api/v2/ffmpeg-copy' +
-              (/^[a-z0-9]{1,16}$/i.test(copyVariant) ? '?variant=' + encodeURIComponent(copyVariant) : ''), {
-              method: 'POST',
-              headers: copyHeaders,
-              body: processingFile,
-              signal: controller.signal,
-              cache: 'no-store'
-            });
+            copyResponse = await postV2FfmpegCopy('/api/v2/ffmpeg-copy' +
+              (/^[a-z0-9]{1,16}$/i.test(copyVariant) ? '?variant=' + encodeURIComponent(copyVariant) : ''),
+              processingFile, copyHeaders, controller.signal,
+              (ratio) => updateProcessingProgress(7 + Math.round(ratio * 4)));
             break;
           } catch (error) {
             if (controller.signal.aborted) throw error;
@@ -3460,11 +3487,11 @@ function localizePatchError(message) {
   const v2CopyFailure = String(message || '').match(/^v2_ffmpeg_copy_failed:\s*(.*)$/i);
   if (v2CopyFailure) {
     const reason = v2CopyFailure[1];
-    if (/timeout_120s/i.test(reason)) {
+    if (/timeout_(?:120|240)s/i.test(reason)) {
       return ({
-        ru: 'V2 остановлен: FFmpeg не завершил копирование потоков за 120 секунд. Метаданные не изменялись; попробуйте файл поменьше.',
-        kk: 'V2 тоқтатылды: FFmpeg ағындарды 120 секунд ішінде көшіріп үлгермеді. Метадеректер өзгертілмеді; кішірек файлды қолданып көріңіз.',
-        en: 'V2 stopped: FFmpeg did not finish stream-copying within 120 seconds. Metadata was not changed; try a smaller file.'
+        ru: 'V2 остановлен: FFmpeg не завершил копирование потоков за 240 секунд. Метаданные не изменялись; попробуйте файл поменьше.',
+        kk: 'V2 тоқтатылды: FFmpeg ағындарды 240 секунд ішінде көшіріп үлгермеді. Метадеректер өзгертілмеді; кішірек файлды қолданып көріңіз.',
+        en: 'V2 stopped: FFmpeg did not finish stream-copying within 240 seconds. Metadata was not changed; try a smaller file.'
       })[lang];
     }
     return ({

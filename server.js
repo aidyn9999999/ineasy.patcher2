@@ -714,7 +714,7 @@ function downloadVideoToTmp(url) {
     execFile(
       YTDLP_PATH,
       ['--no-warnings', '--no-playlist', '--max-filesize', '300M', '--socket-timeout', '20', '-o', template, url],
-      { timeout: 120000, maxBuffer: 5 * 1024 * 1024 },
+      { timeout: 240000, maxBuffer: 5 * 1024 * 1024 },
       (err) => {
         const files = fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith(`chk_${id}.`) && !f.endsWith('.part'));
         const full = files.map((f) => path.join(os.tmpdir(), f));
@@ -2153,7 +2153,7 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
       ];
       execFile(FFMPEG_PATH, args, {
         maxBuffer: 4 * 1024 * 1024,
-        timeout: 120000,
+        timeout: 240000,
         killSignal: 'SIGKILL'
       }, (error, stdout, stderr) => {
         if (error) {
@@ -2256,12 +2256,12 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, express.raw({ type: 'applicati
     await fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
     const timedOut = error && (error.killed || error.signal === 'SIGKILL' || error.code === 'ETIMEDOUT');
     console.error('[INEASY V2] FFmpeg stream-copy failed:', {
-      reason: timedOut ? '120-second timeout' : (error.message || 'ffmpeg_copy_failed'),
+      reason: timedOut ? '240-second timeout' : (error.message || 'ffmpeg_copy_failed'),
       code: error.code || null,
       signal: error.signal || null,
       stderr: String(error.stderr || '').slice(-3000)
     });
-    return res.status(422).json({ error: timedOut ? 'ffmpeg_copy_timeout_120s' : 'ffmpeg_copy_failed' });
+    return res.status(422).json({ error: timedOut ? 'ffmpeg_copy_timeout_240s' : 'ffmpeg_copy_failed' });
   }
 });
 
