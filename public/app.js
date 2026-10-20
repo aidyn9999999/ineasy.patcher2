@@ -2142,6 +2142,37 @@ async function convertVideoToExact5994Fps(inputBlob, inputName, signal, onProgre
     try { input?.dispose?.(); } catch (_) {}
   }
 }
+// V2 upload with real progress: fetch() cannot report upload progress, so a big 4K
+// file looked frozen while it was being sent. Resolves with a fetch-style Response.
+function postV2FfmpegCopy(url, body, headers, signal, onUploadProgress) {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) return reject(new DOMException('Aborted', 'AbortError'));
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.responseType = 'blob';
+    Object.entries(headers || {}).forEach(([key, value]) => xhr.setRequestHeader(key, value));
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && event.total > 0) onUploadProgress?.(event.loaded / event.total);
+    };
+    const onAbort = () => xhr.abort();
+    signal.addEventListener('abort', onAbort, { once: true });
+    const done = () => signal.removeEventListener('abort', onAbort);
+    xhr.onload = () => {
+      done();
+      const responseHeaders = new Headers();
+      xhr.getAllResponseHeaders().trim().split(/\r?\n/).forEach((line) => {
+        const index = line.indexOf(':');
+        if (index > 0) { try { responseHeaders.append(line.slice(0, index).trim(), line.slice(index + 1).trim()); } catch (_) {} }
+      });
+      resolve(new Response(xhr.response, { status: xhr.status, headers: responseHeaders }));
+    };
+    xhr.onerror = () => { done(); reject(new TypeError('Failed to fetch')); };
+    xhr.ontimeout = xhr.onerror;
+    xhr.onabort = () => { done(); reject(new DOMException('Aborted', 'AbortError')); };
+    xhr.send(body);
+  });
+}
+
 async function prepareVideoForPatcher(file, dimensions, signal) {
   signal.throwIfAborted();
   return {
@@ -2925,7 +2956,7 @@ if (processBtn) {
       setProcessingState('processing', '');
       updateProcessingProgress(3);
 
-      // V2 is fully local: no server upload, native FPS preserved.
+      // V2 uses server FFmpeg only for verified stream-copy remux and preserves native FPS.
       // V1 keeps its existing SDR-only MediaBunny path and is otherwise untouched.
       const isV2SelectedForJob = getSelectedPatcherVersion() === 'v2';
       const sourceLongSide = Math.max(
@@ -2936,7 +2967,7 @@ if (processBtn) {
       const sourceExtension = String(sourceFile.name || '').toLowerCase().match(/\.([^.]+)$/)?.[1] || '';
       // V2 sends the original bytes to FFmpeg, which detects the actual container from content.
       // Keep V1's existing browser compatibility restriction unchanged.
-      if (!['mp4', 'mov', 'm4v'].includes(sourceExtension)) {
+      if (!isV2SelectedForJob && !['mp4', 'mov', 'm4v'].includes(sourceExtension)) {
         throw new Error('patcher_requires_mp4_mov');
       }
 
@@ -3045,9 +3076,89 @@ if (processBtn) {
       };
       let processingFile = preparedInput.blob;
       const processingFileName = processingFile.name || `${sourceFile.name.replace(/\.[^.]+$/, '')}.mp4`;
-      // V2 is fully local: the original bytes go straight to the in-browser patcher,
-      // nothing is uploaded to a server.
-      updateProcessingProgress(13);
+      if (isV2SelectedForJob) {
+        setProcessingState('processing', '');
+        updateProcessingProgress(7);
+        let copyResponse;
+        const copyHeaders = { 'Content-Type': 'application/octet-stream' };
+        if (tgAuthToken) copyHeaders.Authorization = `Bearer ${tgAuthToken}`;
+        // Mobile Samsung/Android browsers can transiently reset large uploads.
+        // Retry once only when fetch fails before a response is received; keep the
+        // same original bytes and never switch to transcoding or a metadata-only path.
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          try {
+            // Test hook: localStorage.ineasyFfmpegVariant = 'ts60000' | 'dualaudio' (server whitelists names).
+            let copyVariant = '';
+            try { copyVariant = String(localStorage.getItem('ineasyFfmpegVariant') || ''); } catch (_) {}
+            copyResponse = await postV2FfmpegCopy('/api/v2/ffmpeg-copy' +
+              (/^[a-z0-9]{1,16}$/i.test(copyVariant) ? '?variant=' + encodeURIComponent(copyVariant) : ''),
+              processingFile, copyHeaders, controller.signal,
+              (ratio) => updateProcessingProgress(7 + Math.round(ratio * 4)));
+            break;
+          } catch (error) {
+            if (controller.signal.aborted) throw error;
+            if (attempt === 0 && (error instanceof TypeError || /failed to fetch|network|load failed/i.test(String(error?.message || '')))) {
+              setProcessingState('processing', STATE.lang === 'ru'
+                ? 'Соединение прервалось. Повторяем отправку видео…'
+                : STATE.lang === 'kk'
+                  ? 'Байланыс үзілді. Бейнені қайта жіберіп жатырмыз…'
+                  : 'Connection interrupted. Retrying video upload…');
+              await new Promise((resolve, reject) => {
+                const retryTimer = setTimeout(resolve, 900);
+                controller.signal.addEventListener('abort', () => {
+                  clearTimeout(retryTimer);
+                  reject(new DOMException('Aborted', 'AbortError'));
+                }, { once: true });
+              });
+              continue;
+            }
+            throw new Error('v2_ffmpeg_copy_failed: ' + (error?.message || 'network_error'));
+          }
+        }
+        if (!copyResponse) throw new Error('v2_ffmpeg_copy_failed: network_error');
+        if (!copyResponse.ok) {
+          const failure = await copyResponse.json().catch(() => ({}));
+          throw new Error('v2_ffmpeg_copy_failed: ' + (failure.error || `http_${copyResponse.status}`));
+        }
+        if (copyResponse.headers.get('X-INEASY-FFMPEG-COPY') !== '1') {
+          throw new Error('v2_ffmpeg_copy_failed: unverified_server_output');
+        }
+        // Remember FPS/dimensions measured by ffprobe on the ORIGINAL file,
+        // before remuxing. Never use only the remuxed file as the reference.
+        console.info('[INEASY V2] FFmpeg copy variant:', copyResponse.headers.get('X-INEASY-FFMPEG-VARIANT'),
+          'audio:', copyResponse.headers.get('X-INEASY-FFMPEG-AUDIO'));
+        const sourceFpsHeader = Number(copyResponse.headers.get('X-INEASY-SOURCE-FPS'));
+        const outputFpsHeader = Number(copyResponse.headers.get('X-INEASY-OUTPUT-FPS'));
+        const sourceWidthHeader = Number(copyResponse.headers.get('X-INEASY-SOURCE-WIDTH'));
+        const sourceHeightHeader = Number(copyResponse.headers.get('X-INEASY-SOURCE-HEIGHT'));
+        if (Number.isFinite(sourceFpsHeader) && sourceFpsHeader > 0) {
+          originalInputFps = sourceFpsHeader;
+        }
+        if (Number.isFinite(sourceWidthHeader) && sourceWidthHeader > 0 &&
+            Number.isFinite(sourceHeightHeader) && sourceHeightHeader > 0) {
+          originalFfprobeSourceInfo = {
+            width: sourceWidthHeader,
+            height: sourceHeightHeader,
+            fps: Number.isFinite(sourceFpsHeader) && sourceFpsHeader > 0 ? sourceFpsHeader : null
+          };
+        }
+        if (Number.isFinite(sourceFpsHeader) && sourceFpsHeader >= 50 &&
+            (!Number.isFinite(outputFpsHeader) || outputFpsHeader < 50 ||
+             outputFpsHeader < sourceFpsHeader - 1)) {
+          throw new Error('v2_ffmpeg_copy_failed: ffmpeg_copy_fps_downgrade_blocked');
+        }
+        const remuxedBlob = await copyResponse.blob();
+        if (!remuxedBlob.size) throw new Error('v2_ffmpeg_copy_failed: empty_output');
+        processingFile = new File([remuxedBlob], processingFileName.replace(/\.[^.]+$/, '') + '.mp4', {
+          type: 'video/mp4',
+          lastModified: Date.now()
+        });
+        console.info('[INEASY V2] FFmpeg stream-copy remux completed; proceeding to metadata patching.', {
+          inputBytes: sourceFile.size,
+          remuxedBytes: processingFile.size
+        });
+        updateProcessingProgress(13);
+      }
       const buffer = await processingFile.arrayBuffer();
       // Keep ADJN and its SIZE GUARD unchanged; only eligible 1080p SDR is transcoded before patching.
       if (!isV2SelectedForJob && !fpsConversion.preserveOriginal) {
