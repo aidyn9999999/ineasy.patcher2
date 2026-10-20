@@ -1,0 +1,274 @@
+/* Shared components: buttons, fields, panels, status, modals */
+
+/* ---------- Buttons ---------- */
+.btn, .pkg-buy, .ia-btn {
+  --btn-bg: var(--ink-700);
+  --btn-fg: var(--text);
+  --btn-bd: var(--line-strong);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 20px;
+  border: 1px solid var(--btn-bd);
+  border-radius: var(--r-md);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font: 600 var(--fs-md) / 1.15 var(--font-text);
+  letter-spacing: -0.005em;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease),
+    color var(--t-fast) var(--ease), box-shadow var(--t-med) var(--ease), transform var(--t-fast) var(--ease), opacity var(--t-fast) var(--ease);
+}
+.btn:hover, .pkg-buy:hover, .ia-btn:hover { color: var(--btn-fg); }
+.btn:active:not(:disabled), .pkg-buy:active, .ia-btn:active { transform: translateY(1px) scale(0.985); }
+.btn:disabled, .btn[aria-disabled='true'] { opacity: 0.38; cursor: not-allowed; box-shadow: none; filter: saturate(0.5); }
+.btn:focus-visible, .pkg-buy:focus-visible, .ia-btn:focus-visible { outline-offset: 3px; border-radius: var(--r-md); }
+
+/* Primary — the one main action on a screen */
+.btn-primary, .pkg-buy {
+  --btn-fg: #fff;
+  --btn-bd: rgba(143, 178, 255, 0.45);
+  background: linear-gradient(180deg, #4079fb 0%, var(--blue-600) 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.28) inset, var(--glow-primary);
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-primary:hover:not(:disabled), .pkg-buy:hover {
+  background: linear-gradient(180deg, #5388ff 0%, #2f64e8 100%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.32) inset, 0 14px 32px -10px rgba(52, 111, 245, 0.85);
+}
+.btn-primary::after, .pkg-buy::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.34) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.7s var(--ease);
+  pointer-events: none;
+}
+.btn-primary:hover:not(:disabled)::after, .pkg-buy:hover::after { transform: translateX(120%); }
+
+/* Secondary — calm, filled */
+.btn-secondary:hover:not(:disabled), .ia-btn:hover { --btn-bg: var(--ink-600); --btn-bd: rgba(143, 178, 255, 0.4); }
+
+/* Outline — alternative to primary, no fill */
+.btn-outline { --btn-bg: transparent; --btn-fg: var(--blue-200); --btn-bd: rgba(143, 178, 255, 0.38); }
+.btn-outline:hover:not(:disabled) { --btn-bg: var(--blue-wash); --btn-bd: var(--blue-300); }
+
+/* Ghost — quietest */
+.btn-ghost { --btn-bg: transparent; --btn-fg: var(--text-2); --btn-bd: transparent; }
+.btn-ghost:hover:not(:disabled) { --btn-bg: rgba(130, 165, 235, 0.08); --btn-fg: var(--text); }
+
+.btn-danger, .ia-btn-danger { --btn-bg: transparent; --btn-fg: var(--err); --btn-bd: transparent; }
+.btn-danger:hover:not(:disabled), .ia-btn-danger:hover { --btn-bg: var(--err-wash); --btn-fg: var(--err); --btn-bd: transparent; }
+
+/* Destructive but confirmed: tinted red, never the loudest thing on screen */
+.btn-danger-solid { --btn-bg: rgba(255, 107, 132, 0.12); --btn-fg: #ffb3c0; --btn-bd: rgba(255, 107, 132, 0.42); }
+.btn-danger-solid:hover:not(:disabled) { --btn-bg: rgba(255, 107, 132, 0.22); --btn-bd: rgba(255, 107, 132, 0.7); --btn-fg: #ffd0d8; }
+
+.btn-lg { min-height: 56px; padding: 0 28px; font-size: 1.0625rem; border-radius: 14px; }
+.btn-sm, .ia-btn { min-height: 38px; padding: 0 14px; font-size: var(--fs-sm); border-radius: 10px; }
+.btn-block { width: 100%; }
+.btn .ic, .btn.bi::before { --ic-size: 1.2em; }
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-2);
+  transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.icon-btn:hover { background: rgba(130, 165, 235, 0.1); color: var(--text); }
+.icon-btn .ic, .icon-btn svg { width: 20px; height: 20px; --ic-size: 20px; }
+
+.link-btn {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--blue-300);
+  font: 500 var(--fs-sm) / 1.2 var(--font-text);
+  text-decoration: underline;
+  text-decoration-color: rgba(143, 178, 255, 0.4);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.link-btn:hover { color: var(--blue-200); text-decoration-color: currentColor; }
+
+/* ---------- Panels ---------- */
+.panel {
+  position: relative;
+  border-radius: var(--r-xl);
+  background: linear-gradient(180deg, rgba(24, 40, 72, 0.7) 0%, rgba(9, 16, 30, 0.86) 100%);
+  box-shadow: var(--shadow-panel);
+}
+
+/* Viewfinder crop marks — signature frame detail */
+.brackets {
+  --bk: var(--blue-400);
+  --bk-len: 18px;
+  --bk-w: 2px;
+  background-image:
+    linear-gradient(var(--bk), var(--bk)), linear-gradient(var(--bk), var(--bk)),
+    linear-gradient(var(--bk), var(--bk)), linear-gradient(var(--bk), var(--bk)),
+    linear-gradient(var(--bk), var(--bk)), linear-gradient(var(--bk), var(--bk)),
+    linear-gradient(var(--bk), var(--bk)), linear-gradient(var(--bk), var(--bk));
+  background-size:
+    var(--bk-len) var(--bk-w), var(--bk-w) var(--bk-len),
+    var(--bk-len) var(--bk-w), var(--bk-w) var(--bk-len),
+    var(--bk-len) var(--bk-w), var(--bk-w) var(--bk-len),
+    var(--bk-len) var(--bk-w), var(--bk-w) var(--bk-len);
+  background-position:
+    left top, left top, right top, right top,
+    left bottom, left bottom, right bottom, right bottom;
+  background-repeat: no-repeat;
+}
+
+/* ---------- Fields ---------- */
+.field, #checkerUrl, #zernioApiKey, #tiktokCaption, .tiktok-scheduled input {
+  width: 100%;
+  min-height: 50px;
+  padding: 13px 15px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: rgba(3, 6, 12, 0.55);
+  color: var(--text);
+  font: 400 var(--fs-md) / 1.4 var(--font-text);
+  transition: border-color var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease);
+}
+.field::placeholder, #checkerUrl::placeholder, #zernioApiKey::placeholder, #tiktokCaption::placeholder { color: var(--text-3); }
+.field:hover, #checkerUrl:hover, #zernioApiKey:hover, #tiktokCaption:hover { border-color: rgba(143, 178, 255, 0.4); }
+.field:focus, #checkerUrl:focus, #zernioApiKey:focus, #tiktokCaption:focus {
+  outline: none;
+  border-color: var(--blue-400);
+  background: rgba(3, 6, 12, 0.8);
+  box-shadow: 0 0 0 3px rgba(91, 140, 255, 0.22);
+}
+#tiktokCaption { min-height: 120px; resize: vertical; }
+
+/* ---------- Callouts & status ---------- */
+.callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--blue-wash);
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.callout > svg, .callout > .ic { flex: none; width: 20px; height: 20px; margin-top: 1px; color: var(--blue-300); }
+.callout p { margin: 0; }
+.callout-warn { border-color: rgba(242, 184, 75, 0.28); background: var(--warn-wash); }
+.callout-warn > svg, .callout-warn > .ic { color: var(--warn); }
+
+.spinner, .processing-spinner {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--ink-600);
+  border-top-color: var(--blue-400);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.progress-track, .tiktok-progress-track {
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: rgba(91, 140, 255, 0.14);
+}
+.progress-track i, .tiktok-progress-track i {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--blue-500), var(--cyan-300));
+  transition: width 0.4s var(--ease);
+}
+
+/* ---------- Modals ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(2, 4, 9, 0.74);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: fadeIn var(--t-med) var(--ease);
+}
+.modal-overlay.hidden { display: none; }
+@keyframes fadeIn { from { opacity: 0; } }
+@keyframes riseIn { from { opacity: 0; transform: translateY(12px) scale(0.985); } }
+@keyframes viewIn { from { opacity: 0; transform: translateY(8px); } }
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: min(88vh, 860px);
+  max-height: min(88dvh, 860px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-xl);
+  background: linear-gradient(180deg, var(--ink-800) 0%, var(--ink-850) 100%);
+  box-shadow: var(--shadow-pop);
+  animation: riseIn var(--t-med) var(--ease);
+}
+.modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 16px 16px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--ink-800);
+}
+.modal-head h2, .modal-head h3 { font: 500 var(--fs-lg) / 1.2 var(--font-display); letter-spacing: -0.02em; }
+.modal-body { padding: 22px 24px 26px; }
+.modal-close {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.modal-close:hover { background: rgba(130, 165, 235, 0.12); color: var(--text); }
+.modal-close svg { width: 20px; height: 20px; }
+
+/* While a dialog is open the page behind it must not scroll (iOS/Android bug magnet) */
+body:has(.modal-overlay:not(.hidden)) { overflow: hidden; }

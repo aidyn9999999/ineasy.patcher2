@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050911">
 <title>INEASY — обработка видео для TikTok в высоком качестве</title>
 <meta name="description" content="Обработай своё видео для TikTok в высоком качестве с INEASY. Подготовь ролик к публикации, сохраняя исходное разрешение и параметры там, где это поддерживается.">
 <meta name="robots" content="index, follow">
@@ -16,14 +17,19 @@
 <meta name="twitter:description" content="Обработай своё видео для TikTok в высоком качестве с INEASY.">
 <link rel="icon" type="image/png" href="/ineasy-logo.png?v=20261019-favicon-photo-v1">
 <link rel="apple-touch-icon" href="/ineasy-logo.png?v=20261019-photo-logo-v1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Exo+2:wght@500;700;800&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261019-safari-v2">
-<link rel="stylesheet" href="home.css?v=20261019-safari-v2">
-<link rel="stylesheet" href="theme.css?v=20261019-safari-v2">
+<link rel="preload" href="fonts/unbounded-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/onest-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/fonts.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/tokens.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/base.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/icons.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/components.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/fx.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/shell.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/home.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/patcher.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/pages.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/modals.css?v=20261020-ui1">
 <script>
 (function () {
   var ua = navigator.userAgent || '';
@@ -32,27 +38,27 @@
 })();
 </script>
 </head>
-<body>
+<body class="app">
 
 <div class="app-shell">
   <header class="topbar">
-    <div class="brand"><span class="brand-in">in</span><span class="brand-easy">easy</span></div>
+    <a class="brand" href="/" aria-label="INEASY"><span class="brand-in">in</span><span class="brand-easy">easy</span></a>
     <div class="balance-pill" id="balancePill">
-      <span class="id-part"><span id="idCaption">ID:</span> <b id="tgIdLabel">—</b></span>
-      <button class="copy-id-btn icon-action-btn" id="copyIdBtn" type="button" aria-label="Copy Telegram ID" title="Copy Telegram ID"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="13" height="13" x="9" y="9" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+      <span class="wallet-id"><span class="id-part"><span id="idCaption">ID:</span> <b id="tgIdLabel">—</b></span>
+      <button class="copy-id-btn icon-action-btn" id="copyIdBtn" type="button" aria-label="Copy Telegram ID" title="Copy Telegram ID"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="13" height="13" x="9" y="9" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button></span>
       <span class="pill-sep"></span>
-      <span class="balance-part"><span id="balanceCaption">Balance:</span> <b id="balanceLabel">…</b></span>
-      <button class="plus-btn icon-action-btn" id="plusBtn" type="button" aria-label="Top up balance" title="Top up balance"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M8 12h8"/></svg></button>
+      <span class="wallet-bal"><span class="balance-part"><span id="balanceCaption">Balance:</span> <b id="balanceLabel">…</b></span>
+      <button class="plus-btn icon-action-btn" id="plusBtn" type="button" aria-label="Top up balance" title="Top up balance"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8"/><path d="M8 12h8"/></svg></button></span>
       <button class="logout-btn" id="logoutBtn" type="button" aria-label="Log out" title="Log out"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg><span id="logoutLabel">Log out</span></button>
     </div>
   </header>
 
   <!-- Package modal -->
   <div class="modal-overlay hidden" id="modalOverlay">
-    <div class="modal">
+    <div class="modal pkg-modal">
       <div class="modal-head">
         <h3 id="packagesTitle">Paid packages</h3>
-        <button class="modal-close" id="modalClose" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x ui-icon" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
+        <button class="modal-close" id="modalClose" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x ui-icon" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></button>
       </div>
 
       <div class="modal-body" id="packagesView">
@@ -66,6 +72,7 @@
   <main class="app-main">
     <aside class="community-callout" aria-label="Telegram">
       <div class="news-callout">
+        <span class="news-icon" aria-hidden="true"><i class="ic i-send"></i></span>
         <div class="news-copy">
           <strong id="communityTitle">Новости, розыгрыши и туториалы</strong>
           <p><span id="communityBody">Новости, розыгрыши и туториалы — присоединяйтесь к каналу.</span> <b>@ineasynews</b></p>
@@ -79,21 +86,35 @@
         <button type="button" data-lang="en">EN</button>
       </div>
     </aside>
+
     <section class="view-section home-section active" id="homeSection">
       <section class="home-hero" id="homeHero" aria-labelledby="homeTitle">
         <div class="home-hero-shade" aria-hidden="true"></div>
         <div class="deco-stage" aria-hidden="true">
           <span class="deco-orb deco-orb-a"></span><span class="deco-orb deco-orb-b"></span>
-          <span class="deco-spark s1">✦</span><span class="deco-spark s2">✦</span><span class="deco-spark s3">✦</span>
         </div>
         <div class="home-hero-copy">
           <h1 id="homeTitle"><span class="home-greeting">Добро пожаловать, <span id="homeUserName" class="home-name">друг</span></span><span class="home-headline">Публикуй видео в TikTok без потери качества</span></h1>
           <p class="home-intro" id="homeIntro">До <strong class="hero-quality">4K · 120 FPS</strong> <span class="hero-workflow">Обработай видео, подключи автопост и опубликуй в TikTok — без повторного перекодирования.</span></p>
+          <div class="hero-actions">
+            <button class="home-cta btn btn-primary btn-lg" type="button" data-open-view="patchSection"><span id="homeCta">Обработка видео</span><i class="ic i-arrowRight" aria-hidden="true"></i></button>
+          </div>
         </div>
-        <div class="home-hero-foot" aria-hidden="true"><span>INEASY</span><span>ДО 4K · 120 FPS*</span></div>
+        <div class="hero-emblem" aria-hidden="true">
+          <span class="he-glow"></span>
+          <span class="he-ring he-ring-outer"></span>
+          <span class="he-ring he-ring-inner"></span>
+          <div class="he-core">
+            <strong>4K</strong>
+            <span>120 FPS</span>
+          </div>
+          <span class="he-node he-node-a"><i class="ic i-film"></i></span>
+          <span class="he-node he-node-b"><i class="ic i-activity"></i></span>
+          <span class="he-node he-node-c"><i class="ic i-send"></i></span>
+        </div>
       </section>
 
-      <section class="home-content-section" aria-labelledby="comparisonTitle">
+      <section class="home-content-section home-compare" aria-labelledby="comparisonTitle">
         <div class="home-section-heading">
           <p class="home-eyebrow" id="comparisonKicker">КАЧЕСТВО</p>
           <h2 id="comparisonTitle">Сравнение качества</h2>
@@ -120,35 +141,46 @@
           <article class="workflow-step"><span class="workflow-number">02</span><h3 id="stepTwoTitle">Подключите Zernio</h3><p id="stepTwoBody">Добавьте API-ключ Zernio и подключите свой аккаунт TikTok.</p></article>
           <article class="workflow-step"><span class="workflow-number">03</span><h3 id="stepThreeTitle">Опубликуйте ролик</h3><p id="stepThreeBody">Напишите описание, выберите настройки публикации и нажмите «Опубликовать».</p></article>
         </div>
-        <div class="home-local-note"><span class="home-local-icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-up-right ui-icon" aria-hidden="true"><path d="M7 7h10v10"></path><path d="M7 17 17 7"></path></svg></span><p id="localProcessingCopy">Обработка выполняется в браузере: видео и звук не загружаются на сервер INEASY. Для совместимых файлов патчер обновляет необходимые метаданные без повторного кодирования. Фактические параметры результата зависят от исходного файла.</p></div>
-        <button class="home-cta home-cta-bottom" type="button" data-open-view="patchSection"><span id="homeBottomCta">Обработка видео</span><span aria-hidden="true">↗</span></button>
+        <div class="home-local-note"><span class="home-local-icon" aria-hidden="true"><i class="ic i-shield"></i></span><p id="localProcessingCopy">Обработка выполняется в браузере: видео и звук не загружаются на сервер INEASY. Для совместимых файлов патчер обновляет необходимые метаданные без повторного кодирования. Фактические параметры результата зависят от исходного файла.</p></div>
+        <button class="home-cta home-cta-bottom btn btn-primary btn-lg" type="button" data-open-view="patchSection"><span id="homeBottomCta">Обработка видео</span><i class="ic i-arrowRight" aria-hidden="true"></i></button>
       </section>
     </section>
 
     <!-- PATCHER SECTION -->
     <section class="view-section hidden" id="patchSection">
     <div class="patch-panel">
-      <h1 class="patch-title" id="patchTitle">ОБХОД СЖАТИЯ TIKTOK</h1>
-      <p class="patch-quality-heading">Обработайте видео без сжатия, с сохранением качества и без перекодирования.</p>
-      <p class="patch-sub" id="patchSub">Загрузите видео до 4K • 120 FPS</p>
+      <div class="patch-intro">
+        <h1 class="patch-title" id="patchTitle">ОБХОД СЖАТИЯ TIKTOK</h1>
+        <p class="patch-quality-heading" data-i18n="pqHeading">Обработайте видео без сжатия, с сохранением качества и без перекодирования.</p>
+        <p class="patch-sub" id="patchSub">Загрузите видео до 4K • 120 FPS</p>
 
-      <div class="dropzone" id="dropzone">
+        <section class="daily-limit-card" id="dailyLimitCard" aria-label="Ваш дневной лимит">
+          <div class="daily-limit-heading"><strong id="dailyLimitTitle" data-i18n="dlTitle">Ваш бесплатный дневной лимит</strong></div>
+          <div class="daily-limit-track" role="progressbar" aria-label="Использованный дневной лимит" aria-valuemin="0" aria-valuemax="2" aria-valuenow="0" id="dailyLimitProgress">
+            <span id="dailyLimitFill"></span>
+            <span class="daily-limit-track-label" id="dailyLimitCount">Бесплатный лимит · 0 из 2 видео использовано</span>
+          </div>
+        </section>
+      </div>
+
+      <div class="patch-work">
+      <div class="dropzone brackets" id="dropzone">
         <input type="file" id="fileInput" accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.avi,.3gp,.3g2,.ts,.mts,.m2ts,.mpg,.mpeg,.wmv,.flv,.ogv">
         <div class="dropzone-content" id="dropzoneContent">
-          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload ui-icon" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
+          <span class="dz-art" aria-hidden="true"><i class="ic i-uploadCloud"></i></span>
           <p class="dz-title" id="dzTitle">Выберите видео</p>
           <p class="dz-sub" id="dzSub">Нажмите, чтобы загрузить или перетащите файл</p>
           <p class="patch-format-note">MP4, MOV</p>
         </div>
         <div class="balance-lock hidden" id="balanceLock">
-          <svg class="balance-lock-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 14v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span class="dz-art lock-art" aria-hidden="true"><i class="ic i-lock"></i></span>
           <p class="dz-title" id="noCreditsTitle">Лимиты закончились</p>
           <p class="dz-sub" id="noCreditsText">Пополните баланс, чтобы снова обрабатывать видео.</p>
           <p class="dz-sub" id="freeBalanceNextAt" hidden></p>
           <div class="balance-lock-actions">
-            <button class="balance-buy-site" id="buyOnSiteBtn" type="button">Купить на сайте</button>
-            <a class="balance-buy-telegram" id="buyInTelegram" href="https://t.me/ineasybot" target="_blank" rel="noopener">Купить в Telegram</a>
-            <a class="balance-buy-telegram" id="inviteOnSiteBtn" href="https://t.me/ineasybot" target="_blank" rel="noopener">👥 Пригласить друга</a>
+            <button class="balance-buy-site btn btn-primary" id="buyOnSiteBtn" type="button">Купить на сайте</button>
+            <a class="balance-buy-telegram btn btn-outline" id="buyInTelegram" href="https://t.me/ineasybot" target="_blank" rel="noopener">Купить в Telegram</a>
+            <a class="balance-buy-telegram btn btn-ghost" id="inviteOnSiteBtn" href="https://t.me/ineasybot" target="_blank" rel="noopener">👥 Пригласить друга</a>
           </div>
         </div>
       </div>
@@ -157,13 +189,13 @@
         <video id="previewVideo" controls playsinline webkit-playsinline preload="metadata"></video>
         <div class="file-row">
           <span id="fileMeta">—</span>
-          <button class="clear-btn" id="clearBtn" type="button">Remove</button>
+          <button class="clear-btn btn btn-danger btn-sm" id="clearBtn" type="button">Remove</button>
         </div>
       </div>
 
       <section class="video-size-meter" id="videoSizeMeter" aria-label="Размер видео">
         <div class="video-size-meter-heading">
-          <div><span class="video-size-meter-kicker">РАЗМЕР ВИДЕО</span><strong>Максимум 150 МБ</strong></div>
+          <div><span class="video-size-meter-kicker" data-i18n="smKicker">РАЗМЕР ВИДЕО</span><strong data-i18n="smMax">Максимум 150 МБ</strong></div>
         </div>
         <div class="video-size-meter-track" id="videoSizeProgress" role="progressbar" aria-label="Размер выбранного видео из 150 МБ" aria-valuemin="0" aria-valuemax="150" aria-valuenow="0">
           <span class="video-size-meter-fill" id="videoSizeFill"></span>
@@ -172,13 +204,6 @@
       </section>
 
       <p class="export-note hidden" id="exportNote"></p>
-      <section class="daily-limit-card" id="dailyLimitCard" aria-label="Ваш дневной лимит">
-        <div class="daily-limit-heading"><strong id="dailyLimitTitle">Ваш бесплатный дневной лимит</strong></div>
-        <div class="daily-limit-track" role="progressbar" aria-label="Использованный дневной лимит" aria-valuemin="0" aria-valuemax="2" aria-valuenow="0" id="dailyLimitProgress">
-          <span id="dailyLimitFill"></span>
-          <span class="daily-limit-track-label" id="dailyLimitCount">Бесплатный лимит · 0 из 2 видео использовано</span>
-        </div>
-        </section>
       <input id="postingDevice" type="hidden" value="">
       <div class="patcher-version-picker hidden" role="radiogroup" aria-label="Режим обработки">
         <span class="mode-thumb" aria-hidden="true"></span>
@@ -193,42 +218,56 @@
       </div>
       <p class="patcher-version-note hidden" id="patcherVersionNote" aria-hidden="true"></p>
       <p class="fps-advice hidden" id="fpsAdvice" aria-hidden="true"></p>
-      <button class="process-btn" id="processBtn" type="button" disabled>Process video</button>
+      <button class="process-btn btn btn-primary btn-lg btn-block" id="processBtn" type="button" disabled>Process video</button>
       <div class="processing-state hidden" id="processingState">
         <span class="processing-spinner"></span>
-        <div>
+        <div class="ps-copy">
           <span class="processing-percent" id="processingPercent" aria-live="polite">Loading: 0%</span>
           <span id="processingText" aria-live="polite"></span>
           <span class="processing-wait-note" id="processingWaitNote"></span>
-          <div class="progress-track"><i id="processingProgress"></i></div>
         </div>
-        <button class="cancel-process-btn" id="cancelProcessBtn" type="button" disabled>Cancel</button>
+        <button class="cancel-process-btn btn btn-ghost btn-sm" id="cancelProcessBtn" type="button" disabled>Cancel</button>
+        <div class="progress-track"><i id="processingProgress"></i></div>
       </div>
       <div class="processed-result hidden" id="processedResult">
-        <span class="result-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5 9.2 16.5 19 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span class="result-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12.5 9.2 16.5 19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
         <div class="processed-result-copy">
           <strong id="resultTitle">Your video is ready</strong>
           <small id="resultSub">Video processed</small>
           <small class="compatibility-note" id="compatibilityNote">Совместимый формат для TikTok: 1080p • 60 FPS • H.264 (AVC) или H.265 (HEVC).</small>
         </div>
-        <a id="downloadBtn" href="#" download class="download-link">Download</a>
+        <a id="downloadBtn" href="#" download class="download-link btn btn-primary bi i-download">Download</a>
         <div class="publication-actions" id="publicationActions">
-          <button id="publishTiktokBtn" class="tiktok-publish-btn" type="button">Publish to TikTok</button>
-          <a id="tiktokStudioBtn" class="tiktok-publish-btn tiktok-studio-btn" href="https://www.tiktok.com/upload" target="_blank" rel="noopener noreferrer">Open TikTok Studio</a>
-          <small class="autopost-hint" id="autopostHint">Quick auto-post with Zernio</small>
-          <small class="autopost-hint tiktok-studio-hint" id="tiktokStudioHint">Official TikTok upload. Posting on site is usually faster.</small>
+          <div class="pub-option">
+            <button id="publishTiktokBtn" class="tiktok-publish-btn btn btn-primary" type="button">Publish to TikTok</button>
+            <small class="autopost-hint" id="autopostHint">Quick auto-post with Zernio</small>
+          </div>
+          <div class="pub-option">
+            <a id="tiktokStudioBtn" class="tiktok-publish-btn tiktok-studio-btn btn btn-outline" href="https://www.tiktok.com/upload" target="_blank" rel="noopener noreferrer">Open TikTok Studio</a>
+            <small class="autopost-hint tiktok-studio-hint" id="tiktokStudioHint">Official TikTok upload. Posting on site is usually faster.</small>
+          </div>
         </div>
-        <button id="optimizeAnotherBtn" class="optimize-another-btn" type="button">Optimize another video</button>
+        <aside class="fps-tip fps-tip-result" role="note">
+          <span class="fps-tip-badge" aria-hidden="true"><i class="ic i-alert"></i></span>
+          <div class="fps-tip-body">
+            <strong data-i18n="fpsTipTitle">Столкнулись с ошибкой 30 FPS?</strong>
+            <p data-i18n-html="fpsTipBody">Если вы столкнулись с ошибкой 30 FPS, после обработки попробуйте <b>опубликовать через сайт</b> или используйте формат <b>HEVC (H.265)</b> — это может решить проблему.</p>
+            <div class="fps-tip-tags" aria-hidden="true"><span><i class="ic i-globe"></i><span data-i18n="fpsTipTagSite">Через сайт</span></span><span><i class="ic i-hevc"></i>HEVC · H.265</span></div>
+          </div>
+        </aside>
+        <button id="optimizeAnotherBtn" class="optimize-another-btn btn btn-ghost btn-block" type="button">Optimize another video</button>
       </div>
-      <div class="notice-banner hidden" id="durationNotice" role="note">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.9945 16H12.0035" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="notice-banner callout callout-warn hidden" id="durationNotice" role="note">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 22C17.5 22 22 17.5 22 12C22 6.5 17.5 2 12 2C6.5 2 2 6.5 2 12C2 17.5 6.5 22 12 22Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8V13" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.9945 16H12.0035" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <p id="noticeBannerText">If the duration displays as 0:00, check the downloaded MP4 in a separate video player before publishing.</p>
+      </div>
       </div>
     </div>
     </section>
 
     <!-- ANALYZER SECTION -->
     <section class="view-section hidden" id="checkerSection">
+    <div class="checker-layout">
     <section class="checker-panel" aria-labelledby="checkerTitle">
       <div class="checker-copy">
         <p class="eyebrow" id="analyzerLabel">VIDEO ANALYZER</p>
@@ -237,22 +276,33 @@
       </div>
       <form class="checker-form" id="checkerForm">
         <div class="checker-input-row">
-          <input id="checkerUrl" type="url" placeholder="Paste TikTok link" autocomplete="url" required>
-          <button type="submit" id="analyzeBtn">Analyze</button>
+          <input id="checkerUrl" type="url" placeholder="Paste TikTok link" autocomplete="url" inputmode="url" required>
+          <button type="submit" class="btn btn-primary bi i-search" id="analyzeBtn">Analyze</button>
         </div>
         <p class="checker-source hidden" id="checkerSource" aria-live="polite"></p>
         <p class="checker-status" id="checkerStatus" aria-live="polite"></p>
       </form>
-      <div class="checker-result hidden" id="checkerResult" aria-live="polite"></div>
     </section>
+    <div class="readout panel">
+      <div class="checker-result hidden" id="checkerResult" aria-live="polite"></div>
+      <div class="readout-ph" aria-hidden="true">
+        <div><small>●</small><strong>—</strong></div><div><small>●</small><strong>—</strong></div>
+        <div><small>●</small><strong>—</strong></div><div><small>●</small><strong>—</strong></div>
+      </div>
+    </div>
+    </div>
     <p class="checker-support"><span id="supportText">Found a bug?</span> <a id="checkerReport" href="https://t.me/ineasyadmin?text=I%20found%20a%20bug%20on%20the%20site%20and%20want%20to%20report%20it" target="_blank">Report</a></p>
     </section>
 
     <!-- HOW TO USE / FAQ SECTION -->
     <section class="view-section hidden" id="faqSection">
-    <section class="faq-section" aria-labelledby="faqTitle">
+    <div class="faq-layout">
+    <div class="faq-head">
       <p class="eyebrow" id="faqLabel">FAQ / FREQUENTLY ASKED QUESTIONS</p>
       <h2 id="faqTitle">Frequently asked questions</h2>
+      <p class="faq-support"><span id="faqSupportText">Found a bug?</span> <a id="faqReport" href="https://t.me/ineasyadmin?text=I%20found%20a%20bug%20on%20the%20site%20and%20want%20to%20report%20it" target="_blank">Report</a></p>
+    </div>
+    <section class="faq-section" aria-labelledby="faqTitle">
       <details>
         <summary id="faq1q">What does INEASY Patcher do?</summary>
         <p id="faq1a">INEASY Patcher automatically prepares your video before publishing it to TikTok. It analyzes the source file and applies optimized processing parameters designed to minimize noticeable quality loss after upload.</p>
@@ -288,7 +338,7 @@
         <p id="faq7a">No. TikTok processes uploaded content on its own systems. Patcher cannot disable TikTok’s internal processing. Its purpose is to prepare the video with optimized parameters designed to minimize noticeable quality loss after publishing.</p>
       </details>
     </section>
-    <p class="faq-support"><span id="faqSupportText">Found a bug?</span> <a id="faqReport" href="https://t.me/ineasyadmin?text=I%20found%20a%20bug%20on%20the%20site%20and%20want%20to%20report%20it" target="_blank">Report</a></p>
+    </div>
     </section>
   </main>
 
@@ -297,12 +347,13 @@
 
   <div class="modal-overlay archive-full-overlay hidden" id="archiveFullOverlay" role="dialog" aria-modal="true" aria-labelledby="archiveFullTitle">
     <section class="modal archive-full-modal">
-      <h2 id="archiveFullTitle">Архив заполнен</h2>
-      <p>У вас уже сохранены 2 видео. Удалите одно или оба ненужных видео — новое обработанное видео сохранится автоматически после освобождения места.</p>
+      <span class="modal-mark warn" aria-hidden="true"><i class="ic i-archive"></i></span>
+      <h2 id="archiveFullTitle" data-i18n="afTitle">Архив заполнен</h2>
+      <p data-i18n="afBody">У вас заполнен архив видео (2 из 2). Удалите ненужное видео — иначе новое видео потеряется.</p>
       <div id="archiveFullItems" class="archive-full-items"></div>
       <div class="archive-full-actions">
-        <button type="button" id="archiveFullDone" disabled>Удалить выбранные и продолжить</button>
-        <button type="button" id="archiveFullCancel">Позже</button>
+        <button type="button" class="btn btn-primary" id="archiveFullDone" data-i18n="afDone" disabled>Удалить выбранные и продолжить</button>
+        <button type="button" class="btn btn-ghost" id="archiveFullCancel" data-i18n="afLater">Позже</button>
       </div>
     </section>
   </div>
@@ -310,59 +361,64 @@
     <section class="modal support-modal">
       <h2 id="supportTitle">Куда написать?</h2>
       <a class="support-choice" href="https://t.me/ineasynews" target="_blank" rel="noopener">
-        <span class="support-choice-icon" aria-hidden="true">💬</span>
+        <span class="support-choice-icon" aria-hidden="true"><i class="ic i-message"></i></span>
         <span><strong id="supportQText">Вопрос? Напишите в комментарии канала</strong><small id="supportQLink">@ineasynews</small></span>
+        <i class="ic i-arrowUpRight support-go" aria-hidden="true"></i>
       </a>
       <a class="support-choice" href="https://t.me/ineasyadmin" target="_blank" rel="noopener">
-        <span class="support-choice-icon" aria-hidden="true">🐞</span>
+        <span class="support-choice-icon" aria-hidden="true"><i class="ic i-bug"></i></span>
         <span><strong id="supportBText">Баг или ошибка? Напишите контакт, ответим в личку</strong><small id="supportBLink">@ineasyadmin</small></span>
+        <i class="ic i-arrowUpRight support-go" aria-hidden="true"></i>
       </a>
-      <button type="button" class="support-close" id="supportCloseBtn">Закрыть</button>
+      <button type="button" class="support-close btn btn-ghost btn-block" id="supportCloseBtn">Закрыть</button>
     </section>
   </div>
   <div class="modal-overlay resolution-warning-overlay hidden" id="uhdWarningOverlay" role="dialog" aria-modal="true" aria-labelledby="uhdWarningTitle">
     <section class="modal resolution-warning-modal uhd-warning-modal">
-      <h2 id="uhdWarningTitle">Ваше видео <span class="hl-4k">4K</span></h2>
-      <p id="uhdWarningCopy">Можете получить <span class="hl-fps">30 FPS</span> после публикации — это риск. Советуем лучше выбрать видео <strong>1080p 60 FPS</strong>.</p>
+      <span class="modal-mark warn" aria-hidden="true"><i class="ic i-alert"></i></span>
+      <h2 id="uhdWarningTitle" data-i18n-html="uhdTitle">Ваше видео <span class="hl-4k">4K</span></h2>
+      <p id="uhdWarningCopy" data-i18n-html="uhdBody">Можете получить <span class="hl-fps">30 FPS</span> после публикации — это риск. Советуем лучше выбрать видео <strong>1080p 60 FPS</strong>.</p>
       <div class="resolution-warning-actions">
-        <button type="button" id="uhdReplaceBtn">Заменить на другое</button>
-        <button type="button" id="uhdKeepBtn">Оставить 4K — я рискую</button>
+        <button type="button" class="btn btn-primary" id="uhdReplaceBtn" data-i18n="uhdReplace">Заменить на другое</button>
+        <button type="button" class="btn btn-ghost" id="uhdKeepBtn" data-i18n="uhdKeep">Оставить 4K — я рискую</button>
       </div>
     </section>
   </div>
   <div class="modal-overlay resolution-warning-overlay hidden" id="resolutionWarningOverlay" role="dialog" aria-modal="true" aria-labelledby="resolutionWarningTitle">
     <section class="modal resolution-warning-modal">
+      <span class="modal-mark warn" aria-hidden="true"><i class="ic i-alert"></i></span>
       <h2 id="resolutionWarningTitle">Видео выше 1080p</h2>
       <p id="resolutionWarningCopy">Вы выбрали видео 4K. После публикации TikTok может изменить качество или частоту кадров. Для более предсказуемого результата рекомендуем 1080p. Если исходный формат вам подходит, нажмите «Продолжить».</p>
       <div class="resolution-warning-actions">
-        <button type="button" id="resolutionWarningContinue">Продолжить</button>
-        <button type="button" id="resolutionWarningCancel">Отмена</button>
+        <button type="button" class="btn btn-primary" id="resolutionWarningContinue">Продолжить</button>
+        <button type="button" class="btn btn-ghost" id="resolutionWarningCancel">Отмена</button>
       </div>
     </section>
   </div>
 
   <div class="modal-overlay post-success-overlay hidden" id="draftWarningOverlay" role="dialog" aria-modal="true" aria-labelledby="draftWarningTitle">
     <section class="modal post-success-modal">
-      <button class="modal-close" id="draftWarningClose" type="button" aria-label="Закрыть">×</button>
-      <div class="post-success-mark" aria-hidden="true">!</div>
-      <h2 id="draftWarningTitle">Видео сохранено как черновик</h2>
-      <p>Черновики могут не храниться постоянно. Проверяйте TikTok и удаляйте ненужные черновики вручную, чтобы освободить место.</p>
+      <button class="modal-close" id="draftWarningClose" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      <div class="post-success-mark warn" aria-hidden="true"><i class="ic i-alert"></i></div>
+      <h2 id="draftWarningTitle" data-i18n="dwTitle">Видео сохранено как черновик</h2>
+      <p data-i18n="dwBody">Черновики могут не храниться постоянно. Проверяйте TikTok и удаляйте ненужные черновики вручную, чтобы освободить место.</p>
       <div class="post-success-actions">
-        <button type="button" class="post-success-secondary" id="draftWarningOk">Понятно</button>
-        <a class="post-success-primary" id="draftWarningOpenTikTok" href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer">Открыть TikTok</a>
+        <button type="button" class="post-success-secondary btn btn-ghost" id="draftWarningOk" data-i18n="dwOk">Понятно</button>
+        <a class="post-success-primary btn btn-primary" id="draftWarningOpenTikTok" href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer">Открыть TikTok</a>
       </div>
     </section>
   </div>
 
   <div class="modal-overlay post-success-overlay hidden" id="postSuccessOverlay" role="dialog" aria-modal="true" aria-labelledby="postSuccessTitle">
     <section class="modal post-success-modal">
-      <button class="modal-close post-success-close" id="postSuccessClose" type="button" aria-label="Закрыть">×</button>
-      <div class="post-success-mark" aria-hidden="true">✓</div>
-      <h2 id="postSuccessTitle">Видео опубликовано!</h2>
-      <p>Хотите удалить только что опубликованное видео? Если оно больше не нужно, откройте TikTok и удалите его там.</p>
+      <button class="modal-close post-success-close" id="postSuccessClose" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+      <div class="post-success-mark" aria-hidden="true"><i class="ic i-check"></i></div>
+      <h2 id="postSuccessTitle" data-i18n="psTitle">Видео опубликовано!</h2>
+      <p id="postSuccessText" data-i18n="psBody">Удалить только что обработанное видео автоматически? Вы уже опубликовали его, поэтому копия больше не нужна.</p>
+      <p class="post-success-status" id="postSuccessStatus" role="status" aria-live="polite"></p>
       <div class="post-success-actions">
-        <button type="button" class="post-success-secondary" id="postSuccessKeep">Оставить видео</button>
-        <a class="post-success-primary" id="postSuccessOpenTikTok" href="https://www.tiktok.com/" target="_blank" rel="noopener noreferrer">Открыть TikTok</a>
+        <button type="button" class="post-success-secondary btn btn-secondary" id="postSuccessKeep" data-i18n="psKeep">Нет, оставить</button>
+        <button type="button" class="post-success-delete btn btn-danger-solid bi i-trash2" id="postSuccessDelete" data-i18n="psDelete">Да, удалить</button>
       </div>
     </section>
   </div>
@@ -370,7 +426,7 @@
     <section class="modal tiktok-composer">
       <div class="modal-head">
         <h2 id="publishModalTitle">Publish to TikTok</h2>
-        <button class="modal-close" id="tiktokModalClose" type="button" aria-label="Close">×</button>
+        <button class="modal-close" id="tiktokModalClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
       </div>
       <div class="modal-body">
         <section class="zernio-key-panel" id="zernioKeyPanel">
@@ -378,19 +434,29 @@
           <label class="tiktok-field-label" for="zernioApiKey" id="zernioKeyLabel">Zernio API key</label>
           <div class="zernio-key-row">
             <input id="zernioApiKey" type="password" placeholder="Paste your Zernio API key here" autocomplete="off" autocapitalize="off" spellcheck="false">
-            <a class="zernio-key-link" id="zernioGetApiKey" href="https://zernio.com/dashboard/api-keys" target="_blank" rel="noopener">Get API key</a>
+            <a class="zernio-key-link btn btn-outline" id="zernioGetApiKey" href="https://zernio.com/dashboard/api-keys" target="_blank" rel="noopener">Get API key</a>
           </div>
-          <button class="tiktok-connect-btn" id="zernioSaveKeyBtn" type="button">Connect Zernio</button>
+          <button class="tiktok-connect-btn btn btn-primary btn-block" id="zernioSaveKeyBtn" type="button">Connect Zernio</button>
           <p class="zernio-key-hint" id="zernioKeyHint">Your key is encrypted on the server and never saved in this browser.</p>
         </section>
         <section class="tiktok-account-panel hidden" id="tiktokAccountPanel">
           <p class="tiktok-account-status" id="tiktokAccountStatus" role="status" aria-live="polite">TikTok account is not connected.</p>
-          <button class="tiktok-connect-btn hidden" id="tiktokConnectBtn" type="button">Connect TikTok account</button>
+          <button class="tiktok-connect-btn btn btn-primary hidden" id="tiktokConnectBtn" type="button">Connect TikTok account</button>
         </section>
         <form class="tiktok-publish-form hidden" id="tiktokPublishForm">
-          <label class="tiktok-field-label" for="tiktokCaption" id="tiktokCaptionLabel">Описание</label>
-          <textarea id="tiktokCaption" maxlength="2200" rows="4" placeholder="#хештеги  @упоминания"></textarea>
-          <div class="tiktok-caption-hint"><span id="tiktokCaptionHint">#хештеги  @упоминания</span><span id="tiktokCaptionCount">0 / 2200</span></div>
+          <aside class="fps-tip fps-tip-compact" role="note">
+          <span class="fps-tip-badge" aria-hidden="true"><i class="ic i-alert"></i></span>
+          <div class="fps-tip-body">
+            <strong data-i18n="fpsTipTitle">Столкнулись с ошибкой 30 FPS?</strong>
+            <p data-i18n-html="fpsTipBody">Если вы столкнулись с ошибкой 30 FPS, после обработки попробуйте <b>опубликовать через сайт</b> или используйте формат <b>HEVC (H.265)</b> — это может решить проблему.</p>
+            <div class="fps-tip-tags" aria-hidden="true"><span><i class="ic i-globe"></i><span data-i18n="fpsTipTagSite">Через сайт</span></span><span><i class="ic i-hevc"></i>HEVC · H.265</span></div>
+          </div>
+        </aside>
+          <div class="tt-field">
+            <label class="tiktok-field-label" for="tiktokCaption" id="tiktokCaptionLabel">Описание</label>
+            <textarea id="tiktokCaption" maxlength="2200" rows="4" placeholder="#хештеги  @упоминания"></textarea>
+            <div class="tiktok-caption-hint"><span id="tiktokCaptionHint">#хештеги  @упоминания</span><span id="tiktokCaptionCount">0 / 2200</span></div>
+          </div>
           <label class="tiktok-comments-toggle">
             <span id="tiktokCommentsLabel">Разрешить комментарии</span>
             <input id="tiktokAllowComments" type="checkbox" checked>
@@ -402,11 +468,11 @@
             <div class="tiktok-progress-track"><i id="tiktokProgressBar"></i></div>
             <p class="tiktok-progress-warn">Не закрывайте страницу, иначе загрузка прервётся.</p>
           </div>
-          <button class="tiktok-submit-btn" id="tiktokSubmitBtn" type="submit">Опубликовать</button>
+          <button class="tiktok-submit-btn btn btn-primary btn-lg btn-block bi i-send" id="tiktokSubmitBtn" type="submit">Опубликовать</button>
           <p class="tiktok-consent-note">Публикуя видео, вы подтверждаете права на видео и музыку и соглашаетесь с правилами TikTok.</p>
         </form>
         <p class="tiktok-publish-status" id="tiktokPublishStatus" role="status" aria-live="polite"></p>
-        <button class="tiktok-change-key-btn" id="zernioChangeKeyBtn" type="button">Change API key</button>
+        <button class="tiktok-change-key-btn btn btn-ghost btn-sm" id="zernioChangeKeyBtn" type="button">Change API key</button>
       </div>
     </section>
   </div>
@@ -432,16 +498,16 @@
   </nav>
 
   <footer class="site-footer">
-    <div><strong id="footerTitle">VideoPatcher</strong><span id="footerDesc">Video preparation for TikTok.</span></div>
+    <div class="foot-brand"><strong id="footerTitle">VideoPatcher</strong><span id="footerDesc">Video preparation for TikTok.</span></div>
     <nav aria-label="Footer Navigation">
       <a href="#homeSection" id="footerHome">Home</a>
       <a href="#faqTitle" id="footerFaq">FAQ</a>
       <a href="mailto:support@ineasy.site" id="footerSupport">Support</a>
+      <a class="footer-telegram" href="https://t.me/ineasyadmin?text=I%20found%20a%20bug%20on%20the%20site%20and%20want%20to%20report%20it" target="_blank" rel="noopener" id="footerTelegram">Telegram</a>
     </nav>
-    <a class="footer-telegram" href="https://t.me/ineasyadmin?text=I%20found%20a%20bug%20on%20the%20site%20and%20want%20to%20report%20it" target="_blank" rel="noopener" id="footerTelegram">Telegram</a>
     <section class="support-block" aria-labelledby="supportBlockText">
       <p id="supportBlockText">Заметили ошибку? Напишите</p>
-      <button type="button" class="support-open" id="supportOpenBtn">Написать</button>
+      <button type="button" class="support-open btn btn-outline btn-sm" id="supportOpenBtn">Написать</button>
     </section>
   </footer>
 </div>
@@ -452,6 +518,7 @@
 <script src="adjn-processor.js?v=20261013-4"></script>
 <script src="app.js?v=20261019-support-chooser-v1"></script>
 <script src="local-video-archive.js?v=20261019-archive-layout-v1"></script>
+<script src="ui.js?v=20261020-ui1"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
@@ -459,10 +526,10 @@
 
 <div class="giveaway-toast" id="giveawayToast">
   <a class="giveaway-toast-link" href="https://t.me/ineasynews" target="_blank" rel="noopener noreferrer" aria-label="Открыть канал с розыгрышами">
-    <span class="giveaway-toast-icon" aria-hidden="true"><span class="giveaway-gift">🎁</span></span>
+    <span class="giveaway-toast-icon" aria-hidden="true"><i class="ic i-gift"></i></span>
     <span class="giveaway-toast-copy"><strong class="giveaway-shine">Канал с розыгрышами</strong><small>Новости и розыгрыши INEASY</small></span>
   </a>
-  <button class="giveaway-toast-close" id="giveawayToastClose" type="button" aria-label="Закрыть">×</button>
+  <button class="giveaway-toast-close" id="giveawayToastClose" type="button" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
 </div>
 </body>
 </html>
