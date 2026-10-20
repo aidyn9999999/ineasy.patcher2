@@ -103,6 +103,7 @@ const translations = {
     process: 'Process video',
     progressLabel: 'Loading',
     uhdWait: '4K video processing can take 1–2 minutes. Please wait.',
+    waitHint: 'Please wait about 1 minute if you think it is stuck — it is still working.',
     ready: 'Your video is ready',
     readySub: 'Video processed',
     compatibilityNote: 'TikTok-compatible target: 1080p • 60 FPS • H.264 (AVC) or H.265 (HEVC). Actual output details are shown above.',
@@ -300,6 +301,7 @@ const translations = {
     process: 'Обработать видео',
     progressLabel: 'Загрузка',
     uhdWait: 'Обработка видео 4K может занять 1–2 минуты. Пожалуйста, подождите.',
+    waitHint: 'Ожидайте 1 минуту, если вам кажется, что оно зависло — обработка продолжается.',
     ready: 'Ваше видео готово',
     readySub: 'Видео обработано',
     compatibilityNote: 'Совместимый формат для TikTok: 1080p • 60 FPS • H.264 (AVC) или H.265 (HEVC). Фактические параметры результата указаны выше.',
@@ -497,6 +499,7 @@ const translations = {
     process: 'Бейнені өңдеу',
     progressLabel: 'Жүктелуде',
     uhdWait: '4K бейнесін өңдеу 1–2 минутқа созылуы мүмкін. Күте тұрыңыз.',
+    waitHint: 'Қатып қалды деп ойласаңыз, 1 минут күтіңіз — өңдеу жалғасып жатыр.',
     ready: 'Бейнеңіз дайын',
     readySub: '1080p • 60 FPS',
     previewMeta: '1080p • 60 FPS',
@@ -1636,21 +1639,37 @@ function setProcessingState(type, text) {
 
 let progressTarget = 0;
 let progressDisplayed = 0;
+let progressUpdatedAt = 0;
 
 // Show the real progress value immediately. Easing the bar toward it made a
 // fast job look slow, and the bar could trail the work actually done.
 function paintProcessingProgress() {
   const percent = Math.max(0, Math.min(100, Math.round(progressDisplayed)));
   if (processingPercent) processingPercent.textContent = `${t('progressLabel')}: ${percent}%`;
+  const waitNote = document.getElementById('processingWaitNote');
+  if (waitNote) waitNote.textContent = t('waitHint');
   if (processingProgress) processingProgress.style.width = `${percent}%`;
 }
 
 function updateProcessingProgress(value) {
   const percent = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
   progressTarget = percent === 0 ? 0 : Math.max(progressTarget, percent);
-  progressDisplayed = progressTarget;
+  progressDisplayed = percent === 0 ? 0 : Math.max(progressDisplayed, progressTarget);
+  progressUpdatedAt = Date.now();
   paintProcessingProgress();
 }
+
+// Long stages (encoding, server remux) report nothing for a while. Creep the
+// bar slowly past the last real value so it never looks frozen; real updates
+// still win and the creep never runs more than 3 points ahead of them.
+setInterval(() => {
+  if (progressTarget <= 0 || progressTarget >= 99) return;
+  if (Date.now() - progressUpdatedAt < 1200) return;
+  const ceiling = Math.min(98, progressTarget + 3);
+  if (progressDisplayed >= ceiling) return;
+  progressDisplayed = Math.min(ceiling, progressDisplayed + 0.12);
+  paintProcessingProgress();
+}, 400);
 
 const MAX_VIDEO_SECONDS = 150;
 
@@ -2966,15 +2985,26 @@ if (processBtn) {
         console.info('[INEASY] Converting confirmed SDR source at native resolution to exact 60 FPS', {
           sourceCodec: sdr1080pEligibility.codec
         });
-        fpsConversion = await convertVideoToExact5994Fps(
+        // 4K uses the same settings as 1080p (native size, exact 59.94 FPS, AVC,
+        // source-matched bitrate). Hardware encoders often reject or stall on 4K,
+        // so fall back to the software encoder instead of hanging.
+        const runCfr = (encoderPreference) => convertVideoToExact5994Fps(
           sourceFile,
           sourceFile.name,
           controller.signal,
-          (progress) => updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 10)),
+          (progress) => updateProcessingProgress(3 + Math.round(Math.max(0, Math.min(1, progress)) * 9)),
           sourceDuration,
-          false,
-          'prefer-hardware'
+          is4kSource,
+          encoderPreference
         );
+        try {
+          fpsConversion = await runCfr('prefer-hardware');
+        } catch (cfrError) {
+          if (controller.signal.aborted || /processing_cancelled|mediabunny_load_timeout/i.test(String(cfrError?.message || ''))) throw cfrError;
+          console.warn('[INEASY] Hardware CFR failed, retrying with software encoder:', cfrError);
+          updateProcessingProgress(3);
+          fpsConversion = await runCfr('prefer-software');
+        }
       } else {
         console.info('[INEASY] Preserving source FPS; CFR conversion not eligible:', sdr1080pEligibility.reason);
       }
