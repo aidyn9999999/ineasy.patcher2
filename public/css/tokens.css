@@ -1,0 +1,74 @@
+/* INEASY design tokens. Everything visual hangs off these variables. */
+:root {
+  /* Ink — the navy depth scale (darkest → lightest surface) */
+  --ink-1000: #03060c;
+  --ink-950: #050911;
+  --ink-900: #080e1a;
+  --ink-850: #0b1424;
+  --ink-800: #0f1a2e;
+  --ink-700: #16243d;
+  --ink-600: #20314f;
+
+  /* Hairlines */
+  --line: rgba(130, 165, 235, 0.13);
+  --line-strong: rgba(130, 165, 235, 0.24);
+
+  /* Blue — the single brand hue */
+  --blue-600: #2759db;
+  --blue-500: #346ff5;
+  --blue-400: #5b8cff;
+  --blue-300: #8fb2ff;
+  --blue-200: #bcd0ff;
+  --cyan-300: #66d9ff;
+  --blue-wash: rgba(91, 140, 255, 0.1);
+  --blue-wash-strong: rgba(91, 140, 255, 0.18);
+
+  /* Text */
+  --text: #eaf1ff;
+  --text-2: #a9b8d2;
+  --text-3: #71839f;
+
+  /* Status */
+  --ok: #3ddba7;
+  --ok-wash: rgba(61, 219, 167, 0.1);
+  --warn: #f2b84b;
+  --warn-wash: rgba(242, 184, 75, 0.1);
+  --err: #ff6b84;
+  --err-wash: rgba(255, 107, 132, 0.1);
+
+  /* Type */
+  --font-display: 'Unbounded', 'Onest', system-ui, sans-serif;
+  --font-text: 'Onest', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-h2: clamp(1.5rem, 1.1rem + 1.6vw, 2.125rem);
+  --fs-h1: clamp(1.9rem, 1rem + 2.7vw, 3rem);
+
+  /* Shape */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+  --r-pill: 999px;
+
+  /* Depth */
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 60px -28px rgba(0, 0, 0, 0.75);
+  --shadow-pop: 0 24px 64px -16px rgba(0, 0, 0, 0.85), 0 0 0 1px var(--line);
+  --glow-primary: 0 10px 28px -10px rgba(52, 111, 245, 0.7);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 140ms;
+  --t-med: 240ms;
+
+  /* Layout */
+  --gutter: clamp(16px, 4vw, 40px);
+  --page-max: 1240px;
+  --header-h: 68px;
+  --navbar-h: 64px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}

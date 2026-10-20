@@ -1,0 +1,88 @@
+/* Atmosphere & depth: background light, gradient-edge surfaces, motion accents.
+   Kept apart from components so the whole "mood" layer can be tuned (or dropped) in one place. */
+
+@property --ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
+/* ---------- Page atmosphere ---------- */
+body.app, body.login { position: relative; isolation: isolate; }
+body.app::before, body.login::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(64vw 54vh at 86% -12%, rgba(52, 111, 245, 0.34), transparent 66%),
+    radial-gradient(46vw 46vh at 4% 6%, rgba(102, 217, 255, 0.1), transparent 66%),
+    radial-gradient(80vw 44vh at 50% 112%, rgba(39, 89, 219, 0.26), transparent 70%);
+}
+/* perspective floor grid */
+body.app::after, body.login::after {
+  content: '';
+  position: fixed;
+  left: -25%; right: -25%; bottom: -2vh;
+  height: 52vh;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(91, 140, 255, 0.14) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(91, 140, 255, 0.14) 1px, transparent 1px);
+  background-size: 72px 72px;
+  transform: perspective(520px) rotateX(64deg);
+  transform-origin: 50% 100%;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 78%);
+  mask-image: linear-gradient(to top, #000 0%, transparent 78%);
+  opacity: 0.5;
+}
+
+/* ---------- Gradient-edge surfaces + pointer spotlight ----------
+   One definition for every "raised" surface so they all share the same light direction. */
+:is(.panel, .card, .ia-panel, .daily-limit-card, .video-size-meter, .processed-result, .news-callout,
+    .home-local-note, .support-block, .home-hero, .quality-comparison, .patcher-version-picker) {
+  position: relative;
+}
+:is(.panel, .card, .ia-panel, .daily-limit-card, .video-size-meter, .processed-result, .news-callout,
+    .home-local-note, .support-block, .home-hero, .quality-comparison, .patcher-version-picker)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(150deg, rgba(160, 190, 255, 0.55), rgba(143, 178, 255, 0.08) 38%, rgba(143, 178, 255, 0.05) 62%, rgba(102, 217, 255, 0.38));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+:is(.panel, .card, .ia-panel, .daily-limit-card, .video-size-meter, .news-callout, .home-local-note, .support-block, .home-hero)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: radial-gradient(380px circle at var(--mx, 50%) var(--my, 0%), rgba(91, 140, 255, 0.14), transparent 62%);
+  opacity: 0;
+  transition: opacity 0.35s var(--ease);
+  pointer-events: none;
+}
+:is(.panel, .card, .ia-panel, .daily-limit-card, .video-size-meter, .news-callout, .home-local-note, .support-block, .home-hero):hover::after { opacity: 1; }
+
+/* ---------- Headline gradient ---------- */
+.gradient-text {
+  background: linear-gradient(180deg, #ffffff 25%, #aac3ff 125%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.accent {
+  background: linear-gradient(95deg, #6a9bff 0%, #66d9ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Safari: backdrop-filter on big fixed layers is the main cost; keep it off there */
+.safari-browser .modal-overlay { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgba(2, 4, 9, 0.86); }

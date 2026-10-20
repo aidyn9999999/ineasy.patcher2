@@ -2,26 +2,36 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#050911">
 <title>INEASY — подготовка видео для TikTok</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261014-1">
 <link rel="apple-touch-icon" href="/favicon.svg?v=20261014-1">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20261019-safari-v2">
-<link rel="stylesheet" href="theme.css?v=20261019-safari-v2">
+<link rel="preload" href="fonts/unbounded-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/onest-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/fonts.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/tokens.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/base.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/icons.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/components.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/fx.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/login.css?v=20261020-ui1">
 </head>
-<body>
+<body class="login">
 
 <div class="scene">
-  <div class="grid-lines" aria-hidden="true"></div>
-  <div class="deco-stage deco-stage-login" aria-hidden="true">
-    <span class="deco-orb deco-orb-a"></span><span class="deco-orb deco-orb-b"></span>
-    <span class="deco-spark s1">✦</span><span class="deco-spark s2">✦</span><span class="deco-spark s3">✦</span>
-  </div>
+  <a class="login-brand" href="/login" aria-label="INEASY"><span class="brand-in">in</span><span class="brand-easy">easy</span></a>
+
+  <!-- Decorative viewfinder: purely visual -->
+  <aside class="login-visual" aria-hidden="true">
+    <div class="vf brackets">
+      <span class="vf-tag vf-tag-tl">9:16</span>
+      <span class="vf-tag vf-tag-tr">4K · 120 FPS</span>
+      <div class="vf-ghost"><i class="ic i-play"></i></div>
+      <span class="vf-scan"></span>
+      <div class="vf-ruler"></div>
+    </div>
+  </aside>
 
   <main class="card" id="card">
     <nav class="login-language-dock" aria-label="Язык входа">
@@ -34,33 +44,35 @@
     <p class="lede" id="loginLede">Войдите в INEASY, чтобы подготовить видео и проверить параметры опубликованного ролика.</p>
 
     <div class="stage" id="stage-login">
-      <button class="tg-btn" id="tgBtn">
+      <button class="tg-btn btn btn-primary btn-lg btn-block" id="tgBtn" type="button">
         <svg class="telegram-login-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="M22 3 2.8 10.5c-1.1.4-1.1 2 .1 2.4l4.9 1.6 1.7 5.4c.3 1 1.6 1.2 2.2.4l2.8-3.5 4.8 3.5c.9.6 2.1.1 2.3-1L23.8 4.4c.2-1-.9-1.8-1.8-1.4ZM9.1 13.7l9.7-7.1-7.5 8.6-.4 3-1.8-4.5Z" fill="#229ED9"/>
+          <path d="M22 3 2.8 10.5c-1.1.4-1.1 2 .1 2.4l4.9 1.6 1.7 5.4c.3 1 1.6 1.2 2.2.4l2.8-3.5 4.8 3.5c.9.6 2.1.1 2.3-1L23.8 4.4c.2-1-.9-1.8-1.8-1.4ZM9.1 13.7l9.7-7.1-7.5 8.6-.4 3-1.8-4.5Z" fill="currentColor"/>
         </svg>
         <span id="loginButtonLabel">Войти через Telegram</span>
       </button>
       <p class="hint" id="loginBotHint">Откроется бот <b>@ineasybot</b> — нажмите «Запустить» в чате.</p>
-      <p class="browser-warning" id="browserWarning">Если вход не проходит, откройте сайт в Chrome или другом браузере. Safari и встроенный браузер Telegram могут не завершить подтверждение.</p>
+      <p class="browser-warning callout callout-warn" id="browserWarning">Если вход не проходит, откройте сайт в Chrome или другом браузере. Safari и встроенный браузер Telegram могут не завершить подтверждение.</p>
     </div>
 
-    <div class="stage hidden" id="stage-waiting">
-      <div class="spinner" aria-hidden="true"></div>
-      <p class="waiting-text" id="waitingText">Ждём подтверждение в Telegram…</p>
+    <div class="stage hidden" id="stage-waiting" role="status" aria-live="polite">
+      <div class="waiting-row">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="waiting-text" id="waitingText">Ждём подтверждение в Telegram…</p>
+      </div>
       <a class="link-btn hidden" id="telegramFallbackLink" href="https://t.me/ineasybot" target="_blank" rel="noopener">Открыть Telegram</a>
-      <button class="link-btn" id="cancelBtn">Отменить</button>
+      <button class="link-btn" id="cancelBtn" type="button">Отменить</button>
     </div>
 
     <div class="stage hidden" id="stage-subscription">
-      <p class="error-text" id="subscriptionText">✕ Сначала подпишитесь на канал новостей, чтобы продолжить.</p>
-      <a class="tg-btn subscription-channel" id="subscriptionLink" href="https://t.me/ineasynews" target="_blank" rel="noopener">Подписаться на канал</a>
+      <p class="error-text notice" id="subscriptionText">✕ Сначала подпишитесь на канал новостей, чтобы продолжить.</p>
+      <a class="tg-btn subscription-channel btn btn-primary btn-lg btn-block" id="subscriptionLink" href="https://t.me/ineasynews" target="_blank" rel="noopener">Подписаться на канал</a>
       <p class="hint" id="subscriptionHint">После подписки вернитесь сюда и подтвердите её в Telegram.</p>
       <button class="link-btn" id="checkSubscriptionBtn" type="button">Я подписался</button>
     </div>
 
-    <div class="stage hidden" id="stage-error">
+    <div class="stage hidden" id="stage-error" role="alert">
       <p class="error-text" id="loginErrorText">Не получилось подтвердить вход. Попробуйте ещё раз.</p>
-      <button class="tg-btn" id="retryBtn">Попробовать снова</button>
+      <button class="tg-btn btn btn-secondary btn-lg btn-block bi i-refresh" id="retryBtn" type="button">Попробовать снова</button>
     </div>
 
   </main>
