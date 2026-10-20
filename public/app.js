@@ -221,7 +221,7 @@ const translations = {
     cancel: 'Cancel',
     processingCancelled: 'Processing cancelled.',
     processingTimedOut: 'Processing took longer than 20 minutes. Try a shorter video.',
-    videoTooLong: 'Choose a video that is 1 minute or shorter.',
+    videoTooLong: 'Choose a video that is 2 minutes 30 seconds or shorter.',
     videoDurationUnavailable: 'Could not read this video duration. Try an MP4 file.',
     noBalance: 'No videos remain in your balance. Add videos to continue.',
     balanceCheckFailed: 'Could not refresh your balance. Please try again.',
@@ -418,7 +418,7 @@ const translations = {
     cancel: 'Отмена',
     processingCancelled: 'Обработка отменена.',
     processingTimedOut: 'Обработка длится больше 20 минут. Попробуйте более короткое видео.',
-    videoTooLong: 'Выберите видео длительностью не более 1 минуты.',
+    videoTooLong: 'Выберите видео длительностью не более 2 минут 30 секунд.',
     videoDurationUnavailable: 'Не удалось определить длительность видео. Попробуйте файл MP4.',
     noBalance: 'На балансе не осталось обработок. Пополните его, чтобы продолжить.',
     balanceCheckFailed: 'Не удалось проверить баланс. Попробуйте ещё раз.',
@@ -614,7 +614,7 @@ const translations = {
     cancel: 'Бас тарту',
     processingCancelled: 'Өңдеу тоқтатылды.',
     processingTimedOut: 'Өңдеу 20 минуттан ұзақ. Қысқарақ бейне қолданып көріңіз.',
-    videoTooLong: 'Ұзақтығы 1 минуттан аспайтын бейне таңдаңыз.',
+    videoTooLong: 'Ұзақтығы 2 минут 30 секундтан аспайтын бейне таңдаңыз.',
     videoDurationUnavailable: 'Бейне ұзақтығын анықтау мүмкін болмады. MP4 файлын қолданып көріңіз.',
     noBalance: 'Өңдеу лимиті таусылды. Жалғастыру үшін балансты толтырыңыз.',
     balanceCheckFailed: 'Балансты тексеру мүмкін болмады. Қайталап көріңіз.',
@@ -1652,13 +1652,15 @@ function updateProcessingProgress(value) {
   paintProcessingProgress();
 }
 
+const MAX_VIDEO_SECONDS = 150;
+
 async function readVideoDuration(file, signal) {
   if (signal?.aborted) throw new Error('processing_cancelled');
   if (previewVideo && currentObjectUrl && previewVideo.src === currentObjectUrl &&
       (!previewVideo.currentSrc || previewVideo.currentSrc === currentObjectUrl) &&
       previewVideo.readyState >= 1 && previewVideo.videoWidth > 0 &&
       previewVideo.duration > 0 && Number.isFinite(previewVideo.duration)) {
-    if (previewVideo.duration > 60) throw new Error('video_over_60_seconds');
+    if (previewVideo.duration > MAX_VIDEO_SECONDS) throw new Error('video_over_60_seconds');
     return previewVideo.duration;
   }
   try {
@@ -1697,7 +1699,7 @@ async function readVideoDuration(file, signal) {
       video.load();
       if (signal.aborted) onAbort();
     });
-    if (dur > 60) throw new Error('video_over_60_seconds');
+    if (dur > MAX_VIDEO_SECONDS) throw new Error('video_over_60_seconds');
     return dur;
   } catch (err) {
     if (err.message === 'video_over_60_seconds' || err.message === 'processing_cancelled') throw err;
@@ -1709,7 +1711,7 @@ async function readVideoDuration(file, signal) {
         const videoTrack = (info.tracks || []).find((t) => t.handler === 'vide');
         if (videoTrack && videoTrack.duration && videoTrack.timescale) {
           const sec = videoTrack.duration / videoTrack.timescale;
-          if (sec > 60) throw new Error('video_over_60_seconds');
+          if (sec > MAX_VIDEO_SECONDS) throw new Error('video_over_60_seconds');
           return sec;
         }
       }
