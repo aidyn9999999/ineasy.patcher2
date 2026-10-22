@@ -84,8 +84,9 @@ const WordMark: React.FC<{spread: number}> = ({spread}) => (
  *  90-150 logo settles crisp, light sweep, ready for the cut to the interface
  */
 export const Logo3D: React.FC = () => {
-  const frame = useCurrentFrame();
-  const {fps} = useVideoConfig();
+  const {fps: realFps} = useVideoConfig();
+  const frame = (useCurrentFrame() * 30) / realFps; // timeline below is authored at 30 fps
+  const fps = 30;
 
   const appear = spring({frame: frame - 30, fps, config: {damping: 200}, durationInFrames: 70});
   const settle = Easing.bezier(0.16, 1, 0.3, 1)(interpolate(frame, [30, 120], [0, 1], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'}));

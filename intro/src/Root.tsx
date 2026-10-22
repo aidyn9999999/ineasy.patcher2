@@ -1,27 +1,14 @@
 import React from 'react';
-import {AbsoluteFill, Composition, Sequence} from 'remotion';
+import {Composition} from 'remotion';
+import {Ad} from './Ad';
 import {Intro} from './Intro';
-import {VoiceScene} from './VoiceScene';
-import {FPS, FULL_FRAMES, INTRO_FRAMES, VOICE_FRAMES} from './theme';
-
-type Props = {hasVoiceover: boolean};
-
-const Full: React.FC<Props> = ({hasVoiceover}) => (
-  <AbsoluteFill>
-    <Sequence from={INTRO_FRAMES} durationInFrames={VOICE_FRAMES}>
-      <VoiceScene hasVoiceover={hasVoiceover} />
-    </Sequence>
-    <Sequence durationInFrames={INTRO_FRAMES}>
-      <Intro />
-    </Sequence>
-  </AbsoluteFill>
-);
+import {END, FPS, sec} from './theme';
 
 const common = {fps: FPS, width: 1080, height: 1920} as const;
 
 export const Root: React.FC = () => (
   <>
-    <Composition id="IneasyIntro" component={Intro} durationInFrames={INTRO_FRAMES} {...common} />
-    <Composition id="IneasyFull" component={Full} durationInFrames={FULL_FRAMES} defaultProps={{hasVoiceover: false}} {...common} />
+    <Composition id="IneasyIntro" component={Intro} durationInFrames={sec(5)} {...common} />
+    <Composition id="IneasyAd" component={Ad} durationInFrames={sec(END)} {...common} />
   </>
 );

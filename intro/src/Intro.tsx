@@ -1,11 +1,12 @@
 import React from 'react';
-import {AbsoluteFill, Audio, interpolate, random, staticFile, useCurrentFrame} from 'remotion';
+import {AbsoluteFill, Audio, interpolate, random, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Logo3D} from './Logo3D';
-import {colors, INTRO_FRAMES} from './theme';
+import {colors} from './theme';
 import {useFonts} from './useFonts';
 
 const Bokeh: React.FC = () => {
-  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const frame = (useCurrentFrame() * 30) / fps;
   return (
     <AbsoluteFill>
       {Array.from({length: 26}).map((_, i) => {
@@ -40,9 +41,10 @@ const Bokeh: React.FC = () => {
 /** 0:00 - 0:05. No voice. Cinnamon Girl fragment (public/intro-music-5s.mp3). */
 export const Intro: React.FC<{withMusic?: boolean}> = ({withMusic = true}) => {
   useFonts();
-  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const frame = (useCurrentFrame() * 30) / fps;
   const light = interpolate(frame, [0, 45, 120], [0, 0.35, 0.85], {extrapolateRight: 'clamp'});
-  const outFade = interpolate(frame, [INTRO_FRAMES - 8, INTRO_FRAMES], [1, 0], {extrapolateLeft: 'clamp'});
+  const outFade = interpolate(frame, [150 - 8, 150], [1, 0], {extrapolateLeft: 'clamp'});
 
   return (
     <AbsoluteFill style={{background: colors.bg, opacity: outFade}}>
