@@ -8,7 +8,7 @@ BROWSER=(--browser-executable="$CHROME" --chrome-mode=chrome-for-testing)
 mkdir -p out/chunks
 i=0
 for r in 0-299 300-1799 1800-3299 3300-4619; do
-  [ -s out/chunks/c$i.mp4 ] || npx remotion render src/index.ts IneasyAd out/chunks/c$i.mp4 --frames=$r --muted --codec=h264 --crf=20 "${BROWSER[@]}"
+  [ -s out/chunks/c$i.mp4 ] || npx remotion render src/index.ts IneasyAd out/chunks/c$i.mp4 --frames=$r --muted --codec=h264 --crf=20 --concurrency=3 --timeout=180000 "${BROWSER[@]}"
   echo "file 'c$i.mp4'" >> out/chunks/list.tmp
   i=$((i+1))
 done
