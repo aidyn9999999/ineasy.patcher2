@@ -111,3 +111,10 @@ npx --yes http-server public -p 4173
 **Запуск на своём ноутбуке.** Бот можно запускать локально (`npm start` без Railway-переменных — он работает через polling). Укажите `BOT_VIDEO_KEEP_DIR=./results`: каждый готовый файл останется в `results/<telegram id>/`, и вы удаляете его вручную, когда нужно освободить место. Без этой переменной результаты удаляются сразу после отправки.
 
 Удалить все сохранённые результаты разом: `npm run clean` (чистит `BOT_VIDEO_KEEP_DIR`).
+
+### Railway: бот и локальный Bot API в одном контейнере (видео до 150 МБ)
+
+1. Получите `api_id` и `api_hash` на https://my.telegram.org (API development tools).
+2. В Railway → Variables: `RAILWAY_DOCKERFILE_PATH=Dockerfile.botapi`, `TELEGRAM_API_ID`, `TELEGRAM_API_HASH`, `BOT_VIDEO_MAX_MB=150`. `BOT_API_ROOT` задавать не нужно — `start-with-botapi.sh` выставит его сам. `BOT_VIDEO_KEEP_DIR` не задавайте: результат удаляется сразу после отправки.
+3. Один раз откройте в браузере `https://api.telegram.org/bot<BOT_TOKEN>/logOut` (бот переедет на локальный сервер; обратно на облачный API он вернётся не сразу — примерно через 10 минут).
+4. Задеплойте. Без `TELEGRAM_API_ID`/`TELEGRAM_API_HASH` контейнер стартует как раньше, с лимитом 20 МБ.
