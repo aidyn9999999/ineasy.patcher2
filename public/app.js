@@ -2333,7 +2333,7 @@ function rejectFileSelection(message) {
   updateProcessButton();
 }
 
-// ---- 4K warning: the user either replaces the file or accepts the 4K risk ----
+// ---- 4K confirmation: asks whether the video was picked through "Choose file"; never blocks processing ----
 const uhdWarningOverlay = document.getElementById('uhdWarningOverlay');
 
 function openUhdWarning() {
@@ -2344,14 +2344,11 @@ function closeUhdWarning() {
   uhdWarningOverlay?.classList.add('hidden');
 }
 
-document.getElementById('uhdReplaceBtn')?.addEventListener('click', () => {
+document.getElementById('uhdConfirmBtn')?.addEventListener('click', closeUhdWarning);
+document.getElementById('uhdPickBtn')?.addEventListener('click', () => {
   closeUhdWarning();
-  clearSelectedVideo(true);
-});
-document.getElementById('uhdKeepBtn')?.addEventListener('click', () => {
-  const file = fileInput?.files?.[0];
-  if (file) resolutionWarningConfirmedFor = [file.name, file.size, file.lastModified].join(':');
-  closeUhdWarning();
+  // The existing input re-runs handleFile (and this check) when a new video is chosen.
+  fileInput?.click();
 });
 
 async function handleFile(file) {
@@ -2894,39 +2891,11 @@ if (comparisonRange && qualityComparison) {
   }
 }
 
-let resolutionWarningConfirmedFor = '';
-const resolutionWarningOverlay = document.getElementById('resolutionWarningOverlay');
-document.getElementById('resolutionWarningContinue')?.addEventListener('click', () => {
-  const file = fileInput?.files?.[0];
-  if (file) resolutionWarningConfirmedFor = [file.name, file.size, file.lastModified].join(':');
-  resolutionWarningOverlay?.classList.add('hidden');
-  processBtn?.click();
-});
-document.getElementById('resolutionWarningCancel')?.addEventListener('click', () => {
-  resolutionWarningOverlay?.classList.add('hidden');
-});
-resolutionWarningOverlay?.addEventListener('click', event => {
-  if (event.target === resolutionWarningOverlay) resolutionWarningOverlay.classList.add('hidden');
-});
-
 if (processBtn) {
   processBtn.addEventListener('click', async () => {
     if (!fileInput || !fileInput.files[0] || processBtn.disabled) return;
     if (fileInput.files[0].size > MAX_VIDEO_SIZE_BYTES) {
       rejectFileSelection(t('videoTooLarge'));
-      return;
-    }
-    const selectedFile = fileInput.files[0];
-    const resolutionLongSide = Math.max(Number(selectedVideoDimensions?.width) || 0, Number(selectedVideoDimensions?.height) || 0);
-    const resolutionKey = [selectedFile.name, selectedFile.size, selectedFile.lastModified].join(':');
-    if (resolutionLongSide > 1920 && resolutionWarningConfirmedFor !== resolutionKey) {
-      const warningCopy = document.getElementById('resolutionWarningCopy');
-      if (warningCopy) {
-        warningCopy.textContent = resolutionLongSide >= 3000
-          ? 'Вы выбрали видео 4K. После публикации TikTok может изменить качество или частоту кадров. Для более предсказуемого результата рекомендуем 1080p. Если исходный формат вам подходит, нажмите «Продолжить».'
-          : 'Вы выбрали видео выше 1080p. После публикации TikTok может изменить качество или частоту кадров. Для более предсказуемого результата рекомендуем 1080p. Если исходный формат вам подходит, нажмите «Продолжить».';
-      }
-      resolutionWarningOverlay?.classList.remove('hidden');
       return;
     }
     processBtn.disabled = true;

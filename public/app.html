@@ -29,7 +29,7 @@
 <link rel="stylesheet" href="css/home.css?v=20261020-ui1">
 <link rel="stylesheet" href="css/patcher.css?v=20261020-ui1">
 <link rel="stylesheet" href="css/pages.css?v=20261020-ui1">
-<link rel="stylesheet" href="css/modals.css?v=20261020-ui1">
+<link rel="stylesheet" href="css/modals.css?v=20261022-4k-guide">
 <script>
 (function () {
   var ua = navigator.userAgent || '';
@@ -376,24 +376,47 @@
   <div class="modal-overlay resolution-warning-overlay hidden" id="uhdWarningOverlay" role="dialog" aria-modal="true" aria-labelledby="uhdWarningTitle">
     <section class="modal resolution-warning-modal uhd-warning-modal">
       <span class="modal-mark warn" aria-hidden="true"><i class="ic i-alert"></i></span>
-      <h2 id="uhdWarningTitle" data-i18n-html="uhdTitle">Ваше видео <span class="hl-4k">4K</span></h2>
-      <p id="uhdWarningCopy" data-i18n-html="uhdBody">Можете получить <span class="hl-fps">30 FPS</span> после публикации — это риск. Советуем лучше выбрать видео <strong>1080p 60 FPS</strong>.</p>
+      <h2 id="uhdWarningTitle" data-i18n-html="uhdTitle">Вы выбрали видео в <span class="hl-4k">4K</span></h2>
+      <p id="uhdWarningCopy" data-i18n="uhdBody">Чтобы избежать возможного сжатия и нежелательного изменения частоты кадров, рекомендуем загрузить оригинал через «Выбрать файл». Это поможет сохранить исходные параметры видео, если устройство и формат файла поддерживаются.</p>
       <div class="resolution-warning-actions">
-        <button type="button" class="btn btn-primary" id="uhdReplaceBtn" data-i18n="uhdReplace">Заменить на другое</button>
-        <button type="button" class="btn btn-ghost" id="uhdKeepBtn" data-i18n="uhdKeep">Оставить 4K — я рискую</button>
+        <button type="button" class="btn btn-primary" id="uhdConfirmBtn" data-i18n="uhdConfirm">Да, я выбрал через файл</button>
+        <button type="button" class="btn btn-ghost" id="uhdPickBtn" data-i18n="uhdPick">Нет, выбрать файл</button>
+        <button type="button" class="btn btn-ghost file-guide-link" id="fileGuideOpenBtn" data-i18n="guideLink">Как правильно выбрать видео?</button>
       </div>
     </section>
   </div>
-  <div class="modal-overlay resolution-warning-overlay hidden" id="resolutionWarningOverlay" role="dialog" aria-modal="true" aria-labelledby="resolutionWarningTitle">
-    <section class="modal resolution-warning-modal">
-      <span class="modal-mark warn" aria-hidden="true"><i class="ic i-alert"></i></span>
-      <h2 id="resolutionWarningTitle">Видео выше 1080p</h2>
-      <p id="resolutionWarningCopy">Вы выбрали видео 4K. После публикации TikTok может изменить качество или частоту кадров. Для более предсказуемого результата рекомендуем 1080p. Если исходный формат вам подходит, нажмите «Продолжить».</p>
-      <div class="resolution-warning-actions">
-        <button type="button" class="btn btn-primary" id="resolutionWarningContinue">Продолжить</button>
-        <button type="button" class="btn btn-ghost" id="resolutionWarningCancel">Отмена</button>
+  <div class="modal-overlay file-guide-overlay hidden" id="fileGuideOverlay" role="dialog" aria-modal="true" aria-labelledby="fileGuideTitle">
+    <section class="modal file-guide-modal">
+      <h2 id="fileGuideTitle" data-i18n="guideTitle">Как правильно выбрать видео?</h2>
+      <figure class="file-guide-figure">
+        <img src="guide/image.png" width="1125" height="644" alt="Меню выбора видео: пункт «Выбрать файл» отмечен зелёной стрелкой" loading="lazy" decoding="async">
+        <figcaption data-i18n="guideCaption">Пример правильного выбора видео через файлы</figcaption>
+      </figure>
+      <p data-i18n="guideMain">Чтобы видео не сжималось и не превращалось в 30 FPS после публикации в TikTok, рекомендуем выбирать оригинальный видеофайл напрямую через кнопку «Выбрать файл», а не через медиатеку или фотогалерею.</p>
+      <p data-i18n="guideExtra">На телефоне видео можно найти через приложение «Файлы» или файловый менеджер. Если видео находится в галерее, сначала сохраните или экспортируйте оригинал в приложение «Файлы», а затем выберите его оттуда.</p>
+      <video class="file-guide-video" id="fileGuideVideo" controls playsinline preload="metadata" aria-label="Видеоинструкция">
+        <source src="guide/8414.mov" type="video/mp4">
+      </video>
+      <div class="file-guide-actions">
+        <button type="button" class="btn btn-primary" id="fileGuideExpandBtn" data-i18n="guideExpand">Развернуть видео</button>
+        <button type="button" class="btn btn-ghost" id="fileGuideStepsBtn" aria-expanded="false" aria-controls="fileGuideSteps" data-i18n="guideStepsBtn">Как сохранить видео в файлы?</button>
       </div>
+      <div class="file-guide-steps hidden" id="fileGuideSteps">
+        <ol>
+          <li data-i18n="guideStep1">Откройте видео в приложении «Фото» и нажмите «Поделиться».</li>
+          <li data-i18n="guideStep2">Выберите «Экспортировать оригинал без изменений» или «Сохранить в Файлах».</li>
+          <li data-i18n="guideStep3">Выберите папку в приложении «Файлы» и нажмите «Сохранить».</li>
+          <li data-i18n="guideStep4">На сайте нажмите «Выбрать файл» и выберите сохранённое видео. На Android это «Файлы» или «Мои файлы».</li>
+        </ol>
+      </div>
+      <button type="button" class="btn btn-ghost btn-block" id="fileGuideCloseBtn" data-i18n="guideClose">Закрыть</button>
     </section>
+  </div>
+  <div class="modal-overlay file-guide-zoom-overlay hidden" id="fileGuideZoomOverlay" role="dialog" aria-modal="true" aria-label="Видеоинструкция">
+    <div class="file-guide-zoom">
+      <button type="button" class="btn btn-ghost file-guide-zoom-close" id="fileGuideZoomClose" data-i18n="guideZoomClose">Закрыть</button>
+      <video id="fileGuideZoomVideo" controls playsinline preload="none"></video>
+    </div>
   </div>
 
   <div class="modal-overlay post-success-overlay hidden" id="draftWarningOverlay" role="dialog" aria-modal="true" aria-labelledby="draftWarningTitle">
@@ -516,9 +539,9 @@
 <script src="adjn-engine.js?v=20261008-2"></script>
 <script src="smart-resolution.js?v=20261010-2"></script>
 <script src="adjn-processor.js?v=20261013-4"></script>
-<script src="app.js?v=20261019-support-chooser-v1"></script>
+<script src="app.js?v=20261022-4k-guide"></script>
 <script src="local-video-archive.js?v=20261019-archive-layout-v1"></script>
-<script src="ui.js?v=20261020-ui1"></script>
+<script src="ui.js?v=20261022-4k-guide"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';

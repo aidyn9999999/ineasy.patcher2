@@ -26,10 +26,23 @@
       dwTitle: "Видео сохранено как черновик",
       dwBody: "Черновики могут не храниться постоянно. Проверяйте TikTok и удаляйте ненужные черновики вручную, чтобы освободить место.",
       dwOk: "Понятно",
-      uhdTitle: "Ваше видео <span class=\"hl-4k\">4K</span>",
-      uhdBody: "Можете получить <span class=\"hl-fps\">30 FPS</span> после публикации — это риск. Советуем лучше выбрать видео <strong>1080p 60 FPS</strong>.",
-      uhdReplace: "Заменить на другое",
-      uhdKeep: "Оставить 4K — я рискую",
+      uhdTitle: "Вы выбрали видео в <span class=\"hl-4k\">4K</span>",
+      uhdBody: "Чтобы избежать возможного сжатия и нежелательного изменения частоты кадров, рекомендуем загрузить оригинал через «Выбрать файл». Это поможет сохранить исходные параметры видео, если устройство и формат файла поддерживаются.",
+      uhdConfirm: "Да, я выбрал через файл",
+      uhdPick: "Нет, выбрать файл",
+      guideLink: "Как правильно выбрать видео?",
+      guideTitle: "Как правильно выбрать видео?",
+      guideCaption: "Пример правильного выбора видео через файлы",
+      guideMain: "Чтобы видео не сжималось и не превращалось в 30 FPS после публикации в TikTok, рекомендуем выбирать оригинальный видеофайл напрямую через кнопку «Выбрать файл», а не через медиатеку или фотогалерею.",
+      guideExtra: "На телефоне видео можно найти через приложение «Файлы» или файловый менеджер. Если видео находится в галерее, сначала сохраните или экспортируйте оригинал в приложение «Файлы», а затем выберите его оттуда.",
+      guideExpand: "Развернуть видео",
+      guideStepsBtn: "Как сохранить видео в файлы?",
+      guideStep1: "Откройте видео в приложении «Фото» и нажмите «Поделиться».",
+      guideStep2: "Выберите «Экспортировать оригинал без изменений» или «Сохранить в Файлах».",
+      guideStep3: "Выберите папку в приложении «Файлы» и нажмите «Сохранить».",
+      guideStep4: "На сайте нажмите «Выбрать файл» и выберите сохранённое видео. На Android это «Файлы» или «Мои файлы».",
+      guideClose: "Закрыть",
+      guideZoomClose: "Закрыть",
       afDone: "Удалить выбранные и продолжить",
       afLater: "Позже",
     },
@@ -51,10 +64,23 @@
       dwTitle: "Бейне черновик ретінде сақталды",
       dwBody: "Черновиктер әрдайым сақталмауы мүмкін. TikTok-ты тексеріп, орын босату үшін қажетсіз черновиктерді қолмен жойыңыз.",
       dwOk: "Түсінікті",
-      uhdTitle: "Сіздің бейнеңіз <span class=\"hl-4k\">4K</span>",
-      uhdBody: "Жарияланғаннан кейін <span class=\"hl-fps\">30 FPS</span> алуыңыз мүмкін — бұл тәуекел. Мұнан да <strong>1080p 60 FPS</strong> бейнесін таңдаған жөн.",
-      uhdReplace: "Басқасымен ауыстыру",
-      uhdKeep: "4K қалдыру — тәуекелге барамын",
+      uhdTitle: "Вы выбрали видео в <span class=\"hl-4k\">4K</span>",
+      uhdBody: "Чтобы избежать возможного сжатия и нежелательного изменения частоты кадров, рекомендуем загрузить оригинал через «Выбрать файл». Это поможет сохранить исходные параметры видео, если устройство и формат файла поддерживаются.",
+      uhdConfirm: "Да, я выбрал через файл",
+      uhdPick: "Нет, выбрать файл",
+      guideLink: "Как правильно выбрать видео?",
+      guideTitle: "Как правильно выбрать видео?",
+      guideCaption: "Пример правильного выбора видео через файлы",
+      guideMain: "Чтобы видео не сжималось и не превращалось в 30 FPS после публикации в TikTok, рекомендуем выбирать оригинальный видеофайл напрямую через кнопку «Выбрать файл», а не через медиатеку или фотогалерею.",
+      guideExtra: "На телефоне видео можно найти через приложение «Файлы» или файловый менеджер. Если видео находится в галерее, сначала сохраните или экспортируйте оригинал в приложение «Файлы», а затем выберите его оттуда.",
+      guideExpand: "Развернуть видео",
+      guideStepsBtn: "Как сохранить видео в файлы?",
+      guideStep1: "Откройте видео в приложении «Фото» и нажмите «Поделиться».",
+      guideStep2: "Выберите «Экспортировать оригинал без изменений» или «Сохранить в Файлах».",
+      guideStep3: "Выберите папку в приложении «Файлы» и нажмите «Сохранить».",
+      guideStep4: "На сайте нажмите «Выбрать файл» и выберите сохранённое видео. На Android это «Файлы» или «Мои файлы».",
+      guideClose: "Закрыть",
+      guideZoomClose: "Закрыть",
       afDone: "Таңдалғанды жойып, жалғастыру",
       afLater: "Кейінірек",
     },
@@ -76,10 +102,23 @@
       dwTitle: "Video saved as a draft",
       dwBody: "Drafts may not be kept forever. Check TikTok and delete drafts you no longer need to free up space.",
       dwOk: "Got it",
-      uhdTitle: "Your video is <span class=\"hl-4k\">4K</span>",
-      uhdBody: "You may get <span class=\"hl-fps\">30 FPS</span> after publishing — that is a risk. We recommend choosing a <strong>1080p 60 FPS</strong> video instead.",
-      uhdReplace: "Replace with another",
-      uhdKeep: "Keep 4K — I accept the risk",
+      uhdTitle: "You selected a <span class=\"hl-4k\">4K</span> video",
+      uhdBody: "To avoid possible compression and an unwanted change of frame rate, we recommend uploading the original through \"Choose file\". This helps keep the original video parameters if your device and file format support it.",
+      uhdConfirm: "Yes, I chose it as a file",
+      uhdPick: "No, choose a file",
+      guideLink: "How to choose the video correctly?",
+      guideTitle: "How to choose the video correctly?",
+      guideCaption: "Example of choosing a video through Files",
+      guideMain: "So the video is not compressed or turned into 30 FPS after publishing to TikTok, we recommend choosing the original video file directly with the \"Choose file\" button, not through the media library or photo gallery.",
+      guideExtra: "On a phone you can find the video in the Files app or a file manager. If the video is in the gallery, first save or export the original to the Files app, then choose it from there.",
+      guideExpand: "Enlarge video",
+      guideStepsBtn: "How to save the video to Files?",
+      guideStep1: "Open the video in the Photos app and tap Share.",
+      guideStep2: "Choose \"Export Unmodified Original\" or \"Save to Files\".",
+      guideStep3: "Pick a folder in the Files app and tap Save.",
+      guideStep4: "On the site tap \"Choose file\" and select the saved video. On Android this is \"Files\" or \"My Files\".",
+      guideClose: "Close",
+      guideZoomClose: "Close",
       afDone: "Delete selected and continue",
       afLater: "Later",
     },
@@ -193,4 +232,44 @@
       window.dispatchEvent(new CustomEvent('ineasy:processed-video', { detail: { blob: current.blob, name: current.name } }));
     }
   });
+
+  // ================= File-selection guide (opened from the 4K confirmation) =================
+  // Pure presentation: opens the guide, expands/closes the video and toggles the short steps. No autoplay.
+  (() => {
+    const guide = $('fileGuideOverlay'), zoom = $('fileGuideZoomOverlay');
+    const video = $('fileGuideVideo'), big = $('fileGuideZoomVideo');
+    const steps = $('fileGuideSteps'), stepsBtn = $('fileGuideStepsBtn');
+    if (!guide || !zoom || !video || !big || !steps || !stepsBtn) return;
+    const closeGuide = () => { video.pause(); guide.classList.add('hidden'); };
+    const closeZoom = () => { big.pause(); zoom.classList.add('hidden'); };
+    $('fileGuideOpenBtn')?.addEventListener('click', () => guide.classList.remove('hidden'));
+    $('fileGuideCloseBtn')?.addEventListener('click', closeGuide);
+    guide.addEventListener('click', (event) => { if (event.target === guide) closeGuide(); });
+    stepsBtn.addEventListener('click', () => {
+      stepsBtn.setAttribute('aria-expanded', String(!steps.classList.toggle('hidden')));
+    });
+    $('fileGuideExpandBtn')?.addEventListener('click', () => {
+      const resumeAt = video.currentTime;
+      video.pause();
+      if (!big.querySelector('source')) {
+        const source = document.createElement('source');
+        source.src = video.querySelector('source')?.src || video.currentSrc;
+        source.type = 'video/mp4';
+        big.appendChild(source);
+        big.load();
+      }
+      if (resumeAt > 0) {
+        const seek = () => { big.currentTime = resumeAt; };
+        if (big.readyState >= 1) seek(); else big.addEventListener('loadedmetadata', seek, { once: true });
+      }
+      zoom.classList.remove('hidden');
+    });
+    $('fileGuideZoomClose')?.addEventListener('click', closeZoom);
+    zoom.addEventListener('click', (event) => { if (event.target === zoom) closeZoom(); });
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (!zoom.classList.contains('hidden')) closeZoom();
+      else if (!guide.classList.contains('hidden')) closeGuide();
+    });
+  })();
 })();

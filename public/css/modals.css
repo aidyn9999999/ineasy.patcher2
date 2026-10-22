@@ -161,6 +161,25 @@
 .tiktok-publish-status.success { color: var(--ok); }
 .tiktok-change-key-btn { justify-self: center; }
 
+/* ---------- File-selection guide (opened from the 4K confirmation) ---------- */
+.file-guide-link { min-height: 40px; color: var(--blue-300); font-size: var(--fs-sm); }
+.file-guide-modal { max-width: 460px; padding: 26px 22px calc(22px + var(--safe-b, 0px)); text-align: left; }
+.file-guide-modal h2 { margin-bottom: 14px; font: 500 1.25rem / 1.2 var(--font-display); letter-spacing: -0.025em; }
+.file-guide-modal p { margin: 0 0 12px; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.6; }
+.file-guide-figure { margin: 0 0 14px; }
+.file-guide-figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: var(--r-md); }
+.file-guide-figure figcaption { margin-top: 8px; color: var(--text-3); font-size: var(--fs-xs); line-height: 1.4; text-align: center; }
+.file-guide-video { display: block; width: 100%; max-width: 100%; max-height: 46vh; max-height: 46dvh; margin: 4px 0 14px; border-radius: var(--r-md); background: #000; object-fit: contain; }
+.file-guide-actions { display: grid; gap: 10px; margin-bottom: 12px; }
+.file-guide-steps { margin: 0 0 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgba(3, 6, 12, 0.4); }
+.file-guide-steps.hidden { display: none; }
+.file-guide-steps ol { margin: 0; padding-left: 20px; color: var(--text-2); font-size: var(--fs-sm); line-height: 1.6; }
+.file-guide-steps li + li { margin-top: 6px; }
+.file-guide-zoom-overlay { padding: 12px; }
+.file-guide-zoom { display: flex; flex-direction: column; gap: 10px; width: min(100%, 520px); max-height: 100%; }
+.file-guide-zoom video { display: block; width: 100%; max-height: calc(100vh - 80px); max-height: calc(100dvh - 80px); border-radius: var(--r-md); background: #000; object-fit: contain; }
+.file-guide-zoom-close { align-self: flex-end; }
+
 /* ================= Phone: bottom sheets ================= */
 @media (max-width: 599px) {
   .modal-overlay { align-items: flex-end; padding: 0; }
@@ -179,3 +198,5 @@
   .zernio-key-row { grid-template-columns: minmax(0, 1fr); }
   .pkg-row { padding-left: 14px; gap: 10px; }
 }
+/* the enlarged video stays centred on phones too (the bottom-sheet rule above would pin it to the bottom) */
+.file-guide-zoom-overlay { align-items: center; padding: 12px; }
