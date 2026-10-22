@@ -1,0 +1,7 @@
+# Replace with your domain(s). Caddy gets and renews the HTTPS certificate by itself.
+ineasy.site, www.ineasy.site {
+	request_body {
+		max_size 600MB
+	}
+	reverse_proxy app:3000
+}
