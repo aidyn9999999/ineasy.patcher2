@@ -487,13 +487,28 @@
             <i class="tiktok-switch" aria-hidden="true"></i>
           </label>
           <input id="tiktokPrivacy" type="hidden" value="PUBLIC_TO_EVERYONE">
+          <div class="tiktok-direct-options hidden" id="tiktokDirectOptions">
+            <div class="tt-field">
+              <label class="tiktok-field-label" for="tiktokPrivacySelect" id="tiktokPrivacySelectLabel">Who can view this video</label>
+              <select class="tiktok-select" id="tiktokPrivacySelect"></select>
+            </div>
+            <label class="tiktok-comments-toggle">
+              <span id="tiktokAiLabel">AI-generated content</span>
+              <input id="tiktokAiToggle" type="checkbox">
+              <i class="tiktok-switch" aria-hidden="true"></i>
+            </label>
+            <div class="tt-field">
+              <label class="tiktok-field-label" for="tiktokCommercialSelect" id="tiktokCommercialLabel">Commercial content</label>
+              <select class="tiktok-select" id="tiktokCommercialSelect"></select>
+            </div>
+          </div>
           <div class="tiktok-progress hidden" id="tiktokProgress" aria-live="polite">
             <div class="tiktok-progress-head"><span id="tiktokProgressLabel"></span><b id="tiktokProgressValue">0%</b></div>
             <div class="tiktok-progress-track"><i id="tiktokProgressBar"></i></div>
             <p class="tiktok-progress-warn">Не закрывайте страницу, иначе загрузка прервётся.</p>
           </div>
           <button class="tiktok-submit-btn btn btn-primary btn-lg btn-block bi i-send" id="tiktokSubmitBtn" type="submit">Опубликовать</button>
-          <p class="tiktok-consent-note">Публикуя видео, вы подтверждаете права на видео и музыку и соглашаетесь с правилами TikTok.</p>
+          <p class="tiktok-consent-note" id="tiktokConsentNote">Публикуя видео, вы подтверждаете права на видео и музыку и соглашаетесь с правилами TikTok.</p>
         </form>
         <p class="tiktok-publish-status" id="tiktokPublishStatus" role="status" aria-live="polite"></p>
         <button class="tiktok-change-key-btn btn btn-ghost btn-sm" id="zernioChangeKeyBtn" type="button">Change API key</button>

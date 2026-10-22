@@ -48,6 +48,7 @@ const STATE = {
   lang: getBrowserValue('ineasy-language') || 'en',
 };
 let tiktokCreatorInfo = null;
+let tiktokProvider = null;
 let tiktokAccountId = null;
 const TIKTOK_CAPTION_SUFFIX = '@ineasybot или ineasy.site(веб сайт)\n#ineasybot';
 
@@ -163,6 +164,22 @@ const translations = {
     timezoneHint: 'Times use {timezone}.',
     scheduleInvalid: 'Choose a future date and time.',
     consentLabel: 'I confirm I have the rights to this video and music, allow copyright checks, and agree to TikTok’s posting rules.',
+    connectHintDirect: 'Connect your TikTok account to publish videos from INEASY.',
+    dPrivacyLabel: 'Who can view this video',
+    dPrivacyPlaceholder: 'Select visibility…',
+    dPrivacyPUBLIC_TO_EVERYONE: 'Everyone',
+    dPrivacyMUTUAL_FOLLOW_FRIENDS: 'Friends',
+    dPrivacyFOLLOWER_OF_CREATOR: 'Followers',
+    dPrivacySELF_ONLY: 'Only me',
+    dAiLabel: 'AI-generated content',
+    dCommercialLabel: 'Commercial content',
+    dCommercialNone: 'Not commercial',
+    dCommercialOrganic: 'Promoting my own brand',
+    dCommercialPaid: 'Paid partnership',
+    dPrivacyRequired: 'Choose who can view this video before publishing.',
+    dBrandedPrivate: 'Branded content cannot be set to “Only me”. Choose another visibility.',
+    consentNoteMusic: 'By clicking “Publish”, you automatically confirm that you agree to TikTok’s <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noopener">Music Usage Confirmation</a>.',
+    consentNoteBranded: 'By clicking “Publish”, you automatically confirm that you agree to TikTok’s <a href="https://www.tiktok.com/legal/page/global/bc-policy/en" target="_blank" rel="noopener">Branded Content Policy</a> and <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noopener">Music Usage Confirmation</a>.',
     draftNotice: 'The selected privacy setting will be applied when this video is published.',
     connecting: 'Opening TikTok sign-in…',
     uploading: 'Uploading video…',
@@ -363,6 +380,22 @@ const translations = {
     timezoneHint: 'Часовой пояс: {timezone}.',
     scheduleInvalid: 'Выберите будущие дату и время.',
     consentLabel: 'Подтверждаю права на видео и музыку, разрешаю проверку авторских прав и принимаю правила публикации TikTok.',
+    connectHintDirect: 'Подключите аккаунт TikTok, чтобы публиковать видео из INEASY.',
+    dPrivacyLabel: 'Кто может смотреть это видео',
+    dPrivacyPlaceholder: 'Выберите видимость…',
+    dPrivacyPUBLIC_TO_EVERYONE: 'Все',
+    dPrivacyMUTUAL_FOLLOW_FRIENDS: 'Друзья',
+    dPrivacyFOLLOWER_OF_CREATOR: 'Подписчики',
+    dPrivacySELF_ONLY: 'Только я',
+    dAiLabel: 'Контент создан с помощью ИИ',
+    dCommercialLabel: 'Коммерческий контент',
+    dCommercialNone: 'Не коммерческий',
+    dCommercialOrganic: 'Продвижение своего бренда',
+    dCommercialPaid: 'Платное партнёрство',
+    dPrivacyRequired: 'Выберите, кто может смотреть видео, перед публикацией.',
+    dBrandedPrivate: 'Брендированный контент нельзя сделать видимым только для вас. Выберите другую видимость.',
+    consentNoteMusic: 'Нажимая «Опубликовать», вы автоматически подтверждаете, что принимаете <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/ru" target="_blank" rel="noopener">Подтверждение использования музыки</a> TikTok.',
+    consentNoteBranded: 'Нажимая «Опубликовать», вы автоматически подтверждаете, что принимаете <a href="https://www.tiktok.com/legal/page/global/bc-policy/ru" target="_blank" rel="noopener">Политику брендированного контента</a> и <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/ru" target="_blank" rel="noopener">Подтверждение использования музыки</a> TikTok.',
     draftNotice: 'Выбранные настройки приватности применятся при публикации видео.',
     connecting: 'Открываем вход в TikTok…',
     uploading: 'Загружаем видео…',
@@ -562,6 +595,22 @@ const translations = {
     timezoneHint: 'Уақыт белдеуі: {timezone}.',
     scheduleInvalid: 'Болашақ күн мен уақытты таңдаңыз.',
     consentLabel: 'Бұл бейне мен музыкаға құқығым бар екенін растаймын, авторлық құқықты тексеруге рұқсат беремін және TikTok жариялау ережелерін қабылдаймын.',
+    connectHintDirect: 'INEASY-дан бейне жариялау үшін TikTok аккаунтын қосыңыз.',
+    dPrivacyLabel: 'Бұл бейнені кім көре алады',
+    dPrivacyPlaceholder: 'Көрінімділікті таңдаңыз…',
+    dPrivacyPUBLIC_TO_EVERYONE: 'Барлығы',
+    dPrivacyMUTUAL_FOLLOW_FRIENDS: 'Достар',
+    dPrivacyFOLLOWER_OF_CREATOR: 'Жазылушылар',
+    dPrivacySELF_ONLY: 'Тек мен',
+    dAiLabel: 'ЖИ жасаған контент',
+    dCommercialLabel: 'Коммерциялық контент',
+    dCommercialNone: 'Коммерциялық емес',
+    dCommercialOrganic: 'Өз брендімді жылжыту',
+    dCommercialPaid: 'Ақылы серіктестік',
+    dPrivacyRequired: 'Жариялау алдында бейнені кім көре алатынын таңдаңыз.',
+    dBrandedPrivate: 'Брендті контентті «Тек мен» етіп қоюға болмайды. Басқа көрінімділікті таңдаңыз.',
+    consentNoteMusic: '«Жариялау» түймесін басу арқылы сіз TikTok-тың <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noopener">Музыканы пайдалану растауын</a> автоматты түрде қабылдайсыз.',
+    consentNoteBranded: '«Жариялау» түймесін басу арқылы сіз TikTok-тың <a href="https://www.tiktok.com/legal/page/global/bc-policy/en" target="_blank" rel="noopener">Брендті контент саясатын</a> және <a href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en" target="_blank" rel="noopener">Музыканы пайдалану растауын</a> автоматты түрде қабылдайсыз.',
     draftNotice: 'Таңдалған құпиялық параметрі бейне жарияланғанда қолданылады.',
     connecting: 'TikTok жүйесіне кіру ашылуда…',
     uploading: 'Бейне жүктелуде…',
@@ -1307,12 +1356,47 @@ function renderTikTokOptions() {
     .filter(Boolean));
   // Post publicly when TikTok allows it, otherwise use the first visibility the account can use.
   tiktokPrivacy.value = !allowedPrivacy.size || allowedPrivacy.has('PUBLIC_TO_EVERYONE') ? 'PUBLIC_TO_EVERYONE' : [...allowedPrivacy][0];
+  renderDirectTikTokOptions(allowedPrivacy);
   const commentSetting = tiktokCreatorInfo.postingLimits?.interactionSettings?.allow_comment;
   const comments = document.getElementById('tiktokAllowComments');
   if (comments) {
     comments.disabled = Boolean(commentSetting && commentSetting.enabled === false);
     comments.checked = !comments.disabled;
   }
+}
+
+// Direct TikTok publishing (admin only for now): the user must choose visibility, AI and commercial labels
+// explicitly, and sees TikTok's declarations before publishing.
+const TIKTOK_PRIVACY_ORDER = ['PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'FOLLOWER_OF_CREATOR', 'SELF_ONLY'];
+function updateTikTokConsentNote() {
+  const note = document.getElementById('tiktokConsentNote');
+  const commercial = document.getElementById('tiktokCommercialSelect');
+  if (!note || tiktokProvider !== 'direct') return;
+  note.innerHTML = commercial && commercial.value === 'brand_content' ? t('consentNoteBranded') : t('consentNoteMusic');
+}
+function renderDirectTikTokOptions(allowedPrivacy) {
+  const panel = document.getElementById('tiktokDirectOptions');
+  if (!panel) return;
+  const direct = tiktokProvider === 'direct';
+  panel.classList.toggle('hidden', !direct);
+  if (!direct) return;
+  setText('tiktokPrivacySelectLabel', t('dPrivacyLabel'));
+  setText('tiktokAiLabel', t('dAiLabel'));
+  setText('tiktokCommercialLabel', t('dCommercialLabel'));
+  const privacySelect = document.getElementById('tiktokPrivacySelect');
+  privacySelect.replaceChildren(new Option(t('dPrivacyPlaceholder'), ''));
+  TIKTOK_PRIVACY_ORDER.filter((level) => allowedPrivacy.has(level))
+    .forEach((level) => privacySelect.add(new Option(t(`dPrivacy${level}`), level)));
+  privacySelect.value = '';
+  const commercialSelect = document.getElementById('tiktokCommercialSelect');
+  commercialSelect.replaceChildren(
+    new Option(t('dCommercialNone'), 'none'),
+    new Option(t('dCommercialOrganic'), 'brand_organic'),
+    new Option(t('dCommercialPaid'), 'brand_content'),
+  );
+  document.getElementById('tiktokAiToggle').checked = false;
+  commercialSelect.onchange = updateTikTokConsentNote;
+  updateTikTokConsentNote();
 }
 
 function buildTikTokCaption(value) {
@@ -1331,6 +1415,7 @@ async function refreshTikTokStatus() {
   tiktokPublishForm.classList.add('hidden');
   try {
     const data = await tiktokApi('/api/tiktok/status');
+    tiktokProvider = data.provider || null;
     if (!data.configured) {
       zernioKeyPanel.classList.remove('hidden');
       tiktokAccountPanel.classList.add('hidden');
@@ -1339,7 +1424,7 @@ async function refreshTikTokStatus() {
     }
     if (!data.connected) {
       tiktokAccountId = null;
-      tiktokAccountStatus.textContent = t('connectHint');
+      tiktokAccountStatus.textContent = tiktokProvider === 'direct' ? t('connectHintDirect') : t('connectHint');
       tiktokConnectBtn.classList.remove('hidden');
       return;
     }
@@ -1546,6 +1631,17 @@ if (tiktokPublishForm) {
       if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('zernioMp4Required');
       return;
     }
+    const directMode = tiktokProvider === 'direct';
+    const directPrivacy = directMode ? document.getElementById('tiktokPrivacySelect').value : '';
+    const directCommercial = directMode ? document.getElementById('tiktokCommercialSelect').value : 'none';
+    if (directMode && !directPrivacy) {
+      if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('dPrivacyRequired');
+      return;
+    }
+    if (directMode && directCommercial === 'brand_content' && directPrivacy === 'SELF_ONLY') {
+      if (tiktokPublishStatus) tiktokPublishStatus.textContent = t('dBrandedPrivate');
+      return;
+    }
     tiktokPublishing = true;
     tiktokSubmitBtn.disabled = true;
     tiktokPublishStatus.classList.remove('success');
@@ -1570,12 +1666,12 @@ if (tiktokPublishForm) {
           accountId: tiktokAccountId,
           uploadId: uploaded.uploadId,
           content: buildTikTokCaption(tiktokCaption.value),
-          privacyLevel: tiktokPrivacy.value,
+          privacyLevel: directMode ? directPrivacy : tiktokPrivacy.value,
           allowComment: document.getElementById('tiktokAllowComments').checked,
           allowDuet: false,
           allowStitch: false,
-          madeWithAi: false,
-          commercialContentType: 'none',
+          madeWithAi: directMode ? document.getElementById('tiktokAiToggle').checked : false,
+          commercialContentType: directMode ? directCommercial : 'none',
           scheduledFor: null,
           timezone,
           confirmedPreview: true,
