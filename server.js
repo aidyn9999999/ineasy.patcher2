@@ -9,6 +9,8 @@ const fs = require('fs');
 const https = require('https');
 const os = require('os');
 const crypto = require('crypto');
+const { ffmpegCopyV2 } = require('./v2-engine');
+const { registerVideoPatcher } = require('./video-bot');
 let FFPROBE_PATH = 'ffprobe';
 try { FFPROBE_PATH = require('ffprobe-static').path; } catch (e) { /* используем системный ffprobe */ }
 let FFMPEG_PATH = null;
@@ -829,7 +831,9 @@ async function setLoginSession(sessionId, session) {
   return true;
 }
 
-const bot = new Telegraf(BOT_TOKEN);
+// Files above 20 MB can only be downloaded through a local Bot API server (BOT_API_ROOT).
+const BOT_API_ROOT = (process.env.BOT_API_ROOT || '').trim().replace(/\/+$/, '');
+const bot = new Telegraf(BOT_TOKEN, BOT_API_ROOT ? { telegram: { apiRoot: BOT_API_ROOT } } : {});
 
 bot.use(async (ctx, next) => {
   // Channel posts (including posts that mention @ineasybot) are publications, not
@@ -1009,6 +1013,12 @@ async function confirmSiteLogin(ctx, sessionId) {
 async function sendPackagesMenu(ctx, lang) {
   await ctx.reply(TEXTS[lang].packagesTitle, packagesKeyboard(lang));
 }
+
+const BOT_NO_BALANCE = {
+  ru: '🆓 Видео закончились. Купите видео или пригласите друга.',
+  en: '🆓 You are out of videos. Buy videos or invite a friend.',
+  kk: '🆓 Бейнелер таусылды. Бейне сатып алыңыз немесе дос шақырыңыз.',
+};
 
 function balanceEndedKeyboard(lang, telegramId) {
   const buyLabel = BTN[lang].buy;
@@ -1501,6 +1511,30 @@ bot.action(/^verify_ref_(\d+)$/, async (ctx) => {
   }
 });
 
+// Videos sent to the bot are patched with the fixed V2 settings. Registered before the
+// receipt handler below; non-video documents fall through to it.
+registerVideoPatcher(bot, {
+  ffmpegPath: FFMPEG_PATH,
+  ffprobePath: FFPROBE_PATH,
+  botToken: BOT_TOKEN,
+  apiRoot: BOT_API_ROOT,
+  newsChannelId: NEWS_CHANNEL_ID,
+  getLang,
+  getFreeBalance,
+  getPurchasedBalance,
+  consumeProcessedVideo: async (telegramId, lang) => {
+    await consumeOneVideo(telegramId);
+    await recordUserActivity(telegramId, 'Обработано видео');
+    const [free, freeNextAt] = await Promise.all([getFreeBalance(telegramId), getFreeNextAt(telegramId)]);
+    if (free === 0 && freeNextAt) await notifyFreeBalanceEnded(telegramId, lang, freeNextAt);
+  },
+  replyNoBalance: async (ctx, lang) => {
+    const id = String(ctx.from.id);
+    const nextAt = await getFreeNextAt(id).catch(() => null);
+    await ctx.reply(nextAt ? TEXTS[lang].freeBalanceEnded(nextAt) : BOT_NO_BALANCE[lang], balanceEndedKeyboard(lang, id));
+  },
+});
+
 bot.on(['photo', 'document'], async (ctx) => {
   const telegramId = String(ctx.from.id);
   const lang = await getLang(telegramId);
@@ -1991,107 +2025,7 @@ async function requireUserToken(req, res, next) {
   return next();
 }
 
-// ---- V2 FFmpeg stream-copy helpers -------------------------------------------------
-// Optional stream-copy command variants for experiments. Every variant keeps the video
-// bitstream (-c:v copy); only the container layout differs. The client picks one with
-// ?variant=<name>; unknown names fall back to the default.
-const FFMPEG_COPY_VARIANTS = {
-  default: { videoArgs: [], audioMaps: ['-map', '0:a:0?'] },
-  // 60000 is a multiple of 60 and 59.94 (60000/1001) so every frame lands on an exact tick.
-  ts60000: { videoArgs: ['-video_track_timescale', '60000'], audioMaps: ['-map', '0:a:0?'] },
-  // Same audio stream mapped twice (the layout that survived TikTok's transcode in the research log).
-  dualaudio: { videoArgs: [], audioMaps: ['-map', '0:a:0?', '-map', '0:a:0?'] }
-};
-
-// Sample-entry boxes that carry HDR / colour signalling. ffmpeg's MP4 muxer can drop some of
-// them (e.g. Dolby Vision dvvC without -strict unofficial), which makes TikTok treat the
-// clip as plain SDR and wash out the colours.
-const HDR_SIGNALING_BOXES = ['colr', 'mdcv', 'clli', 'dvcC', 'dvvC', 'dvwC'];
-
-function parseIsoBoxes(buf, start, end) {
-  const out = [];
-  let pos = start;
-  while (pos + 8 <= end) {
-    let size = buf.readUInt32BE(pos);
-    const type = buf.toString('latin1', pos + 4, pos + 8);
-    let header = 8;
-    if (size === 1 && pos + 16 <= end) { size = Number(buf.readBigUInt64BE(pos + 8)); header = 16; }
-    else if (size === 0) size = end - pos;
-    if (size < header || pos + size > end) break;
-    out.push({ type, start: pos, header, end: pos + size });
-    pos += size;
-  }
-  return out;
-}
-
-// Returns { codecTag, boxes: { colr: '<hex>', ... } } for the first video sample entry,
-// reading only the moov box so large files are not loaded into memory.
-async function readVideoSampleEntrySignaling(filePath) {
-  const handle = await fs.promises.open(filePath, 'r');
-  try {
-    const { size: fileSize } = await handle.stat();
-    let pos = 0;
-    let moov = null;
-    const head = Buffer.alloc(16);
-    while (pos + 8 <= fileSize) {
-      await handle.read(head, 0, 16, pos);
-      let boxSize = head.readUInt32BE(0);
-      const type = head.toString('latin1', 4, 8);
-      let header = 8;
-      if (boxSize === 1) { boxSize = Number(head.readBigUInt64BE(8)); header = 16; }
-      else if (boxSize === 0) boxSize = fileSize - pos;
-      if (boxSize < header || pos + boxSize > fileSize) break;
-      if (type === 'moov') {
-        if (boxSize > 64 * 1024 * 1024) break;
-        moov = Buffer.alloc(boxSize - header);
-        await handle.read(moov, 0, moov.length, pos + header);
-        break;
-      }
-      pos += boxSize;
-    }
-    if (!moov) return null;
-    const find = (buf, start, end, type) => parseIsoBoxes(buf, start, end).find((b) => b.type === type);
-    for (const trak of parseIsoBoxes(moov, 0, moov.length).filter((b) => b.type === 'trak')) {
-      const mdia = find(moov, trak.start + trak.header, trak.end, 'mdia');
-      if (!mdia) continue;
-      const hdlr = find(moov, mdia.start + mdia.header, mdia.end, 'hdlr');
-      if (!hdlr || moov.toString('latin1', hdlr.start + hdlr.header + 8, hdlr.start + hdlr.header + 12) !== 'vide') continue;
-      const minf = find(moov, mdia.start + mdia.header, mdia.end, 'minf');
-      const stbl = minf && find(moov, minf.start + minf.header, minf.end, 'stbl');
-      const stsd = stbl && find(moov, stbl.start + stbl.header, stbl.end, 'stsd');
-      if (!stsd) continue;
-      const entryStart = stsd.start + stsd.header + 8; // version/flags + entry_count
-      if (entryStart + 86 > stsd.end) continue;
-      const entrySize = moov.readUInt32BE(entryStart);
-      const codecTag = moov.toString('latin1', entryStart + 4, entryStart + 8);
-      const children = parseIsoBoxes(moov, entryStart + 86, Math.min(entryStart + entrySize, stsd.end));
-      const boxes = {};
-      for (const child of children) {
-        if (HDR_SIGNALING_BOXES.includes(child.type) && !(child.type in boxes)) {
-          boxes[child.type] = moov.subarray(child.start + child.header, child.end).toString('hex');
-        }
-      }
-      return { codecTag, boxes };
-    }
-    return null;
-  } finally {
-    await handle.close();
-  }
-}
-
-// Every HDR box present in the source must survive the remux. colr is compared by presence
-// only (ffmpeg may rewrite nclc as nclx); everything else must match byte for byte.
-function missingHdrSignaling(source, output) {
-  if (!source) return [];
-  const lost = [];
-  for (const type of Object.keys(source.boxes)) {
-    const after = output && output.boxes[type];
-    if (after === undefined) lost.push(type);
-    else if (type !== 'colr' && after !== source.boxes[type]) lost.push(type + '_changed');
-  }
-  return lost;
-}
-
+// ---- V2 FFmpeg stream-copy (shared with the Telegram bot via v2-engine.js) ---------
 // V2-only stream-copy remux. Allow enough time for cold starts and larger phone videos;
 // reject the job; never silently fall back to the metadata-only patcher.
 // The upload is streamed straight to disk (not buffered in RAM) so several large 4K
@@ -2123,151 +2057,23 @@ app.post('/api/v2/ffmpeg-copy', requireUserToken, async (req, res) => {
       return res.status(400).json({ error: 'video_body_missing' });
     }
 
-    // Probe only container headers (no full-file scan) so the copy is verified against
-    // the ORIGINAL file. Video is never re-encoded, so frames and resolution stay intact.
-    const probeVideo = (filePath) => new Promise((resolve, reject) => {
-      execFile(FFPROBE_PATH, [
-        '-v', 'error', '-select_streams', 'v:0',
-        '-show_entries', 'stream=codec_name,width,height,avg_frame_rate,r_frame_rate,nb_frames,pix_fmt,color_primaries,color_transfer,color_space',
-        '-of', 'json', filePath
-      ], { maxBuffer: 2 * 1024 * 1024, timeout: 30000 }, (error, stdout) => {
-        if (error) return reject(error);
-        try {
-          const stream = JSON.parse(stdout).streams?.[0];
-          if (!stream) throw new Error('ffprobe_video_stream_missing');
-          resolve(stream);
-        } catch (parseError) {
-          reject(parseError);
-        }
-      });
+    const copy = await ffmpegCopyV2({
+      ffmpegPath: FFMPEG_PATH,
+      ffprobePath: FFPROBE_PATH,
+      inputPath,
+      outputPath,
+      variant: req.query.variant
     });
-    const parseFrameRate = (value) => {
-      const parts = String(value || '').split('/').map(Number);
-      if (parts.length !== 2 || !Number.isFinite(parts[0]) ||
-          !Number.isFinite(parts[1]) || parts[0] <= 0 || parts[1] <= 0) return 0;
-      return parts[0] / parts[1];
-    };
-    const videoFps = (stream) => parseFrameRate(stream.avg_frame_rate) || parseFrameRate(stream.r_frame_rate);
-    const inputVideo = await probeVideo(inputPath);
-    const sourceFps = videoFps(inputVideo);
-    const inputFrames = Number(inputVideo.nb_frames);
-    const sourceSignaling = await readVideoSampleEntrySignaling(inputPath).catch(() => null);
-
-    const variantName = Object.prototype.hasOwnProperty.call(FFMPEG_COPY_VARIANTS, String(req.query.variant || ''))
-      ? String(req.query.variant) : 'default';
-    const variant = FFMPEG_COPY_VARIANTS[variantName];
-    const runRemux = (audioMode, copytb) => new Promise((resolve, reject) => {
-      const args = [
-        '-hide_banner', '-loglevel', 'error', '-nostdin', '-y',
-        '-i', inputPath, ...(copytb ? ['-copytb', copytb] : []),
-        // -strict unofficial lets the MP4 muxer keep Dolby Vision (dvvC/dvcC) and similar
-        // sample-entry boxes it would otherwise drop during the copy.
-        '-strict', 'unofficial',
-        '-map', '0:v:0?', ...variant.audioMaps,
-        '-c:v', 'copy', ...variant.videoArgs,
-        ...(audioMode === 'aac'
-          ? ['-c:a', 'aac', '-b:a', '192k']
-          : ['-c:a', 'copy']),
-        '-sn', '-dn', '-map_metadata', '0', '-movflags', '+faststart',
-        '-f', 'mp4', outputPath
-      ];
-      execFile(FFMPEG_PATH, args, {
-        maxBuffer: 4 * 1024 * 1024,
-        timeout: 240000,
-        killSignal: 'SIGKILL'
-      }, (error, stdout, stderr) => {
-        if (error) {
-          error.stderr = stderr;
-          reject(error);
-        } else resolve({ stdout, stderr });
-      });
-    });
-    const remuxWithAudioFallback = async (copytb) => {
-      try {
-        await runRemux('copy', copytb);
-        return 'copy';
-      } catch (copyError) {
-        // Retry only audio compatibility; the video stream remains copied.
-        await fs.promises.rm(outputPath, { force: true }).catch(() => {});
-        try {
-          await runRemux('aac', copytb);
-          return 'aac';
-        } catch (aacError) {
-          aacError.stderr = [
-            'Audio-copy attempt: ' + String(copyError.stderr || copyError.message || '').slice(-1200),
-            'AAC fallback attempt: ' + String(aacError.stderr || aacError.message || '').slice(-1800)
-          ].join('\\n');
-          throw aacError;
-        }
-      }
-    };
-    // The remux must keep dimensions, frame count and frame rate. A lower FPS here
-    // is what platforms later report as 30 FPS, so such an output is never accepted.
-    const remuxKeepsVideo = async () => {
-      const outputVideo = await probeVideo(outputPath);
-      const outputFps = videoFps(outputVideo);
-      const outputFrames = Number(outputVideo.nb_frames);
-      const sameSize = Number(inputVideo.width) === Number(outputVideo.width) &&
-        Number(inputVideo.height) === Number(outputVideo.height);
-      const fpsKept = !(sourceFps >= 29 && outputFps > 0 && outputFps < sourceFps - 1);
-      const framesKept = !(inputFrames > 0 && outputFrames > 0 && inputFrames !== outputFrames);
-      // Colour format and HDR signalling must be identical, otherwise TikTok re-renders the
-      // clip as SDR (washed out) or tone-maps it badly.
-      const colourKept = ['pix_fmt', 'color_primaries', 'color_transfer', 'color_space'].every((key) => {
-        const before = String(inputVideo[key] || '').toLowerCase();
-        const after = String(outputVideo[key] || '').toLowerCase();
-        return !before || before === 'unknown' || before === after;
-      });
-      const outputSignaling = await readVideoSampleEntrySignaling(outputPath).catch(() => null);
-      const lostHdrBoxes = missingHdrSignaling(sourceSignaling, outputSignaling);
-      if (lostHdrBoxes.length) {
-        console.error('[INEASY V2] FFmpeg copy lost HDR signalling:', lostHdrBoxes.join(','));
-      }
-      return { ok: sameSize && fpsKept && framesKept && colourKept && lostHdrBoxes.length === 0, outputFps };
-    };
-
-    // First try the demuxer time base, then FFmpeg's default time base. If neither
-    // keeps the video exactly, return the original bytes instead of a degraded file.
-    let remuxAudioMode = 'copy';
-    let outputFps = 0;
-    let keptOriginal = false;
-    let verified = false;
-    for (const copytb of ['1', '']) {
-      try {
-        remuxAudioMode = await remuxWithAudioFallback(copytb);
-        const check = await remuxKeepsVideo();
-        outputFps = check.outputFps;
-        if (check.ok) { verified = true; break; }
-      } catch (attemptError) {
-        console.error('[INEASY V2] FFmpeg stream-copy attempt failed:', {
-          copytb: copytb || 'default',
-          reason: attemptError.message || 'ffmpeg_copy_failed',
-          stderr: String(attemptError.stderr || '').slice(-1500)
-        });
-        await fs.promises.rm(outputPath, { force: true }).catch(() => {});
-      }
-    }
-    if (!verified) {
-      console.error('[INEASY V2] FFmpeg copy changed the video; returning the original file.', {
-        sourceFps, outputFps
-      });
-      await fs.promises.copyFile(inputPath, outputPath);
-      remuxAudioMode = 'original';
-      outputFps = sourceFps;
-      keptOriginal = true;
-    }
-    const stat = await fs.promises.stat(outputPath);
-    if (stat.size < 16) throw new Error('ffmpeg_copy_output_invalid');
     res.set('Content-Type', 'video/mp4');
-    res.set('Content-Length', String(stat.size));
+    res.set('Content-Length', String(copy.bytes));
     res.set('X-INEASY-FFMPEG-COPY', '1');
-    res.set('X-INEASY-FFMPEG-AUDIO', remuxAudioMode);
-    res.set('X-INEASY-FFMPEG-VARIANT', keptOriginal ? 'original' : variantName);
-    if (keptOriginal) res.set('X-INEASY-REMUX-FALLBACK', 'original');
-    if (sourceFps > 0) res.set('X-INEASY-SOURCE-FPS', sourceFps.toFixed(6));
-    if (Number(inputVideo.width) > 0) res.set('X-INEASY-SOURCE-WIDTH', String(inputVideo.width));
-    if (Number(inputVideo.height) > 0) res.set('X-INEASY-SOURCE-HEIGHT', String(inputVideo.height));
-    if (outputFps > 0) res.set('X-INEASY-OUTPUT-FPS', outputFps.toFixed(6));
+    res.set('X-INEASY-FFMPEG-AUDIO', copy.audioMode);
+    res.set('X-INEASY-FFMPEG-VARIANT', copy.variant);
+    if (copy.keptOriginal) res.set('X-INEASY-REMUX-FALLBACK', 'original');
+    if (copy.sourceFps > 0) res.set('X-INEASY-SOURCE-FPS', copy.sourceFps.toFixed(6));
+    if (copy.width > 0) res.set('X-INEASY-SOURCE-WIDTH', String(copy.width));
+    if (copy.height > 0) res.set('X-INEASY-SOURCE-HEIGHT', String(copy.height));
+    if (copy.outputFps > 0) res.set('X-INEASY-OUTPUT-FPS', copy.outputFps.toFixed(6));
     return res.sendFile(outputPath, (error) => {
       if (error && !res.headersSent) res.status(500).end();
       fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
