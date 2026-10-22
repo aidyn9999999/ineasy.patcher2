@@ -1,0 +1,26 @@
+# VPS deployment: site + bot + local Telegram Bot API (videos up to 150 MB) + automatic HTTPS.
+# Instructions: docs/VPS.md
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.botapi
+    env_file: .env
+    environment:
+      NODE_ENV: production
+    restart: unless-stopped
+    expose:
+      - "3000"
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on:
+      - app
+volumes:
+  caddy_data:
