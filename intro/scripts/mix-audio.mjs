@@ -1,16 +1,21 @@
-// Mixes: Cinnamon Girl fragment 0-5 s (public/intro-music-5s.mp3), the supplied Kazakh voice-over used whole from 0:05
-// (public/voiceover-final.mp3), and a very quiet synthesised pad under the voice. No other voice is added.
+// Final mix. Inputs: video (silent or any, default out/ad-silent.mp4), the full Cinnamon Girl track (public/cinnamon-girl-full.mp3,
+// supplied by the project owner) and the supplied Kazakh voice-over (public/voiceover-final.mp3, used whole, starting at 0:05).
+// Music plays through the whole ad: full level for the 0-5 s intro, ducked under the voice, swelling back for the end card.
+// Usage: node scripts/mix-audio.mjs [videoIn] [videoOut]
 import {execFileSync} from 'node:child_process';
 
 const TOTAL = 77;
 const VOICE_AT = 5000;
-const run = (args) => execFileSync('ffmpeg', ['-v', 'error', '-y', ...args], {stdio: 'inherit'});
+const IN = process.argv[2] ?? 'out/ad-silent.mp4';
+const OUT = process.argv[3] ?? 'out/ineasy-ad.mp4';
+const DUCK = 0.24; // music level under the voice
+const VOL = `if(lt(t,4.5),1,if(lt(t,6),1-(t-4.5)/1.5*${1 - DUCK},if(lt(t,72.4),${DUCK},if(lt(t,74),${DUCK}+(t-72.4)/1.6*0.3,${DUCK + 0.3}))))`;
 
-run(['-f', 'lavfi', '-i', `sine=f=110:d=${TOTAL}`, '-f', 'lavfi', '-i', `sine=f=164.8:d=${TOTAL}`, '-f', 'lavfi', '-i', `sine=f=220:d=${TOTAL}`, '-f', 'lavfi', '-i', `sine=f=277.2:d=${TOTAL}`,
-  '-filter_complex', `[0][1][2][3]amix=inputs=4:normalize=0,lowpass=f=900,tremolo=f=0.25:d=0.4,aecho=0.8:0.7:600:0.4,afade=t=out:st=${TOTAL - 4}:d=4,aformat=channel_layouts=stereo`, '-ar', '48000', 'out/pad.wav']);
+// Track is 60 s: play 15 s -> end, then loop back to the start with a 2 s crossfade to cover 77 s.
+const music = `[1:a]aresample=48000,aformat=channel_layouts=stereo,atrim=15:60,asetpts=PTS-STARTPTS[A];[3:a]aresample=48000,aformat=channel_layouts=stereo,atrim=0:40,asetpts=PTS-STARTPTS[B];[A][B]acrossfade=d=2,afade=t=in:d=0.5,afade=t=out:st=${TOTAL - 2.5}:d=2.5,volume='${VOL}':eval=frame,atrim=0:${TOTAL}[m]`;
+const voice = `[2:a]loudnorm=I=-16:TP=-1.5:LRA=7,adelay=${VOICE_AT}|${VOICE_AT},aformat=sample_rates=48000:channel_layouts=stereo[v]`;
+const mix = `[m][v]amix=inputs=2:normalize=0:duration=longest,alimiter=limit=0.95,apad=whole_dur=${TOTAL},atrim=0:${TOTAL}[a]`;
 
-run(['-i', 'out/ad-silent.mp4', '-i', 'public/intro-music-5s.mp3', '-i', 'public/voiceover-final.mp3', '-i', 'out/pad.wav',
-  '-filter_complex',
-  `[2:a]loudnorm=I=-16:TP=-1.5:LRA=7,adelay=${VOICE_AT}|${VOICE_AT}[v];[1:a]apad=whole_dur=${TOTAL}[m];[3:a]volume='if(lt(t,4),0,min(1,(t-4)/2))*0.10':eval=frame[p];[m][v][p]amix=inputs=3:normalize=0:duration=longest,alimiter=limit=0.95,atrim=0:${TOTAL}[a]`,
-  '-map', '0:v', '-map', '[a]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', 'out/ineasy-ad.mp4']);
-console.log('out/ineasy-ad.mp4');
+execFileSync('ffmpeg', ['-v', 'error', '-y', '-i', IN, '-i', 'public/cinnamon-girl-full.mp3', '-i', 'public/voiceover-final.mp3', '-i', 'public/cinnamon-girl-full.mp3',
+  '-filter_complex', `${music};${voice};${mix}`, '-map', '0:v', '-map', '[a]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', OUT], {stdio: 'inherit'});
+console.log(OUT);
