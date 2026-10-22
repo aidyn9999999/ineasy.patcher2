@@ -7,7 +7,7 @@ export const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as co
 /** Scene wrapper: fades in/out at its edges. `dur` in frames. */
 export const Fade: React.FC<{dur: number; inF?: number; outF?: number; children: React.ReactNode}> = ({dur, inF = 12, outF = 12, children}) => {
   const f = useCurrentFrame();
-  const o = interpolate(f, [0, inF, dur - outF, dur], [0, 1, 1, 0], clamp);
+  const o = interpolate(f, [0, inF, Math.max(dur - outF, inF + 1), Math.max(dur, inF + 2)], [0, 1, 1, outF === 0 ? 1 : 0], clamp);
   return <AbsoluteFill style={{opacity: o}}>{children}</AbsoluteFill>;
 };
 
