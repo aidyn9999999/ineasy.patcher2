@@ -10,14 +10,14 @@ const SHAPES: {points: string; face: string; side: string; rim: string}[] = [
   {points: '356,62 445,30 445,174', face: '#2f6bff', side: '#12328f', rim: '#9cc2ff'},
 ];
 
-const LAYERS = 26;
+const LAYERS = 12;
 const DEPTH = 46;
 
-const Mark: React.FC<{spread: number; front?: boolean}> = ({spread, front = true}) => (
+const Mark: React.FC<{spread: number; front?: boolean; layers?: number}> = ({spread, front = true, layers = LAYERS}) => (
   <div style={{position: 'absolute', inset: 0, transformStyle: 'preserve-3d'}}>
-    {Array.from({length: LAYERS}).map((_, i) => {
-      const t = i / (LAYERS - 1);
-      const isFront = i === LAYERS - 1;
+    {Array.from({length: layers}).map((_, i) => {
+      const t = i / (layers - 1);
+      const isFront = i === layers - 1;
       return (
         <svg
           key={i}
@@ -48,11 +48,11 @@ const Mark: React.FC<{spread: number; front?: boolean}> = ({spread, front = true
   </div>
 );
 
-const WordMark: React.FC<{spread: number}> = ({spread}) => (
+const WordMark: React.FC<{spread: number; layers?: number}> = ({spread, layers = 6}) => (
   <div style={{position: 'absolute', left: 0, top: 410, width: 540, height: 90, transformStyle: 'preserve-3d'}}>
-    {Array.from({length: 10}).map((_, i) => {
-      const t = i / 9;
-      const isFront = i === 9;
+    {Array.from({length: layers}).map((_, i) => {
+      const t = i / (layers - 1);
+      const isFront = i === layers - 1;
       return (
         <div
           key={i}
@@ -117,8 +117,8 @@ export const Logo3D: React.FC = () => {
         maskImage: reflection ? 'linear-gradient(to bottom, transparent 40%, #000 100%)' : undefined,
       }}
     >
-      <Mark spread={spread} front={!reflection} />
-      <WordMark spread={spread} />
+      <Mark spread={spread} front={!reflection} layers={reflection ? 3 : LAYERS} />
+      <WordMark spread={spread} layers={reflection ? 2 : 6} />
     </div>
   );
 
