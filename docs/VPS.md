@@ -42,6 +42,7 @@
    TELEGRAM_API_HASH=...
    BOT_VIDEO_MAX_MB=150
    BOT_VIDEO_CONCURRENCY=3    # см. таблицу выше
+   SERVER_PROCESSING=1        # включает обработку видео на сервере (в боте и V2 на сайте); по умолчанию выключено
    ```
    Не задавайте `BOT_VIDEO_KEEP_DIR`, `BOT_API_ROOT`, `PORT`, `RAILWAY_*`.
 7. **Остановить Railway** (Settings → Remove/Pause service), чтобы он не держал webhook бота.

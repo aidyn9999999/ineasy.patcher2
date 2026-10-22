@@ -29,6 +29,9 @@ const ASTANA_TIME_ZONE = 'Asia/Almaty';
 const CARD_INFO = '4400 4300 2627 8157 или +7 771 327 79 49 (только Kaspi)\nИмя: Алмаз Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasy.site/app.html';
 const WEBSITE_URL = new URL('/', SITE_URL).toString();
+// Server-side video processing (Telegram bot videos and the site's V2 FFmpeg endpoint) is off until
+// a powerful server is connected. Set SERVER_PROCESSING=1 to turn it back on.
+const SERVER_PROCESSING_ENABLED = process.env.SERVER_PROCESSING === '1';
 
 const PACKAGES = [
   [3, 450],
@@ -1513,7 +1516,7 @@ bot.action(/^verify_ref_(\d+)$/, async (ctx) => {
 
 // Videos sent to the bot are patched with the fixed V2 settings. Registered before the
 // receipt handler below; non-video documents fall through to it.
-registerVideoPatcher(bot, {
+if (SERVER_PROCESSING_ENABLED) registerVideoPatcher(bot, {
   ffmpegPath: FFMPEG_PATH,
   ffprobePath: FFPROBE_PATH,
   botToken: BOT_TOKEN,
@@ -1535,6 +1538,26 @@ registerVideoPatcher(bot, {
     await ctx.reply(nextAt ? TEXTS[lang].freeBalanceEnded(nextAt) : BOT_NO_BALANCE[lang], balanceEndedKeyboard(lang, id));
   },
 });
+
+// While server processing is off, videos sent to the bot get a pointer to the website
+// (PDF/image receipts still fall through to the payment handler below).
+const BOT_VIDEO_DISABLED = {
+  ru: (url) => `⏸ Обработка видео в боте временно отключена. Обработайте видео на сайте: ${url}`,
+  en: (url) => `⏸ Video processing in the bot is temporarily off. Please process your video on the website: ${url}`,
+  kk: (url) => `⏸ Боттағы бейне өңдеу уақытша өшірулі. Бейнені сайтта өңдеңіз: ${url}`,
+};
+if (!SERVER_PROCESSING_ENABLED) {
+  const replyVideoDisabled = async (ctx) => {
+    const lang = await getLang(String(ctx.from.id));
+    await ctx.reply((BOT_VIDEO_DISABLED[lang] || BOT_VIDEO_DISABLED.en)(WEBSITE_URL));
+  };
+  bot.on('video', replyVideoDisabled);
+  bot.on('document', (ctx, next) => {
+    const d = ctx.message.document;
+    const isVideo = /^video\//i.test(d.mime_type || '') || /\.(mp4|mov|m4v|mkv|avi|webm)$/i.test(d.file_name || '');
+    return isVideo ? replyVideoDisabled(ctx) : next();
+  });
+}
 
 bot.on(['photo', 'document'], async (ctx) => {
   const telegramId = String(ctx.from.id);
@@ -1975,6 +1998,12 @@ app.use(express.json());
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'app.html'));
 });
+app.get('/terms', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'terms.html'));
+});
+app.get('/privacy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'privacy.html'));
+});
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
@@ -2052,6 +2081,7 @@ async function requireUserToken(req, res, next) {
 // uploads at once cannot exhaust server memory and stall every job.
 const V2_COPY_MAX_BYTES = 512 * 1024 * 1024;
 app.post('/api/v2/ffmpeg-copy', requireUserToken, async (req, res) => {
+  if (!SERVER_PROCESSING_ENABLED) return res.status(503).json({ error: 'server_processing_disabled' });
   if (!FFMPEG_PATH) return res.status(503).json({ error: 'ffmpeg_engine_unavailable' });
   const declaredLength = Number(req.headers['content-length']);
   if (Number.isFinite(declaredLength) && declaredLength > V2_COPY_MAX_BYTES) return res.status(413).json({ error: 'video_too_large' });
