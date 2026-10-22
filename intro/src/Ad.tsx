@@ -333,7 +333,7 @@ export const Ad: React.FC<{hasMusic?: boolean}> = ({hasMusic = true}) => {
       </Scene>
 
       <Scene k="patchCompare">
-        <Split title="Patcher-сіз және Patcher-мен" left="Без Patcher" right="С Patcher" leftSub="демо: 540p" rightSub="демо: 1080p" start={8} delay={3.0}
+        <Split title="Patcher-сіз және Patcher-мен" left="Без Patcher" right="С Patcher" leftSub="демо: 540p" rightSub="демо: 1080p" start={0} delay={3.0}
           footer="Демонстрациялық салыстыру: бір бастапқы видео. Бұл TikTok-қа жарияланғаннан кейінгі нақты нәтиже емес." />
       </Scene>
 
