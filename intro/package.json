@@ -1,0 +1,22 @@
+{
+  "name": "ineasy-intro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Remotion intro for INEASY.SITE (5 s music + 3D logo, then Kazakh voice-over section)",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render src/index.ts IneasyIntro out/ineasy-intro.mp4",
+    "render:full": "remotion render src/index.ts IneasyFull out/ineasy-full.mp4",
+    "clip": "node scripts/make-clip.mjs"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.537",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "remotion": "4.0.537"
+  },
+  "devDependencies": {
+    "@types/react": "19.0.0",
+    "typescript": "5.8.3"
+  }
+}
