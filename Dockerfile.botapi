@@ -1,0 +1,14 @@
+# Bot + local Telegram Bot API server in ONE container, so the bot can read the files
+# (up to 2 GB) the Bot API server downloads straight from its disk.
+# Not used automatically: on Railway set the variable RAILWAY_DOCKERFILE_PATH=Dockerfile.botapi.
+FROM aiogram/telegram-bot-api:latest AS botapi
+
+FROM node:22-alpine
+RUN apk add --no-cache libstdc++ libssl3 zlib
+COPY --from=botapi /usr/local/bin/telegram-bot-api /usr/local/bin/telegram-bot-api
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+COPY . .
+RUN chmod +x start-with-botapi.sh
+CMD ["./start-with-botapi.sh"]
