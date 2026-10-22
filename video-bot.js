@@ -15,6 +15,9 @@ const MB = 1024 * 1024;
 const MAX_VIDEO_BYTES = (Number(process.env.BOT_VIDEO_MAX_MB) || 150) * MB;
 const CONCURRENCY = Math.max(1, Number(process.env.BOT_VIDEO_CONCURRENCY) || 1);
 const MAX_QUEUE = Math.max(1, Number(process.env.BOT_VIDEO_MAX_QUEUE) || 20);
+// Empty = results are deleted right after sending. Set it (e.g. on a laptop) to keep each
+// result in that folder so you can look at it and delete it yourself.
+const KEEP_DIR = (process.env.BOT_VIDEO_KEEP_DIR || '').trim();
 const JOBS_DIR = process.env.BOT_VIDEO_TMP_DIR || path.join(os.tmpdir(), 'ineasy-bot-jobs');
 // The cloud Bot API lets a bot download 20 MB and upload 50 MB. Bigger files need a local
 // Bot API server (BOT_API_ROOT), which the bot then talks to instead.
@@ -225,6 +228,15 @@ function registerVideoPatcher(bot, deps) {
         console.error('[INEASY BOT] sending result failed:', { userId, reason: error.message });
         await setStatus(t.sendFailed);
         return;
+      }
+      if (KEEP_DIR) {
+        try {
+          const userDir = path.join(KEEP_DIR, userId);
+          await fs.promises.mkdir(userDir, { recursive: true });
+          await moveFile(outputPath, path.join(userDir, `${Date.now()}-${baseName}-ineasy.mp4`));
+        } catch (error) {
+          console.error('[INEASY BOT] keeping result failed:', error.message);
+        }
       }
       await ctx.telegram.deleteMessage(ctx.chat.id, statusMessageId).catch(() => {});
       // Charge only after the user actually received the file.
