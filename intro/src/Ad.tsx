@@ -1,6 +1,5 @@
 import React from 'react';
 import {AbsoluteFill, Easing, Freeze, interpolate, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
-import {Intro} from './Intro';
 import {Logo3D} from './Logo3D';
 import {Backdrop, Card, clamp, Fade, Pill, Shot, StepTag, Tapper} from './ui';
 import {colors, fontFamily, FPS, HOOK_LINES, sec, T, END} from './theme';
@@ -27,15 +26,12 @@ const Hook: React.FC = () => {
   return (
     <AbsoluteFill style={{background: colors.bg}}>
       <AbsoluteFill style={{transform: `scale(${scale})`}}>
-        <Freeze frame={Math.min(f, 927)}>
-          <OffthreadVideo src={staticFile('src1080.mp4')} muted style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-        </Freeze>
+        <OffthreadVideo src={staticFile('src1080.mp4')} muted style={{width: '100%', height: '100%', objectFit: 'cover'}} />
       </AbsoluteFill>
       <AbsoluteFill style={{background: 'linear-gradient(180deg, rgba(2,4,10,.5), rgba(2,4,10,0) 30%, rgba(2,4,10,.7))'}} />
-      <div style={{position: 'absolute', top: 110, left: 0, right: 0, textAlign: 'center', fontFamily, fontWeight: 800, fontSize: 44, letterSpacing: 8, color: colors.text, opacity: interpolate(t, [0, 0.6], [0, 1], clamp)}}>INEASY.SITE</div>
       {HOOK_LINES.map((l) => {
-        const a = l.from - 5.0;
-        const b = l.to - 5.0;
+        const a = l.from;
+        const b = l.to;
         if (t < a || t > b) return null;
         const words = l.text.split(' ');
         return (
@@ -60,21 +56,22 @@ const PH = 1000;
 const CX = 540; // source-pixel centre of the compared fragment (1080p coordinates)
 const CY = 760;
 
-const Panel: React.FC<{side: 'l' | 'r'; src: string; scale: number; label: string; sub: string; start: number; ring?: boolean; hot?: boolean}> = ({side, src, scale, label, sub, start, ring, hot}) => {
+const Panel: React.FC<{side: 'l' | 'r'; src: string; scale: number; label: string; sub: string; start: number; ring?: boolean; hot?: boolean; delay?: number; ringAt?: number; labelAt?: number}> = ({side, src, scale, label, sub, start, ring, hot, delay = 0, ringAt = 0, labelAt = 0.4}) => {
   const f = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const t = f / fps;
+  const t = f / fps - delay;
   const slide = interpolate(t, [0.05, 0.7], [side === 'l' ? -620 : 620, 0], {...clamp, easing: Easing.out(Easing.cubic)});
   const o = interpolate(t, [0.05, 0.5], [0, 1], clamp);
+  const lab = interpolate(t, [labelAt, labelAt + 0.3], [0, 1], clamp);
   const w = scale === 2 ? 540 : 1080;
   const h = scale === 2 ? 960 : 1920;
   const tx = PW / 2 - CX;
   const ty = PH / 2 - CY;
-  const pulse = ring ? interpolate(t, [0.9, 1.3, 1.9], [0, 1, 0.55], clamp) : 0;
+  const pulse = ring ? interpolate(t - ringAt, [0, 0.4, 1.0], [0, 1, 0.55], clamp) : 0;
   return (
     <div style={{position: 'absolute', top: 340, left: side === 'l' ? 30 : 555, width: PW, opacity: o, transform: `translateX(${slide}px)`}}>
       <div style={{display: 'flex', justifyContent: 'center', marginBottom: 22}}>
-        <Pill active={hot} style={{fontFamily, fontSize: 44, padding: '16px 38px'}}>{label}</Pill>
+        <Pill active={hot} style={{fontFamily, fontSize: 44, padding: '16px 38px', opacity: lab, transform: `scale(${0.85 + 0.15 * lab})`}}>{label}</Pill>
       </div>
       <div style={{position: 'relative', width: PW, height: PH, overflow: 'hidden', borderRadius: 28, border: `3px solid ${hot ? colors.blue : 'rgba(127,176,255,.35)'}`, boxShadow: hot ? '0 0 60px rgba(47,107,255,.35)' : undefined}}>
         <div style={{position: 'absolute', left: 0, top: 0, width: w, height: h, transformOrigin: '0 0', transform: `translate(${tx}px, ${ty}px) scale(${scale === 2 ? 2 : 1})`}}>
@@ -87,17 +84,17 @@ const Panel: React.FC<{side: 'l' | 'r'; src: string; scale: number; label: strin
   );
 };
 
-const Split: React.FC<{title: string; footer: string; left: string; right: string; leftSub: string; rightSub: string; start: number; ring?: boolean}> = ({title, footer, left, right, leftSub, rightSub, start, ring}) => {
+const Split: React.FC<{title: string; footer: string; left: string; right: string; leftSub: string; rightSub: string; start: number; ring?: boolean; delay?: number; ringAt?: number; leftAt?: number; rightAt?: number}> = ({title, footer, left, right, leftSub, rightSub, start, ring, delay = 0, ringAt = 0, leftAt = 0.4, rightAt = 0.4}) => {
   const f = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const t = f / fps;
+  const t = f / fps - delay;
   const div = interpolate(t, [0.3, 0.9], [0, 1], clamp);
   return (
     <Backdrop>
-      <div style={{position: 'absolute', top: 130, left: 50, right: 50, textAlign: 'center', fontFamily, fontWeight: 800, fontSize: 60, lineHeight: 1.2, opacity: interpolate(t, [0, 0.4], [0, 1], clamp)}}>{title}</div>
-      <Panel side="l" src="src540.mp4" scale={2} label={left} sub={leftSub} start={start} ring={ring} />
-      <Panel side="r" src="src1080.mp4" scale={1} label={right} sub={rightSub} start={start} ring={ring} hot />
-      <div style={{position: 'absolute', left: 539, top: 420 + 0, width: 2, height: PH * div, background: 'rgba(160,205,255,.8)', boxShadow: '0 0 20px rgba(80,140,255,.9)'}} />
+      <div style={{position: 'absolute', top: 130, left: 50, right: 50, textAlign: 'center', fontFamily, fontWeight: 800, fontSize: 60, lineHeight: 1.2, opacity: interpolate(f / fps, [0, 0.4], [0, 1], clamp)}}>{title}</div>
+      <Panel side="l" src="src540.mp4" scale={2} label={left} sub={leftSub} start={start} ring={ring} delay={delay} ringAt={ringAt} labelAt={leftAt} />
+      <Panel side="r" src="src1080.mp4" scale={1} label={right} sub={rightSub} start={start} ring={ring} hot delay={delay} ringAt={ringAt} labelAt={rightAt} />
+      <div style={{position: 'absolute', left: 539, top: 420 + 0, width: 2, height: PH * div, opacity: t > 0 ? 1 : 0, background: 'rgba(160,205,255,.8)', boxShadow: '0 0 20px rgba(80,140,255,.9)'}} />
       <div style={{position: 'absolute', left: 60, right: 60, bottom: 150, textAlign: 'center', fontSize: 32, lineHeight: 1.35, opacity: 0.75, fontFamily: "'Onest', sans-serif"}}>{footer}</div>
     </Backdrop>
   );
@@ -153,7 +150,7 @@ const Zernio: React.FC = () => {
             <Pill active style={{width: '100%', boxSizing: 'border-box'}}>Sign in</Pill>
           </div>
         </Card>
-        <div style={{marginTop: 50, opacity: interpolate(t, [2.8, 3.3], [0, 1], clamp)}}>
+        <div style={{marginTop: 50, opacity: interpolate(t, [3.7, 4.2], [0, 1], clamp)}}>
           <Card>
             <div style={{fontSize: 40, fontWeight: 700, marginBottom: 20}}>Dashboard</div>
             <div style={{display: 'flex', gap: 20, flexWrap: 'wrap'}}>
@@ -163,8 +160,8 @@ const Zernio: React.FC = () => {
           </Card>
         </div>
       </div>
-      <Tapper at={2.2} x={540} y={930} />
-      <Tapper at={4.4} x={250} y={1510} />
+      <Tapper at={3.2} x={540} y={930} />
+      <Tapper at={4.6} x={250} y={1510} />
     </Backdrop>
   );
 };
@@ -172,7 +169,7 @@ const Zernio: React.FC = () => {
 const Connections: React.FC = () => {
   const f = useCurrentFrame();
   const t = f / FPS;
-  const on = t > 3.4;
+  const on = t > 2.0;
   return (
     <Backdrop>
       <StepTag n={8} label="Connections бөлімі · TikTok қосу" />
@@ -186,9 +183,9 @@ const Connections: React.FC = () => {
           </div>
           <Pill active={!on} style={{background: on ? 'rgba(40,200,140,.9)' : undefined}}>{on ? '✓ Connected' : 'Connect'}</Pill>
         </Card>
-        <div style={{marginTop: 36, fontSize: 34, opacity: interpolate(t, [3.5, 4], [0, 0.8], clamp), lineHeight: 1.4}}>Авторизация TikTok-аккаунта выполняется в окне TikTok.</div>
+        <div style={{marginTop: 36, fontSize: 34, opacity: interpolate(t, [2.1, 2.6], [0, 0.8], clamp), lineHeight: 1.4}}>Авторизация TikTok-аккаунта выполняется в окне TikTok.</div>
       </div>
-      <Tapper at={2.8} x={860} y={640} />
+      <Tapper at={1.4} x={860} y={640} />
     </Backdrop>
   );
 };
@@ -196,15 +193,15 @@ const Connections: React.FC = () => {
 const ApiKey: React.FC = () => {
   const f = useCurrentFrame();
   const t = f / FPS;
-  const made = t > 1.8;
-  const copied = t > 3.6;
+  const made = t > 0.9;
+  const copied = t > 2.3;
   return (
     <Backdrop>
       <StepTag n={9} label="API Key жасау және көшіру" />
       <div style={{position: 'absolute', left: 60, right: 60, top: 430}}>
         <div style={{fontFamily, fontSize: 64, fontWeight: 800, marginBottom: 36}}>API Keys</div>
         <Pill active style={{width: '100%', boxSizing: 'border-box'}}>+ Create API key</Pill>
-        <div style={{marginTop: 44, opacity: interpolate(t, [1.8, 2.3], [0, 1], clamp), transform: `translateY(${interpolate(t, [1.8, 2.3], [24, 0], clamp)}px)`}}>
+        <div style={{marginTop: 44, opacity: interpolate(t, [0.9, 1.3], [0, 1], clamp), transform: `translateY(${interpolate(t, [0.9, 1.3], [24, 0], clamp)}px)`}}>
           {made ? (
             <Card>
               <div style={{fontSize: 32, opacity: 0.6}}>Your API key</div>
@@ -216,8 +213,8 @@ const ApiKey: React.FC = () => {
           ) : null}
         </div>
       </div>
-      <Tapper at={1.4} x={540} y={640} />
-      <Tapper at={3.2} x={880} y={875} />
+      <Tapper at={0.5} x={540} y={640} />
+      <Tapper at={2.0} x={880} y={875} />
     </Backdrop>
   );
 };
@@ -228,6 +225,30 @@ const Toast: React.FC<{at: number; text: string}> = ({at, text}) => {
   const o = interpolate(t, [0, 0.3], [0, 1], clamp);
   return (
     <div style={{position: 'absolute', left: 80, right: 80, bottom: 220, opacity: o, transform: `translateY(${(1 - o) * 40}px)`, padding: '30px 40px', borderRadius: 30, background: 'rgba(30,170,120,.95)', fontFamily: "'Onest', sans-serif", fontWeight: 700, fontSize: 44, textAlign: 'center', color: '#fff', boxShadow: '0 20px 60px rgba(0,0,0,.5)'}}>{text}</div>
+  );
+};
+
+const OVERVIEW = ['Google-да INEASY.SITE іздеу', 'Сайтты ашу', 'Telegram арқылы кіру', 'Patcher бөліміне өту', 'Видеоны таңдау, өңдеуді бастау', 'Жариялауға дайындалу', 'Zernio сайтына кіру', 'Connections: TikTok байланыстыру', 'API Key жасау', 'API Key көшіру', 'Кілтті INEASY.SITE-қа енгізу', 'Сипаттама жазып, жариялау'];
+const Overview: React.FC = () => {
+  const f = useCurrentFrame();
+  const t = f / FPS;
+  return (
+    <Backdrop>
+      <div style={{position: 'absolute', top: 150, left: 50, right: 50, textAlign: 'center', fontFamily, fontWeight: 800, fontSize: 62, lineHeight: 1.2, opacity: interpolate(t, [0, 0.4], [0, 1], clamp)}}>Қалай жасауға болады?</div>
+      <div style={{position: 'absolute', top: 400, left: 60, right: 60}}>
+        {OVERVIEW.map((label, i) => {
+          const at = 0.5 + i * 0.36;
+          const o = interpolate(t, [at, at + 0.3], [0, 1], clamp);
+          const x = interpolate(t, [at, at + 0.35], [-50, 0], {...clamp, easing: Easing.out(Easing.cubic)});
+          return (
+            <div key={label} style={{display: 'flex', alignItems: 'center', gap: 24, marginBottom: 16, opacity: o, transform: `translateX(${x}px)`, padding: '14px 26px', borderRadius: 22, background: 'rgba(10,26,68,.6)', border: '1px solid rgba(127,176,255,.3)', fontSize: 38, fontWeight: 600}}>
+              <span style={{minWidth: 52, height: 52, borderRadius: 26, background: colors.blue, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily, fontWeight: 800, fontSize: 26}}>{i + 1}</span>
+              {label}
+            </div>
+          );
+        })}
+      </div>
+    </Backdrop>
   );
 };
 
@@ -257,14 +278,14 @@ export const Ad: React.FC<{hasMusic?: boolean}> = ({hasMusic = true}) => {
   return (
     <AbsoluteFill style={{background: colors.bg}}>
       {hasMusic ? null : null}
-      <Sequence from={0} durationInFrames={sec(T.intro[1]) + 6}><Intro withMusic={false} /></Sequence>
-
       <Scene k="hook"><Hook /></Scene>
 
       <Scene k="compare">
-        <Split title="Қарашы, нәтижесі қандай!" left="540p" right="1080p" leftSub="540×960" rightSub="1080×1920" start={6} ring
+        <Split title="Қарашы, нәтижесі қандай!" left="540p" right="1080p" leftSub="540×960" rightSub="1080×1920" start={6} ring ringAt={5.4} leftAt={3.3} rightAt={4.4}
           footer="Бір видео, бір кадр, 1:1 ұлғайтылған фрагмент. 540p — сіздің бастапқы видеоңыздан жасалған нұсқа." />
       </Scene>
+
+      <Scene k="overview"><Overview /></Scene>
 
       <Scene k="google"><Google /></Scene>
 
@@ -312,7 +333,7 @@ export const Ad: React.FC<{hasMusic?: boolean}> = ({hasMusic = true}) => {
       </Scene>
 
       <Scene k="patchCompare">
-        <Split title="Patcher-сіз және Patcher-мен" left="Без Patcher" right="С Patcher" leftSub="демо: 540p" rightSub="демо: 1080p" start={8}
+        <Split title="Patcher-сіз және Patcher-мен" left="Без Patcher" right="С Patcher" leftSub="демо: 540p" rightSub="демо: 1080p" start={8} delay={3.0}
           footer="Демонстрациялық салыстыру: бір бастапқы видео. Бұл TikTok-қа жарияланғаннан кейінгі нақты нәтиже емес." />
       </Scene>
 

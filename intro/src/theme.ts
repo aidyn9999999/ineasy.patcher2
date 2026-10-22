@@ -18,29 +18,29 @@ export const VOICE_LEN = 70.426;
 export const END = 77.0;
 
 /**
- * Scene boundaries (seconds on the video clock). Derived from the pauses in the voice-over file
- * (speech chunk i starts at VOICE_START + pause-detected start). Edit here if the phrase map changes.
+ * Scene boundaries (seconds on the video clock). The 19 sentences of the supplied script were aligned to the 21 speech
+ * chunks found by pause detection in the voice-over (voice file starts at VOICE_START). Edit here to nudge timing.
  */
 export const T = {
-  intro: [0, 5.0],
-  hook: [5.0, 20.6],
-  compare: [20.6, 23.4],
-  google: [23.4, 26.4],
-  site: [26.4, 30.2],
-  telegram: [30.2, 33.5],
-  patcher: [33.5, 37.5],
-  process: [37.5, 41.7],
-  publish: [41.7, 44.4],
-  zernio: [44.4, 50.3],
-  connections: [50.3, 56.0],
-  apikey: [56.0, 60.9],
-  enterKey: [60.9, 63.9],
-  caption: [63.9, 68.7],
-  patchCompare: [68.7, 72.6],
-  final: [72.6, END],
+  hook: [0, 12.4],
+  compare: [12.4, 20.4],
+  overview: [20.4, 25.9],
+  google: [25.9, 29.8],
+  site: [29.8, 31.2],
+  telegram: [31.2, 33.1],
+  patcher: [33.1, 34.8],
+  process: [34.8, 37.2],
+  publish: [37.2, 41.4],
+  zernio: [41.4, 46.6],
+  connections: [46.6, 50.0],
+  apikey: [50.0, 53.2],
+  enterKey: [53.2, 55.7],
+  caption: [55.7, 60.5],
+  patchCompare: [60.5, 72.4],
+  final: [72.4, END],
 } as const;
 
 export const HOOK_LINES = [
-  {from: 5.0, to: 8.9, text: 'TikTok-тағы видео сапасының төмендегенінен шаршадың ба?'},
-  {from: 9.3, to: 12.4, text: 'Онда INEASY.SITE сайтына кір!'},
+  {from: 5.0, to: 8.9, text: 'TikTok видеоларыңды сығып, сапасын төмендете бергенінен шаршадың ба?'},
+  {from: 9.3, to: 12.2, text: 'Онда INEASY.SITE саған арналған!'},
 ];
