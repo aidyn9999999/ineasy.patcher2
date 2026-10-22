@@ -194,6 +194,8 @@ const translations = {
     faqSupportText: 'Found a bug?',
     faqReport: 'Report',
     footerSupport: 'Support',
+    footerTerms: 'Terms',
+    footerPrivacy: 'Privacy',
     footerHome: 'Home',
     footerFaq: 'FAQ',
     footerTelegram: 'Telegram',
@@ -392,6 +394,8 @@ const translations = {
     faqSupportText: 'Заметили ошибку?',
     faqReport: 'Сообщить',
     footerSupport: 'Поддержка',
+    footerTerms: 'Условия',
+    footerPrivacy: 'Конфиденциальность',
     footerHome: 'Главная',
     footerFaq: 'FAQ',
     footerTelegram: 'Telegram',
@@ -589,6 +593,8 @@ const translations = {
     faqSupportText: 'Қате таптыңыз ба?',
     faqReport: 'Ескерту',
     footerSupport: 'Қолдау',
+    footerTerms: 'Шарттар',
+    footerPrivacy: 'Құпиялылық',
     footerHome: 'Басты',
     footerFaq: 'FAQ',
     footerTelegram: 'Telegram',
@@ -825,6 +831,8 @@ function applyLanguage(lang) {
   setText('footerHome', pack.footerHome);
   setText('footerFaq', pack.footerFaq);
   setText('footerSupport', pack.footerSupport);
+  setText('footerTerms', pack.footerTerms);
+  setText('footerPrivacy', pack.footerPrivacy);
   setText('footerTelegram', pack.footerTelegram);
   const packageHelpEl = document.getElementById('packageHelp');
   if (packageHelpEl) packageHelpEl.innerHTML = pack.packageHelp;

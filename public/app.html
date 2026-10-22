@@ -205,14 +205,15 @@
 
       <p class="export-note hidden" id="exportNote"></p>
       <input id="postingDevice" type="hidden" value="">
-      <div class="patcher-version-picker hidden" role="radiogroup" aria-label="Режим обработки">
+      <!-- V2 uses server FFmpeg, which is switched off for now (SERVER_PROCESSING); the picker stays hidden. -->
+      <div class="patcher-version-picker hidden" style="display:none !important" role="radiogroup" aria-label="Режим обработки">
         <span class="mode-thumb" aria-hidden="true"></span>
         <label class="patcher-version-option">
           <input type="radio" name="patcherVersion" value="v1" checked>
           <span class="mode-card"><strong>V1 <em class="mode-status mode-status-slow">Лагает</em></strong><small>Обычный режим</small></span>
         </label>
         <label class="patcher-version-option patcher-version-beta">
-          <input type="radio" name="patcherVersion" value="v2">
+          <input type="radio" name="patcherVersion" value="v2" disabled>
           <span class="mode-card"><strong>V2 <em class="mode-status mode-status-best">Лучший выбор</em></strong><small>Не лагает — публичный режим</small></span>
         </label>
       </div>
@@ -525,6 +526,8 @@
     <nav aria-label="Footer Navigation">
       <a href="#homeSection" id="footerHome">Home</a>
       <a href="#faqTitle" id="footerFaq">FAQ</a>
+      <a href="/terms" id="footerTerms">Terms</a>
+      <a href="/privacy" id="footerPrivacy">Privacy</a>
       <a href="mailto:support@ineasy.site" id="footerSupport">Support</a>
       <a class="footer-telegram" href="https://t.me/ineasyadmin?text=I%20found%20a%20bug%20on%20the%20site%20and%20want%20to%20report%20it" target="_blank" rel="noopener" id="footerTelegram">Telegram</a>
     </nav>
