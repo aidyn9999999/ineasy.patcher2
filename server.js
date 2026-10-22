@@ -11,6 +11,7 @@ const os = require('os');
 const crypto = require('crypto');
 const { ffmpegCopyV2 } = require('./v2-engine');
 const { registerVideoPatcher } = require('./video-bot');
+const { registerTikTokDirect } = require('./tiktok-direct');
 let FFPROBE_PATH = 'ffprobe';
 try { FFPROBE_PATH = require('ffprobe-static').path; } catch (e) { /* используем системный ffprobe */ }
 let FFMPEG_PATH = null;
@@ -2287,6 +2288,10 @@ app.post('/api/logout', (req, res) => {
   clearPersistentAuthCookie(req, res);
   res.status(204).end();
 });
+
+// Direct TikTok publishing (admin only while the TikTok app is in review); needs TIKTOK_CLIENT_KEY/SECRET.
+// Registered first so its routes win for the admin; other users fall through to the Zernio routes below.
+registerTikTokDirect(app, { redis, requireUserToken, secret: BOT_TOKEN, siteUrl: SITE_URL, captionSuffix: TIKTOK_CAPTION_SUFFIX, adminId: ADMIN_ID });
 
 app.post('/api/tiktok/key', requireUserToken, async (req, res) => {
   const apiKey = typeof req.body?.apiKey === 'string' ? req.body.apiKey.trim() : '';
