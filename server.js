@@ -1715,10 +1715,29 @@ function isAdmin(ctx) {
   return Boolean(ADMIN_ID && ctx.from && String(ctx.from.id) === ADMIN_ID);
 }
 
+bot.command('disk', async (ctx) => {
+  if (!isAdmin(ctx)) return;
+  try {
+    const stat = await fs.promises.statfs(os.tmpdir());
+    const mb = (blocks) => Math.round(blocks * stat.bsize / 1048576);
+    const total = mb(stat.blocks);
+    const free = mb(stat.bavail);
+    const mem = process.memoryUsage();
+    await ctx.reply(
+      `💾 Диск (${os.tmpdir()}): свободно ${free} МБ из ${total} МБ\n` +
+      `🧠 Память процесса: ${Math.round(mem.rss / 1048576)} МБ, свободно в системе ${Math.round(os.freemem() / 1048576)} МБ\n` +
+      'На одно видео нужно примерно 3× его размера на диске.'
+    );
+  } catch (error) {
+    await ctx.reply(`Не удалось узнать место: ${error.message}`);
+  }
+});
+
 bot.command('admin', async (ctx) => {
   if (!isAdmin(ctx)) return;
   await ctx.reply(
     'Команды администратора:\n' +
+    '/disk — свободное место и память сервера\n' +
     '/addvideo <ID> <количество> — добавить купленные видео\n' +
     '/removevideo <ID> <количество> [причина] — снять купленные видео\n' +
     '/block <ID> [причина] — заблокировать бота и сайт\n' +
