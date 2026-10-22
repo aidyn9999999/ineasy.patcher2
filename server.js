@@ -1519,6 +1519,7 @@ registerVideoPatcher(bot, {
   botToken: BOT_TOKEN,
   apiRoot: BOT_API_ROOT,
   newsChannelId: NEWS_CHANNEL_ID,
+  websiteUrl: SITE_URL,
   getLang,
   getFreeBalance,
   getPurchasedBalance,

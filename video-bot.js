@@ -25,6 +25,8 @@ const CLOUD_DOWNLOAD_LIMIT = 20 * MB;
 const CLOUD_UPLOAD_LIMIT = 50 * MB;
 // ffmpeg writes a remux next to the output and ADJN needs RAM for the whole file; keep headroom.
 const DISK_FACTOR = 3;
+// Queue length from which the "use the website" hint is added to the waiting message.
+const SITE_HINT_AFTER = Math.max(1, Number(process.env.BOT_VIDEO_SITE_HINT_AFTER) || 3);
 const VIDEO_EXT = /\.(mp4|mov|m4v|mkv|webm|avi|3gp|mts|m2ts)$/i;
 
 const TEXTS = {
@@ -37,6 +39,7 @@ const TEXTS = {
     busyUser: '⏳ Ваше предыдущее видео ещё обрабатывается. Дождитесь результата.',
     queueFull: '⏳ Сейчас очень много видео. Попробуйте через пару минут.',
     noDisk: '⏳ На сервере сейчас мало места. Попробуйте через минуту.',
+    siteHint: (url) => `\n\n🌐 Не хотите ждать? Обработайте видео на сайте прямо в браузере: ${url}`,
     queued: (n) => `⏳ Видео в очереди, перед вами: ${n}`,
     downloading: '⬇️ Скачиваю видео…',
     processing: '⚙️ Обрабатываю видео (V2)…',
@@ -57,6 +60,7 @@ const TEXTS = {
     busyUser: '⏳ Your previous video is still being processed. Please wait for the result.',
     queueFull: '⏳ There are too many videos right now. Please try again in a couple of minutes.',
     noDisk: '⏳ The server is low on space right now. Please try again in a minute.',
+    siteHint: (url) => `\n\n🌐 Don't want to wait? Process the video on the website right in your browser: ${url}`,
     queued: (n) => `⏳ Your video is queued, ahead of you: ${n}`,
     downloading: '⬇️ Downloading the video…',
     processing: '⚙️ Processing the video (V2)…',
@@ -77,6 +81,7 @@ const TEXTS = {
     busyUser: '⏳ Алдыңғы бейнеңіз әлі өңделіп жатыр. Нәтижесін күтіңіз.',
     queueFull: '⏳ Қазір бейне өте көп. Бірнеше минуттан соң қайталап көріңіз.',
     noDisk: '⏳ Серверде орын аз. Бір минуттан соң қайталап көріңіз.',
+    siteHint: (url) => `\n\n🌐 Күткіңіз келмей ме? Бейнені сайтта браузердің өзінде өңдеңіз: ${url}`,
     queued: (n) => `⏳ Бейне кезекте, алдыңызда: ${n}`,
     downloading: '⬇️ Бейнені жүктеп жатырмын…',
     processing: '⚙️ Бейнені өңдеп жатырмын (V2)…',
@@ -133,7 +138,7 @@ async function moveFile(from, to) {
 
 function registerVideoPatcher(bot, deps) {
   const {
-    ffmpegPath, ffprobePath, botToken, apiRoot, newsChannelId,
+    ffmpegPath, ffprobePath, botToken, apiRoot, newsChannelId, websiteUrl,
     getLang, getFreeBalance, getPurchasedBalance, consumeProcessedVideo, replyNoBalance
   } = deps;
   const localApi = Boolean(apiRoot);
@@ -264,7 +269,7 @@ function registerVideoPatcher(bot, deps) {
         });
       // Tell the people still waiting where they are now.
       queue.forEach((waiting, index) => {
-        waiting.ctx.telegram.editMessageText(waiting.ctx.chat.id, waiting.statusMessageId, undefined, TEXTS[waiting.lang].queued(running + index)).catch(() => {});
+        waiting.ctx.telegram.editMessageText(waiting.ctx.chat.id, waiting.statusMessageId, undefined, TEXTS[waiting.lang].queued(running + index) + (running + index >= SITE_HINT_AFTER ? TEXTS[waiting.lang].siteHint(websiteUrl) : '')).catch(() => {});
       });
     }
   }
@@ -282,7 +287,7 @@ function registerVideoPatcher(bot, deps) {
     if (activeUsers.has(userId)) return ctx.reply(t.busyUser);
     if (video.size > MAX_VIDEO_BYTES) return ctx.reply(t.tooBig(Math.round(MAX_VIDEO_BYTES / MB)));
     if (video.size > downloadLimit) return ctx.reply(t.needLocalApi);
-    if (queue.length >= MAX_QUEUE) return ctx.reply(t.queueFull);
+    if (queue.length >= MAX_QUEUE) return ctx.reply(t.queueFull + t.siteHint(websiteUrl));
 
     // Same entry conditions as the website: channel subscription and a positive balance.
     try {
@@ -296,12 +301,12 @@ function registerVideoPatcher(bot, deps) {
     }
     const [free, purchased] = await Promise.all([getFreeBalance(userId), getPurchasedBalance(userId)]);
     if (free + purchased <= 0) return replyNoBalance(ctx, lang);
-    if (!await hasDiskFor(video.size)) return ctx.reply(t.noDisk);
+    if (!await hasDiskFor(video.size)) return ctx.reply(t.noDisk + t.siteHint(websiteUrl));
 
     activeUsers.add(userId);
     try {
       const ahead = queue.length + running;
-      const status = await ctx.reply(ahead >= CONCURRENCY ? t.queued(ahead) : t.downloading);
+      const status = await ctx.reply(ahead >= CONCURRENCY ? t.queued(ahead) + (ahead >= SITE_HINT_AFTER ? t.siteHint(websiteUrl) : '') : t.downloading);
       queue.push({ ctx, video, lang, userId, statusMessageId: status.message_id });
     } catch (error) {
       activeUsers.delete(userId);
