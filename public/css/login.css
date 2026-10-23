@@ -180,3 +180,7 @@
   .card { padding: 26px 20px; border-radius: 22px; }
   .lede { margin-bottom: 26px; }
 }
+
+.login-legal { margin-top: 20px; text-align: center; }
+.login-legal a { color: var(--text-2); text-decoration: underline; text-underline-offset: 2px; }
+.login-legal a:hover { color: var(--text-1, var(--text-2)); }

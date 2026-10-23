@@ -24,6 +24,7 @@ const loginTranslations = {
     subscribed: 'Я подписался',
     loginError: 'Не получилось подтвердить вход. Проверьте соединение и попробуйте ещё раз.',
     retry: 'Попробовать снова',
+    legal: 'Входя, вы принимаете', terms: 'Условия использования', and: 'и', privacy: 'Политику конфиденциальности',
   },
   en: {
     title: 'Patch your video now.',
@@ -40,6 +41,7 @@ const loginTranslations = {
     subscribed: 'I subscribed',
     loginError: 'Could not confirm sign-in. Check your connection and try again.',
     retry: 'Try again',
+    legal: 'By signing in, you agree to the', terms: 'Terms of Service', and: 'and', privacy: 'Privacy Policy',
   },
   kk: {
     title: 'Бейнеңізді қазір патчтаңыз.',
@@ -56,6 +58,7 @@ const loginTranslations = {
     subscribed: 'Жазылдым',
     loginError: 'Кіру расталмады. Байланысты тексеріп, қайта көріңіз.',
     retry: 'Қайталап көру',
+    legal: 'Кіру арқылы сіз', terms: 'Пайдалану шарттарымен', and: 'және', privacy: 'Құпиялылық саясатымен келісесіз',
   },
 };
 
@@ -80,6 +83,10 @@ function applyLoginLanguage(language) {
   checkSubscriptionBtn.textContent = text.subscribed;
   document.getElementById('loginErrorText').textContent = text.loginError;
   retryBtn.textContent = text.retry;
+  document.getElementById('loginLegalText').textContent = text.legal;
+  document.getElementById('loginTermsLink').textContent = text.terms;
+  document.getElementById('loginLegalAnd').textContent = text.and;
+  document.getElementById('loginPrivacyLink').textContent = text.privacy;
   document.querySelectorAll('[data-login-lang]').forEach((button) => {
     button.classList.toggle('active', button.dataset.loginLang === selected);
   });
