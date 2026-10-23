@@ -14,6 +14,7 @@
       done: 'Готово', after: 'Результат', before: 'Было', download: 'Скачать', again: 'Улучшить другое видео',
       tooLong: (s) => `Видео слишком длинное. Максимум для него: ${s} сек.`,
       lockedHint: 'Улучшение доступно по подписке INEASY Pro.',
+      lockTitle: 'Раздел закрыт', lockText: 'Улучшение доступно только по подписке INEASY Pro.',
       err: {
         pro_required: 'Нужна подписка INEASY Pro.', video_too_large: 'Файл слишком большой (максимум 300 МБ).',
         enhance_unreadable: 'Не удалось открыть видео. Попробуйте MP4 или MOV.', enhance_duration_unknown: 'Не удалось прочитать видео. Загрузите исходный файл.',
@@ -37,6 +38,7 @@
       done: 'Done', after: 'Result', before: 'Before', download: 'Download', again: 'Enhance another video',
       tooLong: (s) => `This video is too long. The maximum for it is ${s} s.`,
       lockedHint: 'Enhancing needs an INEASY Pro subscription.',
+      lockTitle: 'Section locked', lockText: 'Enhancing is available with an INEASY Pro subscription only.',
       err: {
         pro_required: 'INEASY Pro subscription required.', video_too_large: 'The file is too large (max 300 MB).',
         enhance_unreadable: 'Could not open the video. Try MP4 or MOV.', enhance_duration_unknown: 'Could not read the video. Upload the original file.',
@@ -60,6 +62,7 @@
       done: 'Дайын', after: 'Нәтиже', before: 'Бұрын', download: 'Жүктеп алу', again: 'Басқа бейнені жақсарту',
       tooLong: (s) => `Бейне тым ұзақ. Ол үшін ең көбі: ${s} сек.`,
       lockedHint: 'Жақсарту INEASY Pro жазылымымен қолжетімді.',
+      lockTitle: 'Бөлім жабық', lockText: 'Жақсарту тек INEASY Pro жазылымымен қолжетімді.',
       err: {
         pro_required: 'INEASY Pro жазылымы қажет.', video_too_large: 'Файл тым үлкен (ең көбі 300 МБ).',
         enhance_unreadable: 'Бейнені ашу мүмкін болмады. MP4 немесе MOV қолданып көріңіз.', enhance_duration_unknown: 'Бейнені оқу мүмкін болмады. Түпнұсқа файлды жүктеңіз.',
@@ -96,7 +99,9 @@
   function render() {
     const s = t();
     text('navEnhance', s.nav); text('enhKicker', s.kicker); text('enhTitle', s.title); text('enhLead', s.lead);
-    text('enhBuyBtn', s.buy); text('enhPresetsTitle', s.presets); text('enhCancel', s.cancel);
+    text('enhBuyBtn', s.buy); text('enhLockTitle', s.lockTitle); text('enhLockText', s.lockText); text('enhLockBuy', s.buy);
+    $('enhStageBox').classList.toggle('locked', !active());
+    hide('enhLock', active()); text('enhPresetsTitle', s.presets); text('enhCancel', s.cancel);
     text('enhDone', s.done); text('enhTabAfter', s.after); text('enhTabBefore', s.before); text('enhDownload', s.download); text('enhAgain', s.again);
     document.querySelectorAll('[data-k]').forEach((n) => { n.textContent = s[n.dataset.k]; });
     $('enhAccess').classList.toggle('on', active());
@@ -265,6 +270,7 @@
     $('enhCancel').addEventListener('click', cancel);
     $('enhAgain').addEventListener('click', reset);
     $('enhBuyBtn').addEventListener('click', () => hide('enhBuyOverlay', false));
+    $('enhLockBuy').addEventListener('click', () => hide('enhBuyOverlay', false));
     $('enhBuyClose').addEventListener('click', closeBuy);
     $('enhBuyOverlay').addEventListener('click', (e) => { if (e.target === $('enhBuyOverlay')) closeBuy(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBuy(); });
