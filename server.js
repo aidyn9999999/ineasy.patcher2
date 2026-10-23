@@ -30,8 +30,8 @@ const ASTANA_TIME_ZONE = 'Asia/Almaty';
 const CARD_INFO = '4400 4300 2627 8157 или +7 771 327 79 49 (только Kaspi)\nИмя: Алмаз Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasy.site/app.html';
 const WEBSITE_URL = new URL('/', SITE_URL).toString();
-// Server-side video processing (Telegram bot videos and the site's V2 FFmpeg endpoint) is off until
-// a powerful server is connected. Set SERVER_PROCESSING=1 to turn it back on.
+// Telegram bot video processing is off until a powerful server is connected.
+// Set SERVER_PROCESSING=1 to turn it back on. The site's V1/V2 modes are not affected.
 const SERVER_PROCESSING_ENABLED = process.env.SERVER_PROCESSING === '1';
 
 const PACKAGES = [
@@ -2082,7 +2082,6 @@ async function requireUserToken(req, res, next) {
 // uploads at once cannot exhaust server memory and stall every job.
 const V2_COPY_MAX_BYTES = 512 * 1024 * 1024;
 app.post('/api/v2/ffmpeg-copy', requireUserToken, async (req, res) => {
-  if (!SERVER_PROCESSING_ENABLED) return res.status(503).json({ error: 'server_processing_disabled' });
   if (!FFMPEG_PATH) return res.status(503).json({ error: 'ffmpeg_engine_unavailable' });
   const declaredLength = Number(req.headers['content-length']);
   if (Number.isFinite(declaredLength) && declaredLength > V2_COPY_MAX_BYTES) return res.status(413).json({ error: 'video_too_large' });
