@@ -30,7 +30,7 @@
 <link rel="stylesheet" href="css/patcher.css?v=20261020-ui1">
 <link rel="stylesheet" href="css/pages.css?v=20261020-ui1">
 <link rel="stylesheet" href="css/modals.css?v=20261022-4k-guide">
-<link rel="stylesheet" href="css/pro.css?v=20261023-pro">
+<link rel="stylesheet" href="css/enhance.css?v=20261024-enhance">
 <script>
 (function () {
   var ua = navigator.userAgent || '';
@@ -265,71 +265,97 @@
       </div>
     </div>
 
-    <!-- INEASY PRO: subscription patcher -->
-    <section class="pro-card" id="proCard" aria-labelledby="proCardTitle">
-      <div class="pro-card-head">
-        <span class="pro-badge">PRO</span>
-        <h2 id="proCardTitle">INEASY Pro</h2>
-        <p id="proCardSub">Улучшение видео для TikTok</p>
-      </div>
-      <div class="pro-locked" id="proLocked">
-        <span class="pro-lock-art" aria-hidden="true"><i class="ic i-lock"></i></span>
-        <strong id="proLockedTitle">У вас нет прав</strong>
-        <p id="proLockedText">Этот патчер доступен только по подписке INEASY Pro.</p>
-        <button class="btn btn-primary" id="proBuyBtn" type="button">Купить подписку</button>
-      </div>
-      <div class="pro-work hidden" id="proWork">
-        <div class="pro-status"><b id="proLeft"></b><span id="proUntil"></span></div>
-        <label class="pro-drop" for="proFile">
-          <input type="file" id="proFile" accept="video/*,.mp4,.mov,.m4v">
-          <i class="ic i-uploadCloud" aria-hidden="true"></i>
-          <strong id="proDropTitle">Выберите видео</strong>
-          <small id="proDropHint">MP4 или MOV</small>
-        </label>
-        <button class="btn btn-primary btn-lg btn-block" id="proRunBtn" type="button" disabled>Улучшить видео</button>
-        <div class="pro-progress hidden" id="proProgress">
-          <span class="pro-progress-text" id="proProgressText" aria-live="polite"></span>
-          <div class="pro-progress-bar" id="proBar"><i></i></div>
-        </div>
-        <p class="pro-error hidden" id="proError" role="alert"></p>
-        <div class="pro-result hidden" id="proResult">
-          <strong id="proDone">Готово! Видео улучшено</strong>
-          <video id="proPreview" controls playsinline preload="metadata"></video>
-          <div class="pro-result-actions">
-            <a class="btn btn-primary bi i-download" id="proDownload" href="#" download>Скачать</a>
-            <button class="btn btn-ghost" id="proAnother" type="button">Улучшить другое видео</button>
-          </div>
-        </div>
-      </div>
-    </section>
     </section>
 
-    <!-- INEASY PRO: subscription page -->
-    <section class="view-section hidden" id="proSection">
-      <div class="pro-page">
-        <header class="pro-hero">
-          <span class="pro-badge">INEASY PRO</span>
-          <h1><span id="proPageA">Улучшение видео для </span><span id="proPageB">TikTok</span></h1>
-          <p id="proLead">Загрузите ролик и получите чёткое, яркое видео, готовое к публикации.</p>
-          <ul class="pro-perks">
-            <li><i class="ic i-gift" aria-hidden="true"></i><span id="proPerk1">5 видео бесплатно каждый день</span></li>
-            <li><i class="ic i-calendar" aria-hidden="true"></i><span id="proPerk2">30 дней подписки</span></li>
-            <li><i class="ic i-message" aria-hidden="true"></i><span id="proPerk3">Поддержка всегда онлайн</span></li>
-          </ul>
+    <!-- QUALITY ENHANCER SECTION (separate tool, not the Patcher) -->
+    <section class="view-section hidden" id="enhanceSection">
+      <div class="enh">
+        <header class="enh-head">
+          <div class="enh-head-copy">
+            <p class="home-eyebrow" id="enhKicker">УЛУЧШАТЕЛЬ КАЧЕСТВА</p>
+            <h1 id="enhTitle">Улучшите качество своего видео</h1>
+            <p id="enhLead"></p>
+          </div>
+          <div class="enh-access" id="enhAccess">
+            <span class="pro-badge">PRO</span>
+            <span id="enhAccessText"></span>
+            <button class="btn btn-primary btn-sm" id="enhBuyBtn" type="button">Купить</button>
+          </div>
         </header>
-        <div class="pro-features">
-          <article class="pro-feature"><i class="ic i-eye" aria-hidden="true"></i><h3 id="proF1">Чёткость</h3><p id="proF1t"></p></article>
-          <article class="pro-feature"><i class="ic i-spark" aria-hidden="true"></i><h3 id="proF2">Насыщенность</h3><p id="proF2t"></p></article>
-          <article class="pro-feature"><i class="ic i-send" aria-hidden="true"></i><h3 id="proF3">Готово для TikTok</h3><p id="proF3t"></p></article>
+
+        <div class="enh-grid">
+          <div class="enh-main">
+            <label class="enh-drop" id="enhDrop" for="enhFile">
+              <input type="file" id="enhFile" accept="video/*,.mp4,.mov,.m4v">
+              <i class="ic i-uploadCloud" aria-hidden="true"></i>
+              <strong id="enhDropTitle">Выберите видео</strong>
+              <small id="enhDropHint">MP4 или MOV</small>
+            </label>
+            <div class="enh-upload hidden" id="enhUpload">
+              <span id="enhUploadText" aria-live="polite"></span>
+              <div class="enh-bar" id="enhUploadBar"><i></i></div>
+            </div>
+            <dl class="enh-info hidden" id="enhInfo"></dl>
+            <p class="enh-warn hidden" id="enhWarn" role="status"></p>
+            <div class="enh-original hidden" id="enhOriginalWrap">
+              <video id="enhOriginal" controls playsinline preload="metadata"></video>
+            </div>
+          </div>
+
+          <aside class="enh-side">
+            <h2 id="enhPresetsTitle">Пресет</h2>
+            <div class="enh-presets" id="enhPresets" role="radiogroup" aria-label="Пресет">
+              <button type="button" class="enh-preset active" data-preset="natural" role="radio" aria-checked="true"><strong>Natural</strong><small data-k="pNatural"></small></button>
+              <button type="button" class="enh-preset" data-preset="sharp" role="radio" aria-checked="false"><strong>Sharp</strong><small data-k="pSharp"></small></button>
+              <button type="button" class="enh-preset" data-preset="vivid" role="radio" aria-checked="false"><strong>Vivid</strong><small data-k="pVivid"></small></button>
+              <button type="button" class="enh-preset" data-preset="restore" role="radio" aria-checked="false" aria-disabled="true"><strong>AI Restore</strong><small data-k="pRestore"></small></button>
+              <button type="button" class="enh-preset" data-preset="hdr" role="radio" aria-checked="false"><strong>HDR Preserve</strong><small data-k="pHdr"></small></button>
+            </div>
+            <h2 id="enhSettingsTitle">Настройки</h2>
+            <label class="enh-slider"><span><span id="enhStrengthLabel">Сила улучшения</span><output id="enhStrengthOut">25%</output></span><input type="range" id="enhStrength" min="0" max="50" step="1" value="25"></label>
+            <label class="enh-slider"><span><span id="enhSatLabel">Насыщенность</span><output id="enhSatOut">+5%</output></span><input type="range" id="enhSat" min="0" max="50" step="1" value="5"></label>
+            <p class="enh-note" id="enhNote"></p>
+            <button class="btn btn-primary btn-lg btn-block" id="enhRun" type="button" disabled>Улучшить качество</button>
+          </aside>
         </div>
-        <p class="pro-note" id="proNote"></p>
-        <div class="pro-price-card">
-          <div class="pro-price"><span id="proPrice">5 990</span> ₸ <small id="proUnit">/ 30 дней</small></div>
-          <p class="pro-active hidden" id="proActive"></p>
-          <button class="btn btn-primary btn-lg" id="proPageBuy" type="button">Купить подписку</button>
-        </div>
+
+        <section class="enh-progress hidden" id="enhProgress" aria-live="polite">
+          <div class="enh-progress-top"><strong id="enhStage"></strong><span id="enhPercent"></span></div>
+          <div class="enh-bar" id="enhBar"><i></i></div>
+          <div class="enh-progress-bottom"><span id="enhEta"></span><button class="btn btn-ghost btn-sm" id="enhCancel" type="button">Отменить</button></div>
+        </section>
+
+        <p class="enh-error hidden" id="enhError" role="alert"></p>
+
+        <section class="enh-result hidden" id="enhResult">
+          <div class="enh-result-head"><strong id="enhDone">Готово</strong>
+            <div class="enh-tabs" role="tablist"><button type="button" class="active" id="enhTabAfter" role="tab">Результат</button><button type="button" id="enhTabBefore" role="tab">Оригинал</button></div>
+          </div>
+          <video id="enhResultVideo" controls playsinline preload="metadata"></video>
+          <table class="enh-compare" id="enhCompare"></table>
+          <p class="enh-times" id="enhTimes"></p>
+          <p class="enh-note" id="enhAfterNote"></p>
+          <div class="enh-result-actions">
+            <a class="btn btn-primary bi i-download" id="enhDownload" href="#" download>Скачать</a>
+            <button class="btn btn-ghost" id="enhAgain" type="button">Улучшить другое видео</button>
+          </div>
+        </section>
       </div>
     </section>
+
+    <!-- Buy panel: opens over the page, the purchase itself continues in the Telegram bot -->
+    <div class="enh-sheet-overlay hidden" id="enhBuyOverlay">
+      <section class="enh-sheet" role="dialog" aria-modal="true" aria-labelledby="enhBuyTitle">
+        <button class="enh-sheet-close" id="enhBuyClose" type="button" aria-label="Закрыть">×</button>
+        <span class="pro-badge">PRO</span>
+        <h2 id="enhBuyTitle">INEASY Pro</h2>
+        <p id="enhBuyLead"></p>
+        <ul class="enh-perks" id="enhPerks"></ul>
+        <div class="enh-price"><span id="enhPrice">5 990</span> ₸ <small id="enhPriceUnit">/ 30 дней</small></div>
+        <button class="btn btn-primary btn-lg btn-block" id="enhBuyGo" type="button">Купить в Telegram</button>
+        <p class="enh-terms" id="enhTerms"></p>
+      </section>
+    </div>
 
     <!-- ANALYZER SECTION -->
     <section class="view-section hidden" id="checkerSection">
@@ -591,6 +617,10 @@
       <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m22 8-6 4 6 4V8Z"/></svg></span>
       <span id="navPatcher">PATCHER</span>
     </button>
+    <button class="nav-tab" data-view="enhanceSection" type="button">
+      <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"></svg></span>
+      <span id="navEnhance">УЛУЧШЕНИЕ</span>
+    </button>
     <button class="nav-tab" data-view="checkerSection" type="button">
       <span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M9.96966 7.03031C9.67677 6.73742 9.67677 6.26254 9.96966 5.96965L13.0196 2.91966C15.2455 0.693772 18.8544 0.693771 21.0803 2.91966C23.3062 5.14555 23.3062 8.75443 21.0803 10.9803L18.0303 14.0303C17.7374 14.3232 17.2626 14.3232 16.9697 14.0303C16.6768 13.7374 16.6768 13.2625 16.9697 12.9696L20.0196 9.91966C21.6598 8.27956 21.6598 5.62042 20.0196 3.98032C18.3795 2.34022 15.7204 2.34022 14.0803 3.98032L11.0303 7.03031C10.7374 7.3232 10.2626 7.3232 9.96966 7.03031Z" fill="currentColor"/><path d="M15.5303 8.46965C15.8232 8.76254 15.8232 9.23742 15.5303 9.53031L9.5303 15.5303C9.23741 15.8232 8.76253 15.8232 8.46964 15.5303C8.17675 15.2374 8.17675 14.7625 8.46964 14.4696L14.4696 8.46965C14.7625 8.17676 15.2374 8.17676 15.5303 8.46965Z" fill="currentColor"/><path d="M14.0303 18.0303C14.3232 17.7374 14.3232 17.2625 14.0303 16.9696C13.7374 16.6768 13.2625 16.6768 12.9696 16.9696L9.91966 20.0196C8.27956 21.6597 5.62043 21.6597 3.98032 20.0196C2.34022 18.3795 2.34022 15.7204 3.98032 14.0803L7.03031 11.0303C7.3232 10.7374 7.3232 10.2625 7.03031 9.96965C6.73742 9.67676 6.26254 9.67676 5.96965 9.96965L2.91966 13.0196C0.693772 15.2455 0.693771 18.8544 2.91966 21.0803C5.14555 23.3062 8.75443 23.3062 10.9803 21.0803L14.0303 18.0303Z" fill="currentColor"/></svg></span>
       <span id="navAnalyzer">VIDEO ANALYZER</span>
@@ -625,7 +655,7 @@
 <script src="app.js?v=20261022-4k-guide"></script>
 <script src="local-video-archive.js?v=20261019-archive-layout-v1"></script>
 <script src="ui.js?v=20261022-4k-guide"></script>
-<script src="pro.js?v=20261023-pro"></script>
+<script src="enhance.js?v=20261024-enhance"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';

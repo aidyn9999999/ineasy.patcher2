@@ -10,7 +10,7 @@ const https = require('https');
 const os = require('os');
 const crypto = require('crypto');
 const { ffmpegCopyV2 } = require('./v2-engine');
-const { probe: probeProVideo, allowedSeconds: proAllowedSeconds, enhanceVideo: enhanceProVideo } = require('./pro-engine');
+const { registerEnhanceRoutes } = require('./enhance-api');
 const { registerVideoPatcher } = require('./video-bot');
 const { registerTikTokDirect } = require('./tiktok-direct');
 let FFPROBE_PATH = 'ffprobe';
@@ -30,8 +30,6 @@ const FREE_BALANCE_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const ASTANA_TIME_ZONE = 'Asia/Almaty';
 const PRO_PRICE = Number(process.env.PRO_PRICE_KZT) || 5990;
 const PRO_DAYS = 30;
-const PRO_DAILY = 5;
-const PRO_MAX_BYTES = 300 * 1024 * 1024;
 const CARD_INFO = '4400 4300 2627 8157 или +7 771 327 79 49 (только Kaspi)\nИмя: Алмаз Н.';
 const SITE_URL = process.env.SITE_URL || 'https://ineasy.site/app.html';
 const WEBSITE_URL = new URL('/', SITE_URL).toString();
@@ -556,27 +554,15 @@ async function consumeOneVideo(telegramId) {
 }
 
 // ============ INEASY PRO (подписка) ============
-// pro:<id> = subscription end (ms); proBalance:<id> = enhancements left today, refilled to PRO_DAILY at the shared 07:00 Astana renewal (no carry-over).
-const PRO_BALANCE_LUA = "local bal = redis.call('GET', KEYS[1]); local at = tonumber(redis.call('GET', KEYS[2]) or '0'); local now = tonumber(ARGV[1]); if (not bal) or now >= at then bal = ARGV[2]; redis.call('SET', KEYS[1], bal); redis.call('SET', KEYS[2], ARGV[3]); end; bal = tonumber(bal); if ARGV[4] == '1' then if bal <= 0 then return -1; end; bal = bal - 1; redis.call('SET', KEYS[1], tostring(bal)); end; return bal";
-
+// pro:<id> = end of the INEASY Pro subscription (ms). Pro unlocks the quality enhancer; it has no daily limit.
 async function getProUntil(telegramId) {
   return Number(await redis.get(`pro:${telegramId}`)) || 0;
-}
-
-// take=true spends one enhancement and returns -1 when none is left.
-async function proBalance(telegramId, take = false) {
-  const now = Date.now();
-  return Number(await redis.eval(
-    PRO_BALANCE_LUA,
-    [`proBalance:${telegramId}`, `proNextAt:${telegramId}`],
-    [String(now), String(PRO_DAILY), String(nextAstanaDailyRenewalAt(now)), take ? '1' : '0']
-  ));
 }
 
 // New end date of a subscription bought now: extends an active one, otherwise starts today.
 async function proUntilAfterPurchase(telegramId, days) {
   const current = await getProUntil(telegramId);
-  return { wasActive: current > Date.now(), until: Math.max(current, Date.now()) + days * 24 * 60 * 60 * 1000 };
+  return { until: Math.max(current, Date.now()) + days * 24 * 60 * 60 * 1000 };
 }
 
 const money = (value, lang) => Number(value).toLocaleString(lang === 'en' ? 'en-US' : 'ru-RU');
@@ -585,37 +571,37 @@ const PRO_TEXTS = {
     button: (price) => `⭐ INEASY Pro · ${PRO_DAYS} дн. · ${money(price, 'ru')} ₸`,
     details: (price, days) =>
       `⭐ <b>INEASY Pro</b>\n\nВы выбрали подписку на <b>${days} дней</b>.\n\n` +
-      `✨ Улучшение видео: чёткость, насыщенность, готово для TikTok\n🎬 ${PRO_DAILY} видео каждый день\n\n` +
+      `✨ Улучшатель качества видео: чёткость, цвет\n🎬 Без дневного лимита\n\n` +
       `💰 Стоимость: <b>${money(price, 'ru')} ₸</b>\n\n💳 Для оплаты используйте реквизиты ниже.\n\n${CARD_INFO}\n\n` +
       `После оплаты отправьте <b>фото или PDF чека</b> 📩\n\n` +
       `🔎 Чек проверит реальный человек. Пожалуйста, ожидайте 1–2 часа. После подтверждения подписка включится автоматически.\n\n` +
       `⚠️ Отправляйте только настоящий чек.\n\n🚫 <b>Фейковые или отредактированные чеки не принимаются.</b>`,
     receiptReceived: '✅ Чек отправлен на проверку реальным человеком. Пожалуйста, ожидайте 1–2 часа. После подтверждения подписка включится автоматически.',
-    approved: (until) => `✅ Оплата подтверждена. INEASY Pro активна до ${until}.\n\n🎬 Каждый день — ${PRO_DAILY} улучшений видео. Откройте сайт → Patcher → INEASY Pro.`,
+    approved: (until) => `✅ Оплата подтверждена. INEASY Pro активна до ${until}.\n\n🎬 Улучшения без дневного лимита. Откройте сайт → «Улучшатель».`,
   },
   en: {
     button: (price) => `⭐ INEASY Pro · ${PRO_DAYS} days · ${money(price, 'en')} ₸`,
     details: (price, days) =>
       `⭐ <b>INEASY Pro</b>\n\nYou chose a <b>${days}-day</b> subscription.\n\n` +
-      `✨ Video enhancement: sharper, richer colour, ready for TikTok\n🎬 ${PRO_DAILY} videos every day\n\n` +
+      `✨ Video quality enhancer: sharper, richer colour\n🎬 No daily limit\n\n` +
       `💰 Cost: <b>${money(price, 'en')} ₸</b>\n\n💳 Use the payment details below.\n\n${CARD_INFO}\n\n` +
       `After payment, send a <b>photo or PDF of the receipt</b> 📩\n\n` +
       `🔎 A real person will review the receipt. Please allow 1–2 hours. Your subscription turns on automatically after approval.\n\n` +
       `⚠️ Send only a genuine receipt.\n\n🚫 <b>Fake or edited receipts are not accepted.</b>`,
     receiptReceived: '✅ Your receipt is being reviewed by a real person. Please allow 1–2 hours. Your subscription turns on automatically after approval.',
-    approved: (until) => `✅ Payment confirmed. INEASY Pro is active until ${until}.\n\n🎬 ${PRO_DAILY} video enhancements every day. Open the site → Patcher → INEASY Pro.`,
+    approved: (until) => `✅ Payment confirmed. INEASY Pro is active until ${until}.\n\n🎬 Enhancements with no daily limit. Open the site → Enhancer.`,
   },
   kk: {
     button: (price) => `⭐ INEASY Pro · ${PRO_DAYS} күн · ${money(price, 'ru')} ₸`,
     details: (price, days) =>
       `⭐ <b>INEASY Pro</b>\n\nСіз <b>${days} күндік</b> жазылымды таңдадыңыз.\n\n` +
-      `✨ Бейнені жақсарту: анықтық, қанықтық, TikTok-қа дайын\n🎬 Күн сайын ${PRO_DAILY} бейне\n\n` +
+      `✨ Бейне сапасын жақсартқыш: анықтық, түс\n🎬 Күнделікті лимитсіз\n\n` +
       `💰 Бағасы: <b>${money(price, 'ru')} ₸</b>\n\n💳 Төлеу үшін төмендегі деректемелерді қолданыңыз.\n\n${CARD_INFO}\n\n` +
       `Төлегеннен кейін <b>чектің фотосын немесе PDF</b> жіберіңіз 📩\n\n` +
       `🔎 Чекті нақты адам тексереді. 1–2 сағат күте тұрыңыз. Расталғаннан кейін жазылым автоматты түрде қосылады.\n\n` +
       `⚠️ Тек нақты чекті жіберіңіз.\n\n🚫 <b>Жалған немесе өңделген чектер қабылданбайды.</b>`,
     receiptReceived: '✅ Чекті нақты адам тексеріп жатыр. 1–2 сағат күте тұрыңыз. Расталғаннан кейін жазылым автоматты түрде қосылады.',
-    approved: (until) => `✅ Төлем расталды. INEASY Pro ${until} дейін белсенді.\n\n🎬 Күн сайын ${PRO_DAILY} бейне жақсарту. Сайтты ашыңыз → Patcher → INEASY Pro.`,
+    approved: (until) => `✅ Төлем расталды. INEASY Pro ${until} дейін белсенді.\n\n🎬 Күнделікті лимитсіз жақсарту. Сайтты ашыңыз → «Жақсартқыш».`,
   },
 };
 
@@ -1573,6 +1559,29 @@ bot.action(/^pkg_(\d+)_(\d+)$/, async (ctx) => {
 });
 
 bot.command('pro', async (ctx) => createProOrder(ctx, await getLang(ctx.from.id)));
+
+// Admin only: /addpro <telegram id> [days] gives (or extends) the INEASY Pro subscription without a receipt.
+bot.command('addpro', async (ctx) => {
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
+  const [, targetId, daysText] = String(ctx.message.text || '').trim().split(/\s+/);
+  const days = daysText === undefined ? PRO_DAYS : Number(daysText);
+  if (!/^\d{5,15}$/.test(targetId || '') || !Number.isInteger(days) || days < 1 || days > 365) {
+    await ctx.reply(`Использование: /addpro <Telegram ID> [дней]\nПример: /addpro 123456789 ${PRO_DAYS}\nДней по умолчанию: ${PRO_DAYS}, максимум 365.`);
+    return;
+  }
+  const grant = await proUntilAfterPurchase(targetId, days);
+  await redis.set(`pro:${targetId}`, grant.until);
+  await recordUserActivity(targetId, 'INEASY Pro выдана администратором', { details: `${days} дн.` });
+  let notified = true;
+  try {
+    const lang = await getLang(targetId);
+    await bot.telegram.sendMessage(targetId, PRO_TEXTS[lang].approved(formatAstanaDateTime(grant.until, lang)), mainKeyboard(lang));
+  } catch (error) {
+    notified = false;
+  }
+  await ctx.reply(`✅ INEASY Pro для ${targetId}: +${days} дн., активна до ${formatAstanaDateTime(grant.until, 'ru')}.${notified ? '' : '\n⚠️ Пользователю не удалось отправить уведомление (он не запускал бота).'}`);
+});
+
 bot.action('pro_buy', async (ctx) => {
   await ctx.answerCbQuery();
   await createProOrder(ctx, await getLang(ctx.from.id));
@@ -1764,11 +1773,6 @@ bot.action(/^purchase_(approve|reject)_([\w-]+)$/, async (ctx) => {
       const grant = await proUntilAfterPurchase(order.telegramId, order.days);
       proUntil = grant.until;
       transaction.set(`pro:${order.telegramId}`, proUntil);
-      if (!grant.wasActive) {
-        // A fresh subscription starts with a full daily balance.
-        transaction.set(`proBalance:${order.telegramId}`, PRO_DAILY);
-        transaction.set(`proNextAt:${order.telegramId}`, nextAstanaDailyRenewalAt());
-      }
     } else if (action === 'approve') {
       await getPurchasedBalance(order.telegramId);
       transaction.incrby(`purchased:${order.telegramId}`, order.count);
@@ -2116,7 +2120,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/patcher', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'app.html'));
 });
-app.get('/pro', (req, res) => {
+app.get(['/pro', '/enhance'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'app.html'));
 });
 app.get('/checker', (req, res) => {
@@ -2697,12 +2701,9 @@ app.post('/api/check-video', requireUserToken, async (req, res) => {
 app.get('/api/pro/status', requireUserToken, async (req, res) => {
   try {
     const until = await getProUntil(req.telegramId);
-    const active = until > Date.now();
-    const left = active ? await proBalance(req.telegramId) : 0;
-    const nextAt = active ? Number(await redis.get(`proNextAt:${req.telegramId}`)) || null : null;
     res.set('Cache-Control', 'no-store');
     res.json({
-      active, until: active ? until : null, left, daily: PRO_DAILY, nextAt,
+      active: until > Date.now(), until: until > Date.now() ? until : null,
       price: PRO_PRICE, days: PRO_DAYS, buyUrl: `https://t.me/${BOT_USERNAME}?start=pro`
     });
   } catch (error) {
@@ -2711,84 +2712,13 @@ app.get('/api/pro/status', requireUserToken, async (req, res) => {
   }
 });
 
-// Jobs run one at a time (the encode uses every CPU core); a few more may wait in line.
-let proJobs = 0;
-let proTail = Promise.resolve();
-function queueProJob(job) {
-  if (proJobs >= 3) return null;
-  proJobs += 1;
-  const run = proTail.then(job);
-  proTail = run.catch(() => {}).then(() => { proJobs -= 1; });
-  return run;
-}
-
-app.post('/api/pro/enhance', requireUserToken, async (req, res) => {
-  const reject = (status, body) => { req.resume(); return res.status(status).json(body); };
-  if (!FFMPEG_PATH) return reject(503, { error: 'pro_unavailable' });
-  const telegramId = req.telegramId;
-  try {
-    if ((await getProUntil(telegramId)) <= Date.now()) return reject(403, { error: 'pro_required' });
-    if ((await proBalance(telegramId)) <= 0) return reject(402, { error: 'no_pro_balance', nextAt: Number(await redis.get(`proNextAt:${telegramId}`)) || null });
-  } catch (error) {
-    console.error('Не удалось проверить подписку Pro:', error.message);
-    return reject(503, { error: 'pro_status_failed' });
-  }
-  const declaredLength = Number(req.headers['content-length']);
-  if (Number.isFinite(declaredLength) && declaredLength > PRO_MAX_BYTES) return reject(413, { error: 'video_too_large' });
-
-  const jobDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'ineasy-pro-'));
-  const inputPath = path.join(jobDir, 'input.mp4');
-  const outputPath = path.join(jobDir, 'output.mp4');
-  const cleanup = () => fs.promises.rm(jobDir, { recursive: true, force: true }).catch(() => {});
-  let spent = false;
-  try {
-    let received = 0;
-    await new Promise((resolve, reject2) => {
-      const sink = fs.createWriteStream(inputPath);
-      req.on('data', (chunk) => {
-        received += chunk.length;
-        if (received > PRO_MAX_BYTES) { req.destroy(); sink.destroy(); reject2(new Error('video_too_large')); }
-      });
-      req.on('error', reject2);
-      req.on('aborted', () => reject2(new Error('upload_aborted')));
-      sink.on('error', reject2);
-      sink.on('finish', resolve);
-      req.pipe(sink);
-    });
-    if (received < 16) { await cleanup(); return res.status(400).json({ error: 'video_body_missing' }); }
-
-    let info;
-    try { info = await probeProVideo(FFPROBE_PATH, inputPath); } catch (error) { await cleanup(); return res.status(422).json({ error: 'pro_unreadable' }); }
-    if (!(info.seconds > 0)) { await cleanup(); return res.status(422).json({ error: 'pro_duration_unknown' }); }
-    const maxSeconds = proAllowedSeconds(info);
-    if (info.seconds > maxSeconds) { await cleanup(); return res.status(413).json({ error: 'pro_video_too_long', maxSeconds }); }
-
-    const job = queueProJob(async () => {
-      // Spend the daily credit only when the job really starts; it is refunded if the job fails.
-      if ((await proBalance(telegramId, true)) < 0) { const error = new Error('no_pro_balance'); error.noBalance = true; throw error; }
-      spent = true;
-      return enhanceProVideo({ ffmpegPath: FFMPEG_PATH, ffprobePath: FFPROBE_PATH, inputPath, outputPath, fileName: 'video.mp4', info });
-    });
-    if (!job) { await cleanup(); return res.status(429).json({ error: 'pro_busy' }); }
-    const result = await job;
-    await recordUserActivity(telegramId, 'Pro: видео улучшено');
-    res.set('Content-Type', 'video/mp4');
-    res.set('X-INEASY-PRO-LEFT', String(await proBalance(telegramId)));
-    res.set('X-INEASY-OUTPUT-FPS', String(result.fps || ''));
-    return res.sendFile(outputPath, (error) => {
-      if (error && !res.headersSent) res.status(500).end();
-      cleanup();
-    });
-  } catch (error) {
-    if (spent) await redis.incr(`proBalance:${telegramId}`).catch(() => {});
-    await cleanup();
-    if (res.headersSent) return undefined;
-    if (error.noBalance) return res.status(402).json({ error: 'no_pro_balance' });
-    if (error.message === 'video_too_large') return res.status(413).json({ error: 'video_too_large' });
-    const timedOut = error && (error.killed || error.signal === 'SIGKILL');
-    console.error('[INEASY Pro] enhancement failed:', { reason: timedOut ? 'timeout' : error.message, stderr: String(error.stderr || '').slice(-1500) });
-    return res.status(422).json({ error: timedOut ? 'pro_timeout' : 'pro_failed' });
-  }
+// The enhancer is a separate tool from the Patcher: own routes, own limits (none per day), no shared balance.
+registerEnhanceRoutes(app, {
+  requireUserToken,
+  hasPro: async (telegramId) => (await getProUntil(telegramId)) > Date.now(),
+  ffmpegPath: FFMPEG_PATH,
+  ffprobePath: FFPROBE_PATH,
+  onDone: (telegramId) => recordUserActivity(telegramId, 'Улучшатель: видео улучшено').catch(() => {}),
 });
 
 app.get('/api/buy-link/:count/:price', (req, res) => {
