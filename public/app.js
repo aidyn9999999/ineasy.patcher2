@@ -120,6 +120,7 @@ const translations = {
     scheduleSubmit: 'Schedule post',
     publishTitle: 'Publish to TikTok',
     connectTikTok: 'Connect TikTok account',
+    changeTikTok: 'Change TikTok account',
     checkingTikTok: 'Checking your Zernio connection…',
     connectedAs: 'Online ·',
     uploadNotice: 'Your processed video will be uploaded to your TikTok account through Zernio.',
@@ -336,6 +337,7 @@ const translations = {
     scheduleSubmit: 'Запланировать публикацию',
     publishTitle: 'Публикация в TikTok',
     connectTikTok: 'Подключить аккаунт TikTok',
+    changeTikTok: 'Сменить аккаунт TikTok',
     checkingTikTok: 'Проверяем подключение к Zernio…',
     connectedAs: 'В сети ·',
     uploadNotice: 'Обработанное видео будет загружено в ваш TikTok через Zernio.',
@@ -551,6 +553,7 @@ const translations = {
     scheduleSubmit: 'Жариялауды жоспарлау',
     publishTitle: 'TikTok-қа жариялау',
     connectTikTok: 'TikTok аккаунтын қосу',
+    changeTikTok: 'TikTok аккаунтын ауыстыру',
     checkingTikTok: 'Zernio байланысын тексеріп жатырмыз…',
     connectedAs: 'Желіде ·',
     uploadNotice: 'Өңделген бейне Zernio арқылы TikTok аккаунтыңызға жүктеледі.',
@@ -833,6 +836,7 @@ function applyLanguage(lang) {
   setText('zernioSaveKeyBtn', pack.zernioSaveKey);
   setText('zernioChangeKeyBtn', pack.zernioChangeKey);
   setText('tiktokConnectBtn', pack.connectTikTok);
+  setText('tiktokChangeAccountBtn', pack.changeTikTok);
   setText('zernioKeyHint', pack.zernioKeyHint);
   const zernioApiKeyInput = document.getElementById('zernioApiKey');
   if (zernioApiKeyInput) zernioApiKeyInput.placeholder = pack.zernioKeyPlaceholder;
@@ -1318,6 +1322,7 @@ const zernioKeyHint = document.getElementById('zernioKeyHint');
 const tiktokAccountPanel = document.getElementById('tiktokAccountPanel');
 const tiktokAccountStatus = document.getElementById('tiktokAccountStatus');
 const tiktokConnectBtn = document.getElementById('tiktokConnectBtn');
+const tiktokChangeAccountBtn = document.getElementById('tiktokChangeAccountBtn');
 const tiktokPublishForm = document.getElementById('tiktokPublishForm');
 const tiktokPublishStatus = document.getElementById('tiktokPublishStatus');
 const tiktokCaption = document.getElementById('tiktokCaption');
@@ -1410,6 +1415,7 @@ async function refreshTikTokStatus() {
   tiktokAccountStatus.textContent = t('checkingTikTok');
   tiktokAccountStatus.classList.remove('online');
   tiktokConnectBtn.classList.add('hidden');
+  tiktokChangeAccountBtn?.classList.add('hidden');
   zernioKeyPanel.classList.add('hidden');
   tiktokAccountPanel.classList.remove('hidden');
   tiktokPublishForm.classList.add('hidden');
@@ -1432,6 +1438,7 @@ async function refreshTikTokStatus() {
     tiktokCreatorInfo = data.creatorInfo;
     tiktokAccountStatus.textContent = `${t('connectedAs')} @${data.account.username}`;
     tiktokAccountStatus.classList.add('online');
+    tiktokChangeAccountBtn?.classList.toggle('hidden', tiktokProvider !== 'direct');
     tiktokPublishForm.classList.remove('hidden');
     renderTikTokOptions();
   } catch (error) {
@@ -1455,6 +1462,21 @@ if (tiktokConnectBtn) {
     } catch (error) {
       tiktokAccountStatus.textContent = error.message || t('connectFailed');
       tiktokConnectBtn.disabled = false;
+    }
+  });
+}
+
+if (tiktokChangeAccountBtn) {
+  // Direct mode only: revoke the stored TikTok token, then show the "Connect" button again.
+  tiktokChangeAccountBtn.addEventListener('click', async () => {
+    tiktokChangeAccountBtn.disabled = true;
+    try {
+      await tiktokApi('/api/tiktok/disconnect', { method: 'DELETE' });
+      await refreshTikTokStatus();
+    } catch (error) {
+      tiktokAccountStatus.textContent = error.message || t('connectFailed');
+    } finally {
+      tiktokChangeAccountBtn.disabled = false;
     }
   });
 }
