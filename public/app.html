@@ -30,6 +30,7 @@
 <link rel="stylesheet" href="css/patcher.css?v=20261020-ui1">
 <link rel="stylesheet" href="css/pages.css?v=20261020-ui1">
 <link rel="stylesheet" href="css/modals.css?v=20261022-4k-guide">
+<link rel="stylesheet" href="css/pro.css?v=20261023-pro">
 <script>
 (function () {
   var ua = navigator.userAgent || '';
@@ -263,6 +264,71 @@
       </div>
       </div>
     </div>
+
+    <!-- INEASY PRO: subscription patcher -->
+    <section class="pro-card" id="proCard" aria-labelledby="proCardTitle">
+      <div class="pro-card-head">
+        <span class="pro-badge">PRO</span>
+        <h2 id="proCardTitle">INEASY Pro</h2>
+        <p id="proCardSub">Улучшение видео для TikTok</p>
+      </div>
+      <div class="pro-locked" id="proLocked">
+        <span class="pro-lock-art" aria-hidden="true"><i class="ic i-lock"></i></span>
+        <strong id="proLockedTitle">У вас нет прав</strong>
+        <p id="proLockedText">Этот патчер доступен только по подписке INEASY Pro.</p>
+        <button class="btn btn-primary" id="proBuyBtn" type="button">Купить подписку</button>
+      </div>
+      <div class="pro-work hidden" id="proWork">
+        <div class="pro-status"><b id="proLeft"></b><span id="proUntil"></span></div>
+        <label class="pro-drop" for="proFile">
+          <input type="file" id="proFile" accept="video/*,.mp4,.mov,.m4v">
+          <i class="ic i-uploadCloud" aria-hidden="true"></i>
+          <strong id="proDropTitle">Выберите видео</strong>
+          <small id="proDropHint">MP4 или MOV</small>
+        </label>
+        <button class="btn btn-primary btn-lg btn-block" id="proRunBtn" type="button" disabled>Улучшить видео</button>
+        <div class="pro-progress hidden" id="proProgress">
+          <span class="pro-progress-text" id="proProgressText" aria-live="polite"></span>
+          <div class="pro-progress-bar" id="proBar"><i></i></div>
+        </div>
+        <p class="pro-error hidden" id="proError" role="alert"></p>
+        <div class="pro-result hidden" id="proResult">
+          <strong id="proDone">Готово! Видео улучшено</strong>
+          <video id="proPreview" controls playsinline preload="metadata"></video>
+          <div class="pro-result-actions">
+            <a class="btn btn-primary bi i-download" id="proDownload" href="#" download>Скачать</a>
+            <button class="btn btn-ghost" id="proAnother" type="button">Улучшить другое видео</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    </section>
+
+    <!-- INEASY PRO: subscription page -->
+    <section class="view-section hidden" id="proSection">
+      <div class="pro-page">
+        <header class="pro-hero">
+          <span class="pro-badge">INEASY PRO</span>
+          <h1><span id="proPageA">Улучшение видео для </span><span id="proPageB">TikTok</span></h1>
+          <p id="proLead">Загрузите ролик и получите чёткое, яркое видео, готовое к публикации.</p>
+          <ul class="pro-perks">
+            <li><i class="ic i-gift" aria-hidden="true"></i><span id="proPerk1">5 видео бесплатно каждый день</span></li>
+            <li><i class="ic i-calendar" aria-hidden="true"></i><span id="proPerk2">30 дней подписки</span></li>
+            <li><i class="ic i-message" aria-hidden="true"></i><span id="proPerk3">Поддержка всегда онлайн</span></li>
+          </ul>
+        </header>
+        <div class="pro-features">
+          <article class="pro-feature"><i class="ic i-eye" aria-hidden="true"></i><h3 id="proF1">Чёткость</h3><p id="proF1t"></p></article>
+          <article class="pro-feature"><i class="ic i-spark" aria-hidden="true"></i><h3 id="proF2">Насыщенность</h3><p id="proF2t"></p></article>
+          <article class="pro-feature"><i class="ic i-send" aria-hidden="true"></i><h3 id="proF3">Готово для TikTok</h3><p id="proF3t"></p></article>
+        </div>
+        <p class="pro-note" id="proNote"></p>
+        <div class="pro-price-card">
+          <div class="pro-price"><span id="proPrice">5 990</span> ₸ <small id="proUnit">/ 30 дней</small></div>
+          <p class="pro-active hidden" id="proActive"></p>
+          <button class="btn btn-primary btn-lg" id="proPageBuy" type="button">Купить подписку</button>
+        </div>
+      </div>
     </section>
 
     <!-- ANALYZER SECTION -->
@@ -559,6 +625,7 @@
 <script src="app.js?v=20261022-4k-guide"></script>
 <script src="local-video-archive.js?v=20261019-archive-layout-v1"></script>
 <script src="ui.js?v=20261022-4k-guide"></script>
+<script src="pro.js?v=20261023-pro"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
