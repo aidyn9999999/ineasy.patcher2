@@ -2780,13 +2780,14 @@ applyProvidedNavIcons();
 const SECTION_PATHS = {
   homeSection: '/',
   patchSection: '/patcher',
+  enhanceSection: '/enhance',
   checkerSection: '/checker',
   faqSection: '/',
 };
 function syncSectionFromPath() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
-  if (path === '/pro') { window.showProSection?.(false); return; }
   const view = path === '/patcher' ? 'patchSection'
+    : path === '/enhance' || path === '/pro' ? 'enhanceSection'
     : path === '/checker' ? 'checkerSection'
     : 'homeSection';
   const tab = document.querySelector(`.nav-tab[data-view="${view}"]`);
