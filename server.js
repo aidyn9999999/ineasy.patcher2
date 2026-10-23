@@ -10,7 +10,6 @@ const https = require('https');
 const os = require('os');
 const crypto = require('crypto');
 const { ffmpegCopyV2 } = require('./v2-engine');
-const { registerEnhanceRoutes } = require('./enhance-api');
 const { registerVideoPatcher } = require('./video-bot');
 const { registerTikTokDirect } = require('./tiktok-direct');
 let FFPROBE_PATH = 'ffprobe';
@@ -2726,14 +2725,7 @@ app.get('/api/pro/status', requireUserToken, async (req, res) => {
   }
 });
 
-// The enhancer is a separate tool from the Patcher: own routes, own limits (none per day), no shared balance.
-registerEnhanceRoutes(app, {
-  requireUserToken,
-  hasPro: async (telegramId) => (await getProUntil(telegramId)) > Date.now(),
-  ffmpegPath: FFMPEG_PATH,
-  ffprobePath: FFPROBE_PATH,
-  onDone: (telegramId) => recordUserActivity(telegramId, 'Улучшатель: видео улучшено').catch(() => {}),
-});
+// The enhancer itself runs in the browser (public/enhance.js); the server only reports who has Pro.
 
 app.get('/api/buy-link/:count/:price', (req, res) => {
   const { count, price } = req.params;
