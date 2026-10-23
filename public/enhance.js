@@ -16,6 +16,7 @@
       done: 'Готово', after: 'Результат', before: 'Было', download: 'Скачать', again: 'Улучшить другое видео',
       tooLong: (s) => `Видео слишком длинное. Максимум для него: ${s} сек.`,
       lockedHint: 'Улучшение доступно по подписке INEASY Pro.',
+      lockTitle: 'Раздел закрыт', lockText: 'Улучшение доступно только по подписке INEASY Pro.',
       err: {
         unsupported: 'Браузер не смог открыть это видео. Обновите Chrome или Safari и попробуйте MP4 или MOV.',
         no_webgl: 'Этот браузер не поддерживает нужное ускорение. Попробуйте Chrome или Safari последней версии.',
@@ -37,6 +38,7 @@
       done: 'Done', after: 'Result', before: 'Before', download: 'Download', again: 'Enhance another video',
       tooLong: (s) => `This video is too long. The maximum for it is ${s} s.`,
       lockedHint: 'Enhancing needs an INEASY Pro subscription.',
+      lockTitle: 'Section locked', lockText: 'Enhancing is available with an INEASY Pro subscription only.',
       err: {
         unsupported: 'Your browser could not open this video. Update Chrome or Safari and try an MP4 or MOV.',
         no_webgl: 'This browser lacks the graphics acceleration needed. Try the latest Chrome or Safari.',
@@ -58,6 +60,7 @@
       done: 'Дайын', after: 'Нәтиже', before: 'Бұрын', download: 'Жүктеп алу', again: 'Басқа бейнені жақсарту',
       tooLong: (s) => `Бейне тым ұзақ. Ол үшін ең көбі: ${s} сек.`,
       lockedHint: 'Жақсарту INEASY Pro жазылымымен қолжетімді.',
+      lockTitle: 'Бөлім жабық', lockText: 'Жақсарту тек INEASY Pro жазылымымен қолжетімді.',
       err: {
         unsupported: 'Браузер бұл бейнені аша алмады. Chrome немесе Safari жаңартып, MP4 немесе MOV қолданып көріңіз.',
         no_webgl: 'Бұл браузерде қажетті жеделдету жоқ. Chrome немесе Safari соңғы нұсқасын қолданып көріңіз.',
@@ -95,7 +98,9 @@
   function render() {
     const s = t();
     text('navEnhance', s.nav); text('enhKicker', s.kicker); text('enhTitle', s.title); text('enhLead', s.lead);
-    text('enhBuyBtn', s.buy); text('enhPresetsTitle', s.presets); text('enhCancel', s.cancel);
+    text('enhBuyBtn', s.buy); text('enhLockTitle', s.lockTitle); text('enhLockText', s.lockText); text('enhLockBuy', s.buy);
+    $('enhStageBox').classList.toggle('locked', !active());
+    hide('enhLock', active()); text('enhPresetsTitle', s.presets); text('enhCancel', s.cancel);
     text('enhDone', s.done); text('enhTabAfter', s.after); text('enhTabBefore', s.before); text('enhDownload', s.download); text('enhAgain', s.again);
     document.querySelectorAll('[data-k]').forEach((n) => { n.textContent = s[n.dataset.k]; });
     $('enhAccess').classList.toggle('on', active());
@@ -272,6 +277,7 @@
     $('enhCancel').addEventListener('click', cancel);
     $('enhAgain').addEventListener('click', reset);
     $('enhBuyBtn').addEventListener('click', () => hide('enhBuyOverlay', false));
+    $('enhLockBuy').addEventListener('click', () => hide('enhBuyOverlay', false));
     $('enhBuyClose').addEventListener('click', closeBuy);
     $('enhBuyOverlay').addEventListener('click', (e) => { if (e.target === $('enhBuyOverlay')) closeBuy(); });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBuy(); });

@@ -30,7 +30,7 @@
 <link rel="stylesheet" href="css/patcher.css?v=20261020-ui1">
 <link rel="stylesheet" href="css/pages.css?v=20261020-ui1">
 <link rel="stylesheet" href="css/modals.css?v=20261022-4k-guide">
-<link rel="stylesheet" href="css/enhance.css?v=20261024-enhance">
+<link rel="stylesheet" href="css/enhance.css?v=20261024-lock">
 <script>
 (function () {
   var ua = navigator.userAgent || '';
@@ -283,6 +283,7 @@
           </div>
         </header>
 
+        <div class="enh-stage" id="enhStageBox">
         <div class="enh-grid">
           <div class="enh-main">
             <label class="enh-drop" id="enhDrop" for="enhFile">
@@ -310,6 +311,15 @@
             </div>
             <button class="btn btn-primary btn-lg btn-block" id="enhRun" type="button" disabled>Улучшить</button>
           </aside>
+        </div>
+        <div class="enh-lock hidden" id="enhLock">
+          <div class="enh-lock-card">
+            <i class="ic i-lock" aria-hidden="true"></i>
+            <strong id="enhLockTitle">Раздел закрыт</strong>
+            <p id="enhLockText"></p>
+            <button class="btn-black" id="enhLockBuy" type="button">Купить</button>
+          </div>
+        </div>
         </div>
 
         <section class="enh-progress hidden" id="enhProgress" aria-live="polite">
@@ -646,7 +656,7 @@
 <script src="local-video-archive.js?v=20261019-archive-layout-v1"></script>
 <script src="ui.js?v=20261022-4k-guide"></script>
 <script src="enhance-gl.js?v=20261025-local"></script>
-<script src="enhance.js?v=20261025-local"></script>
+<script src="enhance.js?v=20261025-lock"></script>
 <script type="module">
   const localHost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
   const patcherTest = localHost && new URLSearchParams(window.location.search).get('patcher-test') === '1';
