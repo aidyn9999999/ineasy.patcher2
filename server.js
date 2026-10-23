@@ -2127,6 +2127,11 @@ app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 app.use(express.static(path.join(__dirname, 'public')));
+// TikTok URL-prefix verification files are also served under /terms/ and /privacy/,
+// because TikTok looks for the file inside the exact URL it is verifying.
+for (const prefix of ['/terms', '/privacy']) {
+  app.use(prefix, express.static(path.join(__dirname, 'tiktok-verification')));
+}
 
 
 // Clean URLs for authenticated single-page app sections.
