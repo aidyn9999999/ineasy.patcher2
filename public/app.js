@@ -2785,6 +2785,7 @@ const SECTION_PATHS = {
 };
 function syncSectionFromPath() {
   const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  if (path === '/pro') { window.showProSection?.(false); return; }
   const view = path === '/patcher' ? 'patchSection'
     : path === '/checker' ? 'checkerSection'
     : 'homeSection';
