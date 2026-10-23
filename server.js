@@ -1582,6 +1582,20 @@ bot.command('addpro', async (ctx) => {
   await ctx.reply(`✅ INEASY Pro для ${targetId}: +${days} дн., активна до ${formatAstanaDateTime(grant.until, 'ru')}.${notified ? '' : '\n⚠️ Пользователю не удалось отправить уведомление (он не запускал бота).'}`);
 });
 
+// Admin only: /removepro <telegram id> switches the INEASY Pro subscription off right away.
+bot.command('removepro', async (ctx) => {
+  if (!ADMIN_ID || String(ctx.from.id) !== ADMIN_ID) return;
+  const [, targetId] = String(ctx.message.text || '').trim().split(/\s+/);
+  if (!/^\d{5,15}$/.test(targetId || '')) {
+    await ctx.reply('Использование: /removepro <Telegram ID>\nПример: /removepro 123456789');
+    return;
+  }
+  const wasActive = (await getProUntil(targetId)) > Date.now();
+  await redis.del(`pro:${targetId}`);
+  await recordUserActivity(targetId, 'INEASY Pro отключена администратором');
+  await ctx.reply(wasActive ? `✅ INEASY Pro для ${targetId} отключена.` : `ℹ️ У ${targetId} не было активной подписки. Ключ подписки очищен.`);
+});
+
 bot.action('pro_buy', async (ctx) => {
   await ctx.answerCbQuery();
   await createProOrder(ctx, await getLang(ctx.from.id));
