@@ -12,7 +12,7 @@ const TTL_MS = 15 * 60 * 1000;
 const MAX_WAITING = 3;
 
 const HTTP_STATUS = {
-  ai_unavailable: 409, hdr_source_required: 409, preset_unknown: 400, bad_options: 400, nothing_to_do: 400,
+  preset_unknown: 400, bad_options: 400, nothing_to_do: 400,
 };
 
 function registerEnhanceRoutes(app, { requireUserToken, hasPro, ffmpegPath, ffprobePath, onDone = () => {} }) {
@@ -84,8 +84,7 @@ function registerEnhanceRoutes(app, { requireUserToken, hasPro, ffmpegPath, ffpr
       uploads.set(id, { userId, dir, path: inputPath, info, createdAt: Date.now(), timings: { receiveMs, analyzeMs: Date.now() - analyzeStart } });
       return res.json({
         uploadId: id, info: publicInfo(info), timings: uploads.get(id).timings,
-        limits: { maxSeconds: engine.allowedSeconds(info, 'natural'), maxSecondsHdrPreserve: engine.allowedSeconds(info, 'hdr'), maxMb: MAX_BYTES / 1048576 },
-        presets: { restore: { available: false, reason: engine.AI_RESTORE.reason }, hdr: { available: info.hdr !== 'SDR' } },
+        limits: { maxSeconds: engine.allowedSeconds(info), maxMb: MAX_BYTES / 1048576 },
       });
     } catch (error) {
       await removeDir(dir);
@@ -104,7 +103,7 @@ function registerEnhanceRoutes(app, { requireUserToken, hasPro, ffmpegPath, ffpr
     try { options = engine.resolveOptions(upload.info, req.body); } catch (error) {
       return res.status(HTTP_STATUS[error.code] || 400).json({ error: error.code || 'bad_options' });
     }
-    const maxSeconds = engine.allowedSeconds(upload.info, options.preset);
+    const maxSeconds = engine.allowedSeconds(upload.info);
     if (upload.info.seconds > maxSeconds) return res.status(413).json({ error: 'too_long', maxSeconds });
     const running = [...jobs.values()].filter(live);
     if (running.some((j) => j.userId === userId)) return res.status(429).json({ error: 'job_active' });

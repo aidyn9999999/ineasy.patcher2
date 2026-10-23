@@ -272,7 +272,7 @@
       <div class="enh">
         <header class="enh-head">
           <div class="enh-head-copy">
-            <p class="home-eyebrow" id="enhKicker">УЛУЧШАТЕЛЬ КАЧЕСТВА</p>
+            <p class="home-eyebrow" id="enhKicker">УЛУЧШЕНИЕ ВИДЕО</p>
             <h1 id="enhTitle">Улучшите качество своего видео</h1>
             <p id="enhLead"></p>
           </div>
@@ -295,7 +295,6 @@
               <span id="enhUploadText" aria-live="polite"></span>
               <div class="enh-bar" id="enhUploadBar"><i></i></div>
             </div>
-            <dl class="enh-info hidden" id="enhInfo"></dl>
             <p class="enh-warn hidden" id="enhWarn" role="status"></p>
             <div class="enh-original hidden" id="enhOriginalWrap">
               <video id="enhOriginal" controls playsinline preload="metadata"></video>
@@ -303,19 +302,13 @@
           </div>
 
           <aside class="enh-side">
-            <h2 id="enhPresetsTitle">Пресет</h2>
-            <div class="enh-presets" id="enhPresets" role="radiogroup" aria-label="Пресет">
-              <button type="button" class="enh-preset active" data-preset="natural" role="radio" aria-checked="true"><strong>Natural</strong><small data-k="pNatural"></small></button>
-              <button type="button" class="enh-preset" data-preset="sharp" role="radio" aria-checked="false"><strong>Sharp</strong><small data-k="pSharp"></small></button>
-              <button type="button" class="enh-preset" data-preset="vivid" role="radio" aria-checked="false"><strong>Vivid</strong><small data-k="pVivid"></small></button>
-              <button type="button" class="enh-preset" data-preset="restore" role="radio" aria-checked="false" aria-disabled="true"><strong>AI Restore</strong><small data-k="pRestore"></small></button>
-              <button type="button" class="enh-preset" data-preset="hdr" role="radio" aria-checked="false"><strong>HDR Preserve</strong><small data-k="pHdr"></small></button>
+            <h2 id="enhPresetsTitle">Стиль</h2>
+            <div class="enh-presets" id="enhPresets" role="radiogroup" aria-label="Стиль">
+              <button type="button" class="enh-preset active" data-preset="natural" role="radio" aria-checked="true"><strong data-k="nNatural">Natural</strong><small data-k="pNatural"></small></button>
+              <button type="button" class="enh-preset" data-preset="sharp" role="radio" aria-checked="false"><strong data-k="nSharp">Sharp</strong><small data-k="pSharp"></small></button>
+              <button type="button" class="enh-preset" data-preset="vivid" role="radio" aria-checked="false"><strong data-k="nVivid">Vivid</strong><small data-k="pVivid"></small></button>
             </div>
-            <h2 id="enhSettingsTitle">Настройки</h2>
-            <label class="enh-slider"><span><span id="enhStrengthLabel">Сила улучшения</span><output id="enhStrengthOut">25%</output></span><input type="range" id="enhStrength" min="0" max="50" step="1" value="25"></label>
-            <label class="enh-slider"><span><span id="enhSatLabel">Насыщенность</span><output id="enhSatOut">+5%</output></span><input type="range" id="enhSat" min="0" max="50" step="1" value="5"></label>
-            <p class="enh-note" id="enhNote"></p>
-            <button class="btn btn-primary btn-lg btn-block" id="enhRun" type="button" disabled>Улучшить качество</button>
+            <button class="btn btn-primary btn-lg btn-block" id="enhRun" type="button" disabled>Улучшить</button>
           </aside>
         </div>
 
@@ -329,12 +322,9 @@
 
         <section class="enh-result hidden" id="enhResult">
           <div class="enh-result-head"><strong id="enhDone">Готово</strong>
-            <div class="enh-tabs" role="tablist"><button type="button" class="active" id="enhTabAfter" role="tab">Результат</button><button type="button" id="enhTabBefore" role="tab">Оригинал</button></div>
+            <div class="enh-tabs" role="tablist"><button type="button" class="active" id="enhTabAfter" role="tab">Результат</button><button type="button" id="enhTabBefore" role="tab">Было</button></div>
           </div>
           <video id="enhResultVideo" controls playsinline preload="metadata"></video>
-          <table class="enh-compare" id="enhCompare"></table>
-          <p class="enh-times" id="enhTimes"></p>
-          <p class="enh-note" id="enhAfterNote"></p>
           <div class="enh-result-actions">
             <a class="btn btn-primary bi i-download" id="enhDownload" href="#" download>Скачать</a>
             <button class="btn btn-ghost" id="enhAgain" type="button">Улучшить другое видео</button>

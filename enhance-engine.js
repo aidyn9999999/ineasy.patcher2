@@ -1,6 +1,6 @@
 'use strict';
 // INEASY quality enhancer: classic restoration filters (denoise, sharpen, local contrast, saturation).
-// It is NOT the Patcher: no TikTok patch is applied here, and no AI model runs (see AI_RESTORE below).
+// It is NOT the Patcher: no TikTok patch is applied here, and no AI model runs (see the note below).
 const { execFile, spawn } = require('child_process');
 
 const MAX_SECONDS = Number(process.env.ENHANCE_MAX_SECONDS) || 60;
@@ -8,16 +8,13 @@ const MAX_SECONDS = Number(process.env.ENHANCE_MAX_SECONDS) || 60;
 const MAX_WORK = Number(process.env.ENHANCE_MAX_WORK) || 12000;
 const TIMEOUT_MS = Number(process.env.ENHANCE_TIMEOUT_MS) || 240000;
 
-// A real super-resolution / restoration model needs a GPU runtime (Real-ESRGAN ncnn-vulkan, ONNX Runtime GPU).
-// The ffmpeg build used here has no DNN backend and the server has no GPU, so this preset stays switched off.
-const AI_RESTORE = { available: false, reason: 'gpu_required' };
-
+// No neural model runs here: a real super-resolution / restoration model needs a GPU runtime
+// (Real-ESRGAN ncnn-vulkan, ONNX Runtime GPU) and the server has none. Only classic filters are applied.
 // strength 0-50 (%): 25 gives the base amounts below. saturation: extra percent on top (0-50).
 const PRESETS = {
   natural: { denoise: [1.0, 2.0], sharpen: 0.8, contrast: 0.02, saturation: 5 },
   sharp: { denoise: [1.5, 3.0], sharpen: 1.6, contrast: 0.03, saturation: 5 },
   vivid: { denoise: [0.8, 1.5], sharpen: 0.8, contrast: 0.05, saturation: 18 },
-  hdr: { denoise: [0.8, 1.5], sharpen: 0.8, contrast: 0.02, saturation: 0, preserveHdr: true },
 };
 
 const run = (file, args, options) => new Promise((resolve, reject) => {
@@ -60,32 +57,31 @@ async function probe(ffprobePath, filePath) {
   };
 }
 
-// HDR Preserve keeps 10-bit HEVC with the source colour signal; the other presets give 8-bit H.264.
-const weight = (info, preset) => (PRESETS[preset] && PRESETS[preset].preserveHdr ? 3 : info.hdr !== 'SDR' ? 2 : 1);
-const workPerSecond = (info, preset) => info.fps * info.megapixels * weight(info, preset);
-const allowedSeconds = (info, preset = 'natural') => Math.min(MAX_SECONDS, Math.floor(MAX_WORK / Math.max(workPerSecond(info, preset), 0.001)));
+// HDR videos stay HDR (10-bit HEVC, same colour signal) when they are short enough for that slower path;
+// otherwise they are converted to standard colour. Everything else is 8-bit H.264.
+const weight = (info, preserveHdr) => (preserveHdr ? 3 : info.hdr !== 'SDR' ? 2 : 1);
+const allowedSeconds = (info, preserveHdr = false) => Math.min(MAX_SECONDS, Math.floor(MAX_WORK / Math.max(info.fps * info.megapixels * weight(info, preserveHdr), 0.001)));
 
 // Validates the request and returns the normalised options, or throws an Error with .code.
 function resolveOptions(info, { preset = 'natural', strength = 25, saturation } = {}) {
   const fail = (code) => Object.assign(new Error(code), { code });
-  if (preset === 'restore') throw fail('ai_unavailable');
   const base = PRESETS[preset];
   if (!base) throw fail('preset_unknown');
-  if (base.preserveHdr && info.hdr === 'SDR') throw fail('hdr_source_required');
   const level = Number(strength);
   const extra = Number(saturation === undefined ? base.saturation : saturation);
   if (!Number.isFinite(level) || !Number.isFinite(extra) || level < 0 || level > 50 || extra < 0 || extra > 50) throw fail('bad_options');
   if (level === 0 && extra === 0) throw fail('nothing_to_do');
-  return { preset, strength: level, saturation: extra, k: level / 25 };
+  const preserveHdr = info.hdr !== 'SDR' && info.seconds <= allowedSeconds(info, true);
+  return { preset, strength: level, saturation: extra, k: level / 25, preserveHdr };
 }
 
 function filterChain(info, options) {
   const p = PRESETS[options.preset];
   const k = options.k;
   const parts = [];
-  if (!p.preserveHdr && info.hdr === 'HDR10 (PQ)') parts.push('zscale=t=linear:npl=203,format=gbrpf32le,tonemap=mobius,zscale=t=bt709:m=bt709:p=bt709:r=tv');
-  else if (!p.preserveHdr && info.hdr === 'HLG') parts.push('zscale=t=bt709:m=bt709:p=bt709:r=tv:npl=203');
-  parts.push(p.preserveHdr ? 'format=yuv420p10le' : 'format=yuv420p');
+  if (!options.preserveHdr && info.hdr === 'HDR10 (PQ)') parts.push('zscale=t=linear:npl=203,format=gbrpf32le,tonemap=mobius,zscale=t=bt709:m=bt709:p=bt709:r=tv');
+  else if (!options.preserveHdr && info.hdr === 'HLG') parts.push('zscale=t=bt709:m=bt709:p=bt709:r=tv:npl=203');
+  parts.push(options.preserveHdr ? 'format=yuv420p10le' : 'format=yuv420p');
   if (k > 0) {
     const spatial = (p.denoise[0] * k).toFixed(2);
     const temporal = (p.denoise[1] * k).toFixed(2);
@@ -100,7 +96,7 @@ function filterChain(info, options) {
 }
 
 function encoderArgs(info, options) {
-  if (PRESETS[options.preset].preserveHdr) {
+  if (options.preserveHdr) {
     const primaries = /2020/.test(info.primaries) ? 'bt2020' : info.primaries || 'bt2020';
     return ['-c:v', 'libx265', '-preset', 'ultrafast', '-crf', '20', '-pix_fmt', 'yuv420p10le', '-tag:v', 'hvc1',
       '-x265-params', `colorprim=${primaries}:transfer=${info.transfer}:colormatrix=${info.matrix || 'bt2020nc'}:log-level=error`];
@@ -151,4 +147,4 @@ function startEnhance({ ffmpegPath, inputPath, outputPath, info, options, onProg
   return { done, cancel: () => { cancelled = true; child.kill('SIGKILL'); } };
 }
 
-module.exports = { AI_RESTORE, PRESETS, MAX_SECONDS, probe, allowedSeconds, resolveOptions, filterChain, startEnhance };
+module.exports = { PRESETS, MAX_SECONDS, probe, allowedSeconds, resolveOptions, filterChain, startEnhance };
